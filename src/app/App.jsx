@@ -36,6 +36,7 @@ import useMusicStore, {
   STEPS_PER_BAR,
   TOTAL_BARS,
 } from '../store/useMusicStore.js';
+import { findClipForTrackBar } from '../store/slices/clipsSlice.js';
 import {
   createUiAudioDispatcher,
   seedDefaultDrumsPattern,
@@ -161,7 +162,7 @@ function TrackRow({ active, onSelect, track }) {
   const classes = [
     'track',
     active ? 'selected' : '',
-    track.clipName ? 'has-phrase' : '',
+    track.clip ? 'has-phrase' : '',
   ].filter(Boolean).join(' ');
 
   return (
@@ -189,13 +190,13 @@ function TrackRow({ active, onSelect, track }) {
   );
 }
 
-function TracksColumn({ activeTrackId, onTrackSelect }) {
+function TracksColumn({ activeTrackId, onTrackSelect, tracks }) {
   return (
     <aside className="tracks-col">
       <div className="tracks-head">
         <div className="tracks-title">
           <span className="label">Tracks</span>
-          <span className="count">{TRACK_UI.length}</span>
+          <span className="count">{tracks.length}</span>
         </div>
         <button className="edit-btn" aria-label="Edit tracks" title="Reorder and rename">
           {renderIcon(SlidersHorizontal)}
@@ -203,7 +204,7 @@ function TracksColumn({ activeTrackId, onTrackSelect }) {
       </div>
 
       <div className="tracks-list">
-        {TRACK_UI.map((track) => createElement(TrackRow, {
+        {tracks.map((track) => createElement(TrackRow, {
           active: track.id === activeTrackId,
           key: track.id,
           onSelect: onTrackSelect,
@@ -221,14 +222,15 @@ function TracksColumn({ activeTrackId, onTrackSelect }) {
 
 function Clip({
   active,
-  onOpenEditor,
+  clip,
+  onOpenClip,
   onPreview,
   track,
 }) {
-  if (!track.clipName) return null;
+  if (!clip) return null;
 
   const handleClick = () => {
-    onOpenEditor(track.id);
+    onOpenClip(clip.id);
     if (track.id === 'drums') onPreview();
   };
 
@@ -242,7 +244,7 @@ function Clip({
       onClick={handleClick}
     >
       <div className="clip-name">
-        {track.clipName}
+        {clip.name}
         {renderIcon(Pencil)}
       </div>
       <div className="clip-mini" />
@@ -258,6 +260,8 @@ function Timeline({
   onAddClip,
   onDrumsPreview,
   onOpenClip,
+  selectedClipId,
+  tracks,
 }) {
   const flatStep = currentBar * STEPS_PER_BAR + currentStep;
   const playheadLeft = `${(flatStep / (TOTAL_BARS * STEPS_PER_BAR)) * 100}%`;
@@ -277,17 +281,17 @@ function Timeline({
 
       <div className="grid">
         <div className="grid-rows" aria-hidden="true">
-          {TRACK_UI.map((track) => (
+          {tracks.map((track) => (
             <div className="row" key={track.id} />
           ))}
         </div>
 
         <div className="hover-rows">
-          {TRACK_UI.map((track, trackIndex) => (
+          {tracks.map((track, trackIndex) => (
             <div
               className={[
                 'hover-row',
-                track.clipName ? 'has-phrase' : '',
+                track.clip ? 'has-phrase' : '',
                 track.id === activeTrackId ? 'active' : '',
               ].filter(Boolean).join(' ')}
               data-type={track.id}
@@ -296,8 +300,9 @@ function Timeline({
               key={track.id}
             >
               {createElement(Clip, {
-                active: track.id === activeTrackId,
-                onOpenEditor: onOpenClip,
+                active: track.clip?.id === selectedClipId,
+                clip: track.clip,
+                onOpenClip,
                 onPreview: onDrumsPreview,
                 track,
               })}
@@ -551,6 +556,8 @@ export default function App() {
   const matrix = useMusicStore((state) => state.matrix);
   const activeTrackId = useMusicStore((state) => state.activeTrackId);
   const selectedBar = useMusicStore((state) => state.selectedBar);
+  const selectedClipId = useMusicStore((state) => state.selectedClipId);
+  const clips = useMusicStore((state) => state.clips);
 
   const dispatchAppCommand = useMemo(
     () => createUiAudioDispatcher({ store: useMusicStore, audio: audioEngine }),
@@ -589,11 +596,32 @@ export default function App() {
     void audioEngine.triggerDrumsStep(['kick', 'snare', 'hihat']);
   }, []);
 
-  const handleOpenTrackEditor = useCallback((trackId) => {
-    const { setActiveTrackId, setSelectedClipId } = useMusicStore.getState();
+  const tracks = useMemo(() => TRACK_UI.map((track) => ({
+    ...track,
+    clip: findClipForTrackBar(clips, track.id, selectedBar),
+  })), [clips, selectedBar]);
+
+  const handleTrackSelect = useCallback((trackId) => {
+    const state = useMusicStore.getState();
+    const clip = state.getClipForTrackBar(trackId, selectedBar);
+    if (clip) {
+      state.selectClip(clip.id);
+      return;
+    }
+
+    const { setActiveTrackId, setSelectedBar, setSelectedClipId } = state;
     setActiveTrackId(trackId);
-    setSelectedClipId(`${trackId}-bar-${selectedBar}`);
+    setSelectedBar(selectedBar);
+    setSelectedClipId(null);
   }, [selectedBar]);
+
+  const handleAddClip = useCallback((trackId) => {
+    useMusicStore.getState().createClip(trackId, selectedBar);
+  }, [selectedBar]);
+
+  const handleOpenClip = useCallback((clipId) => {
+    useMusicStore.getState().selectClip(clipId);
+  }, []);
 
   const handleDrumsStepToggle = useCallback((instrument, step) => {
     const state = useMusicStore.getState();
@@ -623,15 +651,18 @@ export default function App() {
       <main className="workspace">
         {createElement(TracksColumn, {
           activeTrackId,
-          onTrackSelect: handleOpenTrackEditor,
+          onTrackSelect: handleTrackSelect,
+          tracks,
         })}
         {createElement(Timeline, {
           activeTrackId,
           currentBar,
           currentStep,
-          onAddClip: handleOpenTrackEditor,
+          onAddClip: handleAddClip,
           onDrumsPreview: handleDrumsPreview,
-          onOpenClip: handleOpenTrackEditor,
+          onOpenClip: handleOpenClip,
+          selectedClipId,
+          tracks,
         })}
       </main>
       {createElement(BottomEditor, {

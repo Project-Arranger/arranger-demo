@@ -20,18 +20,11 @@ const trackVolumes = {
   sample: { level: 60, label: '-7dB' },
 };
 
-const trackClips = {
-  drums: 'Drum 01',
-  chord: 'Chord 01',
-};
-
 const TRACK_UI = Object.freeze(
   TRACK_IDS.map((id) => Object.freeze({
     id,
     label: trackLabels[id],
     volume: trackVolumes[id],
-    clipName: trackClips[id] ?? null,
-    selected: id === 'chord',
   })),
 );
 
