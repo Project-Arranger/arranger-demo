@@ -11,6 +11,7 @@ import {
 
 test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async () => {
   const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
+  const uiDataSource = await readFile(new URL('../src/app/uiShellData.js', import.meta.url), 'utf8');
 
   assert.match(source, /aria-label="Project Arranger workspace"/);
   assert.match(source, /Project Arranger/);
@@ -18,8 +19,15 @@ test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async
   assert.doesNotMatch(source, /perc/i);
   assert.match(source, /TRACK_UI\.map/);
   assert.match(source, /BAR_NUMBERS\.map/);
+  assert.match(source, /clips/);
+  assert.match(source, /getClipForTrackBar/);
+  assert.match(source, /createClip\(trackId,\s*selectedBar\)/);
+  assert.match(source, /selectClip\(clipId\)/);
+  assert.doesNotMatch(source, /track\.clipName/);
+  assert.doesNotMatch(uiDataSource, /trackClips|clipName|selected:/);
 
   assert.deepEqual(TRACK_UI.map((track) => track.id), TRACK_IDS);
+  assert.equal(TRACK_UI.every((track) => !Object.hasOwn(track, 'clipName')), true);
   assert.equal(BAR_NUMBERS.length, TOTAL_BARS);
   assert.equal(BAR_NUMBERS.at(0), 1);
   assert.equal(BAR_NUMBERS.at(-1), TOTAL_BARS);
@@ -50,8 +58,8 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
 
   assert.match(source, /activeTrackId/);
-  assert.match(source, /setActiveTrackId\(trackId\)/);
-  assert.match(source, /setSelectedClipId\(`\$\{trackId\}-bar-\$\{selectedBar\}`\)/);
+  assert.match(source, /handleAddClip/);
+  assert.match(source, /handleOpenClip/);
   assert.match(source, /onAddClip/);
   assert.match(source, /data-track-row=\{track\.id\}/);
   assert.match(source, /data-track-index=\{trackIndex\}/);
