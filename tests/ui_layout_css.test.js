@@ -17,9 +17,10 @@ test('timeline clips stay inside one bar and leave room for add clip controls', 
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
   assert.match(css, /\.clip\s*\{[^}]*left:\s*10px;/s);
+  assert.match(css, /\.clip\s*\{[^}]*left:\s*calc\(var\(--bar-index\) \* 100% \/ var\(--bars\) \+ 10px\);/s);
   assert.match(css, /\.clip\s*\{[^}]*width:\s*calc\(100% \/ var\(--bars\) - 20px\);/s);
   assert.match(css, /\.clip\s*\{[^}]*min-width:\s*0;/s);
-  assert.match(css, /\.add-clip\s*\{[^}]*left:\s*calc\(100% \/ var\(--bars\) \* 1\.5\);/s);
+  assert.match(css, /\.add-clip\s*\{[^}]*left:\s*calc\(\(var\(--bar-index\) \+ 0\.5\) \* 100% \/ var\(--bars\)\);/s);
   assert.match(css, /\.add-clip\s*\{[^}]*transform:\s*translate\(-50%, -50%\);/s);
   assert.doesNotMatch(css, /var\(--bars\) \* 1\.55/);
 });
