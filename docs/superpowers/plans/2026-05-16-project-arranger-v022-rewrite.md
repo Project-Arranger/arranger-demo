@@ -35,7 +35,7 @@
 - Create: `src/app/App.jsx`
 - Create: `src/index.css`
 - Create directories: `src/app`, `src/domain`, `src/store`, `src/input`, `src/audio`, `src/tutorial`, `src/components`, `src/data`, `src/storage`, `src/styles`, `tests`, `public/samples`
-- Copy from old project: `public/samples`, `src/data/chords.js`, `src/data/bassNotes.js`, `src/data/leadNotes.js`, `src/data/percNotes.js`
+- Copy from old project: `public/samples`, `src/data/chords.js`, `src/data/bassNotes.js`, `src/data/leadNotes.js`, and migrate old drums data into `src/data/drumsNotes.js`
 
 - [ ] Initialize Vite React project files in the current repo.
 - [ ] Install runtime dependencies: `react`, `react-dom`, `zustand`, `tone`, `lucide-react`.
@@ -66,7 +66,7 @@
 - Create: `src/store/slices/contextSlice.js`
 - Test: `tests/matrix.test.js`
 
-- [ ] Define constants: `TOTAL_BARS = 8`, `STEPS_PER_BAR = 16`, `BEATS_PER_BAR = 4`, `TRACK_IDS = ['chord', 'bass', 'perc', 'lead']`, `DEFAULT_BPM = 120`, `ROOT_KEY = 'C'`, `SCALE = 'Ionian'`.
+- [ ] Define constants: `TOTAL_BARS = 8`, `STEPS_PER_BAR = 16`, `BEATS_PER_BAR = 4`, `TRACK_IDS = ['drums', 'bass', 'chord', 'lead', 'pad', 'vocal', 'sample']`, `CORE_TRACK_IDS = ['drums', 'bass', 'chord', 'lead']`, `OPTIONAL_TRACK_IDS = ['pad', 'vocal', 'sample']`, `DRUMS_INSTRUMENT_IDS = ['kick', 'snare', 'hihat']`, `DEFAULT_BPM = 120`, `ROOT_KEY = 'C'`, `SCALE = 'Ionian'`.
 - [ ] Implement `createInitialMatrix()` returning all four tracks, eight bars per track, and sixteen null steps per bar.
 - [ ] Implement `transportSlice` with BPM, key, scale, play state, current position, seek position, and volumes.
 - [ ] Implement `matrixSlice` with `setCell`, `clearStep`, `clearTrack`, and `clearMatrix`.
@@ -96,7 +96,7 @@
 - Test: `tests/command_guards.test.js`
 - Test: `tests/command_dispatcher.test.js`
 
-- [ ] Define `APP_COMMAND_TYPES` for transport, tutorial, percussion, chord, and lead commands.
+- [ ] Define `APP_COMMAND_TYPES` for transport, tutorial, drums, chord, and lead commands.
 - [ ] Add JSDoc typedefs for `AppCommand` payloads.
 - [ ] Implement `isValidAppCommand(command)` with exact payload validation.
 - [ ] Implement `dispatchCommand(command, deps)` so handlers can call store actions and audio methods without components knowing input sources.
@@ -124,9 +124,9 @@
 
 - [ ] Implement audio statuses: `idle`, `starting`, `ready`, `sample-fallback`, `error`.
 - [ ] Load migrated chord, bass, lead, and 808 samples using `import.meta.env.BASE_URL`.
-- [ ] Add synth fallbacks for chord, bass, lead, and percussion sample failure.
+- [ ] Add synth fallbacks for chord, bass, lead, and drums sample failure.
 - [ ] Implement `startAudio`, `play`, `pause`, `stop`, `seekToStep`.
-- [ ] Implement preview APIs: `playChordPreview`, `playChordArpeggioPreview`, `playBassPreview`, `playPercPreview`, `playLeadPreview`.
+- [ ] Implement preview APIs: `playChordPreview`, `playChordArpeggioPreview`, `playBassPreview`, `playDrumsPreview`, `playLeadPreview`.
 - [ ] Implement `leadNoteOn(note)` and `leadNoteOff(note)`.
 - [ ] Wire transport and lead commands to audio methods through the dispatcher.
 - [ ] Manually smoke test audio unlock, play, pause, stop, seek, and four track previews.
@@ -169,33 +169,33 @@
 继续 Phase 5 UI Shell：实现首屏编曲工作台布局，包括 Transport、Arrangement、Context Editor、右侧 Tutorial Panel 占位，并适配 1280x720 和 1920x1080。
 ```
 
-## Phase 6: Percussion Workflow
+## Phase 6: Drums Workflow
 
 **Goal:** Make the first editable music workflow complete and testable.
 
 **Files:**
-- Create: `src/store/slices/percussionSlice.js`
-- Create: `src/components/PercMatrix.jsx`
+- Create: `src/store/slices/drumsSlice.js`
+- Create: `src/components/DrumsMatrix.jsx`
 - Modify: `src/components/ContextEditor.jsx`
 - Modify: `src/input/commandDispatcher.js`
-- Test: `tests/percussion.test.js`
+- Test: `tests/drums.test.js`
 
-- [ ] Implement `togglePercStep(bar, step, instrument)` for kick, snare, and hihat.
-- [ ] Allow multiple percussion instruments in the same step.
-- [ ] Implement `autoFillPercGroove(bar)` with kick/hihat at step 0, hihat at step 4, snare/hihat at step 8, hihat at step 12.
-- [ ] Render a 16-step percussion grid in the context editor.
-- [ ] Dispatch `perc.toggle` from cell clicks.
-- [ ] Play percussion preview after a step is turned on.
+- [ ] Implement `toggleDrumsStep(bar, step, instrument)` for kick, snare, and hihat.
+- [ ] Allow multiple drums instruments in the same step.
+- [ ] Implement `autoFillDrumsGroove(bar)` with kick/hihat at step 0, hihat at step 4, snare/hihat at step 8, hihat at step 12.
+- [ ] Render a 16-step drums grid in the context editor.
+- [ ] Dispatch `drums.toggle` from cell clicks.
+- [ ] Play drums preview after a step is turned on.
 - [ ] Add an auto-groove button for the selected bar.
 - [ ] Add tests for toggle on, toggle off, stacked instruments, and auto groove.
-- [ ] Run: `npm test -- tests/percussion.test.js`.
+- [ ] Run: `npm test -- tests/drums.test.js`.
 - [ ] Run: `npm run build`.
 - [ ] Run: `npm run lint`.
 
 **Command to give Codex:**
 
 ```text
-继续 Phase 6 Perc：实现 kick/snare/hihat 的 16-step 编辑器、预览声音、自动基础律动和相关测试。所有操作通过 AppCommand。
+继续 Phase 6 Drums：实现 kick/snare/hihat 的 16-step 编辑器、预览声音、自动基础律动和相关测试。所有操作通过 AppCommand。
 ```
 
 ## Phase 7: Button-First Chord Composer
@@ -273,10 +273,10 @@
 - Modify: `src/app/AppShell.jsx`
 - Test: `tests/tutorial_completion.test.js`
 
-- [ ] Define steps: Intro, UI Overview, Perc Kick, Perc Snare, Perc Hihat, Perc Groove, Chord Template, Chord Color, Chord Passing, Chord Tension, Lead Performance, Complete.
+- [ ] Define steps: Intro, UI Overview, Drums Kick, Drums Snare, Drums Hihat, Drums Groove, Chord Template, Chord Color, Chord Passing, Chord Tension, Lead Performance, Complete.
 - [ ] Put all tutorial copy and targets in `tutorialSteps.js`.
 - [ ] Implement tutorial state: current step, active/skipped/completed state, last wrong-target hint, completed task state.
-- [ ] Implement completion evaluators for manual steps, percussion counts, chord workflow stage completion, and lead activity count.
+- [ ] Implement completion evaluators for manual steps, drums counts, chord workflow stage completion, and lead activity count.
 - [ ] Highlight real DOM targets through stable `data-tutorial-target` attributes.
 - [ ] Keep target areas clickable.
 - [ ] Allow non-target clicks and show a reminder in the right panel.
@@ -332,8 +332,8 @@
 - [ ] Run: `npm run lint`.
 - [ ] Run: `npm run build`.
 - [ ] Start the app with `npm run dev`.
-- [ ] Manually verify audio unlock, play, pause, stop, seek, and chord/bass/perc/lead previews.
-- [ ] Manually run the tutorial path: Intro, UI Overview, Perc, Chord, Lead, Complete.
+- [ ] Manually verify audio unlock, play, pause, stop, seek, and chord/bass/drums/lead previews.
+- [ ] Manually run the tutorial path: Intro, UI Overview, Drums, Chord, Lead, Complete.
 - [ ] Refresh the browser and verify matrix, tutorial progress, BPM, key, scale, and volume recover.
 - [ ] Verify no hardware connection is required for mouse, touch, or keyboard use.
 - [ ] Check 1280x720 and 1920x1080 landscape layout for overflow, text overlap, and layout jumps.
