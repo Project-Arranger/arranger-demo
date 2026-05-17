@@ -13,7 +13,9 @@ import useMusicStore from '../src/store/useMusicStore.js';
 function createMockStore(initial = {}) {
   const calls = [];
   const state = {
+    bpm: 120,
     isPlaying: false,
+    matrix: { drums: [] },
     seekBar: 0,
     seekStep: 0,
     currentBar: 0,
@@ -44,10 +46,16 @@ test('dispatchCommand rejects invalid commands before side effects', async () =>
 });
 
 test('transport commands dispatch to store and optional audio dependencies', async () => {
-  const store = createMockStore({ isPlaying: false });
+  const store = createMockStore({ isPlaying: false, bpm: 96, currentBar: 1, currentStep: 4 });
   const audioCalls = [];
   const audio = {
-    play: () => audioCalls.push(['audio.play']),
+    play: (options) => audioCalls.push([
+      'audio.play',
+      options.bpm,
+      options.bar,
+      options.step,
+      options.matrixSource().drums,
+    ]),
     pause: () => audioCalls.push(['audio.pause']),
     stop: () => audioCalls.push(['audio.stop']),
     seekToStep: (bar, step) => audioCalls.push(['audio.seekToStep', bar, step]),
@@ -66,15 +74,38 @@ test('transport commands dispatch to store and optional audio dependencies', asy
     ['stop'],
   ]);
   assert.deepEqual(audioCalls, [
-    ['audio.play'],
+    ['audio.play', 96, 1, 4, []],
     ['audio.pause'],
     ['audio.seekToStep', 2, 8],
     ['audio.stop'],
   ]);
 });
 
+test('transport commands preserve audio engine method context', async () => {
+  const store = createMockStore();
+  const audioCalls = [];
+  const audio = {
+    label: 'engine',
+    play() {
+      audioCalls.push(['play', this.label]);
+    },
+    stop() {
+      audioCalls.push(['stop', this.label]);
+    },
+  };
+
+  await dispatchCommand({ type: 'transport.togglePlay' }, { store, audio });
+  await dispatchCommand({ type: 'transport.stop' }, { store, audio });
+
+  assert.deepEqual(audioCalls, [
+    ['play', 'engine'],
+    ['stop', 'engine'],
+  ]);
+});
+
 test('domain commands dispatch to injected handlers without perc naming', async () => {
   const calls = [];
+  const audioCalls = [];
   const handlers = {
     tutorial: {
       next: () => calls.push(['tutorial.next']),
@@ -92,10 +123,13 @@ test('domain commands dispatch to injected handlers without perc naming', async 
       noteOff: (command) => calls.push(['lead.noteOff', command.note]),
     },
   };
+  const audio = {
+    triggerDrumsStep: (instrument) => audioCalls.push(['audio.triggerDrumsStep', instrument]),
+  };
 
   await dispatchCommand({ type: 'tutorial.next' }, { handlers });
   await dispatchCommand({ type: 'tutorial.completeTask' }, { handlers });
-  await dispatchCommand({ type: 'drums.toggle', bar: 0, step: 4, instrument: 'kick' }, { handlers });
+  await dispatchCommand({ type: 'drums.toggle', bar: 0, step: 4, instrument: 'kick' }, { handlers, audio });
   await dispatchCommand({ type: 'chord.selectOption', optionIndex: 3 }, { handlers });
   await dispatchCommand({ type: 'chord.confirm' }, { handlers });
   await dispatchCommand({ type: 'lead.noteOn', note: 'C3' }, { handlers });
@@ -109,6 +143,9 @@ test('domain commands dispatch to injected handlers without perc naming', async 
     ['chord.confirm'],
     ['lead.noteOn', 'C3'],
     ['lead.noteOff', 'C3'],
+  ]);
+  assert.deepEqual(audioCalls, [
+    ['audio.triggerDrumsStep', 'kick'],
   ]);
 });
 

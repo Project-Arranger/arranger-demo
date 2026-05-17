@@ -11,6 +11,21 @@ async function maybeCall(fn, ...args) {
   await fn(...args);
 }
 
+async function maybeCallMethod(target, methodName, ...args) {
+  const fn = target?.[methodName];
+  if (typeof fn !== 'function') return;
+  await fn.call(target, ...args);
+}
+
+function createAudioPlayOptions(store, state) {
+  return {
+    bpm: state.bpm,
+    bar: state.currentBar,
+    step: state.currentStep,
+    matrixSource: () => store.getState().matrix,
+  };
+}
+
 async function dispatchTransportCommand(command, deps) {
   const store = getStore(deps);
   const state = store.getState();
@@ -19,21 +34,21 @@ async function dispatchTransportCommand(command, deps) {
     case APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY:
       if (state.isPlaying) {
         state.pause?.();
-        await maybeCall(deps.audio?.pause);
+        await maybeCallMethod(deps.audio, 'pause');
       } else {
         state.play?.();
-        await maybeCall(deps.audio?.play);
+        await maybeCallMethod(deps.audio, 'play', createAudioPlayOptions(store, state));
       }
       return { ok: true };
 
     case APP_COMMAND_TYPES.TRANSPORT_STOP:
       state.stop?.();
-      await maybeCall(deps.audio?.stop);
+      await maybeCallMethod(deps.audio, 'stop');
       return { ok: true };
 
     case APP_COMMAND_TYPES.TRANSPORT_SEEK:
       state.setSeekPosition?.(command.bar, command.step);
-      await maybeCall(deps.audio?.seekToStep, command.bar, command.step);
+      await maybeCallMethod(deps.audio, 'seekToStep', command.bar, command.step);
       return { ok: true };
 
     default:
@@ -55,6 +70,7 @@ async function dispatchHandlerCommand(command, deps) {
 
     case APP_COMMAND_TYPES.DRUMS_TOGGLE:
       await maybeCall(handlers.drums?.toggle, command);
+      await maybeCallMethod(deps.audio, 'triggerDrumsStep', command.instrument);
       return { ok: true };
 
     case APP_COMMAND_TYPES.CHORD_SELECT_OPTION:
