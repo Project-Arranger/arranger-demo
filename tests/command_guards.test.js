@@ -9,9 +9,9 @@ import {
 import { isValidAppCommand } from '../src/input/commandGuards.js';
 import { TOTAL_BARS, STEPS_PER_BAR } from '../src/domain/musicConstants.js';
 
-test('app command constants use drums naming and no perc command', () => {
+test('app command constants use drums naming', () => {
   assert.equal(APP_COMMAND_TYPES.DRUMS_TOGGLE, 'drums.toggle');
-  assert.equal(Object.values(APP_COMMAND_TYPES).includes('perc.toggle'), false);
+  assert.equal(Object.values(APP_COMMAND_TYPES).includes('unknown.toggle'), false);
   assert.equal(COMMAND_GROUPS.drums.includes(APP_COMMAND_TYPES.DRUMS_TOGGLE), true);
   assert.equal(CHORD_OPTION_COUNT, 8);
   assert.deepEqual(LEAD_NOTE_IDS, ['C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3']);
@@ -42,7 +42,7 @@ test('drums command validates track step and known instruments', () => {
   assert.equal(isValidAppCommand({ type: 'drums.toggle', bar: 0, step: 0, instrument: 'kick' }), true);
   assert.equal(isValidAppCommand({ type: 'drums.toggle', bar: 0, step: 0, instrument: 'snare' }), true);
   assert.equal(isValidAppCommand({ type: 'drums.toggle', bar: 0, step: 0, instrument: 'hihat' }), true);
-  assert.equal(isValidAppCommand({ type: 'perc.toggle', bar: 0, step: 0, instrument: 'kick' }), false);
+  assert.equal(isValidAppCommand({ type: 'unknown.toggle', bar: 0, step: 0, instrument: 'kick' }), false);
   assert.equal(isValidAppCommand({ type: 'drums.toggle', bar: 0, step: 0, instrument: 'tom' }), false);
 });
 

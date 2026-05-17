@@ -63,7 +63,6 @@ test('createInitialMatrix creates seven tracks with eight bars and sixteen empty
 
   assert.deepEqual(Object.keys(matrix), TRACK_IDS);
   assert.equal(Object.hasOwn(matrix, 'drums'), true);
-  assert.equal(Object.hasOwn(matrix, 'perc'), false);
 
   for (const trackId of TRACK_IDS) {
     assert.equal(matrix[trackId].length, TOTAL_BARS);

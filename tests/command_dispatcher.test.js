@@ -103,7 +103,7 @@ test('transport commands preserve audio engine method context', async () => {
   ]);
 });
 
-test('domain commands dispatch to injected handlers without perc naming', async () => {
+test('domain commands dispatch to injected handlers with drums naming', async () => {
   const calls = [];
   const audioCalls = [];
   const handlers = {
