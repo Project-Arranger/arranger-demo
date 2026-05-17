@@ -644,6 +644,7 @@ button {
   top: 12px;
   bottom: 12px;
   left: 10px;
+  left: calc(var(--bar-index) * 100% / var(--bars) + 10px);
   width: calc(100% / var(--bars) - 20px);
   min-width: 0;
   padding: 7px 10px 8px;
@@ -704,7 +705,7 @@ button {
 .add-clip {
   position: absolute;
   top: 50%;
-  left: calc(100% / var(--bars) * 1.5);
+  left: calc((var(--bar-index) + 0.5) * 100% / var(--bars));
   display: grid;
   place-items: center;
   width: 24px;
@@ -835,6 +836,13 @@ button {
 
 .drum-action {
   background: var(--brand);
+}
+
+.drum-clear-action {
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  box-shadow: none;
 }
 
 .tool-icon,

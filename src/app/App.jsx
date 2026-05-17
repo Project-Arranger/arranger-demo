@@ -42,6 +42,11 @@ import {
   seedDefaultDrumsPattern,
 } from './audioUiBridge.js';
 import {
+  applyBasicDrumsAllBars,
+  applyBasicDrumsBar,
+  clearDrumsBar,
+} from './drumsPatternActions.js';
+import {
   DRUM_SEQUENCER_ROWS,
   isDrumsStepActive,
   toggleInstrumentInCell,
@@ -162,7 +167,7 @@ function TrackRow({ active, onSelect, track }) {
   const classes = [
     'track',
     active ? 'selected' : '',
-    track.clip ? 'has-phrase' : '',
+    track.hasClip ? 'has-phrase' : '',
   ].filter(Boolean).join(' ');
 
   return (
@@ -238,7 +243,9 @@ function Clip({
     <button
       className={`clip${active ? ' selected' : ''}`}
       data-type={track.id}
-      aria-label={`${track.label} clip`}
+      data-bar-index={clip.bar}
+      style={{ '--bar-index': clip.bar }}
+      aria-label={`${track.label} clip bar ${clip.bar + 1}`}
       title={track.id === 'drums' ? 'Preview drums' : undefined}
       type="button"
       onClick={handleClick}
@@ -291,7 +298,7 @@ function Timeline({
             <div
               className={[
                 'hover-row',
-                track.clip ? 'has-phrase' : '',
+                track.hasClip ? 'has-phrase' : '',
                 track.id === activeTrackId ? 'active' : '',
               ].filter(Boolean).join(' ')}
               data-type={track.id}
@@ -299,21 +306,27 @@ function Timeline({
               data-track-index={trackIndex}
               key={track.id}
             >
-              {createElement(Clip, {
-                active: track.clip?.id === selectedClipId,
-                clip: track.clip,
+              {track.clipsByBar.map((clip, barIndex) => createElement(Clip, {
+                active: clip?.id === selectedClipId,
+                clip,
+                key: clip?.id ?? `${track.id}-empty-${barIndex}`,
                 onOpenClip,
                 onPreview: onDrumsPreview,
                 track,
-              })}
-              <button
-                className="add-clip"
-                aria-label={`Add clip to ${track.label}`}
-                type="button"
-                onClick={() => onAddClip(track.id)}
-              >
-                {renderIcon(Plus)}
-              </button>
+              }))}
+              {BAR_NUMBERS.map((barNumber, barIndex) => (
+                <button
+                  className="add-clip"
+                  aria-label={`Add clip to ${track.label} bar ${barNumber}`}
+                  data-bar-index={barIndex}
+                  key={`${track.id}-add-${barIndex}`}
+                  style={{ '--bar-index': barIndex }}
+                  type="button"
+                  onClick={() => onAddClip(track.id, barIndex)}
+                >
+                  {renderIcon(Plus)}
+                </button>
+              ))}
             </div>
           ))}
         </div>
@@ -324,7 +337,15 @@ function Timeline({
   );
 }
 
-function DrumSequencer({ matrix, onStepToggle, selectedBar }) {
+function DrumSequencer({
+  matrix,
+  onClearCurrentBar,
+  onClearDrums,
+  onGenerateAllBars,
+  onGenerateCurrentBar,
+  onStepToggle,
+  selectedBar,
+}) {
   return (
     <section className="editor drum-editor" data-screen-label="Drum Sequencer">
       <header className="editor-head">
@@ -343,11 +364,17 @@ function DrumSequencer({ matrix, onStepToggle, selectedBar }) {
         </div>
 
         <div className="tools">
-          <button className="btn-template drum-action" type="button">
+          <button className="btn-template drum-action" type="button" onClick={onGenerateCurrentBar}>
             为本小节生成基础律动
           </button>
-          <button className="btn-template drum-action" type="button">
+          <button className="btn-template drum-action" type="button" onClick={onGenerateAllBars}>
             全局生成基础律动
+          </button>
+          <button className="btn-template drum-clear-action" type="button" onClick={onClearCurrentBar}>
+            清空本小节
+          </button>
+          <button className="btn-template drum-clear-action" type="button" onClick={onClearDrums}>
+            清空 Drums
           </button>
         </div>
       </header>
@@ -528,12 +555,20 @@ function TrackEditorPlaceholder({ activeTrackId }) {
 function BottomEditor({
   activeTrackId,
   matrix,
+  onClearCurrentDrumsBar,
+  onClearDrums,
+  onGenerateAllDrumsBars,
+  onGenerateCurrentDrumsBar,
   onDrumsStepToggle,
   selectedBar,
 }) {
   if (activeTrackId === 'drums') {
     return createElement(DrumSequencer, {
       matrix,
+      onClearCurrentBar: onClearCurrentDrumsBar,
+      onClearDrums,
+      onGenerateAllBars: onGenerateAllDrumsBars,
+      onGenerateCurrentBar: onGenerateCurrentDrumsBar,
       onStepToggle: onDrumsStepToggle,
       selectedBar,
     });
@@ -599,6 +634,10 @@ export default function App() {
   const tracks = useMemo(() => TRACK_UI.map((track) => ({
     ...track,
     clip: findClipForTrackBar(clips, track.id, selectedBar),
+    clipsByBar: BAR_NUMBERS.map((_, barIndex) => findClipForTrackBar(clips, track.id, barIndex)),
+  })).map((track) => ({
+    ...track,
+    hasClip: track.clipsByBar.some(Boolean),
   })), [clips, selectedBar]);
 
   const handleTrackSelect = useCallback((trackId) => {
@@ -615,12 +654,43 @@ export default function App() {
     setSelectedClipId(null);
   }, [selectedBar]);
 
-  const handleAddClip = useCallback((trackId) => {
-    useMusicStore.getState().createClip(trackId, selectedBar);
-  }, [selectedBar]);
+  const handleAddClip = useCallback((trackId, barIndex) => {
+    useMusicStore.getState().createClip(trackId, barIndex);
+  }, []);
 
   const handleOpenClip = useCallback((clipId) => {
     useMusicStore.getState().selectClip(clipId);
+  }, []);
+
+  const writeDrumsBars = useCallback((nextMatrix, barIndexes) => {
+    const state = useMusicStore.getState();
+    for (const barIndex of barIndexes) {
+      nextMatrix.drums[barIndex].forEach((cell, step) => {
+        state.setCell('drums', barIndex, step, cell);
+      });
+    }
+  }, []);
+
+  const handleGenerateCurrentDrumsBar = useCallback(() => {
+    const state = useMusicStore.getState();
+    const nextMatrix = applyBasicDrumsBar(state.matrix, selectedBar);
+    writeDrumsBars(nextMatrix, [selectedBar]);
+  }, [selectedBar, writeDrumsBars]);
+
+  const handleGenerateAllDrumsBars = useCallback(() => {
+    const state = useMusicStore.getState();
+    const nextMatrix = applyBasicDrumsAllBars(state.matrix);
+    writeDrumsBars(nextMatrix, BAR_NUMBERS.map((_, barIndex) => barIndex));
+  }, [writeDrumsBars]);
+
+  const handleClearCurrentDrumsBar = useCallback(() => {
+    const state = useMusicStore.getState();
+    const nextMatrix = clearDrumsBar(state.matrix, selectedBar);
+    writeDrumsBars(nextMatrix, [selectedBar]);
+  }, [selectedBar, writeDrumsBars]);
+
+  const handleClearDrums = useCallback(() => {
+    useMusicStore.getState().clearTrack('drums');
   }, []);
 
   const handleDrumsStepToggle = useCallback((instrument, step) => {
@@ -668,6 +738,10 @@ export default function App() {
       {createElement(BottomEditor, {
         activeTrackId,
         matrix,
+        onClearCurrentDrumsBar: handleClearCurrentDrumsBar,
+        onClearDrums: handleClearDrums,
+        onGenerateAllDrumsBars: handleGenerateAllDrumsBars,
+        onGenerateCurrentDrumsBar: handleGenerateCurrentDrumsBar,
         onDrumsStepToggle: handleDrumsStepToggle,
         selectedBar,
       })}
