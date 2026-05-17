@@ -7,7 +7,7 @@ import {
 import { STEPS_PER_BAR, TOTAL_BARS } from '../src/domain/musicConstants.js';
 import createInitialMatrix from '../src/store/createInitialMatrix.js';
 
-test('extractDrumsInstruments reads drums cells without perc naming', () => {
+test('extractDrumsInstruments reads drums cells', () => {
   assert.deepEqual(extractDrumsInstruments(null), []);
   assert.deepEqual(extractDrumsInstruments({ instruments: ['kick', 'tom', 'hihat'] }), ['kick', 'hihat']);
   assert.deepEqual(extractDrumsInstruments({ instrument: 'snare' }), ['snare']);

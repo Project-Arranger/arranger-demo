@@ -16,7 +16,8 @@ test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async
   assert.match(source, /aria-label="Project Arranger workspace"/);
   assert.match(source, /Project Arranger/);
   assert.match(source, /data-screen-label="Main"/);
-  assert.doesNotMatch(source, /perc/i);
+  assert.match(source, /drums/);
+  assert.match(source, /DRUMS_TOGGLE/);
   assert.match(source, /TRACK_UI\.map/);
   assert.match(source, /BAR_NUMBERS\.map/);
   assert.match(source, /clips/);

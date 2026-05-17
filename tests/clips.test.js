@@ -73,7 +73,7 @@ test('selectClip links selectedClipId, activeTrackId, and selectedBar', () => {
 });
 
 test('createClip ignores unknown track ids', () => {
-  const clip = useMusicStore.getState().createClip('perc', 0);
+  const clip = useMusicStore.getState().createClip('unknown-track', 0);
 
   assert.equal(clip, null);
   assert.equal(useMusicStore.getState().clips.ids.every((id) => TRACK_IDS.includes(id.split('-bar-')[0])), true);
