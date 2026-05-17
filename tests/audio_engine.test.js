@@ -1,0 +1,187 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { AUDIO_STATUSES } from '../src/audio/audioStatus.js';
+import AudioEngine, {
+  createDrumsSampleUrls,
+  formatToneTransportPosition,
+} from '../src/audio/AudioEngine.js';
+import createAudioEngine from '../src/audio/createAudioEngine.js';
+import { STEPS_PER_BAR } from '../src/domain/musicConstants.js';
+import createInitialMatrix from '../src/store/createInitialMatrix.js';
+
+function createFakeTone() {
+  const calls = [];
+  const transport = {
+    bpm: { value: null },
+    position: '0:0:0',
+    scheduledCallback: null,
+    scheduleRepeat(callback, interval) {
+      calls.push(['transport.scheduleRepeat', interval]);
+      this.scheduledCallback = callback;
+      return 'repeat-id';
+    },
+    clear(id) {
+      calls.push(['transport.clear', id]);
+    },
+    start() {
+      calls.push(['transport.start']);
+    },
+    pause() {
+      calls.push(['transport.pause']);
+    },
+    stop() {
+      calls.push(['transport.stop']);
+    },
+  };
+
+  return {
+    calls,
+    now: () => 12.5,
+    start: async () => calls.push(['tone.start']),
+    Transport: transport,
+  };
+}
+
+function createPlayerFactory(calls) {
+  return (url, instrument) => ({
+    start: (time) => calls.push(['player.start', instrument, url, time]),
+    toDestination: () => calls.push(['player.toDestination', instrument]),
+  });
+}
+
+test('audio statuses expose the phase 4 lifecycle states', () => {
+  assert.deepEqual(AUDIO_STATUSES, {
+    IDLE: 'idle',
+    STARTING: 'starting',
+    READY: 'ready',
+    SAMPLE_FALLBACK: 'sample-fallback',
+    ERROR: 'error',
+  });
+});
+
+test('createDrumsSampleUrls maps drums instruments to migrated 808 samples', () => {
+  assert.deepEqual(createDrumsSampleUrls('/arranger/'), {
+    kick: '/arranger/samples/808/kick.wav',
+    snare: '/arranger/samples/808/snare.wav',
+    hihat: '/arranger/samples/808/hihat.wav',
+  });
+});
+
+test('formatToneTransportPosition converts matrix bar and step to Tone position', () => {
+  assert.equal(formatToneTransportPosition(0, 0), '0:0:0');
+  assert.equal(formatToneTransportPosition(2, 9), '2:2:1');
+  assert.equal(formatToneTransportPosition(7, STEPS_PER_BAR - 1), '7:3:3');
+});
+
+test('AudioEngine starts audio and triggers drums samples', async () => {
+  const tone = createFakeTone();
+  const engine = new AudioEngine({
+    tone,
+    baseUrl: '/',
+    playerFactory: createPlayerFactory(tone.calls),
+  });
+
+  assert.equal(engine.status, AUDIO_STATUSES.IDLE);
+  assert.equal(await engine.startAudio(), AUDIO_STATUSES.READY);
+  await engine.triggerDrumsStep(['kick', 'snare']);
+
+  assert.equal(engine.status, AUDIO_STATUSES.READY);
+  assert.deepEqual(tone.calls, [
+    ['tone.start'],
+    ['player.toDestination', 'kick'],
+    ['player.toDestination', 'snare'],
+    ['player.toDestination', 'hihat'],
+    ['player.start', 'kick', '/samples/808/kick.wav', 12.5],
+    ['player.start', 'snare', '/samples/808/snare.wav', 12.5],
+  ]);
+});
+
+test('AudioEngine uses synth fallback when drum samples cannot load', async () => {
+  const tone = createFakeTone();
+  const fallbackCalls = [];
+  const engine = new AudioEngine({
+    tone,
+    playerFactory: () => {
+      throw new Error('sample failed');
+    },
+    fallbackSynthFactory: () => ({
+      triggerAttackRelease: (note, duration, time) => fallbackCalls.push([note, duration, time]),
+    }),
+  });
+
+  assert.equal(await engine.startAudio(), AUDIO_STATUSES.SAMPLE_FALLBACK);
+  await engine.triggerDrumsStep('kick');
+
+  assert.deepEqual(fallbackCalls, [['C1', '16n', 12.5]]);
+});
+
+test('AudioEngine falls back if a loaded sample player cannot start yet', async () => {
+  const tone = createFakeTone();
+  const fallbackCalls = [];
+  const engine = new AudioEngine({
+    tone,
+    playerFactory: (url, instrument) => ({
+      start: () => {
+        throw new Error(`${instrument} sample not ready: ${url}`);
+      },
+      toDestination: () => tone.calls.push(['player.toDestination', instrument]),
+    }),
+    fallbackSynthFactory: () => ({
+      triggerAttackRelease: (note, duration, time) => fallbackCalls.push([note, duration, time]),
+    }),
+  });
+
+  assert.equal(await engine.startAudio(), AUDIO_STATUSES.READY);
+  await engine.triggerDrumsStep('hihat');
+
+  assert.deepEqual(fallbackCalls, [['F#1', '16n', 12.5]]);
+});
+
+test('AudioEngine contains fallback synth trigger errors during stacked drums preview', async () => {
+  const tone = createFakeTone();
+  const engine = new AudioEngine({
+    tone,
+    playerFactory: () => {
+      throw new Error('sample failed');
+    },
+    fallbackSynthFactory: () => ({
+      triggerAttackRelease: () => {
+        throw new Error('same start time');
+      },
+    }),
+  });
+
+  assert.equal(await engine.startAudio(), AUDIO_STATUSES.SAMPLE_FALLBACK);
+  assert.deepEqual(await engine.triggerDrumsStep(['kick', 'snare']), []);
+});
+
+test('AudioEngine syncs transport play pause stop and seek', async () => {
+  const tone = createFakeTone();
+  const matrix = createInitialMatrix();
+  const engine = new AudioEngine({
+    tone,
+    matrixSource: matrix,
+    playerFactory: createPlayerFactory(tone.calls),
+  });
+
+  await engine.play({ bpm: 96 });
+  await engine.pause();
+  await engine.seekToStep(3, 12);
+  await engine.stop();
+
+  assert.equal(tone.Transport.bpm.value, 96);
+  assert.equal(tone.Transport.position, '0:0:0');
+  assert.deepEqual(tone.calls.filter(([name]) => name.startsWith('transport.')), [
+    ['transport.scheduleRepeat', '16n'],
+    ['transport.start'],
+    ['transport.pause'],
+    ['transport.stop'],
+  ]);
+});
+
+test('createAudioEngine injects the default Tone dependency', () => {
+  const engine = createAudioEngine();
+
+  assert.equal(engine.status, AUDIO_STATUSES.IDLE);
+  assert.ok(engine.tone);
+});

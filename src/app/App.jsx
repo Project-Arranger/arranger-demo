@@ -20,19 +20,39 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { createElement } from 'react';
+import {
+  createElement,
+  useCallback,
+  useEffect,
+  useMemo,
+} from 'react';
+import audioEngine from '../audio/audioEngineSingleton.js';
+import { APP_COMMAND_TYPES } from '../input/appCommands.js';
+import useKeyboardCommands from '../input/useKeyboardCommands.js';
 import useMusicStore, {
   BEATS_PER_BAR,
   ROOT_KEY,
   SCALE,
+  STEPS_PER_BAR,
   TOTAL_BARS,
 } from '../store/useMusicStore.js';
+import {
+  createUiAudioDispatcher,
+  seedDefaultDrumsPattern,
+} from './audioUiBridge.js';
+import {
+  DRUM_SEQUENCER_ROWS,
+  isDrumsStepActive,
+  toggleInstrumentInCell,
+} from './drumSequencerData.js';
 import {
   BAR_NUMBERS,
   BEAT_NUMBERS,
   CHORD_NOTES,
   TRACK_UI,
 } from './uiShellData.js';
+
+const STEP_NUMBERS = Array.from({ length: STEPS_PER_BAR }, (_, index) => index + 1);
 
 const TRACK_ICONS = {
   drums: Drum,
@@ -48,7 +68,17 @@ function renderIcon(Icon, props = {}) {
   return createElement(Icon, { 'aria-hidden': 'true', ...props });
 }
 
-function TopBar({ bpm, currentBar, currentStep, rootKey, scale }) {
+function TopBar({
+  bpm,
+  currentBar,
+  currentStep,
+  isPlaying,
+  onBackToStart,
+  onPlayToggle,
+  onStop,
+  rootKey,
+  scale,
+}) {
   return (
     <header className="topbar">
       <div className="brand">
@@ -63,13 +93,25 @@ function TopBar({ bpm, currentBar, currentStep, rootKey, scale }) {
 
       <div className="topbar-center">
         <div className="transport" role="toolbar" aria-label="Transport">
-          <button className="t-btn" aria-label="Back to start" title="Back to start">
+          <button
+            className="t-btn"
+            aria-label="Back to start"
+            title="Back to start"
+            type="button"
+            onClick={onBackToStart}
+          >
             {renderIcon(SkipBack)}
           </button>
-          <button className="t-btn" aria-label="Stop" title="Stop">
+          <button className="t-btn" aria-label="Stop" title="Stop" type="button" onClick={onStop}>
             {renderIcon(Square)}
           </button>
-          <button className="t-btn play" aria-label="Play" title="Play (Space)">
+          <button
+            className={`t-btn play${isPlaying ? ' active' : ''}`}
+            aria-label={isPlaying ? 'Pause' : 'Play'}
+            title={isPlaying ? 'Pause (Space)' : 'Play (Space)'}
+            type="button"
+            onClick={onPlayToggle}
+          >
             {renderIcon(Play)}
           </button>
         </div>
@@ -114,16 +156,22 @@ function TopBar({ bpm, currentBar, currentStep, rootKey, scale }) {
   );
 }
 
-function TrackRow({ track }) {
+function TrackRow({ active, onSelect, track }) {
   const Icon = TRACK_ICONS[track.id];
   const classes = [
     'track',
-    track.selected ? 'selected' : '',
+    active ? 'selected' : '',
     track.clipName ? 'has-phrase' : '',
   ].filter(Boolean).join(' ');
 
   return (
-    <button className={classes} data-type={track.id} type="button">
+    <button
+      className={classes}
+      data-type={track.id}
+      type="button"
+      aria-pressed={active}
+      onClick={() => onSelect(track.id)}
+    >
       <span className="ic">
         {renderIcon(Icon)}
       </span>
@@ -141,7 +189,7 @@ function TrackRow({ track }) {
   );
 }
 
-function TracksColumn() {
+function TracksColumn({ activeTrackId, onTrackSelect }) {
   return (
     <aside className="tracks-col">
       <div className="tracks-head">
@@ -155,7 +203,12 @@ function TracksColumn() {
       </div>
 
       <div className="tracks-list">
-        {TRACK_UI.map((track) => createElement(TrackRow, { key: track.id, track }))}
+        {TRACK_UI.map((track) => createElement(TrackRow, {
+          active: track.id === activeTrackId,
+          key: track.id,
+          onSelect: onTrackSelect,
+          track,
+        }))}
       </div>
 
       <button className="add-track" type="button">
@@ -166,15 +219,27 @@ function TracksColumn() {
   );
 }
 
-function Clip({ track }) {
+function Clip({
+  active,
+  onOpenEditor,
+  onPreview,
+  track,
+}) {
   if (!track.clipName) return null;
 
+  const handleClick = () => {
+    onOpenEditor(track.id);
+    if (track.id === 'drums') onPreview();
+  };
+
   return (
-    <div
-      className={`clip${track.selected ? ' selected' : ''}`}
+    <button
+      className={`clip${active ? ' selected' : ''}`}
       data-type={track.id}
-      tabIndex="0"
       aria-label={`${track.label} clip`}
+      title={track.id === 'drums' ? 'Preview drums' : undefined}
+      type="button"
+      onClick={handleClick}
     >
       <div className="clip-name">
         {track.clipName}
@@ -182,11 +247,21 @@ function Clip({ track }) {
       </div>
       <div className="clip-mini" />
       <div className="clip-empty-tag">empty</div>
-    </div>
+    </button>
   );
 }
 
-function Timeline() {
+function Timeline({
+  activeTrackId,
+  currentBar,
+  currentStep,
+  onAddClip,
+  onDrumsPreview,
+  onOpenClip,
+}) {
+  const flatStep = currentBar * STEPS_PER_BAR + currentStep;
+  const playheadLeft = `${(flatStep / (TOTAL_BARS * STEPS_PER_BAR)) * 100}%`;
+
   return (
     <section className="timeline-col" style={{ '--bars': TOTAL_BARS }}>
       <div className="ruler" aria-label="Timeline bars">
@@ -208,21 +283,123 @@ function Timeline() {
         </div>
 
         <div className="hover-rows">
-          {TRACK_UI.map((track) => (
+          {TRACK_UI.map((track, trackIndex) => (
             <div
-              className={`hover-row${track.clipName ? ' has-phrase' : ''}`}
+              className={[
+                'hover-row',
+                track.clipName ? 'has-phrase' : '',
+                track.id === activeTrackId ? 'active' : '',
+              ].filter(Boolean).join(' ')}
               data-type={track.id}
+              data-track-row={track.id}
+              data-track-index={trackIndex}
               key={track.id}
             >
-              {createElement(Clip, { track })}
-              <button className="add-clip" aria-label={`Add clip to ${track.label}`} type="button">
+              {createElement(Clip, {
+                active: track.id === activeTrackId,
+                onOpenEditor: onOpenClip,
+                onPreview: onDrumsPreview,
+                track,
+              })}
+              <button
+                className="add-clip"
+                aria-label={`Add clip to ${track.label}`}
+                type="button"
+                onClick={() => onAddClip(track.id)}
+              >
                 {renderIcon(Plus)}
               </button>
             </div>
           ))}
         </div>
 
-        <div className="playhead" style={{ left: 0 }} />
+        <div className="playhead" style={{ left: playheadLeft }} />
+      </div>
+    </section>
+  );
+}
+
+function DrumSequencer({ matrix, onStepToggle, selectedBar }) {
+  return (
+    <section className="editor drum-editor" data-screen-label="Drum Sequencer">
+      <header className="editor-head">
+        <div className="editor-left">
+          <div className="clip-chip">
+            {renderIcon(Drum)}
+          </div>
+          <div className="clip-title">
+            <div className="crumb">Drums · Phrase</div>
+            <div className="clip-name-input">
+              DRUM SEQUENCER - BAR
+              {' '}
+              {selectedBar + 1}
+            </div>
+          </div>
+        </div>
+
+        <div className="tools">
+          <button className="btn-template drum-action" type="button">
+            为本小节生成基础律动
+          </button>
+          <button className="btn-template drum-action" type="button">
+            全局生成基础律动
+          </button>
+        </div>
+      </header>
+
+      <div className="drum-seq-body">
+        <div className="drum-seq-panel">
+          <div className="drum-step-numbers" aria-hidden="true">
+            <div />
+            <div className="drum-steps">
+              {STEP_NUMBERS.map((stepNumber) => (
+                <span
+                  className={`drum-step-number${stepNumber % 4 === 0 ? ' beat-end' : ''} mono`}
+                  key={stepNumber}
+                >
+                  {stepNumber}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {DRUM_SEQUENCER_ROWS.map((row) => (
+            <div className="drum-row" key={row.id}>
+              <div className="drum-row-label">
+                <span className="drum-dot" data-instrument={row.id} />
+                <span>{row.label}</span>
+              </div>
+              <div className="drum-steps">
+                {STEP_NUMBERS.map((stepNumber) => {
+                  const stepIndex = stepNumber - 1;
+                  const active = isDrumsStepActive(matrix, selectedBar, stepIndex, row.id);
+                  return (
+                    <button
+                      className={[
+                        'drum-step',
+                        active ? 'active' : '',
+                        stepNumber % 4 === 0 ? 'beat-end' : '',
+                      ].filter(Boolean).join(' ')}
+                      data-instrument={row.id}
+                      data-step={stepIndex}
+                      key={stepNumber}
+                      type="button"
+                      aria-label={`Toggle ${row.label} step ${stepNumber}`}
+                      aria-pressed={active}
+                      onClick={() => onStepToggle(row.id, stepIndex)}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+
+          <div className="drum-bar-indicator mono">
+            {selectedBar + 1}
+            {' '}
+            / 8
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -322,12 +499,113 @@ function ChordEditor() {
   );
 }
 
+function TrackEditorPlaceholder({ activeTrackId }) {
+  return (
+    <section className="editor" data-screen-label="Track Editor">
+      <header className="editor-head">
+        <div className="editor-left">
+          <div className="clip-chip">
+            {renderIcon(TRACK_ICONS[activeTrackId] ?? Music)}
+          </div>
+          <div className="clip-title">
+            <div className="crumb">Track · Phrase</div>
+            <div className="clip-name-input">{activeTrackId} editor</div>
+          </div>
+        </div>
+      </header>
+      <div className="empty-editor">
+        Select Drums or Chord to edit a phrase.
+      </div>
+    </section>
+  );
+}
+
+function BottomEditor({
+  activeTrackId,
+  matrix,
+  onDrumsStepToggle,
+  selectedBar,
+}) {
+  if (activeTrackId === 'drums') {
+    return createElement(DrumSequencer, {
+      matrix,
+      onStepToggle: onDrumsStepToggle,
+      selectedBar,
+    });
+  }
+
+  if (activeTrackId === 'chord') {
+    return createElement(ChordEditor);
+  }
+
+  return createElement(TrackEditorPlaceholder, { activeTrackId });
+}
+
 export default function App() {
   const bpm = useMusicStore((state) => state.bpm);
   const rootKey = useMusicStore((state) => state.rootKey);
   const scale = useMusicStore((state) => state.scale);
   const currentBar = useMusicStore((state) => state.currentBar);
   const currentStep = useMusicStore((state) => state.currentStep);
+  const isPlaying = useMusicStore((state) => state.isPlaying);
+  const matrix = useMusicStore((state) => state.matrix);
+  const activeTrackId = useMusicStore((state) => state.activeTrackId);
+  const selectedBar = useMusicStore((state) => state.selectedBar);
+
+  const dispatchAppCommand = useMemo(
+    () => createUiAudioDispatcher({ store: useMusicStore, audio: audioEngine }),
+    [],
+  );
+
+  useKeyboardCommands({ dispatch: dispatchAppCommand });
+
+  useEffect(() => {
+    seedDefaultDrumsPattern(useMusicStore);
+  }, []);
+
+  useEffect(() => {
+    audioEngine.onPositionChange = (bar, step) => {
+      useMusicStore.getState().setPosition(bar, step);
+    };
+
+    return () => {
+      audioEngine.onPositionChange = null;
+    };
+  }, []);
+
+  const handleBackToStart = useCallback(() => {
+    void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_SEEK, bar: 0, step: 0 });
+  }, [dispatchAppCommand]);
+
+  const handleStop = useCallback(() => {
+    void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
+  }, [dispatchAppCommand]);
+
+  const handlePlayToggle = useCallback(() => {
+    void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY });
+  }, [dispatchAppCommand]);
+
+  const handleDrumsPreview = useCallback(() => {
+    void audioEngine.triggerDrumsStep(['kick', 'snare', 'hihat']);
+  }, []);
+
+  const handleOpenTrackEditor = useCallback((trackId) => {
+    const { setActiveTrackId, setSelectedClipId } = useMusicStore.getState();
+    setActiveTrackId(trackId);
+    setSelectedClipId(`${trackId}-bar-${selectedBar}`);
+  }, [selectedBar]);
+
+  const handleDrumsStepToggle = useCallback((instrument, step) => {
+    const state = useMusicStore.getState();
+    const currentCell = state.matrix.drums[selectedBar]?.[step] ?? null;
+    state.setCell('drums', selectedBar, step, toggleInstrumentInCell(currentCell, instrument));
+    void dispatchAppCommand({
+      type: APP_COMMAND_TYPES.DRUMS_TOGGLE,
+      bar: selectedBar,
+      step,
+      instrument,
+    });
+  }, [dispatchAppCommand, selectedBar]);
 
   return (
     <div className="app" data-screen-label="Main" aria-label="Project Arranger workspace">
@@ -335,14 +613,33 @@ export default function App() {
         bpm,
         currentBar,
         currentStep,
+        isPlaying,
+        onBackToStart: handleBackToStart,
+        onPlayToggle: handlePlayToggle,
+        onStop: handleStop,
         rootKey,
         scale,
       })}
       <main className="workspace">
-        {createElement(TracksColumn)}
-        {createElement(Timeline)}
+        {createElement(TracksColumn, {
+          activeTrackId,
+          onTrackSelect: handleOpenTrackEditor,
+        })}
+        {createElement(Timeline, {
+          activeTrackId,
+          currentBar,
+          currentStep,
+          onAddClip: handleOpenTrackEditor,
+          onDrumsPreview: handleDrumsPreview,
+          onOpenClip: handleOpenTrackEditor,
+        })}
       </main>
-      {createElement(ChordEditor)}
+      {createElement(BottomEditor, {
+        activeTrackId,
+        matrix,
+        onDrumsStepToggle: handleDrumsStepToggle,
+        selectedBar,
+      })}
     </div>
   );
 }
