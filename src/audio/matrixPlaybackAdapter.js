@@ -1,23 +1,15 @@
 import {
-  DRUMS_INSTRUMENT_IDS,
   STEPS_PER_BAR,
   TOTAL_BARS,
 } from '../domain/musicConstants.js';
-
-const DRUMS_INSTRUMENT_SET = new Set(DRUMS_INSTRUMENT_IDS);
+import { getDrumsCellInstruments } from '../domain/drumsCells.js';
 
 function normalizeMatrixSource(matrixSource) {
   return typeof matrixSource === 'function' ? matrixSource : () => matrixSource;
 }
 
 function extractDrumsInstruments(cell) {
-  if (!cell) return [];
-
-  const instruments = Array.isArray(cell.instruments)
-    ? cell.instruments
-    : [cell.instrument].filter(Boolean);
-
-  return instruments.filter((instrument) => DRUMS_INSTRUMENT_SET.has(instrument));
+  return getDrumsCellInstruments(cell);
 }
 
 function createDrumsEvent(bar, step, instrument) {
