@@ -113,6 +113,10 @@ export default function App() {
     useMusicStore.getState().createClip(trackId, barIndex);
   }, []);
 
+  const handleMoveClip = useCallback((clipId, targetBar) => {
+    useMusicStore.getState().moveClipToBar(clipId, targetBar);
+  }, []);
+
   const handleOpenClip = useCallback((clipId) => {
     useMusicStore.getState().selectClip(clipId);
   }, []);
@@ -223,6 +227,7 @@ export default function App() {
           currentStep,
           onAddClip: handleAddClip,
           onDrumsPreview: handleDrumsPreview,
+          onMoveClip: handleMoveClip,
           onOpenClip: handleOpenClip,
           selectedClipId,
           tracks,

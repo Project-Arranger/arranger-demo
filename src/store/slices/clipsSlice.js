@@ -1,10 +1,5 @@
 import { TOTAL_BARS, TRACK_IDS } from '../../domain/musicConstants.js';
 
-const DEFAULT_CLIP_NAMES = Object.freeze({
-  drums: 'Drum 01',
-  chord: 'Chord 01',
-});
-
 const TRACK_LABELS = Object.freeze({
   drums: 'Drum',
   bass: 'Bass',
@@ -19,12 +14,36 @@ function createClipId(trackId, bar) {
   return `${trackId}-bar-${bar}`;
 }
 
+function formatClipName(trackId, bar) {
+  const label = TRACK_LABELS[trackId] ?? trackId;
+  const barNumber = String(bar + 1).padStart(2, '0');
+
+  return `${label} ${barNumber}`;
+}
+
 function createClipRecord(trackId, bar) {
   return {
     id: createClipId(trackId, bar),
     trackId,
     bar,
-    name: DEFAULT_CLIP_NAMES[trackId] ?? `${TRACK_LABELS[trackId] ?? trackId} 01`,
+    name: formatClipName(trackId, bar),
+  };
+}
+
+function createEmptyBarLike(bar) {
+  return Array.from({ length: bar.length }, () => null);
+}
+
+function cloneBar(bar) {
+  return [...bar];
+}
+
+function moveClipRecordToBar(clip, bar) {
+  return {
+    ...clip,
+    id: createClipId(clip.trackId, bar),
+    bar,
+    name: formatClipName(clip.trackId, bar),
   };
 }
 
@@ -97,6 +116,62 @@ export default function createClipsSlice(set, get) {
 
       return clip;
     },
+
+    moveClipToBar: (clipId, targetBar) => {
+      const state = get();
+      const sourceClip = state.clips.byId[clipId];
+      if (!sourceClip || !isValidClipLocation(sourceClip.trackId, targetBar)) return null;
+
+      if (sourceClip.bar === targetBar) {
+        get().selectClip(sourceClip.id);
+        return sourceClip;
+      }
+
+      const trackMatrix = state.matrix[sourceClip.trackId];
+      if (!trackMatrix?.[sourceClip.bar] || !trackMatrix?.[targetBar]) return null;
+
+      const targetClip = findClipForTrackBar(state.clips, sourceClip.trackId, targetBar);
+      const sourceBarData = cloneBar(trackMatrix[sourceClip.bar]);
+      const targetBarData = cloneBar(trackMatrix[targetBar]);
+      const nextTrackMatrix = [...trackMatrix];
+      const nextById = { ...state.clips.byId };
+      let nextIds = state.clips.ids;
+      let selectedClip;
+
+      if (targetClip) {
+        const nextSourceClip = moveClipRecordToBar(targetClip, sourceClip.bar);
+        const nextTargetClip = moveClipRecordToBar(sourceClip, targetBar);
+        nextById[nextSourceClip.id] = nextSourceClip;
+        nextById[nextTargetClip.id] = nextTargetClip;
+        nextTrackMatrix[sourceClip.bar] = targetBarData;
+        nextTrackMatrix[targetBar] = sourceBarData;
+        selectedClip = nextTargetClip;
+      } else {
+        const nextTargetClip = moveClipRecordToBar(sourceClip, targetBar);
+        delete nextById[sourceClip.id];
+        nextById[nextTargetClip.id] = nextTargetClip;
+        nextIds = state.clips.ids.map((id) => (id === sourceClip.id ? nextTargetClip.id : id));
+        nextTrackMatrix[sourceClip.bar] = createEmptyBarLike(sourceBarData);
+        nextTrackMatrix[targetBar] = sourceBarData;
+        selectedClip = nextTargetClip;
+      }
+
+      set({
+        activeTrackId: selectedClip.trackId,
+        selectedBar: selectedClip.bar,
+        selectedClipId: selectedClip.id,
+        clips: {
+          ids: nextIds,
+          byId: nextById,
+        },
+        matrix: {
+          ...state.matrix,
+          [selectedClip.trackId]: nextTrackMatrix,
+        },
+      });
+
+      return selectedClip;
+    },
   };
 }
 
@@ -105,5 +180,6 @@ export {
   createClipRecord,
   createInitialClips,
   findClipForTrackBar,
+  formatClipName,
   isValidClipLocation,
 };

@@ -20,6 +20,19 @@ test('createTimelineTracks decorates static track UI with clip state by bar', ()
   assert.equal(tracks.length, TRACK_UI.length);
   assert.equal(drums.clip.id, 'drums-bar-0');
   assert.equal(drums.hasClip, true);
+  assert.equal(drums.bars.length, BAR_NUMBERS.length);
+  assert.deepEqual(drums.bars[0], {
+    bar: 0,
+    barNumber: 1,
+    clip: drums.clipsByBar[0],
+    canAddClip: false,
+  });
+  assert.deepEqual(drums.bars[1], {
+    bar: 1,
+    barNumber: 2,
+    clip: null,
+    canAddClip: true,
+  });
   assert.equal(drums.clipsByBar.length, BAR_NUMBERS.length);
   assert.equal(drums.clipsByBar[0].id, 'drums-bar-0');
   assert.equal(drums.clipsByBar[1], null);

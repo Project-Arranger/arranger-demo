@@ -414,44 +414,47 @@ button {
 
 .track.selected {
   background: var(--surface);
+  box-shadow: inset 3px 0 0 var(--track-ink, var(--brand));
 }
 
-.track.has-phrase[data-type="drums"],
-.hover-row.has-phrase[data-type="drums"] {
-  background-color: color-mix(in oklab, var(--c-drums) 32%, var(--bg));
+[data-type="drums"] {
+  --track-color: var(--c-drums);
+  --track-ink: var(--c-drums-ink);
 }
 
-.track.has-phrase[data-type="chord"],
-.hover-row.has-phrase[data-type="chord"] {
-  background-color: color-mix(in oklab, var(--c-chord) 32%, var(--bg));
+[data-type="bass"] {
+  --track-color: var(--c-bass);
+  --track-ink: var(--c-bass-ink);
 }
 
-.track.selected[data-type="chord"] {
-  box-shadow: inset 3px 0 0 var(--c-chord-ink);
+[data-type="chord"] {
+  --track-color: var(--c-chord);
+  --track-ink: var(--c-chord-ink);
 }
 
-.track.selected[data-type="drums"] {
-  box-shadow: inset 3px 0 0 var(--c-drums-ink);
+[data-type="lead"] {
+  --track-color: var(--c-lead);
+  --track-ink: var(--c-lead-ink);
 }
 
-.track.selected[data-type="bass"] {
-  box-shadow: inset 3px 0 0 var(--c-bass-ink);
+[data-type="pad"] {
+  --track-color: var(--c-pad);
+  --track-ink: var(--c-pad-ink);
 }
 
-.track.selected[data-type="lead"] {
-  box-shadow: inset 3px 0 0 var(--c-lead-ink);
+[data-type="vocal"] {
+  --track-color: var(--c-vocal);
+  --track-ink: var(--c-vocal-ink);
 }
 
-.track.selected[data-type="pad"] {
-  box-shadow: inset 3px 0 0 var(--c-pad-ink);
+[data-type="sample"] {
+  --track-color: var(--c-sample);
+  --track-ink: var(--c-sample-ink);
 }
 
-.track.selected[data-type="vocal"] {
-  box-shadow: inset 3px 0 0 var(--c-vocal-ink);
-}
-
-.track.selected[data-type="sample"] {
-  box-shadow: inset 3px 0 0 var(--c-sample-ink);
+.track.has-phrase,
+.hover-row.has-phrase {
+  background-color: color-mix(in oklab, var(--track-color, var(--surface)) 32%, var(--bg));
 }
 
 .ic {
@@ -459,47 +462,14 @@ button {
   place-items: center;
   width: 32px;
   height: 32px;
+  color: var(--track-ink, var(--ink-3));
+  background: var(--track-color, var(--surface-2));
   border-radius: 9px;
 }
 
 .ic svg {
   width: 21px;
   height: 21px;
-}
-
-[data-type="drums"] .ic {
-  color: var(--c-drums-ink);
-  background: var(--c-drums);
-}
-
-[data-type="bass"] .ic {
-  color: var(--c-bass-ink);
-  background: var(--c-bass);
-}
-
-[data-type="chord"] .ic {
-  color: var(--c-chord-ink);
-  background: var(--c-chord);
-}
-
-[data-type="lead"] .ic {
-  color: var(--c-lead-ink);
-  background: var(--c-lead);
-}
-
-[data-type="pad"] .ic {
-  color: var(--c-pad-ink);
-  background: var(--c-pad);
-}
-
-[data-type="vocal"] .ic {
-  color: var(--c-vocal-ink);
-  background: var(--c-vocal);
-}
-
-[data-type="sample"] .ic {
-  color: var(--c-sample-ink);
-  background: var(--c-sample);
 }
 
 .meta {
@@ -637,10 +607,11 @@ button {
 }
 
 .clip {
-  --clip-bg: var(--c-drums);
-  --clip-ink: var(--c-drums-ink);
+  --clip-bg: var(--track-color, var(--c-drums));
+  --clip-ink: var(--track-ink, var(--c-drums-ink));
   appearance: none;
   position: absolute;
+  z-index: 2;
   top: 12px;
   bottom: 12px;
   left: 10px;
@@ -654,14 +625,32 @@ button {
   border: 1px solid color-mix(in oklab, var(--clip-ink) 18%, transparent);
   border-radius: 10px;
   box-shadow: var(--shadow-2);
-  cursor: pointer;
+  cursor: grab;
   font: inherit;
   text-align: left;
+  transform: translateY(0) scale(1);
+  transition:
+    box-shadow 0.12s ease,
+    opacity 0.12s ease,
+    transform 0.12s ease;
 }
 
-.clip[data-type="chord"] {
-  --clip-bg: var(--c-chord);
-  --clip-ink: var(--c-chord-ink);
+.clip:active {
+  cursor: grabbing;
+}
+
+.clip.clip-dragging {
+  z-index: 5;
+  opacity: 0.78;
+  transform: translateY(-3px) scale(1.02);
+  box-shadow:
+    0 0 0 2px color-mix(in oklab, var(--clip-ink) 38%, white),
+    0 14px 32px oklch(20% 0.02 270 / 0.16);
+}
+
+.clip.drop-move,
+.clip.drop-swap {
+  animation: clip-drop-pop 0.48s ease-out;
 }
 
 .clip.selected {
@@ -704,15 +693,16 @@ button {
 
 .add-clip {
   position: absolute;
+  z-index: 3;
   top: 50%;
   left: calc((var(--bar-index) + 0.5) * 100% / var(--bars));
   display: grid;
   place-items: center;
   width: 24px;
   height: 24px;
-  color: var(--ink-3);
-  background: var(--surface);
-  border: 1px solid var(--border-soft);
+  color: var(--track-ink, var(--ink-3));
+  background: color-mix(in oklab, var(--track-color, var(--surface)) 38%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--track-ink, var(--border)) 24%, transparent);
   border-radius: 8px;
   opacity: 0;
   transform: translate(-50%, -50%);
@@ -722,6 +712,36 @@ button {
     color 0.12s ease;
 }
 
+.bar-drop-zone {
+  position: absolute;
+  z-index: 1;
+  top: 6px;
+  bottom: 6px;
+  left: calc(var(--bar-index) * 100% / var(--bars) + 4px);
+  width: calc(100% / var(--bars) - 8px);
+  border: 1px solid transparent;
+  border-radius: 12px;
+}
+
+.bar-drop-zone.drag-over {
+  background: color-mix(in oklab, var(--track-color, var(--brand)) 34%, transparent);
+  border-color: color-mix(in oklab, var(--track-ink, var(--brand)) 45%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--track-ink, var(--brand)) 28%, transparent);
+}
+
+.bar-drop-zone.drop-move,
+.bar-drop-zone.drop-swap {
+  animation: bar-drop-pulse 0.7s ease-out;
+  background: color-mix(in oklab, var(--track-color, var(--brand)) 48%, transparent);
+  border-color: color-mix(in oklab, var(--track-ink, var(--brand)) 52%, transparent);
+}
+
+.bar-drop-zone.drop-swap {
+  box-shadow:
+    inset 0 0 0 2px color-mix(in oklab, var(--track-ink, var(--brand)) 40%, transparent),
+    0 0 0 4px color-mix(in oklab, var(--track-color, var(--brand)) 32%, transparent);
+}
+
 .hover-row:hover .add-clip {
   opacity: 1;
 }
@@ -729,6 +749,41 @@ button {
 .add-clip svg {
   width: 14px;
   height: 14px;
+}
+
+@keyframes clip-drop-pop {
+  0% {
+    transform: scale(0.96);
+    box-shadow:
+      0 0 0 4px color-mix(in oklab, var(--clip-ink) 30%, transparent),
+      var(--shadow-2);
+  }
+
+  55% {
+    transform: scale(1.04);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow: var(--shadow-2);
+  }
+}
+
+@keyframes bar-drop-pulse {
+  0% {
+    opacity: 0.95;
+    transform: scaleX(0.94);
+  }
+
+  45% {
+    opacity: 1;
+    transform: scaleX(1.03);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scaleX(1);
+  }
 }
 
 .playhead {
