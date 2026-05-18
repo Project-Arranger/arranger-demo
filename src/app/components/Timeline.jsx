@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import {
   createElement,
+  forwardRef,
   useCallback,
   useEffect,
   useRef,
@@ -128,17 +129,20 @@ function Clip({
   );
 }
 
-function Timeline({
-  activeTrackId,
-  currentBar,
-  currentStep,
-  onAddClip,
-  onDrumsPreview,
-  onMoveClip,
-  onOpenClip,
-  selectedClipId,
-  tracks,
-}) {
+const Timeline = forwardRef(function Timeline(
+  {
+    activeTrackId,
+    currentBar,
+    currentStep,
+    onAddClip,
+    onDrumsPreview,
+    onMoveClip,
+    onOpenClip,
+    selectedClipId,
+    tracks,
+  },
+  scrollRef,
+) {
   const [dragSession, setDragSession] = useState(null);
   const [dragFeedback, setDragFeedback] = useState(null);
   const [dragOverBar, setDragOverBar] = useState(null);
@@ -212,7 +216,7 @@ function Timeline({
   }, [dragSession, onMoveClip, showDragFeedback, tracks]);
 
   return (
-    <section className="timeline-col" style={{ '--bars': TOTAL_BARS }}>
+    <section className="timeline-col" ref={scrollRef} style={{ '--bars': TOTAL_BARS }}>
       <div className="ruler" aria-label="Timeline bars">
         {BAR_NUMBERS.map((barNumber) => (
           <div
@@ -292,6 +296,6 @@ function Timeline({
       </div>
     </section>
   );
-}
+});
 
 export { Timeline };

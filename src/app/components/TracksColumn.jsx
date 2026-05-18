@@ -2,43 +2,147 @@ import {
   Plus,
   SlidersHorizontal,
 } from 'lucide-react';
-import { createElement } from 'react';
+import {
+  createElement,
+  forwardRef,
+  useRef,
+} from 'react';
+import {
+  MAX_TRACK_VOLUME_DB,
+  MIN_TRACK_VOLUME_DB,
+} from '../trackVolumeViewModels.js';
+import { getTrackVolumeFromClientX } from '../trackVolumeInteraction.js';
 import { TRACK_ICONS, renderIcon } from './icons.js';
 
-function TrackRow({ active, onSelect, track }) {
+function TrackRow({
+  active,
+  onSelect,
+  onVolumeChange = () => {},
+  track,
+}) {
+  const volumeInputRef = useRef(null);
   const Icon = TRACK_ICONS[track.id];
   const classes = [
     'track',
     active ? 'selected' : '',
     track.hasClip ? 'has-phrase' : '',
   ].filter(Boolean).join(' ');
+  const handleVolumeChange = (event) => {
+    onVolumeChange(track.id, Number(event.target.value));
+  };
+  const updateVolumeFromPointer = (event) => {
+    onVolumeChange(
+      track.id,
+      getTrackVolumeFromClientX(event.clientX, event.currentTarget.getBoundingClientRect()),
+    );
+  };
+  const handleVolumePointerDown = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    volumeInputRef.current?.focus();
+    updateVolumeFromPointer(event);
+  };
+  const handleVolumePointerMove = (event) => {
+    if (event.buttons !== 1) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    updateVolumeFromPointer(event);
+  };
+  const handleVolumePointerUp = (event) => {
+    event.stopPropagation();
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+  };
+  const handleVolumeKeyDown = (event) => {
+    const keyDeltas = {
+      ArrowDown: -1,
+      ArrowLeft: -1,
+      ArrowRight: 1,
+      ArrowUp: 1,
+      PageDown: -3,
+      PageUp: 3,
+    };
+
+    if (event.key === 'Home') {
+      event.preventDefault();
+      onVolumeChange(track.id, MIN_TRACK_VOLUME_DB);
+      return;
+    }
+
+    if (event.key === 'End') {
+      event.preventDefault();
+      onVolumeChange(track.id, MAX_TRACK_VOLUME_DB);
+      return;
+    }
+
+    if (!Object.hasOwn(keyDeltas, event.key)) return;
+    event.preventDefault();
+    onVolumeChange(track.id, track.volume.value + keyDeltas[event.key]);
+  };
+  const stopVolumeEventPropagation = (event) => {
+    event.stopPropagation();
+  };
 
   return (
-    <button
+    <div
       className={classes}
       data-type={track.id}
-      type="button"
-      aria-pressed={active}
-      onClick={() => onSelect(track.id)}
     >
-      <span className="ic">
-        {renderIcon(Icon)}
-      </span>
-      <span className="meta">
+      <button
+        className="track-select"
+        type="button"
+        aria-pressed={active}
+        onClick={() => onSelect(track.id)}
+      >
+        <span className="ic">
+          {renderIcon(Icon)}
+        </span>
         <span className="track-name">{track.label}</span>
-        <span className="vol">
-          <span className="bar">
+      </button>
+      <label
+        className="vol"
+        onClick={stopVolumeEventPropagation}
+        onPointerDown={stopVolumeEventPropagation}
+      >
+        <span
+          className="volume-control"
+          onPointerDown={handleVolumePointerDown}
+          onPointerMove={handleVolumePointerMove}
+          onPointerUp={handleVolumePointerUp}
+        >
+          <span className="bar" aria-hidden="true">
             <span className="fill" style={{ width: `${track.volume.level}%` }} />
             <span className="knob" style={{ left: `${track.volume.level}%` }} />
           </span>
-          <span className="db mono">{track.volume.label}</span>
+          <input
+            className="volume-slider"
+            ref={volumeInputRef}
+            type="range"
+            min={MIN_TRACK_VOLUME_DB}
+            max={MAX_TRACK_VOLUME_DB}
+            step="1"
+            value={track.volume.value}
+            aria-label={`${track.label} volume`}
+            onChange={handleVolumeChange}
+            onKeyDown={handleVolumeKeyDown}
+          />
         </span>
-      </span>
-    </button>
+        <span className="db mono">{track.volume.label}</span>
+      </label>
+    </div>
   );
 }
 
-function TracksColumn({ activeTrackId, onTrackSelect, tracks }) {
+const TracksColumn = forwardRef(function TracksColumn(
+  {
+    activeTrackId,
+    onTrackSelect,
+    onVolumeChange,
+    tracks,
+  },
+  scrollRef,
+) {
   return (
     <aside className="tracks-col">
       <div className="tracks-head">
@@ -51,11 +155,12 @@ function TracksColumn({ activeTrackId, onTrackSelect, tracks }) {
         </button>
       </div>
 
-      <div className="tracks-list">
+      <div className="tracks-list" ref={scrollRef}>
         {tracks.map((track) => createElement(TrackRow, {
           active: track.id === activeTrackId,
           key: track.id,
           onSelect: onTrackSelect,
+          onVolumeChange,
           track,
         }))}
       </div>
@@ -66,6 +171,6 @@ function TracksColumn({ activeTrackId, onTrackSelect, tracks }) {
       </button>
     </aside>
   );
-}
+});
 
 export { TracksColumn };

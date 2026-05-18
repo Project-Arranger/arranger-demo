@@ -79,6 +79,10 @@ test('timeline add clip controls switch the persistent editor by track row', asy
     new URL('../src/app/components/BottomEditor.jsx', import.meta.url),
     'utf8',
   );
+  const tracksColumnSource = await readFile(
+    new URL('../src/app/components/TracksColumn.jsx', import.meta.url),
+    'utf8',
+  );
   const drumSequencerSource = await readFile(
     new URL('../src/app/components/DrumSequencer.jsx', import.meta.url),
     'utf8',
@@ -91,6 +95,11 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(source, /activeTrackId/);
   assert.match(source, /handleAddClip/);
   assert.match(source, /handleOpenClip/);
+  assert.match(source, /syncTrackScrollContainers/);
+  assert.match(source, /tracksScrollRef/);
+  assert.match(source, /timelineScrollRef/);
+  assert.match(source, /ref:\s*tracksScrollRef/);
+  assert.match(source, /ref:\s*timelineScrollRef/);
   assert.match(source, /onAddClip/);
   assert.match(timelineSource, /onAddClip\(track\.id,\s*bar\.bar\)/);
   assert.match(source, /handleMoveClip/);
@@ -107,6 +116,14 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(source, /createClip\(trackId,\s*barIndex\)/);
   assert.match(source, /moveClipToBar\(clipId,\s*targetBar\)/);
   assert.match(source, /selectClip\(clipId\)/);
+  assert.match(source, /volumes/);
+  assert.match(source, /setTrackVolume\(trackId,\s*volume\)/);
+  assert.match(source, /onVolumeChange:\s*handleTrackVolumeChange/);
+  assert.match(tracksColumnSource, /type="range"/);
+  assert.match(tracksColumnSource, /aria-label=\{`\$\{track\.label\} volume`\}/);
+  assert.match(tracksColumnSource, /onVolumeChange\(track\.id/);
+  assert.match(tracksColumnSource, /handleVolumePointerDown/);
+  assert.match(tracksColumnSource, /getTrackVolumeFromClientX/);
   assert.match(timelineSource, /data-track-row=\{track\.id\}/);
   assert.match(timelineSource, /data-track-index=\{trackIndex\}/);
   assert.match(timelineSource, /data-bar-index=\{bar\.bar\}/);
@@ -117,7 +134,9 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(drumSequencerSource, /清空本小节/);
   assert.match(drumSequencerSource, /清空 Drums/);
   assert.match(source, /applyBasicDrumsBar/);
+  assert.match(source, /getDrumsClipBarIndexes/);
   assert.match(source, /applyBasicDrumsAllBars/);
+  assert.match(source, /applyBasicDrumsAllBars\(state\.matrix,\s*drumsClipBars\)/);
   assert.match(source, /clearDrumsBar/);
   assert.match(bottomEditorSource, /activeTrackId === 'drums'/);
   assert.match(bottomEditorSource, /activeTrackId === 'chord'/);

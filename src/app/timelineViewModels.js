@@ -1,10 +1,16 @@
 import { findClipForTrackBar } from '../store/slices/clipsSlice.js';
+import { createTrackVolumeView } from './trackVolumeViewModels.js';
+
+function getTrackVolume(track, volumes) {
+  return createTrackVolumeView(volumes?.[track.id] ?? track.volume?.value);
+}
 
 function createTimelineTracks({
   barNumbers,
   clips,
   selectedBar,
   trackUi,
+  volumes,
 }) {
   return trackUi.map((track) => {
     const clipsByBar = barNumbers.map((_, barIndex) => (
@@ -27,6 +33,7 @@ function createTimelineTracks({
       bars,
       clipsByBar,
       hasClip: clipsByBar.some(Boolean),
+      volume: getTrackVolume(track, volumes),
     };
   });
 }

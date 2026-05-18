@@ -1,4 +1,5 @@
 import { TOTAL_BARS, TRACK_IDS } from '../domain/musicConstants.js';
+import { createTrackVolumeView } from './trackVolumeViewModels.js';
 
 const trackLabels = {
   drums: 'Drums',
@@ -10,21 +11,11 @@ const trackLabels = {
   sample: 'Sample',
 };
 
-const trackVolumes = {
-  drums: { level: 72, label: '-4dB' },
-  bass: { level: 64, label: '-6dB' },
-  chord: { level: 58, label: '-8dB' },
-  lead: { level: 54, label: '-9dB' },
-  pad: { level: 48, label: '-11dB' },
-  vocal: { level: 50, label: '-10dB' },
-  sample: { level: 60, label: '-7dB' },
-};
-
 const TRACK_UI = Object.freeze(
   TRACK_IDS.map((id) => Object.freeze({
     id,
     label: trackLabels[id],
-    volume: trackVolumes[id],
+    volume: createTrackVolumeView(),
   })),
 );
 

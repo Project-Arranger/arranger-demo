@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
 } from 'react';
 import audioEngine from '../audio/audioEngineSingleton.js';
 import { APP_COMMAND_TYPES } from '../input/appCommands.js';
@@ -31,8 +32,10 @@ import {
   applyBasicDrumsAllBars,
   applyBasicDrumsBar,
   clearDrumsBar,
+  getDrumsClipBarIndexes,
 } from './drumsPatternActions.js';
 import { createTimelineTracks } from './timelineViewModels.js';
+import { syncTrackScrollContainers } from './syncTrackScroll.js';
 import {
   BAR_NUMBERS,
   TRACK_UI,
@@ -50,6 +53,9 @@ export default function App() {
   const selectedBar = useMusicStore((state) => state.selectedBar);
   const selectedClipId = useMusicStore((state) => state.selectedClipId);
   const clips = useMusicStore((state) => state.clips);
+  const volumes = useMusicStore((state) => state.volumes);
+  const tracksScrollRef = useRef(null);
+  const timelineScrollRef = useRef(null);
 
   const dispatchAppCommand = useMemo(
     () => createUiAudioDispatcher({ store: useMusicStore, audio: audioEngine }),
@@ -61,6 +67,10 @@ export default function App() {
   useEffect(() => {
     seedDefaultDrumsPattern(useMusicStore);
   }, []);
+
+  useEffect(() => (
+    syncTrackScrollContainers(tracksScrollRef.current, timelineScrollRef.current)
+  ), []);
 
   useEffect(() => {
     audioEngine.onPositionChange = (bar, step) => {
@@ -93,7 +103,8 @@ export default function App() {
     clips,
     selectedBar,
     trackUi: TRACK_UI,
-  }), [clips, selectedBar]);
+    volumes,
+  }), [clips, selectedBar, volumes]);
 
   const handleTrackSelect = useCallback((trackId) => {
     const state = useMusicStore.getState();
@@ -111,6 +122,10 @@ export default function App() {
 
   const handleAddClip = useCallback((trackId, barIndex) => {
     useMusicStore.getState().createClip(trackId, barIndex);
+  }, []);
+
+  const handleTrackVolumeChange = useCallback((trackId, volume) => {
+    useMusicStore.getState().setTrackVolume(trackId, volume);
   }, []);
 
   const handleMoveClip = useCallback((clipId, targetBar) => {
@@ -138,7 +153,8 @@ export default function App() {
 
   const handleGenerateAllDrumsBars = useCallback(() => {
     const state = useMusicStore.getState();
-    const nextMatrix = applyBasicDrumsAllBars(state.matrix);
+    const drumsClipBars = getDrumsClipBarIndexes(state.clips);
+    const nextMatrix = applyBasicDrumsAllBars(state.matrix, drumsClipBars);
     writeDrumsBars(nextMatrix, BAR_NUMBERS.map((_, barIndex) => barIndex));
   }, [writeDrumsBars]);
 
@@ -219,6 +235,8 @@ export default function App() {
         {createElement(TracksColumn, {
           activeTrackId,
           onTrackSelect: handleTrackSelect,
+          onVolumeChange: handleTrackVolumeChange,
+          ref: tracksScrollRef,
           tracks,
         })}
         {createElement(Timeline, {
@@ -229,6 +247,7 @@ export default function App() {
           onDrumsPreview: handleDrumsPreview,
           onMoveClip: handleMoveClip,
           onOpenClip: handleOpenClip,
+          ref: timelineScrollRef,
           selectedClipId,
           tracks,
         })}

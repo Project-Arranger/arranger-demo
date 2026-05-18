@@ -28,7 +28,10 @@
   --drum-hihat: oklch(82% 0.12 92);
   --brand: oklch(56% 0.13 268);
   --play: oklch(72% 0.13 155);
-  --track-row-size: minmax(74px, 1fr);
+  --app-topbar-height: clamp(52px, 7vh, 64px);
+  --app-editor-height: clamp(260px, 39vh, 330px);
+  --timeline-min-width: min(640px, 100%);
+  --track-row-size: minmax(clamp(48px, 7.5vh, 74px), 1fr);
   --radius-sm: 8px;
   --radius: 12px;
   --shadow-1:
@@ -56,12 +59,14 @@
 html,
 body,
 #root {
+  height: 100%;
   min-height: 100%;
   margin: 0;
 }
 
 body {
   min-width: 320px;
+  overflow: hidden;
   background: var(--bg);
 }
 
@@ -76,8 +81,9 @@ button {
 
 .app {
   display: grid;
-  grid-template-rows: 64px minmax(300px, 1fr) 330px;
-  min-height: 100vh;
+  grid-template-rows: var(--app-topbar-height) minmax(0, 1fr) var(--app-editor-height);
+  height: 100dvh;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -88,6 +94,7 @@ button {
   grid-template-columns: auto auto minmax(360px, 1fr) auto;
   align-items: center;
   gap: 14px;
+  min-height: 0;
   padding: 0 18px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
@@ -337,7 +344,7 @@ button {
 
 .workspace {
   display: grid;
-  grid-template-columns: 246px minmax(720px, 1fr);
+  grid-template-columns: clamp(188px, 18vw, 246px) minmax(0, 1fr);
   min-height: 0;
   overflow: hidden;
   background: var(--bg);
@@ -394,8 +401,9 @@ button {
 
 .track {
   display: grid;
-  grid-template-columns: 38px 1fr;
-  align-items: center;
+  grid-template-rows: 30px 18px;
+  align-content: center;
+  gap: 6px;
   width: 100%;
   height: 100%;
   min-height: 0;
@@ -405,7 +413,7 @@ button {
   color: var(--ink);
   background: transparent;
   text-align: left;
-  cursor: pointer;
+  cursor: default;
 }
 
 .track:hover {
@@ -472,11 +480,17 @@ button {
   height: 21px;
 }
 
-.meta {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.track-select {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
   min-width: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
 }
 
 .track-name {
@@ -490,14 +504,33 @@ button {
   grid-template-columns: 1fr 34px;
   align-items: center;
   gap: 10px;
+  margin-left: 38px;
+}
+
+.volume-control {
+  position: relative;
+  display: grid;
+  align-items: center;
+  min-width: 0;
+  height: 4px;
 }
 
 .vol .bar {
   position: relative;
+  width: 100%;
   height: 4px;
   overflow: visible;
   background: color-mix(in oklab, var(--border) 35%, transparent);
   border-radius: 999px;
+  pointer-events: none;
+}
+
+.volume-slider {
+  position: absolute;
+  inset: -7px 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
 }
 
 .vol .fill {
@@ -554,8 +587,8 @@ button {
 
 .ruler {
   display: grid;
-  grid-template-columns: repeat(var(--bars), minmax(90px, 1fr));
-  min-width: 720px;
+  grid-template-columns: repeat(var(--bars), minmax(80px, 1fr));
+  min-width: var(--timeline-min-width);
   border-bottom: 1px solid var(--border-soft);
 }
 
@@ -575,7 +608,7 @@ button {
 
 .grid {
   position: relative;
-  min-width: 720px;
+  min-width: var(--timeline-min-width);
   min-height: 100%;
   background:
     linear-gradient(to right, color-mix(in oklab, var(--border) 55%, transparent) 1px, transparent 1px)
@@ -614,9 +647,10 @@ button {
   z-index: 2;
   top: 12px;
   bottom: 12px;
-  left: 10px;
-  left: calc(var(--bar-index) * 100% / var(--bars) + 10px);
-  width: calc(100% / var(--bars) - 20px);
+  left: 0;
+  left: calc(var(--bar-index) * 100% / var(--bars));
+  width: calc(100% / var(--bars));
+  box-sizing: border-box;
   min-width: 0;
   padding: 7px 10px 8px;
   overflow: hidden;
@@ -1145,7 +1179,31 @@ button {
 
 .drum-step-number.beat-end,
 .drum-step.beat-end {
-  margin-right: 8px;
+  position: relative;
+}
+
+.drum-step-number.beat-end::after {
+  position: absolute;
+  top: 2px;
+  right: -3px;
+  bottom: 2px;
+  width: 1px;
+  content: "";
+  background: color-mix(in oklab, var(--border) 72%, transparent);
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.drum-step.beat-end::after {
+  position: absolute;
+  top: 4px;
+  right: -3px;
+  bottom: 4px;
+  width: 1px;
+  content: "";
+  background: color-mix(in oklab, var(--border) 72%, transparent);
+  border-radius: 999px;
+  pointer-events: none;
 }
 
 .drum-step {
@@ -1204,7 +1262,7 @@ button {
 
 @media (max-width: 980px) {
   .app {
-    grid-template-rows: auto minmax(360px, 1fr) 340px;
+    grid-template-rows: auto minmax(0, 1fr) var(--app-editor-height);
   }
 
   .topbar {
