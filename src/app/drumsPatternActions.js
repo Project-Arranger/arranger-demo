@@ -1,4 +1,5 @@
 import { STEPS_PER_BAR, TOTAL_BARS } from '../domain/musicConstants.js';
+import { createDrumsCell } from '../domain/drumsCells.js';
 
 const BASIC_DRUMS_STEPS = Object.freeze([
   Object.freeze({ step: 0, instruments: Object.freeze(['kick', 'hihat']) }),
@@ -8,7 +9,7 @@ const BASIC_DRUMS_STEPS = Object.freeze([
 ]);
 
 function createCell(instruments) {
-  return { instruments: [...instruments] };
+  return createDrumsCell(instruments);
 }
 
 function createEmptyDrumsBar() {
@@ -23,6 +24,16 @@ function createBasicDrumsBar() {
   }
 
   return bar;
+}
+
+function createDefaultDrumsPattern() {
+  return BASIC_DRUMS_STEPS.flatMap((event) => (
+    event.instruments.map((instrument) => ({
+      bar: 0,
+      step: event.step,
+      instrument,
+    }))
+  ));
 }
 
 function isValidBarIndex(barIndex) {
@@ -63,5 +74,6 @@ export {
   applyBasicDrumsBar,
   clearDrumsBar,
   createBasicDrumsBar,
+  createDefaultDrumsPattern,
   createEmptyDrumsBar,
 };
