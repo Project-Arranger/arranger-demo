@@ -44,13 +44,25 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   );
 
   assert.match(chordEditorSource, /data-screen-label="Chord Editor"/);
-  assert.match(chordEditorSource, /Chord 01/);
+  assert.match(chordEditorSource, /CHORD EDITOR - BAR/);
   assert.match(chordEditorSource, /选择和弦进行模板/);
   assert.match(chordEditorSource, /CHORD_NOTES\.flatMap/);
+  assert.match(chordEditorSource, /getChordCell/);
+  assert.match(chordEditorSource, /isChordCellActive/);
+  assert.match(chordEditorSource, /onChordCellSelect/);
+  assert.match(chordEditorSource, /onClearChordBar/);
+  assert.match(chordEditorSource, /aria-pressed=\{active\}/);
   assert.match(source, /useKeyboardCommands/);
   assert.match(source, /createUiAudioDispatcher/);
   assert.match(source, /audioEngine/);
   assert.match(source, /seedDefaultDrumsPattern/);
+  assert.match(source, /handleChordCellSelect/);
+  assert.match(source, /handleClearChordBar/);
+  assert.match(source, /CHORD_SET_CELL/);
+  assert.match(source, /CHORD_CLEAR_CELL/);
+  assert.match(source, /setChordCell/);
+  assert.match(source, /clearChordCell/);
+  assert.match(source, /clearChordBar/);
   assert.match(source, /TRANSPORT_TOGGLE_PLAY/);
   assert.match(source, /TRANSPORT_STOP/);
   assert.match(source, /handleDrumsPreview/);

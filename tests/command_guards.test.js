@@ -11,8 +11,12 @@ import { TOTAL_BARS, STEPS_PER_BAR } from '../src/domain/musicConstants.js';
 
 test('app command constants use drums naming', () => {
   assert.equal(APP_COMMAND_TYPES.DRUMS_TOGGLE, 'drums.toggle');
+  assert.equal(APP_COMMAND_TYPES.CHORD_SET_CELL, 'chord.setCell');
+  assert.equal(APP_COMMAND_TYPES.CHORD_CLEAR_CELL, 'chord.clearCell');
   assert.equal(Object.values(APP_COMMAND_TYPES).includes('unknown.toggle'), false);
   assert.equal(COMMAND_GROUPS.drums.includes(APP_COMMAND_TYPES.DRUMS_TOGGLE), true);
+  assert.equal(COMMAND_GROUPS.chord.includes(APP_COMMAND_TYPES.CHORD_SET_CELL), true);
+  assert.equal(COMMAND_GROUPS.chord.includes(APP_COMMAND_TYPES.CHORD_CLEAR_CELL), true);
   assert.equal(CHORD_OPTION_COUNT, 8);
   assert.deepEqual(LEAD_NOTE_IDS, ['C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3']);
 });
@@ -36,6 +40,16 @@ test('tutorial and chord commands validate exact payloads', () => {
   assert.equal(isValidAppCommand({ type: 'chord.selectOption', optionIndex: 8 }), false);
   assert.equal(isValidAppCommand({ type: 'chord.confirm' }), true);
   assert.equal(isValidAppCommand({ type: 'chord.confirm', optionIndex: 0 }), false);
+  assert.equal(isValidAppCommand({ type: 'chord.setCell', bar: 0, span: 0, root: 'C' }), true);
+  assert.equal(isValidAppCommand({ type: 'chord.setCell', bar: 7, span: 3, root: 'A#' }), true);
+  assert.equal(isValidAppCommand({ type: 'chord.setCell', bar: 0, span: 4, root: 'C' }), false);
+  assert.equal(isValidAppCommand({ type: 'chord.setCell', bar: 0, span: 0, root: 'H' }), false);
+  assert.equal(isValidAppCommand({ type: 'chord.setCell', bar: 0, span: 0, root: 'C', extra: true }), false);
+  assert.equal(isValidAppCommand({ type: 'chord.clearCell', bar: 0, span: 0 }), true);
+  assert.equal(isValidAppCommand({ type: 'chord.clearCell', bar: 7, span: 3 }), true);
+  assert.equal(isValidAppCommand({ type: 'chord.clearCell', bar: 8, span: 0 }), false);
+  assert.equal(isValidAppCommand({ type: 'chord.clearCell', bar: 0, span: 4 }), false);
+  assert.equal(isValidAppCommand({ type: 'chord.clearCell', bar: 0, span: 0, root: 'C' }), false);
 });
 
 test('drums command validates track step and known instruments', () => {

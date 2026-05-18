@@ -12,11 +12,21 @@ import {
   createUiAudioDispatcher,
   seedDefaultDrumsPattern,
 } from './audioUiBridge.js';
+import {
+  clearChordBar,
+  clearChordCell,
+  getChordCell,
+  setChordCell,
+} from './chordActions.js';
 import { BottomEditor } from './components/BottomEditor.jsx';
 import { Timeline } from './components/Timeline.jsx';
 import { TopBar } from './components/TopBar.jsx';
 import { TracksColumn } from './components/TracksColumn.jsx';
 import { toggleInstrumentInCell } from './drumSequencerData.js';
+import {
+  getChordSpanStep,
+  toggleChordCell,
+} from '../domain/chordCells.js';
 import {
   applyBasicDrumsAllBars,
   applyBasicDrumsBar,
@@ -150,6 +160,44 @@ export default function App() {
     });
   }, [dispatchAppCommand, selectedBar]);
 
+  const handleChordCellSelect = useCallback((spanIndex, root) => {
+    const state = useMusicStore.getState();
+    const step = getChordSpanStep(spanIndex);
+    if (step === null) return;
+
+    const currentCell = getChordCell(state.matrix, selectedBar, spanIndex);
+    const nextCell = toggleChordCell(currentCell, root);
+
+    if (nextCell) {
+      const nextMatrix = setChordCell(state.matrix, selectedBar, spanIndex, root);
+      state.setCell('chord', selectedBar, step, nextMatrix.chord[selectedBar][step]);
+      void dispatchAppCommand({
+        type: APP_COMMAND_TYPES.CHORD_SET_CELL,
+        bar: selectedBar,
+        span: spanIndex,
+        root,
+      });
+      return;
+    }
+
+    const nextMatrix = clearChordCell(state.matrix, selectedBar, spanIndex);
+    state.setCell('chord', selectedBar, step, nextMatrix.chord[selectedBar][step]);
+    void dispatchAppCommand({
+      type: APP_COMMAND_TYPES.CHORD_CLEAR_CELL,
+      bar: selectedBar,
+      span: spanIndex,
+    });
+  }, [dispatchAppCommand, selectedBar]);
+
+  const handleClearChordBar = useCallback(() => {
+    const state = useMusicStore.getState();
+    const nextMatrix = clearChordBar(state.matrix, selectedBar);
+
+    nextMatrix.chord[selectedBar].forEach((cell, step) => {
+      state.setCell('chord', selectedBar, step, cell);
+    });
+  }, [selectedBar]);
+
   return (
     <div className="app" data-screen-label="Main" aria-label="Project Arranger workspace">
       {createElement(TopBar, {
@@ -183,11 +231,14 @@ export default function App() {
       {createElement(BottomEditor, {
         activeTrackId,
         matrix,
+        onChordCellSelect: handleChordCellSelect,
         onClearCurrentDrumsBar: handleClearCurrentDrumsBar,
+        onClearChordBar: handleClearChordBar,
         onClearDrums: handleClearDrums,
         onGenerateAllDrumsBars: handleGenerateAllDrumsBars,
         onGenerateCurrentDrumsBar: handleGenerateCurrentDrumsBar,
         onDrumsStepToggle: handleDrumsStepToggle,
+        rootKey,
         selectedBar,
       })}
     </div>

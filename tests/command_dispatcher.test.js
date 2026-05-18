@@ -117,6 +117,8 @@ test('domain commands dispatch to injected handlers with drums naming', async ()
     chord: {
       selectOption: (command) => calls.push(['chord.selectOption', command.optionIndex]),
       confirm: () => calls.push(['chord.confirm']),
+      setCell: (command) => calls.push(['chord.setCell', command.bar, command.span, command.root]),
+      clearCell: (command) => calls.push(['chord.clearCell', command.bar, command.span]),
     },
     lead: {
       noteOn: (command) => calls.push(['lead.noteOn', command.note]),
@@ -132,6 +134,8 @@ test('domain commands dispatch to injected handlers with drums naming', async ()
   await dispatchCommand({ type: 'drums.toggle', bar: 0, step: 4, instrument: 'kick' }, { handlers, audio });
   await dispatchCommand({ type: 'chord.selectOption', optionIndex: 3 }, { handlers });
   await dispatchCommand({ type: 'chord.confirm' }, { handlers });
+  await dispatchCommand({ type: 'chord.setCell', bar: 2, span: 1, root: 'G#' }, { handlers });
+  await dispatchCommand({ type: 'chord.clearCell', bar: 2, span: 1 }, { handlers });
   await dispatchCommand({ type: 'lead.noteOn', note: 'C3' }, { handlers });
   await dispatchCommand({ type: 'lead.noteOff', note: 'C3' }, { handlers });
 
@@ -141,6 +145,8 @@ test('domain commands dispatch to injected handlers with drums naming', async ()
     ['drums.toggle', 0, 4, 'kick'],
     ['chord.selectOption', 3],
     ['chord.confirm'],
+    ['chord.setCell', 2, 1, 'G#'],
+    ['chord.clearCell', 2, 1],
     ['lead.noteOn', 'C3'],
     ['lead.noteOff', 'C3'],
   ]);

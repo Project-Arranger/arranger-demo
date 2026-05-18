@@ -13,9 +13,17 @@ import {
   BEAT_NUMBERS,
   CHORD_NOTES,
 } from '../uiShellData.js';
+import { getChordCell } from '../chordActions.js';
+import { isChordCellActive } from '../../domain/chordCells.js';
 import { renderIcon } from './icons.js';
 
-function ChordEditor() {
+function ChordEditor({
+  matrix,
+  onChordCellSelect,
+  onClearChordBar,
+  rootKey,
+  selectedBar,
+}) {
   return (
     <section className="editor" data-screen-label="Chord Editor">
       <header className="editor-head">
@@ -26,7 +34,9 @@ function ChordEditor() {
           <div className="clip-title">
             <div className="crumb">Chord · Phrase</div>
             <div className="clip-name-input">
-              Chord 01
+              CHORD EDITOR - BAR
+              {' '}
+              {selectedBar + 1}
               {renderIcon(Pencil)}
             </div>
           </div>
@@ -37,7 +47,13 @@ function ChordEditor() {
             {renderIcon(LayoutTemplate)}
             选择和弦进行模板
           </button>
-          <button className="tool-icon" aria-label="Clear phrase" title="Clear phrase" type="button">
+          <button
+            className="tool-icon"
+            aria-label="Clear phrase"
+            title="Clear phrase"
+            type="button"
+            onClick={onClearChordBar}
+          >
             {renderIcon(Trash2)}
           </button>
           <button className="tool-icon" aria-label="More" title="More" type="button">
@@ -74,35 +90,54 @@ function ChordEditor() {
         </aside>
 
         <div className="chord-grid">
-          {BEAT_NUMBERS.map((beatNumber) => (
-            <div className="beat-group" key={beatNumber}>
-              <div className="beat-head">
-                <button className="add-chord-btn" aria-label="添加和弦" type="button">
-                  {renderIcon(Plus)}
-                  Chord
-                </button>
-                <span className="beat-num mono">{beatNumber}</span>
+          {BEAT_NUMBERS.map((beatNumber) => {
+            const spanIndex = beatNumber - 1;
+            const chordCell = getChordCell(matrix, selectedBar, spanIndex);
+
+            return (
+              <div className="beat-group" key={beatNumber}>
+                <div className="beat-head">
+                  <button
+                    className="add-chord-btn"
+                    aria-label={`Add ${rootKey} chord to beat ${beatNumber}`}
+                    type="button"
+                    onClick={() => onChordCellSelect(spanIndex, rootKey)}
+                  >
+                    {renderIcon(Plus)}
+                    {chordCell?.label ?? 'Chord'}
+                  </button>
+                  <span className="beat-num mono">{beatNumber}</span>
+                </div>
+                <div className="beat-cells">
+                  {CHORD_NOTES.flatMap((note, rowIndex) => (
+                    BEAT_NUMBERS.map((stepNumber, colIndex) => {
+                      const active = isChordCellActive(chordCell, note.label);
+
+                      return (
+                        <button
+                          className={[
+                            'cell',
+                            active ? 'active' : '',
+                            note.sharp ? 'sharp' : '',
+                            colIndex === 0 ? 'downbeat' : '',
+                          ].filter(Boolean).join(' ')}
+                          data-row={rowIndex}
+                          data-col={colIndex}
+                          data-span-index={spanIndex}
+                          data-chord-root={note.label}
+                          key={`${note.label}-${stepNumber}`}
+                          type="button"
+                          aria-label={`${note.label} beat ${beatNumber}.${stepNumber}`}
+                          aria-pressed={active}
+                          onClick={() => onChordCellSelect(spanIndex, note.label)}
+                        />
+                      );
+                    })
+                  ))}
+                </div>
               </div>
-              <div className="beat-cells">
-                {CHORD_NOTES.flatMap((note, rowIndex) => (
-                  BEAT_NUMBERS.map((stepNumber, colIndex) => (
-                    <button
-                      className={[
-                        'cell',
-                        note.sharp ? 'sharp' : '',
-                        colIndex === 0 ? 'downbeat' : '',
-                      ].filter(Boolean).join(' ')}
-                      data-row={rowIndex}
-                      data-col={colIndex}
-                      key={`${note.label}-${stepNumber}`}
-                      type="button"
-                      aria-label={`${note.label} beat ${beatNumber}.${stepNumber}`}
-                    />
-                  ))
-                ))}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

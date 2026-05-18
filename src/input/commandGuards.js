@@ -1,4 +1,5 @@
 import { DRUMS_INSTRUMENT_IDS, STEPS_PER_BAR, TOTAL_BARS } from '../domain/musicConstants.js';
+import { isChordRoot, isChordSpan } from '../domain/chordCells.js';
 import { APP_COMMAND_TYPES, CHORD_OPTION_COUNT, LEAD_NOTE_IDS } from './appCommands.js';
 
 function isPlainObject(value) {
@@ -38,6 +39,23 @@ function hasValidChordOptionPayload(command) {
   );
 }
 
+function hasValidChordSetCellPayload(command) {
+  return (
+    hasOnlyKeys(command, ['type', 'bar', 'span', 'root']) &&
+    isIntegerInRange(command.bar, 0, TOTAL_BARS - 1) &&
+    isChordSpan(command.span) &&
+    isChordRoot(command.root)
+  );
+}
+
+function hasValidChordClearCellPayload(command) {
+  return (
+    hasOnlyKeys(command, ['type', 'bar', 'span']) &&
+    isIntegerInRange(command.bar, 0, TOTAL_BARS - 1) &&
+    isChordSpan(command.span)
+  );
+}
+
 function hasValidLeadPayload(command) {
   return (
     hasOnlyKeys(command, ['type', 'note']) &&
@@ -64,6 +82,12 @@ function isValidAppCommand(command) {
 
     case APP_COMMAND_TYPES.CHORD_SELECT_OPTION:
       return hasValidChordOptionPayload(command);
+
+    case APP_COMMAND_TYPES.CHORD_SET_CELL:
+      return hasValidChordSetCellPayload(command);
+
+    case APP_COMMAND_TYPES.CHORD_CLEAR_CELL:
+      return hasValidChordClearCellPayload(command);
 
     case APP_COMMAND_TYPES.LEAD_NOTE_ON:
     case APP_COMMAND_TYPES.LEAD_NOTE_OFF:
