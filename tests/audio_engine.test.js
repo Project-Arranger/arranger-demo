@@ -49,6 +49,18 @@ function createPlayerFactory(calls) {
   });
 }
 
+function createChordSynthFactory(calls) {
+  return () => ({
+    triggerAttackRelease: (notes, duration, time) => calls.push([
+      'chord.triggerAttackRelease',
+      notes,
+      duration,
+      time,
+    ]),
+    toDestination: () => calls.push(['chord.toDestination']),
+  });
+}
+
 test('audio statuses expose the phase 4 lifecycle states', () => {
   assert.deepEqual(AUDIO_STATUSES, {
     IDLE: 'idle',
@@ -93,6 +105,23 @@ test('AudioEngine starts audio and triggers drums samples', async () => {
     ['player.toDestination', 'hihat'],
     ['player.start', 'kick', '/samples/808/kick.wav', 12.5],
     ['player.start', 'snare', '/samples/808/snare.wav', 12.5],
+  ]);
+});
+
+test('AudioEngine starts audio and triggers chord synth notes', async () => {
+  const tone = createFakeTone();
+  const engine = new AudioEngine({
+    tone,
+    playerFactory: createPlayerFactory(tone.calls),
+    chordSynthFactory: createChordSynthFactory(tone.calls),
+  });
+
+  assert.equal(await engine.startAudio(), AUDIO_STATUSES.READY);
+  assert.equal(await engine.triggerChord(['C4', 'E4', 'G4'], '4n'), true);
+
+  assert.deepEqual(tone.calls.filter(([name]) => name.startsWith('chord.')), [
+    ['chord.toDestination'],
+    ['chord.triggerAttackRelease', ['C4', 'E4', 'G4'], '4n', 12.5],
   ]);
 });
 
@@ -176,6 +205,29 @@ test('AudioEngine syncs transport play pause stop and seek', async () => {
     ['transport.start'],
     ['transport.pause'],
     ['transport.stop'],
+  ]);
+});
+
+test('AudioEngine matrix playback triggers drums and chord events', async () => {
+  const tone = createFakeTone();
+  const matrix = createInitialMatrix();
+  matrix.drums[0][0] = { instruments: ['kick'] };
+  matrix.chord[0][0] = { root: 'C', quality: 'maj', label: 'C' };
+  const engine = new AudioEngine({
+    tone,
+    matrixSource: matrix,
+    playerFactory: createPlayerFactory(tone.calls),
+    chordSynthFactory: createChordSynthFactory(tone.calls),
+  });
+
+  await engine.play({ bpm: 120 });
+  tone.Transport.scheduledCallback(24);
+
+  assert.deepEqual(tone.calls.filter(([name]) => (
+    name === 'player.start' || name === 'chord.triggerAttackRelease'
+  )), [
+    ['player.start', 'kick', '/samples/808/kick.wav', 24],
+    ['chord.triggerAttackRelease', ['C4', 'E4', 'G4'], '4n', 24],
   ]);
 });
 
