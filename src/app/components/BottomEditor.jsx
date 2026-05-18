@@ -6,11 +6,14 @@ import { TrackEditorPlaceholder } from './TrackEditorPlaceholder.jsx';
 function BottomEditor({
   activeTrackId,
   matrix,
+  onChordCellSelect,
   onClearCurrentDrumsBar,
+  onClearChordBar,
   onClearDrums,
   onGenerateAllDrumsBars,
   onGenerateCurrentDrumsBar,
   onDrumsStepToggle,
+  rootKey,
   selectedBar,
 }) {
   if (activeTrackId === 'drums') {
@@ -26,7 +29,13 @@ function BottomEditor({
   }
 
   if (activeTrackId === 'chord') {
-    return createElement(ChordEditor);
+    return createElement(ChordEditor, {
+      matrix,
+      onChordCellSelect,
+      onClearChordBar,
+      rootKey,
+      selectedBar,
+    });
   }
 
   return createElement(TrackEditorPlaceholder, { activeTrackId });

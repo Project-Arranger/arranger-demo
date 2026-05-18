@@ -7,6 +7,8 @@ const APP_COMMAND_TYPES = Object.freeze({
   DRUMS_TOGGLE: 'drums.toggle',
   CHORD_SELECT_OPTION: 'chord.selectOption',
   CHORD_CONFIRM: 'chord.confirm',
+  CHORD_SET_CELL: 'chord.setCell',
+  CHORD_CLEAR_CELL: 'chord.clearCell',
   LEAD_NOTE_ON: 'lead.noteOn',
   LEAD_NOTE_OFF: 'lead.noteOff',
 });
@@ -30,6 +32,8 @@ const COMMAND_GROUPS = Object.freeze({
   chord: Object.freeze([
     APP_COMMAND_TYPES.CHORD_SELECT_OPTION,
     APP_COMMAND_TYPES.CHORD_CONFIRM,
+    APP_COMMAND_TYPES.CHORD_SET_CELL,
+    APP_COMMAND_TYPES.CHORD_CLEAR_CELL,
   ]),
   lead: Object.freeze([
     APP_COMMAND_TYPES.LEAD_NOTE_ON,
@@ -41,7 +45,7 @@ const COMMAND_GROUPS = Object.freeze({
  * @typedef {{ type: 'transport.togglePlay' } | { type: 'transport.stop' } | { type: 'transport.seek', bar: number, step: number }} TransportCommand
  * @typedef {{ type: 'tutorial.next' } | { type: 'tutorial.completeTask' }} TutorialCommand
  * @typedef {{ type: 'drums.toggle', bar: number, step: number, instrument: 'kick' | 'snare' | 'hihat' }} DrumsCommand
- * @typedef {{ type: 'chord.selectOption', optionIndex: number } | { type: 'chord.confirm' }} ChordCommand
+ * @typedef {{ type: 'chord.selectOption', optionIndex: number } | { type: 'chord.confirm' } | { type: 'chord.setCell', bar: number, span: number, root: string } | { type: 'chord.clearCell', bar: number, span: number }} ChordCommand
  * @typedef {{ type: 'lead.noteOn', note: string } | { type: 'lead.noteOff', note: string }} LeadCommand
  * @typedef {TransportCommand | TutorialCommand | DrumsCommand | ChordCommand | LeadCommand} AppCommand
  */

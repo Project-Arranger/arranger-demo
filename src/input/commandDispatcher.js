@@ -81,6 +81,14 @@ async function dispatchHandlerCommand(command, deps) {
       await maybeCall(handlers.chord?.confirm, command);
       return { ok: true };
 
+    case APP_COMMAND_TYPES.CHORD_SET_CELL:
+      await maybeCall(handlers.chord?.setCell, command);
+      return { ok: true };
+
+    case APP_COMMAND_TYPES.CHORD_CLEAR_CELL:
+      await maybeCall(handlers.chord?.clearCell, command);
+      return { ok: true };
+
     case APP_COMMAND_TYPES.LEAD_NOTE_ON:
       await maybeCall(handlers.lead?.noteOn, command);
       return { ok: true };
