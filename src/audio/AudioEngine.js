@@ -60,10 +60,12 @@ export default class AudioEngine {
     this.onPositionChange = options.onPositionChange ?? null;
     this.playerFactory = options.playerFactory ?? null;
     this.fallbackSynthFactory = options.fallbackSynthFactory ?? null;
+    this.chordSynthFactory = options.chordSynthFactory ?? null;
     this.now = options.now ?? (() => this.tone?.now?.() ?? 0);
     this.status = AUDIO_STATUSES.IDLE;
     this.drumPlayers = new Map();
     this.fallbackSynth = null;
+    this.chordSynth = null;
     this.matrixAdapter = null;
     this.transportEventId = null;
     this.transportFlatStep = 0;
@@ -95,6 +97,17 @@ export default class AudioEngine {
     return callToDestination(new this.tone.MembraneSynth());
   }
 
+  createChordSynth() {
+    if (this.chordSynthFactory) return callToDestination(this.chordSynthFactory());
+    if (!this.tone?.PolySynth) return null;
+
+    const synth = this.tone?.Synth
+      ? new this.tone.PolySynth(this.tone.Synth)
+      : new this.tone.PolySynth();
+
+    return callToDestination(synth);
+  }
+
   async startAudio() {
     if (
       this.status === AUDIO_STATUSES.READY
@@ -108,11 +121,13 @@ export default class AudioEngine {
     try {
       await this.tone?.start?.();
       this.fallbackSynth = this.fallbackSynth ?? this.createFallbackSynth();
+      this.chordSynth = this.chordSynth ?? this.createChordSynth();
       this.loadDrumsPlayers();
       this.status = AUDIO_STATUSES.READY;
     } catch {
       this.drumPlayers.clear();
       this.fallbackSynth = this.createFallbackSynth();
+      this.chordSynth = this.chordSynth ?? this.createChordSynth();
       this.status = this.fallbackSynth
         ? AUDIO_STATUSES.SAMPLE_FALLBACK
         : AUDIO_STATUSES.ERROR;
@@ -165,6 +180,27 @@ export default class AudioEngine {
       .filter((instrument) => this.triggerDrumsInstrument(instrument, time));
   }
 
+  triggerChordNotes(notes, duration = '4n', time = this.now()) {
+    if (!Array.isArray(notes) || !notes.length) return false;
+    if (!this.chordSynth?.triggerAttackRelease) return false;
+
+    try {
+      this.chordSynth.triggerAttackRelease(notes, duration, time);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async triggerChord(notes, duration = '4n', time = this.now()) {
+    await this.startAudio();
+    return this.triggerChordNotes(notes, duration, time);
+  }
+
+  triggerChordEvent(event, time = this.now()) {
+    return this.triggerChordNotes(event.notes, event.duration, time);
+  }
+
   setMatrixSource(matrixSource) {
     this.matrixSource = matrixSource;
     this.matrixAdapter = null;
@@ -196,6 +232,9 @@ export default class AudioEngine {
       for (const event of adapter.getEventsForStep(position.bar, position.step)) {
         if (event.type === 'drums') {
           this.triggerDrumsInstrument(event.instrument, time);
+        }
+        if (event.type === 'chord') {
+          this.triggerChordEvent(event, time);
         }
       }
 

@@ -1,8 +1,13 @@
 import {
+  CHORD_SPAN,
   STEPS_PER_BAR,
   TOTAL_BARS,
 } from '../domain/musicConstants.js';
 import { getDrumsCellInstruments } from '../domain/drumsCells.js';
+import {
+  CHORD_ROOTS,
+  getChordToneRoots,
+} from '../domain/chordCells.js';
 
 function normalizeMatrixSource(matrixSource) {
   return typeof matrixSource === 'function' ? matrixSource : () => matrixSource;
@@ -19,6 +24,41 @@ function createDrumsEvent(bar, step, instrument) {
     bar,
     step,
     instrument,
+  };
+}
+
+function createChordNotes(root) {
+  const toneRoots = getChordToneRoots(root);
+  if (!toneRoots.length) return [];
+
+  const rootIndex = CHORD_ROOTS.indexOf(root);
+  return toneRoots.map((toneRoot) => {
+    const toneIndex = CHORD_ROOTS.indexOf(toneRoot);
+    const octave = toneIndex < rootIndex ? 5 : 4;
+    return `${toneRoot}${octave}`;
+  });
+}
+
+function isChordTriggerStep(step) {
+  return Number.isInteger(step) && step % CHORD_SPAN === 0;
+}
+
+function extractChordEvent(cell, bar, step) {
+  if (!cell || !isChordTriggerStep(step)) return null;
+
+  const notes = createChordNotes(cell.root);
+  if (!notes.length) return null;
+
+  return {
+    type: 'chord',
+    trackId: 'chord',
+    bar,
+    step,
+    root: cell.root,
+    quality: cell.quality ?? 'maj',
+    label: cell.label ?? cell.root,
+    notes,
+    duration: '4n',
   };
 }
 
@@ -39,11 +79,15 @@ function createMatrixPlaybackAdapter(matrixSource, options = {}) {
 
   function getEventsForStep(bar, step) {
     const matrix = readMatrix();
-    const cell = matrix?.drums?.[bar]?.[step] ?? null;
+    const drumsCell = matrix?.drums?.[bar]?.[step] ?? null;
+    const chordCell = matrix?.chord?.[bar]?.[step] ?? null;
 
-    return extractDrumsInstruments(cell).map((instrument) => (
+    const drumEvents = extractDrumsInstruments(drumsCell).map((instrument) => (
       createDrumsEvent(bar, step, instrument)
     ));
+    const chordEvent = extractChordEvent(chordCell, bar, step);
+
+    return chordEvent ? [...drumEvents, chordEvent] : drumEvents;
   }
 
   return {
@@ -60,4 +104,9 @@ function createMatrixPlaybackAdapter(matrixSource, options = {}) {
   };
 }
 
-export { createMatrixPlaybackAdapter, extractDrumsInstruments };
+export {
+  createChordNotes,
+  createMatrixPlaybackAdapter,
+  extractChordEvent,
+  extractDrumsInstruments,
+};

@@ -4,6 +4,7 @@ import {
 } from './musicConstants.js';
 
 const CHORD_ROOTS = Object.freeze(['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']);
+const MAJOR_TRIAD_INTERVALS = Object.freeze([0, 4, 7]);
 
 function isChordRoot(root) {
   return CHORD_ROOTS.includes(root);
@@ -35,13 +36,24 @@ function toggleChordCell(cell, root) {
   return createChordCell(root);
 }
 
-function isChordCellActive(cell, root) {
-  return cell?.root === root;
+function getChordToneRoots(root) {
+  if (!isChordRoot(root)) return [];
+
+  const rootIndex = CHORD_ROOTS.indexOf(root);
+  return MAJOR_TRIAD_INTERVALS.map((interval) => (
+    CHORD_ROOTS[(rootIndex + interval) % CHORD_ROOTS.length]
+  ));
+}
+
+function isChordCellActive(cell, root, columnIndex = 0) {
+  if (columnIndex !== 0) return false;
+  return getChordToneRoots(cell?.root).includes(root);
 }
 
 export {
   CHORD_ROOTS,
   createChordCell,
+  getChordToneRoots,
   getChordSpanStep,
   isChordCellActive,
   isChordRoot,

@@ -111,7 +111,7 @@ function ChordEditor({
                 <div className="beat-cells">
                   {CHORD_NOTES.flatMap((note, rowIndex) => (
                     BEAT_NUMBERS.map((stepNumber, colIndex) => {
-                      const active = isChordCellActive(chordCell, note.label);
+                      const active = isChordCellActive(chordCell, note.label, colIndex);
 
                       return (
                         <button

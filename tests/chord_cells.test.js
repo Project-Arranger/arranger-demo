@@ -4,8 +4,10 @@ import { CHORD_SPAN, STEPS_PER_BAR } from '../src/domain/musicConstants.js';
 import {
   CHORD_ROOTS,
   createChordCell,
+  getChordToneRoots,
   getChordSpanStep,
   isChordRoot,
+  isChordCellActive,
   toggleChordCell,
 } from '../src/domain/chordCells.js';
 
@@ -28,6 +30,21 @@ test('createChordCell normalizes valid roots and rejects invalid roots', () => {
   assert.deepEqual(createChordCell('C'), { root: 'C', quality: 'maj', label: 'C' });
   assert.deepEqual(createChordCell('F#'), { root: 'F#', quality: 'maj', label: 'F#' });
   assert.equal(createChordCell('H'), null);
+});
+
+test('chord active tones light the triad only in the first grid column', () => {
+  const cCell = createChordCell('C');
+
+  assert.deepEqual(getChordToneRoots('C'), ['C', 'E', 'G']);
+  assert.deepEqual(getChordToneRoots('F#'), ['F#', 'A#', 'C#']);
+  assert.deepEqual(getChordToneRoots('H'), []);
+  assert.equal(isChordCellActive(cCell, 'C', 0), true);
+  assert.equal(isChordCellActive(cCell, 'E', 0), true);
+  assert.equal(isChordCellActive(cCell, 'G', 0), true);
+  assert.equal(isChordCellActive(cCell, 'B', 0), false);
+  assert.equal(isChordCellActive(cCell, 'C', 1), false);
+  assert.equal(isChordCellActive(cCell, 'E', 1), false);
+  assert.equal(isChordCellActive(null, 'C', 0), false);
 });
 
 test('toggleChordCell clears matching roots and replaces different roots', () => {
