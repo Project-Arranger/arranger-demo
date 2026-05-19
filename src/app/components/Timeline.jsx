@@ -1,5 +1,4 @@
 import {
-  Pencil,
   Plus,
 } from 'lucide-react';
 import {
@@ -89,7 +88,6 @@ function Clip({
   dragging,
   onMouseDownClip,
   onOpenClip,
-  onPreview,
   shouldIgnoreClick,
   track,
 }) {
@@ -99,7 +97,6 @@ function Clip({
     if (shouldIgnoreClick()) return;
 
     onOpenClip(clip.id);
-    if (track.id === 'drums') onPreview();
   };
 
   return (
@@ -114,16 +111,13 @@ function Clip({
       data-bar-index={clip.bar}
       style={{ '--bar-index': clip.bar }}
       aria-label={`${track.label} clip bar ${clip.bar + 1}`}
-      title={track.id === 'drums' ? 'Preview drums' : undefined}
       type="button"
       onClick={handleClick}
       onMouseDown={(event) => onMouseDownClip(event, clip, track.id)}
     >
       <div className="clip-name">
         {clip.name}
-        {renderIcon(Pencil)}
       </div>
-      <div className="clip-mini" />
       <div className="clip-empty-tag">empty</div>
     </button>
   );
@@ -135,7 +129,6 @@ const Timeline = forwardRef(function Timeline(
     currentBar,
     currentStep,
     onAddClip,
-    onDrumsPreview,
     onMoveClip,
     onOpenClip,
     selectedClipId,
@@ -269,7 +262,6 @@ const Timeline = forwardRef(function Timeline(
                 key: bar.clip?.id ?? `${track.id}-empty-${bar.bar}`,
                 onMouseDownClip: handleMouseDown,
                 onOpenClip,
-                onPreview: onDrumsPreview,
                 shouldIgnoreClick,
                 track,
               }))}

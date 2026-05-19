@@ -94,10 +94,6 @@ export default function App() {
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY });
   }, [dispatchAppCommand]);
 
-  const handleDrumsPreview = useCallback(() => {
-    void audioEngine.triggerDrumsStep(['kick', 'snare', 'hihat']);
-  }, []);
-
   const tracks = useMemo(() => createTimelineTracks({
     barNumbers: BAR_NUMBERS,
     clips,
@@ -244,7 +240,6 @@ export default function App() {
           currentBar,
           currentStep,
           onAddClip: handleAddClip,
-          onDrumsPreview: handleDrumsPreview,
           onMoveClip: handleMoveClip,
           onOpenClip: handleOpenClip,
           ref: timelineScrollRef,

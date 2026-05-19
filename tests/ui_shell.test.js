@@ -65,7 +65,7 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(source, /clearChordBar/);
   assert.match(source, /TRANSPORT_TOGGLE_PLAY/);
   assert.match(source, /TRANSPORT_STOP/);
-  assert.match(source, /handleDrumsPreview/);
+  assert.match(source, /handleDrumsStepToggle/);
 
   assert.equal(BEAT_NUMBERS.length, 4);
   assert.equal(CHORD_NOTES.length, 12);
@@ -95,6 +95,7 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(source, /activeTrackId/);
   assert.match(source, /handleAddClip/);
   assert.match(source, /handleOpenClip/);
+  assert.doesNotMatch(source, /onDrumsPreview/);
   assert.match(source, /syncTrackScrollContainers/);
   assert.match(source, /tracksScrollRef/);
   assert.match(source, /timelineScrollRef/);
@@ -108,6 +109,10 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(timelineSource, /mouseup/);
   assert.match(timelineSource, /onMoveClip/);
   assert.match(timelineSource, /dragFeedback/);
+  assert.doesNotMatch(timelineSource, /Pencil/);
+  assert.doesNotMatch(timelineSource, /clip-mini/);
+  assert.doesNotMatch(timelineSource, /onPreview/);
+  assert.doesNotMatch(timelineSource, /Preview drums/);
   assert.match(timelineSource, /sourceBar:\s*clip\.bar/);
   assert.match(timelineSource, /drop-move/);
   assert.match(timelineSource, /drop-swap/);

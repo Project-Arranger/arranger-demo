@@ -645,8 +645,8 @@ button {
   appearance: none;
   position: absolute;
   z-index: 2;
-  top: 12px;
-  bottom: 12px;
+  top: 6px;
+  bottom: 6px;
   left: 0;
   left: calc(var(--bar-index) * 100% / var(--bars));
   width: calc(100% / var(--bars));
@@ -699,21 +699,6 @@ button {
   gap: 8px;
   font-size: 12px;
   font-weight: 800;
-}
-
-.clip-name svg {
-  width: 12px;
-  height: 12px;
-  opacity: 0.48;
-}
-
-.clip-mini {
-  height: 12px;
-  margin-top: 8px;
-  border-radius: 4px;
-  background:
-    linear-gradient(to right, var(--clip-ink) 18%, transparent 18% 36%, var(--clip-ink) 36% 54%, transparent 54% 72%, var(--clip-ink) 72%);
-  opacity: 0.24;
 }
 
 .clip-empty-tag {

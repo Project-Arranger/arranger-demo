@@ -26,6 +26,8 @@ test('timeline clips fill exactly one bar grid cell', async () => {
   assert.match(css, /\.clip\s*\{[^}]*left:\s*0;/s);
   assert.match(css, /\.clip\s*\{[^}]*left:\s*calc\(var\(--bar-index\) \* 100% \/ var\(--bars\)\);/s);
   assert.match(css, /\.clip\s*\{[^}]*width:\s*calc\(100% \/ var\(--bars\)\);/s);
+  assert.match(css, /\.clip\s*\{[^}]*top:\s*6px;/s);
+  assert.match(css, /\.clip\s*\{[^}]*bottom:\s*6px;/s);
   assert.match(css, /\.clip\s*\{[^}]*box-sizing:\s*border-box;/s);
   assert.match(css, /\.clip\s*\{[^}]*min-width:\s*0;/s);
   assert.match(css, /\.ruler\s*\{[^}]*grid-template-columns:\s*repeat\(var\(--bars\),\s*minmax\(80px,\s*1fr\)\);/s);
@@ -35,6 +37,7 @@ test('timeline clips fill exactly one bar grid cell', async () => {
   assert.match(css, /\.add-clip\s*\{[^}]*transform:\s*translate\(-50%, -50%\);/s);
   assert.doesNotMatch(css, /\.clip\s*\{[^}]*\+ 10px/s);
   assert.doesNotMatch(css, /\.clip\s*\{[^}]*- 20px/s);
+  assert.doesNotMatch(css, /\.clip-mini\s*\{/);
   assert.doesNotMatch(css, /var\(--bars\) \* 1\.55/);
 });
 
