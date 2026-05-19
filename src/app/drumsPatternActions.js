@@ -56,12 +56,27 @@ function applyBasicDrumsBar(matrix, barIndex) {
   return replaceDrumsBar(matrix, barIndex, createBasicDrumsBar());
 }
 
-function applyBasicDrumsAllBars(matrix) {
+function getDrumsClipBarIndexes(clips) {
+  const ids = clips?.ids ?? [];
+  const byId = clips?.byId ?? {};
+  const barIndexes = ids
+    .map((id) => byId[id])
+    .filter((clip) => clip?.trackId === 'drums' && isValidBarIndex(clip.bar))
+    .map((clip) => clip.bar);
+
+  return [...new Set(barIndexes)].sort((left, right) => left - right);
+}
+
+function applyBasicDrumsAllBars(matrix, barIndexes = Array.from({ length: TOTAL_BARS }, (_, index) => index)) {
   if (!matrix?.drums) return matrix;
+
+  const targetBars = new Set(barIndexes.filter(isValidBarIndex));
 
   return {
     ...matrix,
-    drums: Array.from({ length: TOTAL_BARS }, () => createBasicDrumsBar()),
+    drums: Array.from({ length: TOTAL_BARS }, (_, barIndex) => (
+      targetBars.has(barIndex) ? createBasicDrumsBar() : createEmptyDrumsBar()
+    )),
   };
 }
 
@@ -76,4 +91,5 @@ export {
   createBasicDrumsBar,
   createDefaultDrumsPattern,
   createEmptyDrumsBar,
+  getDrumsClipBarIndexes,
 };

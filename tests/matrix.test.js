@@ -17,6 +17,10 @@ import {
 import createInitialMatrix from '../src/store/createInitialMatrix.js';
 import useMusicStore from '../src/store/useMusicStore.js';
 import { DRUMS_COLUMNS, DRUMS_INSTRUMENTS } from '../src/data/drumsNotes.js';
+import {
+  MAX_TRACK_VOLUME_DB,
+  MIN_TRACK_VOLUME_DB,
+} from '../src/app/trackVolumeViewModels.js';
 
 function everyCell(matrix, predicate) {
   for (const trackId of TRACK_IDS) {
@@ -103,6 +107,25 @@ test('store starts with transport, context, volumes, and matrix defaults', () =>
   assert.deepEqual(Object.keys(state.volumes), TRACK_IDS);
   assert.equal(Object.values(state.volumes).every((volume) => volume === 0), true);
   assert.equal(everyCell(state.matrix, (cell) => cell === null), true);
+});
+
+test('setTrackVolume updates one track and clamps values to the supported range', () => {
+  useMusicStore.getState().setTrackVolume('drums', -12);
+  let { volumes } = useMusicStore.getState();
+
+  assert.equal(volumes.drums, -12);
+  assert.equal(volumes.bass, 0);
+
+  useMusicStore.getState().setTrackVolume('drums', MIN_TRACK_VOLUME_DB - 10);
+  volumes = useMusicStore.getState().volumes;
+  assert.equal(volumes.drums, MIN_TRACK_VOLUME_DB);
+
+  useMusicStore.getState().setTrackVolume('drums', MAX_TRACK_VOLUME_DB + 10);
+  volumes = useMusicStore.getState().volumes;
+  assert.equal(volumes.drums, MAX_TRACK_VOLUME_DB);
+
+  useMusicStore.getState().setTrackVolume('unknown-track', -6);
+  assert.deepEqual(useMusicStore.getState().volumes, volumes);
 });
 
 test('setCell writes only the requested cell', () => {

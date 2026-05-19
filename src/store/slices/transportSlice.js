@@ -4,6 +4,7 @@ import {
   SCALE,
   TRACK_IDS,
 } from '../../domain/musicConstants.js';
+import { clampTrackVolume } from '../../domain/trackVolume.js';
 
 function createDefaultVolumes() {
   return Object.fromEntries(TRACK_IDS.map((trackId) => [trackId, 0]));
@@ -35,7 +36,7 @@ export default function createTransportSlice(set) {
       return {
         volumes: {
           ...state.volumes,
-          [trackId]: volume,
+          [trackId]: clampTrackVolume(volume),
         },
       };
     }),

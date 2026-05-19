@@ -65,7 +65,7 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(source, /clearChordBar/);
   assert.match(source, /TRANSPORT_TOGGLE_PLAY/);
   assert.match(source, /TRANSPORT_STOP/);
-  assert.match(source, /handleDrumsPreview/);
+  assert.match(source, /handleDrumsStepToggle/);
 
   assert.equal(BEAT_NUMBERS.length, 4);
   assert.equal(CHORD_NOTES.length, 12);
@@ -77,6 +77,10 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
   const bottomEditorSource = await readFile(
     new URL('../src/app/components/BottomEditor.jsx', import.meta.url),
+    'utf8',
+  );
+  const tracksColumnSource = await readFile(
+    new URL('../src/app/components/TracksColumn.jsx', import.meta.url),
     'utf8',
   );
   const drumSequencerSource = await readFile(
@@ -91,13 +95,43 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(source, /activeTrackId/);
   assert.match(source, /handleAddClip/);
   assert.match(source, /handleOpenClip/);
+  assert.doesNotMatch(source, /onDrumsPreview/);
+  assert.match(source, /syncTrackScrollContainers/);
+  assert.match(source, /tracksScrollRef/);
+  assert.match(source, /timelineScrollRef/);
+  assert.match(source, /ref:\s*tracksScrollRef/);
+  assert.match(source, /ref:\s*timelineScrollRef/);
   assert.match(source, /onAddClip/);
-  assert.match(timelineSource, /onAddClip\(track\.id,\s*barIndex\)/);
+  assert.match(timelineSource, /onAddClip\(track\.id,\s*bar\.bar\)/);
+  assert.match(source, /handleMoveClip/);
+  assert.match(timelineSource, /onMouseDown/);
+  assert.match(timelineSource, /mousemove/);
+  assert.match(timelineSource, /mouseup/);
+  assert.match(timelineSource, /onMoveClip/);
+  assert.match(timelineSource, /dragFeedback/);
+  assert.doesNotMatch(timelineSource, /Pencil/);
+  assert.doesNotMatch(timelineSource, /clip-mini/);
+  assert.doesNotMatch(timelineSource, /onPreview/);
+  assert.doesNotMatch(timelineSource, /Preview drums/);
+  assert.match(timelineSource, /sourceBar:\s*clip\.bar/);
+  assert.match(timelineSource, /drop-move/);
+  assert.match(timelineSource, /drop-swap/);
+  assert.match(timelineSource, /clip-dragging/);
+  assert.match(timelineSource, /bar\.canAddClip/);
   assert.match(source, /createClip\(trackId,\s*barIndex\)/);
+  assert.match(source, /moveClipToBar\(clipId,\s*targetBar\)/);
   assert.match(source, /selectClip\(clipId\)/);
+  assert.match(source, /volumes/);
+  assert.match(source, /setTrackVolume\(trackId,\s*volume\)/);
+  assert.match(source, /onVolumeChange:\s*handleTrackVolumeChange/);
+  assert.match(tracksColumnSource, /type="range"/);
+  assert.match(tracksColumnSource, /aria-label=\{`\$\{track\.label\} volume`\}/);
+  assert.match(tracksColumnSource, /onVolumeChange\(track\.id/);
+  assert.match(tracksColumnSource, /handleVolumePointerDown/);
+  assert.match(tracksColumnSource, /getTrackVolumeFromClientX/);
   assert.match(timelineSource, /data-track-row=\{track\.id\}/);
   assert.match(timelineSource, /data-track-index=\{trackIndex\}/);
-  assert.match(timelineSource, /data-bar-index=\{barIndex\}/);
+  assert.match(timelineSource, /data-bar-index=\{bar\.bar\}/);
   assert.match(drumSequencerSource, /data-screen-label="Drum Sequencer"/);
   assert.match(drumSequencerSource, /DRUM SEQUENCER - BAR/);
   assert.match(drumSequencerSource, /为本小节生成基础律动/);
@@ -105,7 +139,9 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(drumSequencerSource, /清空本小节/);
   assert.match(drumSequencerSource, /清空 Drums/);
   assert.match(source, /applyBasicDrumsBar/);
+  assert.match(source, /getDrumsClipBarIndexes/);
   assert.match(source, /applyBasicDrumsAllBars/);
+  assert.match(source, /applyBasicDrumsAllBars\(state\.matrix,\s*drumsClipBars\)/);
   assert.match(source, /clearDrumsBar/);
   assert.match(bottomEditorSource, /activeTrackId === 'drums'/);
   assert.match(bottomEditorSource, /activeTrackId === 'chord'/);

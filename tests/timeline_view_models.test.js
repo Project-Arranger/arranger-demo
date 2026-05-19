@@ -20,6 +20,19 @@ test('createTimelineTracks decorates static track UI with clip state by bar', ()
   assert.equal(tracks.length, TRACK_UI.length);
   assert.equal(drums.clip.id, 'drums-bar-0');
   assert.equal(drums.hasClip, true);
+  assert.equal(drums.bars.length, BAR_NUMBERS.length);
+  assert.deepEqual(drums.bars[0], {
+    bar: 0,
+    barNumber: 1,
+    clip: drums.clipsByBar[0],
+    canAddClip: false,
+  });
+  assert.deepEqual(drums.bars[1], {
+    bar: 1,
+    barNumber: 2,
+    clip: null,
+    canAddClip: true,
+  });
   assert.equal(drums.clipsByBar.length, BAR_NUMBERS.length);
   assert.equal(drums.clipsByBar[0].id, 'drums-bar-0');
   assert.equal(drums.clipsByBar[1], null);
@@ -49,4 +62,30 @@ test('createTimelineTracks marks tracks with clips outside the selected bar', ()
   assert.equal(bass.clip, null);
   assert.equal(bass.hasClip, true);
   assert.equal(bass.clipsByBar[2].id, 'bass-bar-2');
+});
+
+test('createTimelineTracks uses live store volumes for the left track controls', () => {
+  const tracks = createTimelineTracks({
+    barNumbers: BAR_NUMBERS,
+    clips: createInitialClips(),
+    selectedBar: 0,
+    trackUi: TRACK_UI,
+    volumes: {
+      drums: -12,
+      bass: -3,
+      chord: 0,
+      lead: 0,
+      pad: 0,
+      vocal: 0,
+      sample: 0,
+    },
+  });
+  const drums = tracks.find((track) => track.id === 'drums');
+  const bass = tracks.find((track) => track.id === 'bass');
+
+  assert.equal(drums.volume.value, -12);
+  assert.equal(drums.volume.label, '-12dB');
+  assert.equal(drums.volume.level, 40);
+  assert.equal(bass.volume.value, -3);
+  assert.equal(bass.volume.label, '-3dB');
 });

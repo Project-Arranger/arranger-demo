@@ -28,7 +28,10 @@
   --drum-hihat: oklch(82% 0.12 92);
   --brand: oklch(56% 0.13 268);
   --play: oklch(72% 0.13 155);
-  --track-row-size: minmax(74px, 1fr);
+  --app-topbar-height: clamp(52px, 7vh, 64px);
+  --app-editor-height: clamp(260px, 39vh, 330px);
+  --timeline-min-width: min(640px, 100%);
+  --track-row-size: minmax(clamp(48px, 7.5vh, 74px), 1fr);
   --radius-sm: 8px;
   --radius: 12px;
   --shadow-1:
@@ -56,12 +59,14 @@
 html,
 body,
 #root {
+  height: 100%;
   min-height: 100%;
   margin: 0;
 }
 
 body {
   min-width: 320px;
+  overflow: hidden;
   background: var(--bg);
 }
 
@@ -76,8 +81,9 @@ button {
 
 .app {
   display: grid;
-  grid-template-rows: 64px minmax(300px, 1fr) 330px;
-  min-height: 100vh;
+  grid-template-rows: var(--app-topbar-height) minmax(0, 1fr) var(--app-editor-height);
+  height: 100dvh;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -88,6 +94,7 @@ button {
   grid-template-columns: auto auto minmax(360px, 1fr) auto;
   align-items: center;
   gap: 14px;
+  min-height: 0;
   padding: 0 18px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
@@ -337,7 +344,7 @@ button {
 
 .workspace {
   display: grid;
-  grid-template-columns: 246px minmax(720px, 1fr);
+  grid-template-columns: clamp(188px, 18vw, 246px) minmax(0, 1fr);
   min-height: 0;
   overflow: hidden;
   background: var(--bg);
@@ -394,8 +401,9 @@ button {
 
 .track {
   display: grid;
-  grid-template-columns: 38px 1fr;
-  align-items: center;
+  grid-template-rows: 30px 18px;
+  align-content: center;
+  gap: 6px;
   width: 100%;
   height: 100%;
   min-height: 0;
@@ -405,7 +413,7 @@ button {
   color: var(--ink);
   background: transparent;
   text-align: left;
-  cursor: pointer;
+  cursor: default;
 }
 
 .track:hover {
@@ -414,44 +422,47 @@ button {
 
 .track.selected {
   background: var(--surface);
+  box-shadow: inset 3px 0 0 var(--track-ink, var(--brand));
 }
 
-.track.has-phrase[data-type="drums"],
-.hover-row.has-phrase[data-type="drums"] {
-  background-color: color-mix(in oklab, var(--c-drums) 32%, var(--bg));
+[data-type="drums"] {
+  --track-color: var(--c-drums);
+  --track-ink: var(--c-drums-ink);
 }
 
-.track.has-phrase[data-type="chord"],
-.hover-row.has-phrase[data-type="chord"] {
-  background-color: color-mix(in oklab, var(--c-chord) 32%, var(--bg));
+[data-type="bass"] {
+  --track-color: var(--c-bass);
+  --track-ink: var(--c-bass-ink);
 }
 
-.track.selected[data-type="chord"] {
-  box-shadow: inset 3px 0 0 var(--c-chord-ink);
+[data-type="chord"] {
+  --track-color: var(--c-chord);
+  --track-ink: var(--c-chord-ink);
 }
 
-.track.selected[data-type="drums"] {
-  box-shadow: inset 3px 0 0 var(--c-drums-ink);
+[data-type="lead"] {
+  --track-color: var(--c-lead);
+  --track-ink: var(--c-lead-ink);
 }
 
-.track.selected[data-type="bass"] {
-  box-shadow: inset 3px 0 0 var(--c-bass-ink);
+[data-type="pad"] {
+  --track-color: var(--c-pad);
+  --track-ink: var(--c-pad-ink);
 }
 
-.track.selected[data-type="lead"] {
-  box-shadow: inset 3px 0 0 var(--c-lead-ink);
+[data-type="vocal"] {
+  --track-color: var(--c-vocal);
+  --track-ink: var(--c-vocal-ink);
 }
 
-.track.selected[data-type="pad"] {
-  box-shadow: inset 3px 0 0 var(--c-pad-ink);
+[data-type="sample"] {
+  --track-color: var(--c-sample);
+  --track-ink: var(--c-sample-ink);
 }
 
-.track.selected[data-type="vocal"] {
-  box-shadow: inset 3px 0 0 var(--c-vocal-ink);
-}
-
-.track.selected[data-type="sample"] {
-  box-shadow: inset 3px 0 0 var(--c-sample-ink);
+.track.has-phrase,
+.hover-row.has-phrase {
+  background-color: color-mix(in oklab, var(--track-color, var(--surface)) 32%, var(--bg));
 }
 
 .ic {
@@ -459,6 +470,8 @@ button {
   place-items: center;
   width: 32px;
   height: 32px;
+  color: var(--track-ink, var(--ink-3));
+  background: var(--track-color, var(--surface-2));
   border-radius: 9px;
 }
 
@@ -467,46 +480,17 @@ button {
   height: 21px;
 }
 
-[data-type="drums"] .ic {
-  color: var(--c-drums-ink);
-  background: var(--c-drums);
-}
-
-[data-type="bass"] .ic {
-  color: var(--c-bass-ink);
-  background: var(--c-bass);
-}
-
-[data-type="chord"] .ic {
-  color: var(--c-chord-ink);
-  background: var(--c-chord);
-}
-
-[data-type="lead"] .ic {
-  color: var(--c-lead-ink);
-  background: var(--c-lead);
-}
-
-[data-type="pad"] .ic {
-  color: var(--c-pad-ink);
-  background: var(--c-pad);
-}
-
-[data-type="vocal"] .ic {
-  color: var(--c-vocal-ink);
-  background: var(--c-vocal);
-}
-
-[data-type="sample"] .ic {
-  color: var(--c-sample-ink);
-  background: var(--c-sample);
-}
-
-.meta {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.track-select {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
   min-width: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
 }
 
 .track-name {
@@ -520,14 +504,33 @@ button {
   grid-template-columns: 1fr 34px;
   align-items: center;
   gap: 10px;
+  margin-left: 38px;
+}
+
+.volume-control {
+  position: relative;
+  display: grid;
+  align-items: center;
+  min-width: 0;
+  height: 4px;
 }
 
 .vol .bar {
   position: relative;
+  width: 100%;
   height: 4px;
   overflow: visible;
   background: color-mix(in oklab, var(--border) 35%, transparent);
   border-radius: 999px;
+  pointer-events: none;
+}
+
+.volume-slider {
+  position: absolute;
+  inset: -7px 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
 }
 
 .vol .fill {
@@ -584,8 +587,8 @@ button {
 
 .ruler {
   display: grid;
-  grid-template-columns: repeat(var(--bars), minmax(90px, 1fr));
-  min-width: 720px;
+  grid-template-columns: repeat(var(--bars), minmax(80px, 1fr));
+  min-width: var(--timeline-min-width);
   border-bottom: 1px solid var(--border-soft);
 }
 
@@ -605,7 +608,7 @@ button {
 
 .grid {
   position: relative;
-  min-width: 720px;
+  min-width: var(--timeline-min-width);
   min-height: 100%;
   background:
     linear-gradient(to right, color-mix(in oklab, var(--border) 55%, transparent) 1px, transparent 1px)
@@ -637,15 +640,17 @@ button {
 }
 
 .clip {
-  --clip-bg: var(--c-drums);
-  --clip-ink: var(--c-drums-ink);
+  --clip-bg: var(--track-color, var(--c-drums));
+  --clip-ink: var(--track-ink, var(--c-drums-ink));
   appearance: none;
   position: absolute;
-  top: 12px;
-  bottom: 12px;
-  left: 10px;
-  left: calc(var(--bar-index) * 100% / var(--bars) + 10px);
-  width: calc(100% / var(--bars) - 20px);
+  z-index: 2;
+  top: 6px;
+  bottom: 6px;
+  left: 0;
+  left: calc(var(--bar-index) * 100% / var(--bars));
+  width: calc(100% / var(--bars));
+  box-sizing: border-box;
   min-width: 0;
   padding: 7px 10px 8px;
   overflow: hidden;
@@ -654,14 +659,32 @@ button {
   border: 1px solid color-mix(in oklab, var(--clip-ink) 18%, transparent);
   border-radius: 10px;
   box-shadow: var(--shadow-2);
-  cursor: pointer;
+  cursor: grab;
   font: inherit;
   text-align: left;
+  transform: translateY(0) scale(1);
+  transition:
+    box-shadow 0.12s ease,
+    opacity 0.12s ease,
+    transform 0.12s ease;
 }
 
-.clip[data-type="chord"] {
-  --clip-bg: var(--c-chord);
-  --clip-ink: var(--c-chord-ink);
+.clip:active {
+  cursor: grabbing;
+}
+
+.clip.clip-dragging {
+  z-index: 5;
+  opacity: 0.78;
+  transform: translateY(-3px) scale(1.02);
+  box-shadow:
+    0 0 0 2px color-mix(in oklab, var(--clip-ink) 38%, white),
+    0 14px 32px oklch(20% 0.02 270 / 0.16);
+}
+
+.clip.drop-move,
+.clip.drop-swap {
+  animation: clip-drop-pop 0.48s ease-out;
 }
 
 .clip.selected {
@@ -678,21 +701,6 @@ button {
   font-weight: 800;
 }
 
-.clip-name svg {
-  width: 12px;
-  height: 12px;
-  opacity: 0.48;
-}
-
-.clip-mini {
-  height: 12px;
-  margin-top: 8px;
-  border-radius: 4px;
-  background:
-    linear-gradient(to right, var(--clip-ink) 18%, transparent 18% 36%, var(--clip-ink) 36% 54%, transparent 54% 72%, var(--clip-ink) 72%);
-  opacity: 0.24;
-}
-
 .clip-empty-tag {
   margin-top: 6px;
   color: color-mix(in oklab, var(--clip-ink) 70%, var(--ink-3));
@@ -704,15 +712,16 @@ button {
 
 .add-clip {
   position: absolute;
+  z-index: 3;
   top: 50%;
   left: calc((var(--bar-index) + 0.5) * 100% / var(--bars));
   display: grid;
   place-items: center;
   width: 24px;
   height: 24px;
-  color: var(--ink-3);
-  background: var(--surface);
-  border: 1px solid var(--border-soft);
+  color: var(--track-ink, var(--ink-3));
+  background: color-mix(in oklab, var(--track-color, var(--surface)) 38%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--track-ink, var(--border)) 24%, transparent);
   border-radius: 8px;
   opacity: 0;
   transform: translate(-50%, -50%);
@@ -722,6 +731,36 @@ button {
     color 0.12s ease;
 }
 
+.bar-drop-zone {
+  position: absolute;
+  z-index: 1;
+  top: 6px;
+  bottom: 6px;
+  left: calc(var(--bar-index) * 100% / var(--bars) + 4px);
+  width: calc(100% / var(--bars) - 8px);
+  border: 1px solid transparent;
+  border-radius: 12px;
+}
+
+.bar-drop-zone.drag-over {
+  background: color-mix(in oklab, var(--track-color, var(--brand)) 34%, transparent);
+  border-color: color-mix(in oklab, var(--track-ink, var(--brand)) 45%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--track-ink, var(--brand)) 28%, transparent);
+}
+
+.bar-drop-zone.drop-move,
+.bar-drop-zone.drop-swap {
+  animation: bar-drop-pulse 0.7s ease-out;
+  background: color-mix(in oklab, var(--track-color, var(--brand)) 48%, transparent);
+  border-color: color-mix(in oklab, var(--track-ink, var(--brand)) 52%, transparent);
+}
+
+.bar-drop-zone.drop-swap {
+  box-shadow:
+    inset 0 0 0 2px color-mix(in oklab, var(--track-ink, var(--brand)) 40%, transparent),
+    0 0 0 4px color-mix(in oklab, var(--track-color, var(--brand)) 32%, transparent);
+}
+
 .hover-row:hover .add-clip {
   opacity: 1;
 }
@@ -729,6 +768,41 @@ button {
 .add-clip svg {
   width: 14px;
   height: 14px;
+}
+
+@keyframes clip-drop-pop {
+  0% {
+    transform: scale(0.96);
+    box-shadow:
+      0 0 0 4px color-mix(in oklab, var(--clip-ink) 30%, transparent),
+      var(--shadow-2);
+  }
+
+  55% {
+    transform: scale(1.04);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow: var(--shadow-2);
+  }
+}
+
+@keyframes bar-drop-pulse {
+  0% {
+    opacity: 0.95;
+    transform: scaleX(0.94);
+  }
+
+  45% {
+    opacity: 1;
+    transform: scaleX(1.03);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scaleX(1);
+  }
 }
 
 .playhead {
@@ -1090,7 +1164,31 @@ button {
 
 .drum-step-number.beat-end,
 .drum-step.beat-end {
-  margin-right: 8px;
+  position: relative;
+}
+
+.drum-step-number.beat-end::after {
+  position: absolute;
+  top: 2px;
+  right: -3px;
+  bottom: 2px;
+  width: 1px;
+  content: "";
+  background: color-mix(in oklab, var(--border) 72%, transparent);
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.drum-step.beat-end::after {
+  position: absolute;
+  top: 4px;
+  right: -3px;
+  bottom: 4px;
+  width: 1px;
+  content: "";
+  background: color-mix(in oklab, var(--border) 72%, transparent);
+  border-radius: 999px;
+  pointer-events: none;
 }
 
 .drum-step {
@@ -1149,7 +1247,7 @@ button {
 
 @media (max-width: 980px) {
   .app {
-    grid-template-rows: auto minmax(360px, 1fr) 340px;
+    grid-template-rows: auto minmax(0, 1fr) var(--app-editor-height);
   }
 
   .topbar {
