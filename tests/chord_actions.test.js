@@ -8,6 +8,8 @@ import {
   getChordCell,
   setChordCell,
   setChordNoteCell,
+  getChordBarDisplayLabel,
+  getChordSpanDisplayLabel,
   toggleChordNoteStep,
 } from '../src/app/chordActions.js';
 import createInitialMatrix from '../src/store/createInitialMatrix.js';
@@ -80,6 +82,18 @@ test('getChordCell reads span start cells only', () => {
   assert.deepEqual(getChordCell(matrix, 3, 2), { type: 'chord', root: 'A#', chordRoot: 'A#', quality: 'maj', label: 'A#', toneRoots: ['A#', 'D', 'F'] });
   assert.equal(getChordCell(matrix, 3, 1), null);
   assert.equal(getChordCell(matrix, 8, 0), null);
+});
+
+test('chord display labels keep added notes scoped to each beat', () => {
+  let matrix = createInitialMatrix();
+  matrix = setChordCell(matrix, 0, 0, 'C');
+  matrix = setChordCell(matrix, 0, 1, 'F');
+  matrix = setChordNoteCell(matrix, 0, 0, 2, 'D');
+  matrix = setChordNoteCell(matrix, 0, 1, 2, 'E');
+
+  assert.equal(getChordSpanDisplayLabel(matrix, 0, 0), 'C + D');
+  assert.equal(getChordSpanDisplayLabel(matrix, 0, 1), 'F + E');
+  assert.equal(getChordBarDisplayLabel(matrix, 0), 'C + D');
 });
 
 function nextChordLabel(matrix, barIndex, step) {

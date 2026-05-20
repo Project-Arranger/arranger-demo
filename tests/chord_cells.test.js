@@ -12,6 +12,7 @@ import {
   createChordNotesCell,
   getChordCellNotes,
   getPassingChordOptions,
+  getChordVariantOptions,
   getChordToneRoots,
   getChordSpanStep,
   isChordName,
@@ -99,6 +100,19 @@ test('add chord panel exposes diatonic and context-aware passing options', () =>
     getPassingChordOptions(null, null).map((option) => option.name),
     PASSING_CHORD_DEFAULT_OPTIONS.map((option) => option.name),
   );
+});
+
+test('add chord panel exposes rich variants for supported chord roots', () => {
+  assert.deepEqual(
+    getChordVariantOptions('C').map((option) => option.name),
+    ['Cmaj7', 'Csus2', 'Csus4', 'Cadd9'],
+  );
+  assert.deepEqual(
+    getChordVariantOptions('Cmaj7').map((option) => option.name),
+    ['Cmaj7', 'Csus2', 'Csus4', 'Cadd9'],
+  );
+  assert.deepEqual(getChordVariantOptions('Dm'), []);
+  assert.deepEqual(getChordVariantOptions(null), []);
 });
 
 test('chord active tones light the sustained chord range only', () => {

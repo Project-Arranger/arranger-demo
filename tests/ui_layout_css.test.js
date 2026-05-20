@@ -156,8 +156,10 @@ test('add chord secondary panel matches the two-tab reference picker layout', as
   assert.match(css, /\.cv-tab\[aria-selected="true"\]::after\s*\{/);
   assert.match(css, /\.cv-panel\[hidden\]\s*\{[^}]*display:\s*none !important;/s);
   assert.match(css, /\.cv-grid\.diatonic\s*\{[^}]*grid-template-columns:\s*repeat\(7,\s*minmax\(0,\s*1fr\)\);/s);
+  assert.match(css, /\.cv-grid\.enrich\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\);/s);
   assert.match(css, /\.cv-grid\.diatonic \.cv-card\s*\{[^}]*min-height:\s*150px;/s);
   assert.match(css, /\.cv-grid\.diatonic \.cv-foot\s*\{[^}]*margin-top:\s*auto;/s);
   assert.match(css, /\.cv-context\s*\{[^}]*display:\s*flex;/s);
+  assert.match(css, /\.cv-empty\s*\{[^}]*border:\s*1px dashed var\(--border\);/s);
   assert.match(css, /\.cv-roman\s*\{/);
 });

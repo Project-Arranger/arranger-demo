@@ -86,9 +86,17 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(chordEditorSource, /Chord Template Picker/);
   assert.match(chordEditorSource, /添加经过和弦/);
   assert.match(chordEditorSource, /添加调内和弦/);
+  assert.match(chordEditorSource, /丰富和弦/);
   assert.match(chordEditorSource, /AddChordPopover/);
   assert.match(chordEditorSource, /DIATONIC_CHORD_OPTIONS/);
+  assert.match(chordEditorSource, /getChordVariantOptions/);
   assert.match(chordEditorSource, /getPassingChordOptions/);
+  assert.match(chordEditorSource, /mode:\s*hasChord \? 'filled' : 'empty'/);
+  assert.match(chordEditorSource, /setActiveChordTab\(hasChord \? 'enrich' : 'diatonic'\)/);
+  assert.match(chordEditorSource, /mode === 'filled'/);
+  assert.match(chordEditorSource, /mode === 'empty'/);
+  assert.match(chordEditorSource, /cvPanelEnrich/);
+  assert.match(chordEditorSource, /暂无可用丰富和弦/);
   assert.match(chordEditorSource, /CHORD_NOTES\.flatMap/);
   assert.match(chordEditorSource, /CHORD_TEMPLATES/);
   assert.match(chordEditorSource, /onChordPick/);

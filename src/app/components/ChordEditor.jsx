@@ -20,12 +20,14 @@ import {
 import {
   getChordBarDisplayLabel,
   getChordCell,
+  getChordSpanDisplayLabel,
   getChordStepCell,
 } from '../chordActions.js';
 import {
   DIATONIC_CHORD_OPTIONS,
   CHORD_TEMPLATES,
   getPassingChordOptions,
+  getChordVariantOptions,
   getChordToneRoots,
   getChordCellNotes,
   isChordAddedNoteActive,
@@ -40,8 +42,8 @@ const VIEWPORT_MARGIN = 16;
 const PANEL_GAP = 12;
 
 function getBeatValueLabel(matrix, selectedBar, spanIndex) {
-  const chordCell = getChordCell(matrix, selectedBar, spanIndex);
-  if (chordCell?.type === 'chord') return chordCell.label;
+  const chordLabel = getChordSpanDisplayLabel(matrix, selectedBar, spanIndex);
+  if (chordLabel) return chordLabel;
 
   const noteLabels = [];
   for (let columnIndex = 0; columnIndex < 4; columnIndex += 1) {
@@ -107,6 +109,7 @@ function AddChordPopover({
   activeTab,
   anchorRect,
   matrix,
+  mode,
   onClose,
   onPick,
   onChordPreview,
@@ -119,8 +122,15 @@ function AddChordPopover({
   const currentCell = getChordCell(matrix, selectedBar, spanIndex);
   const nextCell = getNextChordCell(matrix, selectedBar, spanIndex);
   const currentChord = currentCell?.type === 'chord' ? currentCell.label : null;
+  const currentChordRoot = currentCell?.type === 'chord' ? currentCell.chordRoot : null;
   const nextChord = nextCell?.type === 'chord' ? nextCell.label : null;
   const passingOptions = getPassingChordOptions(currentChord, nextChord);
+  const variantOptions = getChordVariantOptions(currentChord);
+  const isEmptyMode = mode === 'empty';
+  const isFilledMode = mode === 'filled';
+  const selectedTab = isFilledMode
+    ? (activeTab === 'enrich' ? 'enrich' : 'diatonic')
+    : (activeTab === 'passing' ? 'passing' : 'diatonic');
   const position = getPopoverPosition(anchorRect);
 
   const handlePreview = (event, chordName) => {
@@ -181,7 +191,7 @@ function AddChordPopover({
       className="chord-variants"
       id="chordVariants"
       role="dialog"
-      aria-label="添加和弦"
+      aria-label={isFilledMode ? '丰富和弦色彩' : '添加和弦'}
       data-side={position.side}
       style={{
         '--arrow-x': `${position.arrowX}px`,
@@ -193,27 +203,41 @@ function AddChordPopover({
       <span className="cv-arrow" />
       <header className="cv-head">
         <div className="cv-tabs" role="tablist" aria-label="添加和弦方式">
+          {isEmptyMode ? (
+            <button
+              className="cv-tab"
+              role="tab"
+              type="button"
+              aria-selected={selectedTab === 'passing'}
+              aria-controls="cvPanelPassing"
+              onClick={() => onTabChange('passing')}
+            >
+              添加经过和弦
+            </button>
+          ) : null}
           <button
             className="cv-tab"
             role="tab"
             type="button"
-            aria-selected={activeTab === 'passing'}
-            aria-controls="cvPanelPassing"
-            onClick={() => onTabChange('passing')}
-          >
-            添加经过和弦
-          </button>
-          <button
-            className="cv-tab"
-            role="tab"
-            type="button"
-            aria-selected={activeTab === 'diatonic'}
+            aria-selected={selectedTab === 'diatonic'}
             aria-controls="cvPanelDiatonic"
             onClick={() => onTabChange('diatonic')}
           >
             添加调内和弦
             <span className="cv-tab-key">{rootKey} 大调</span>
           </button>
+          {isFilledMode ? (
+            <button
+              className="cv-tab"
+              role="tab"
+              type="button"
+              aria-selected={selectedTab === 'enrich'}
+              aria-controls="cvPanelEnrich"
+              onClick={() => onTabChange('enrich')}
+            >
+              丰富和弦
+            </button>
+          ) : null}
         </div>
         <button className="cv-custom" type="button" aria-label="自定义和弦">
           <MoreHorizontal size={12} />
@@ -221,38 +245,58 @@ function AddChordPopover({
         </button>
       </header>
 
-      <section className="cv-panel" id="cvPanelPassing" role="tabpanel" hidden={activeTab !== 'passing'}>
-        {currentChord ? (
-          <div className="cv-context">
-            {nextChord ? (
-              <>
-                <span>在</span>
-                <span className="cv-ctx-chord">{currentChord}</span>
-                <span className="cv-ctx-arrow">→</span>
-                <span className="cv-ctx-chord">{nextChord}</span>
-                <span>之间插入经过和弦</span>
-              </>
-            ) : (
-              <>
-                <span>从</span>
-                <span className="cv-ctx-chord">{currentChord}</span>
-                <span>引出的经过和弦</span>
-              </>
-            )}
+      {isEmptyMode ? (
+        <section className="cv-panel" id="cvPanelPassing" role="tabpanel" hidden={selectedTab !== 'passing'}>
+          {currentChord ? (
+            <div className="cv-context">
+              {nextChord ? (
+                <>
+                  <span>在</span>
+                  <span className="cv-ctx-chord">{currentChord}</span>
+                  <span className="cv-ctx-arrow">→</span>
+                  <span className="cv-ctx-chord">{nextChord}</span>
+                  <span>之间插入经过和弦</span>
+                </>
+              ) : (
+                <>
+                  <span>从</span>
+                  <span className="cv-ctx-chord">{currentChord}</span>
+                  <span>引出的经过和弦</span>
+                </>
+              )}
+            </div>
+          ) : null}
+          <div className="cv-grid passing">
+            {passingOptions.map((option) => renderOptionCard(option))}
           </div>
-        ) : null}
-        <div className="cv-grid passing">
-          {passingOptions.map((option) => renderOptionCard(option))}
-        </div>
-      </section>
+        </section>
+      ) : null}
 
-      <section className="cv-panel" id="cvPanelDiatonic" role="tabpanel" hidden={activeTab !== 'diatonic'}>
+      <section className="cv-panel" id="cvPanelDiatonic" role="tabpanel" hidden={selectedTab !== 'diatonic'}>
         <div className="cv-grid diatonic">
           {DIATONIC_CHORD_OPTIONS.map((option) => (
             renderOptionCard(option, { roman: option.roman })
           ))}
         </div>
       </section>
+
+      {isFilledMode ? (
+        <section className="cv-panel" id="cvPanelEnrich" role="tabpanel" hidden={selectedTab !== 'enrich'}>
+          <div className="cv-context enrich">
+            <span>丰富和弦色彩</span>
+            <span className="cv-ctx-chord">{currentChordRoot ?? currentChord}</span>
+          </div>
+          {variantOptions.length ? (
+            <div className="cv-grid enrich">
+              {variantOptions.map((option) => renderOptionCard(option))}
+            </div>
+          ) : (
+            <div className="cv-empty">
+              暂无可用丰富和弦
+            </div>
+          )}
+        </section>
+      ) : null}
     </div>
   );
 }
@@ -333,10 +377,11 @@ function ChordEditor({
 
   const openAddChordPanel = (spanIndex, buttonElement, hasChord) => {
     setPickerOpen(false);
-    setActiveChordTab(hasChord ? 'passing' : 'diatonic');
+    setActiveChordTab(hasChord ? 'enrich' : 'diatonic');
     setAddChordPanel({
       anchorRect: rectToAnchor(buttonElement.getBoundingClientRect()),
       bar: selectedBar,
+      mode: hasChord ? 'filled' : 'empty',
       spanIndex,
     });
   };
@@ -422,11 +467,7 @@ function ChordEditor({
             {BEAT_NUMBERS.map((beatNumber) => {
               const spanIndex = beatNumber - 1;
               const chordCell = getChordCell(matrix, selectedBar, spanIndex);
-              const isPrimaryBeat = spanIndex === 0;
-              const beatNoteLabel = isPrimaryBeat ? null : getBeatValueLabel(matrix, selectedBar, spanIndex);
-              const beatLabel = isPrimaryBeat
-                ? primaryChordLabel
-                : (chordCell?.type === 'chord' ? chordCell.label : beatNoteLabel);
+              const beatLabel = getBeatValueLabel(matrix, selectedBar, spanIndex);
               const beatHasValue = Boolean(beatLabel);
               const beatHasChord = chordCell?.type === 'chord';
 
@@ -435,9 +476,9 @@ function ChordEditor({
                 className={[
                   'beat-group',
                   beatHasValue ? 'has-chord' : '',
-                  isPrimaryBeat && primaryChordLabel?.includes(' + ') ? 'enriched-chord' : '',
+                  beatLabel?.includes(' + ') ? 'enriched-chord' : '',
                 ].filter(Boolean).join(' ')}
-                data-chord-root={chordCell?.type === 'chord' ? chordCell.chordRoot : beatNoteLabel}
+                data-chord-root={chordCell?.type === 'chord' ? chordCell.chordRoot : beatLabel}
                 key={beatNumber}
               >
                 <div className="beat-head">
@@ -502,6 +543,7 @@ function ChordEditor({
         activeTab: activeChordTab,
         anchorRect: addChordPanel.anchorRect,
         matrix,
+        mode: addChordPanel.mode,
         onChordPreview,
         onClose: () => setAddChordPanel(null),
         onPick: onChordPick,

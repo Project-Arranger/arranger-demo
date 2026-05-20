@@ -145,11 +145,16 @@ function applyChordTemplateToExistingClips(matrix, clips, templateId) {
 }
 
 function getChordBarDisplayLabel(matrix, barIndex) {
-  const bar = matrix?.chord?.[barIndex];
-  const mainCell = bar?.[0];
+  return getChordSpanDisplayLabel(matrix, barIndex, 0);
+}
+
+function getChordSpanDisplayLabel(matrix, barIndex, spanIndex) {
+  const mainCell = getChordCell(matrix, barIndex, spanIndex);
   if (mainCell?.type !== 'chord') return null;
 
-  const addedNotes = bar.reduce((notes, cell) => {
+  const addedNotes = Array.from({ length: 4 }, (_, columnIndex) => (
+    getChordStepCell(matrix, barIndex, spanIndex, columnIndex)
+  )).reduce((notes, cell) => {
     getChordCellNotes(cell).forEach((note) => {
       if (!notes.includes(note)) notes.push(note);
     });
@@ -166,6 +171,7 @@ export {
   getChordStepCell,
   getChordCell,
   getChordBarDisplayLabel,
+  getChordSpanDisplayLabel,
   getExistingChordClipBars,
   setChordCell,
   setChordNoteCell,

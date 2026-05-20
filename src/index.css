@@ -1642,6 +1642,10 @@ button {
   gap: 8px;
 }
 
+.cv-grid.enrich {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .cv-grid.diatonic .cv-card {
   align-items: center;
   gap: 8px;
@@ -1680,6 +1684,19 @@ button {
   letter-spacing: 0.14em;
   line-height: 1;
   text-transform: uppercase;
+}
+
+.cv-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 124px;
+  color: var(--ink-3);
+  background: color-mix(in oklab, var(--bg-deep) 68%, var(--surface));
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .cv-card {

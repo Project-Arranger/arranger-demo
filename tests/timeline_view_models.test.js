@@ -68,6 +68,7 @@ test('createTimelineTracks decorates chord clips with the current chord label', 
     label: 'Cmaj7',
     toneRoots: ['C', 'E', 'G', 'B'],
   };
+  matrix.chord[2][2] = { type: 'notes', notes: ['A'], label: 'A' };
   matrix.chord[2][5] = { type: 'notes', notes: ['D', 'F'], label: 'D/F' };
 
   const tracks = createTimelineTracks({
@@ -79,8 +80,8 @@ test('createTimelineTracks decorates chord clips with the current chord label', 
   });
   const chord = tracks.find((track) => track.id === 'chord');
 
-  assert.equal(chord.clip.chordLabel, 'Cmaj7 + D/F');
-  assert.equal(chord.bars[2].clip.chordLabel, 'Cmaj7 + D/F');
+  assert.equal(chord.clip.chordLabel, 'Cmaj7 + A');
+  assert.equal(chord.bars[2].clip.chordLabel, 'Cmaj7 + A');
 });
 
 test('createTimelineTracks marks drums clips with matrix content as non-empty', () => {

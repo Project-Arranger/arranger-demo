@@ -215,6 +215,11 @@ function getPassingChordOptions(fromName, toName) {
     : [...PASSING_CHORD_DEFAULT_OPTIONS];
 }
 
+function getChordVariantOptions(chordName) {
+  const chordRoot = getChordRootName(chordName);
+  return chordRoot && CHORD_VARIANTS[chordRoot] ? [...CHORD_VARIANTS[chordRoot]] : [];
+}
+
 function isChordSpan(spanIndex) {
   return Number.isInteger(spanIndex) && spanIndex >= 0 && spanIndex < BEATS_PER_BAR;
 }
@@ -330,6 +335,7 @@ export {
   getChordCellNotes,
   getChordRootName,
   getChordToneRoots,
+  getChordVariantOptions,
   getPassingChordOptions,
   getChordSpanStep,
   isChordAddedNoteActive,
