@@ -3,6 +3,7 @@ import {
   CHORD_TEMPLATES,
   createChordCell,
   createChordNoteCell,
+  getChordCellNotes,
   getChordSpanStep,
   toggleChordNoteCell,
 } from '../domain/chordCells.js';
@@ -21,27 +22,17 @@ function getChordStepCell(matrix, barIndex, spanIndex, columnIndex) {
   return matrix?.chord?.[barIndex]?.[step + columnIndex] ?? null;
 }
 
-function replaceChordStep(matrix, barIndex, stepIndex, cell) {
-  if (!matrix?.chord?.[barIndex] || !Number.isInteger(stepIndex)) return matrix;
-
-  const nextBar = [...matrix.chord[barIndex]];
-  nextBar[stepIndex] = cell;
-
-  const nextChord = [...matrix.chord];
-  nextChord[barIndex] = nextBar;
-
-  return {
-    ...matrix,
-    chord: nextChord,
-  };
-}
-
 function setChordCell(matrix, barIndex, spanIndex, root) {
   const step = getChordSpanStep(spanIndex);
-  const cell = createChordCell(root);
-  if (step === null || !cell) return matrix;
+  if (step === null) return matrix;
+  const firstCell = createChordCellWithPreviousNotes(root, getMatrixChordStep(matrix, barIndex, step));
+  const sustainCell = createChordCellWithPreviousNotes(root, getMatrixChordStep(matrix, barIndex, step + 1));
+  if (!firstCell || !sustainCell) return matrix;
 
-  return replaceChordStep(matrix, barIndex, step, cell);
+  return setChordStepCells(matrix, barIndex, {
+    [step]: firstCell,
+    [step + 1]: sustainCell,
+  });
 }
 
 function replaceChordBeat(matrix, barIndex, spanIndex, cells) {
@@ -62,6 +53,38 @@ function replaceChordBeat(matrix, barIndex, spanIndex, cells) {
   };
 }
 
+function getMatrixChordStep(matrix, barIndex, step) {
+  return matrix?.chord?.[barIndex]?.[step] ?? null;
+}
+
+function createChordCellWithPreviousNotes(root, previousCell) {
+  const cell = createChordCell(root);
+  if (!cell) return null;
+
+  const addedNotes = getChordCellNotes(previousCell);
+  return addedNotes.length ? { ...cell, addedNotes } : cell;
+}
+
+function setChordStepCells(matrix, barIndex, cellsByStep) {
+  if (!matrix?.chord?.[barIndex]) return matrix;
+
+  const nextBar = [...matrix.chord[barIndex]];
+  Object.entries(cellsByStep).forEach(([stepKey, cell]) => {
+    const step = Number(stepKey);
+    if (Number.isInteger(step) && step >= 0 && step < nextBar.length) {
+      nextBar[step] = cell;
+    }
+  });
+
+  const nextChord = [...matrix.chord];
+  nextChord[barIndex] = nextBar;
+
+  return {
+    ...matrix,
+    chord: nextChord,
+  };
+}
+
 function setChordNoteCell(matrix, barIndex, spanIndex, columnIndex, note) {
   const step = getChordSpanStep(spanIndex);
   const cell = createChordNoteCell(note);
@@ -69,25 +92,27 @@ function setChordNoteCell(matrix, barIndex, spanIndex, columnIndex, note) {
     return matrix;
   }
 
-  const cells = Array.from({ length: 4 }, () => null);
-  cells[columnIndex] = cell;
-
-  return replaceChordBeat(matrix, barIndex, spanIndex, cells);
+  return setChordStepCells(matrix, barIndex, {
+    [step + columnIndex]: cell,
+  });
 }
 
 function toggleChordNoteStep(matrix, barIndex, spanIndex, columnIndex, note) {
   const currentCell = getChordStepCell(matrix, barIndex, spanIndex, columnIndex);
   const nextCell = toggleChordNoteCell(currentCell, note);
+  const step = getChordSpanStep(spanIndex);
+  if (step === null || !Number.isInteger(columnIndex) || columnIndex < 0 || columnIndex >= 4) return matrix;
 
-  if (!nextCell) return replaceChordBeat(matrix, barIndex, spanIndex, []);
-  return setChordNoteCell(matrix, barIndex, spanIndex, columnIndex, note);
+  return setChordStepCells(matrix, barIndex, {
+    [step + columnIndex]: nextCell,
+  });
 }
 
 function clearChordCell(matrix, barIndex, spanIndex) {
   const step = getChordSpanStep(spanIndex);
   if (step === null) return matrix;
 
-  return replaceChordStep(matrix, barIndex, step, null);
+  return replaceChordBeat(matrix, barIndex, spanIndex, []);
 }
 
 function clearChordBar(matrix, barIndex) {
@@ -119,12 +144,28 @@ function applyChordTemplateToExistingClips(matrix, clips, templateId) {
   ), matrix);
 }
 
+function getChordBarDisplayLabel(matrix, barIndex) {
+  const bar = matrix?.chord?.[barIndex];
+  const mainCell = bar?.[0];
+  if (mainCell?.type !== 'chord') return null;
+
+  const addedNotes = bar.reduce((notes, cell) => {
+    getChordCellNotes(cell).forEach((note) => {
+      if (!notes.includes(note)) notes.push(note);
+    });
+    return notes;
+  }, []);
+
+  return addedNotes.length ? `${mainCell.label} + ${addedNotes.join('/')}` : mainCell.label;
+}
+
 export {
   applyChordTemplateToExistingClips,
   clearChordBar,
   clearChordCell,
   getChordStepCell,
   getChordCell,
+  getChordBarDisplayLabel,
   getExistingChordClipBars,
   setChordCell,
   setChordNoteCell,

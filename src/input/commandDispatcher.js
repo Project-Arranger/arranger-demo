@@ -23,6 +23,7 @@ function createAudioPlayOptions(store, state) {
     bar: state.currentBar,
     step: state.currentStep,
     matrixSource: () => store.getState().matrix,
+    volumeSource: () => store.getState().volumes,
   };
 }
 
@@ -49,6 +50,20 @@ async function dispatchTransportCommand(command, deps) {
     case APP_COMMAND_TYPES.TRANSPORT_SEEK:
       state.setSeekPosition?.(command.bar, command.step);
       await maybeCallMethod(deps.audio, 'seekToStep', command.bar, command.step);
+      return { ok: true };
+
+    default:
+      return null;
+  }
+}
+
+async function dispatchClipCommand(command, deps) {
+  const store = getStore(deps);
+  const state = store.getState();
+
+  switch (command.type) {
+    case APP_COMMAND_TYPES.CLIP_DELETE_SELECTED:
+      state.deleteSelectedClip?.();
       return { ok: true };
 
     default:
@@ -109,6 +124,9 @@ async function dispatchCommand(command, deps = {}) {
 
   const transportResult = await dispatchTransportCommand(command, deps);
   if (transportResult) return transportResult;
+
+  const clipResult = await dispatchClipCommand(command, deps);
+  if (clipResult) return clipResult;
 
   const handlerResult = await dispatchHandlerCommand(command, deps);
   if (handlerResult) return handlerResult;

@@ -93,7 +93,8 @@ function Clip({
 }) {
   if (!clip) return null;
 
-  const handleClick = () => {
+  const handleClick = (event) => {
+    event.stopPropagation();
     if (shouldIgnoreClick()) return;
 
     onOpenClip(clip.id);
@@ -125,7 +126,7 @@ function Clip({
       <div className="clip-name">
         {clipName}
       </div>
-      {chordLabel ? null : <div className="clip-empty-tag">empty</div>}
+      {chordLabel || clip.hasContent ? null : <div className="clip-empty-tag">empty</div>}
     </button>
   );
 }
@@ -138,6 +139,7 @@ const Timeline = forwardRef(function Timeline(
     onAddClip,
     onMoveClip,
     onOpenClip,
+    onTrackSelect,
     selectedClipId,
     tracks,
   },
@@ -159,6 +161,7 @@ const Timeline = forwardRef(function Timeline(
   };
 
   const handleMouseDown = (event, clip, trackId) => {
+    event.stopPropagation();
     flushSync(() => setDragSession({
       clipId: clip.id,
       sourceBar: clip.bar,
@@ -175,6 +178,17 @@ const Timeline = forwardRef(function Timeline(
       setDragFeedback(null);
     }, DROP_FEEDBACK_MS);
   }, []);
+
+  const handleTrackRowClick = (event, trackId) => {
+    const target = event.target;
+    if (target.closest('button')) return;
+
+    const barIndex = target.dataset.barIndex
+      ? Number(target.dataset.barIndex)
+      : getBarFromRow(event.currentTarget, event.clientX);
+
+    onTrackSelect(trackId, Number.isInteger(barIndex) ? barIndex : undefined);
+  };
 
   useEffect(() => () => {
     window.clearTimeout(feedbackTimerRef.current);
@@ -247,6 +261,7 @@ const Timeline = forwardRef(function Timeline(
               data-track-row={track.id}
               data-track-index={trackIndex}
               key={track.id}
+              onClick={(event) => handleTrackRowClick(event, track.id)}
             >
               {track.bars.map((bar) => {
                 const dropZoneClass = getDropZoneClass(track.id, bar.bar, dragOverBar, dragFeedback);
@@ -281,7 +296,10 @@ const Timeline = forwardRef(function Timeline(
                     key={`${track.id}-add-${bar.bar}`}
                     style={{ '--bar-index': bar.bar }}
                     type="button"
-                    onClick={() => onAddClip(track.id, bar.bar)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onAddClip(track.id, bar.bar);
+                    }}
                   >
                     {renderIcon(Plus)}
                   </button>

@@ -64,6 +64,32 @@ test('createClip re-selects an existing clip without duplicating it', () => {
   assert.equal(useMusicStore.getState().selectedClipId, 'drums-bar-0');
 });
 
+test('renameClip updates clip names across tracks and preserves custom names on move', () => {
+  const state = useMusicStore.getState();
+  state.createClip('bass', 2);
+
+  const renamedClip = useMusicStore.getState().renameClip('bass-bar-2', 'Warm Bass');
+
+  assert.equal(renamedClip.name, 'Warm Bass');
+  assert.equal(renamedClip.customName, true);
+  assert.equal(useMusicStore.getState().getClipForTrackBar('bass', 2).name, 'Warm Bass');
+
+  const movedClip = useMusicStore.getState().moveClipToBar('bass-bar-2', 4);
+
+  assert.equal(movedClip.id, 'bass-bar-4');
+  assert.equal(movedClip.name, 'Warm Bass');
+  assert.equal(movedClip.customName, true);
+  assert.equal(useMusicStore.getState().getClipForTrackBar('bass', 4).name, 'Warm Bass');
+});
+
+test('renameClip ignores missing clips and non-string names', () => {
+  const beforeClips = structuredClone(useMusicStore.getState().clips);
+
+  assert.equal(useMusicStore.getState().renameClip('missing-clip', 'Nope'), null);
+  assert.equal(useMusicStore.getState().renameClip('drums-bar-0', 123), null);
+  assert.deepEqual(useMusicStore.getState().clips, beforeClips);
+});
+
 test('moveClipToBar moves a clip and its matrix bar data to an empty bar', () => {
   const state = useMusicStore.getState();
   state.setCell('bass', 2, 0, { note: 'C3' });
@@ -129,6 +155,33 @@ test('selectClip links selectedClipId, activeTrackId, and selectedBar', () => {
   assert.equal(useMusicStore.getState().selectedClipId, 'chord-bar-0');
   assert.equal(useMusicStore.getState().activeTrackId, 'chord');
   assert.equal(useMusicStore.getState().selectedBar, 0);
+});
+
+test('deleteSelectedClip removes selected clip and clears its matrix bar', () => {
+  const state = useMusicStore.getState();
+  state.setCell('drums', 0, 0, { instruments: ['kick'] });
+  state.setCell('drums', 0, 4, { instruments: ['snare'] });
+  state.selectClip('drums-bar-0');
+
+  const deletedClip = useMusicStore.getState().deleteSelectedClip();
+
+  assert.equal(deletedClip.id, 'drums-bar-0');
+  assert.equal(useMusicStore.getState().getClipForTrackBar('drums', 0), null);
+  assert.deepEqual(useMusicStore.getState().clips.ids, []);
+  assert.equal(useMusicStore.getState().matrix.drums[0].every((cell) => cell === null), true);
+  assert.equal(useMusicStore.getState().selectedClipId, null);
+  assert.equal(useMusicStore.getState().activeTrackId, 'drums');
+  assert.equal(useMusicStore.getState().selectedBar, 0);
+});
+
+test('deleteClip ignores missing clips without changing state', () => {
+  const beforeClips = structuredClone(useMusicStore.getState().clips);
+  const beforeMatrix = structuredClone(useMusicStore.getState().matrix);
+
+  assert.equal(useMusicStore.getState().deleteClip('missing-clip'), null);
+  assert.equal(useMusicStore.getState().deleteSelectedClip(), null);
+  assert.deepEqual(useMusicStore.getState().clips, beforeClips);
+  assert.deepEqual(useMusicStore.getState().matrix, beforeMatrix);
 });
 
 test('createClip ignores unknown track ids', () => {

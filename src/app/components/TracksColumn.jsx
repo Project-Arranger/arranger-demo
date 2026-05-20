@@ -37,6 +37,7 @@ function TrackRow({
     );
   };
   const handleVolumePointerDown = (event) => {
+    onSelect(track.id);
     event.preventDefault();
     event.stopPropagation();
     event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -88,6 +89,7 @@ function TrackRow({
     <div
       className={classes}
       data-type={track.id}
+      onClick={() => onSelect(track.id)}
     >
       <button
         className="track-select"

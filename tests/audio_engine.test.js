@@ -42,6 +42,19 @@ function createFakeTone() {
   };
 }
 
+function createFakeToneWithEventIds(eventIds) {
+  const tone = createFakeTone();
+  let eventIndex = 0;
+  tone.Transport.scheduleRepeat = (callback, interval) => {
+    tone.calls.push(['transport.scheduleRepeat', interval]);
+    tone.Transport.scheduledCallback = callback;
+    const eventId = eventIds[eventIndex] ?? eventIds.at(-1);
+    eventIndex += 1;
+    return eventId;
+  };
+  return tone;
+}
+
 function createPlayerFactory(calls) {
   return (url, instrument) => ({
     start: (time) => calls.push(['player.start', instrument, url, time]),
@@ -59,6 +72,40 @@ function createChordSynthFactory(calls) {
     ]),
     toDestination: () => calls.push(['chord.toDestination']),
   });
+}
+
+function createVolumeAwarePlayerFactory(calls) {
+  return (url, instrument) => {
+    const player = {
+      volume: { value: 0 },
+      start(time) {
+        calls.push(['player.start', instrument, url, time, player.volume.value]);
+      },
+      toDestination() {
+        calls.push(['player.toDestination', instrument]);
+        return player;
+      },
+    };
+
+    return player;
+  };
+}
+
+function createVolumeAwareChordSynthFactory(calls) {
+  return () => {
+    const synth = {
+      volume: { value: 0 },
+      triggerAttackRelease(notes, duration, time) {
+        calls.push(['chord.triggerAttackRelease', notes, duration, time, synth.volume.value]);
+      },
+      toDestination() {
+        calls.push(['chord.toDestination']);
+        return synth;
+      },
+    };
+
+    return synth;
+  };
 }
 
 test('audio statuses expose the phase 4 lifecycle states', () => {
@@ -205,6 +252,7 @@ test('AudioEngine syncs transport play pause stop and seek', async () => {
     ['transport.start'],
     ['transport.pause'],
     ['transport.stop'],
+    ['transport.clear', 'repeat-id'],
   ]);
 });
 
@@ -228,6 +276,93 @@ test('AudioEngine matrix playback triggers drums and chord events', async () => 
   )), [
     ['player.start', 'kick', '/samples/808/kick.wav', 24],
     ['chord.triggerAttackRelease', ['C4', 'E4', 'G4'], '4n', 24],
+  ]);
+});
+
+test('AudioEngine clears existing matrix playback even when Tone returns event id zero', async () => {
+  const tone = createFakeToneWithEventIds([0, 1]);
+  const matrix = createInitialMatrix();
+  const engine = new AudioEngine({
+    tone,
+    matrixSource: matrix,
+    playerFactory: createPlayerFactory(tone.calls),
+  });
+
+  await engine.play({ bpm: 120 });
+  await engine.play({ bpm: 120 });
+
+  assert.deepEqual(tone.calls.filter(([name]) => name.startsWith('transport.')), [
+    ['transport.scheduleRepeat', '16n'],
+    ['transport.start'],
+    ['transport.clear', 0],
+    ['transport.scheduleRepeat', '16n'],
+    ['transport.start'],
+  ]);
+});
+
+test('AudioEngine applies current track volumes to matrix playback events', async () => {
+  const tone = createFakeTone();
+  const matrix = createInitialMatrix();
+  const volumes = { drums: -18, chord: -9 };
+  matrix.drums[0][0] = { instruments: ['kick'] };
+  matrix.chord[0][0] = { root: 'C', quality: 'maj', label: 'C' };
+  const engine = new AudioEngine({
+    tone,
+    matrixSource: matrix,
+    volumeSource: () => volumes,
+    playerFactory: createVolumeAwarePlayerFactory(tone.calls),
+    chordSynthFactory: createVolumeAwareChordSynthFactory(tone.calls),
+  });
+
+  await engine.play({ bpm: 120 });
+  tone.Transport.scheduledCallback(24);
+
+  assert.deepEqual(tone.calls.filter(([name]) => (
+    name === 'player.start' || name === 'chord.triggerAttackRelease'
+  )), [
+    ['player.start', 'kick', '/samples/808/kick.wav', 24, -18],
+    ['chord.triggerAttackRelease', ['C4', 'E4', 'G4'], '4n', 24, -9],
+  ]);
+});
+
+test('AudioEngine applies live track volume source to drums previews', async () => {
+  const tone = createFakeTone();
+  const volumes = { drums: -12 };
+  const engine = new AudioEngine({
+    tone,
+    volumeSource: () => volumes,
+    playerFactory: createVolumeAwarePlayerFactory(tone.calls),
+  });
+
+  await engine.triggerDrumsStep('snare');
+  volumes.drums = -6;
+  await engine.triggerDrumsStep('snare');
+
+  assert.deepEqual(tone.calls.filter(([name]) => name === 'player.start'), [
+    ['player.start', 'snare', '/samples/808/snare.wav', 12.5, -12],
+    ['player.start', 'snare', '/samples/808/snare.wav', 12.5, -6],
+  ]);
+});
+
+test('AudioEngine previews chord sequences with one audio start and timed chord triggers', async () => {
+  const tone = createFakeTone();
+  const volumes = { chord: -7 };
+  const engine = new AudioEngine({
+    tone,
+    volumeSource: () => volumes,
+    playerFactory: createPlayerFactory(tone.calls),
+    chordSynthFactory: createVolumeAwareChordSynthFactory(tone.calls),
+  });
+
+  await engine.previewChordSequence([
+    ['C4', 'E4', 'G4'],
+    ['F4', 'A4', 'C5'],
+  ]);
+
+  assert.equal(tone.calls.filter(([name]) => name === 'tone.start').length, 1);
+  assert.deepEqual(tone.calls.filter(([name]) => name === 'chord.triggerAttackRelease'), [
+    ['chord.triggerAttackRelease', ['C4', 'E4', 'G4'], '8n', 12.5, -7],
+    ['chord.triggerAttackRelease', ['F4', 'A4', 'C5'], '8n', 13.05, -7],
   ]);
 });
 

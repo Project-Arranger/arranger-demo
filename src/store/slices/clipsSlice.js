@@ -43,7 +43,7 @@ function moveClipRecordToBar(clip, bar) {
     ...clip,
     id: createClipId(clip.trackId, bar),
     bar,
-    name: formatClipName(clip.trackId, bar),
+    name: clip.customName ? clip.name : formatClipName(clip.trackId, bar),
   };
 }
 
@@ -114,6 +114,68 @@ export default function createClipsSlice(set, get) {
       }));
 
       return clip;
+    },
+
+    renameClip: (clipId, name) => {
+      if (typeof name !== 'string') return null;
+
+      const state = get();
+      const clip = state.clips.byId[clipId];
+      if (!clip) return null;
+
+      const renamedClip = {
+        ...clip,
+        customName: true,
+        name,
+      };
+
+      set({
+        clips: {
+          ids: state.clips.ids,
+          byId: {
+            ...state.clips.byId,
+            [clip.id]: renamedClip,
+          },
+        },
+      });
+
+      return renamedClip;
+    },
+
+    deleteClip: (clipId) => {
+      const state = get();
+      const clip = state.clips.byId[clipId];
+      if (!clip) return null;
+
+      const nextById = { ...state.clips.byId };
+      delete nextById[clip.id];
+
+      const trackMatrix = state.matrix[clip.trackId];
+      const nextMatrix = { ...state.matrix };
+      if (trackMatrix?.[clip.bar]) {
+        const nextTrackMatrix = [...trackMatrix];
+        nextTrackMatrix[clip.bar] = createEmptyBarLike(trackMatrix[clip.bar]);
+        nextMatrix[clip.trackId] = nextTrackMatrix;
+      }
+
+      set({
+        activeTrackId: clip.trackId,
+        selectedBar: clip.bar,
+        selectedClipId: null,
+        clips: {
+          ids: state.clips.ids.filter((id) => id !== clip.id),
+          byId: nextById,
+        },
+        matrix: nextMatrix,
+      });
+
+      return clip;
+    },
+
+    deleteSelectedClip: () => {
+      const { selectedClipId } = get();
+      if (!selectedClipId) return null;
+      return get().deleteClip(selectedClipId);
     },
 
     moveClipToBar: (clipId, targetBar) => {

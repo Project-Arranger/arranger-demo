@@ -60,6 +60,15 @@ test('createTimelineTracks decorates chord clips with the current chord label', 
     label: 'Cmaj7',
     toneRoots: ['C', 'E', 'G', 'B'],
   };
+  matrix.chord[2][1] = {
+    type: 'chord',
+    root: 'C',
+    chordRoot: 'C',
+    quality: 'maj7',
+    label: 'Cmaj7',
+    toneRoots: ['C', 'E', 'G', 'B'],
+  };
+  matrix.chord[2][5] = { type: 'notes', notes: ['D', 'F'], label: 'D/F' };
 
   const tracks = createTimelineTracks({
     barNumbers: BAR_NUMBERS,
@@ -70,8 +79,26 @@ test('createTimelineTracks decorates chord clips with the current chord label', 
   });
   const chord = tracks.find((track) => track.id === 'chord');
 
-  assert.equal(chord.clip.chordLabel, 'Cmaj7');
-  assert.equal(chord.bars[2].clip.chordLabel, 'Cmaj7');
+  assert.equal(chord.clip.chordLabel, 'Cmaj7 + D/F');
+  assert.equal(chord.bars[2].clip.chordLabel, 'Cmaj7 + D/F');
+});
+
+test('createTimelineTracks marks drums clips with matrix content as non-empty', () => {
+  const clips = createInitialClips();
+  const matrix = createInitialMatrix();
+  matrix.drums[0][0] = { instruments: ['kick'] };
+
+  const tracks = createTimelineTracks({
+    barNumbers: BAR_NUMBERS,
+    clips,
+    matrix,
+    selectedBar: 0,
+    trackUi: TRACK_UI,
+  });
+  const drums = tracks.find((track) => track.id === 'drums');
+
+  assert.equal(drums.clip.hasContent, true);
+  assert.equal(drums.bars[0].clip.hasContent, true);
 });
 
 test('createTimelineTracks marks tracks with clips outside the selected bar', () => {

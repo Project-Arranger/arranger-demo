@@ -17,6 +17,8 @@ test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async
 
   assert.match(source, /aria-label="Project Arranger workspace"/);
   assert.match(topBarSource, /Project Arranger/);
+  assert.match(topBarSource, /play-glyph/);
+  assert.doesNotMatch(topBarSource, /import\s*\{[^}]*Play/);
   assert.match(source, /data-screen-label="Main"/);
   assert.match(source, /drums/);
   assert.match(source, /DRUMS_TOGGLE/);
@@ -38,35 +40,120 @@ test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async
 
 test('app shell exposes the chord editor preview and audio wiring hooks', async () => {
   const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
+  const bottomEditorSource = await readFile(
+    new URL('../src/app/components/BottomEditor.jsx', import.meta.url),
+    'utf8',
+  );
   const chordEditorSource = await readFile(
     new URL('../src/app/components/ChordEditor.jsx', import.meta.url),
     'utf8',
   );
+  const clipNameInputSource = await readFile(
+    new URL('../src/app/components/ClipNameInput.jsx', import.meta.url),
+    'utf8',
+  );
+  const drumSequencerSource = await readFile(
+    new URL('../src/app/components/DrumSequencer.jsx', import.meta.url),
+    'utf8',
+  );
+  const trackEditorPlaceholderSource = await readFile(
+    new URL('../src/app/components/TrackEditorPlaceholder.jsx', import.meta.url),
+    'utf8',
+  );
 
   assert.match(chordEditorSource, /data-screen-label="Chord Editor"/);
+  assert.match(clipNameInputSource, /function ClipNameInput/);
+  assert.match(clipNameInputSource, /Pencil/);
+  assert.match(clipNameInputSource, /renderIcon\(Pencil\)/);
+  assert.match(clipNameInputSource, /className="clip-name-field"/);
+  assert.match(clipNameInputSource, /className="clip-name-input"/);
+  assert.match(clipNameInputSource, /className="clip-name-edit-icon"/);
+  assert.match(clipNameInputSource, /value=\{clipName\}/);
+  assert.match(clipNameInputSource, /onChange=\{\(event\) => onRenameClip\(event\.target\.value\)\}/);
+  assert.match(chordEditorSource, /ClipNameInput/);
+  assert.match(drumSequencerSource, /ClipNameInput/);
+  assert.match(trackEditorPlaceholderSource, /ClipNameInput/);
+  assert.match(trackEditorPlaceholderSource, /添加一个片段即可开始编辑/);
+  assert.doesNotMatch(trackEditorPlaceholderSource, /clip去编辑/);
+  assert.doesNotMatch(trackEditorPlaceholderSource, /Select any track to edit a phrase/);
+  assert.doesNotMatch(chordEditorSource, /renderIcon\(Pencil\)/);
+  assert.doesNotMatch(chordEditorSource, /import\s*\{[^}]*Pencil/);
+  assert.doesNotMatch(chordEditorSource, /clip-name-display/);
+  assert.doesNotMatch(drumSequencerSource, /clip-name-display/);
+  assert.doesNotMatch(trackEditorPlaceholderSource, /clip-name-display/);
   assert.match(chordEditorSource, /CHORD EDITOR - BAR/);
   assert.match(chordEditorSource, /选择和弦进行模板/);
   assert.match(chordEditorSource, /Chord Template Picker/);
-  assert.match(chordEditorSource, /丰富和弦色彩/);
+  assert.match(chordEditorSource, /添加经过和弦/);
+  assert.match(chordEditorSource, /添加调内和弦/);
+  assert.match(chordEditorSource, /AddChordPopover/);
+  assert.match(chordEditorSource, /DIATONIC_CHORD_OPTIONS/);
+  assert.match(chordEditorSource, /getPassingChordOptions/);
   assert.match(chordEditorSource, /CHORD_NOTES\.flatMap/);
   assert.match(chordEditorSource, /CHORD_TEMPLATES/);
-  assert.match(chordEditorSource, /CHORD_VARIANTS/);
+  assert.match(chordEditorSource, /onChordPick/);
+  assert.match(chordEditorSource, /addChordPanel/);
+  assert.match(chordEditorSource, /aria-label=\{`添加和弦 beat \$\{beatNumber\}`\}/);
+  assert.match(chordEditorSource, /openAddChordPanel\(spanIndex,\s*event\.currentTarget,\s*beatHasChord\)/);
+  assert.match(chordEditorSource, /colIndex < 2 \? 'downbeat' : ''/);
+  assert.match(chordEditorSource, /colIndex >= 2 \? 'extension' : ''/);
+  assert.doesNotMatch(chordEditorSource, /Beat \$\{beatNumber\} 单音/);
+  assert.doesNotMatch(chordEditorSource, /disabled=\{!canOpenChordPanel\}/);
   assert.match(chordEditorSource, /getChordCell/);
   assert.match(chordEditorSource, /getChordStepCell/);
+  assert.match(chordEditorSource, /getChordBarDisplayLabel/);
   assert.match(chordEditorSource, /isChordCellActive/);
-  assert.match(chordEditorSource, /onChordCellSelect/);
+  assert.match(chordEditorSource, /isChordAddedNoteActive/);
   assert.match(chordEditorSource, /onChordNoteSelect/);
+  assert.match(chordEditorSource, /onChordPreview/);
+  assert.match(chordEditorSource, /onChordTemplatePreview/);
   assert.match(chordEditorSource, /onChordTemplateApply/);
   assert.match(chordEditorSource, /onClearChordBar/);
-  assert.match(chordEditorSource, /aria-pressed=\{active\}/);
+  assert.match(chordEditorSource, /onClearChord/);
+  assert.match(chordEditorSource, /清空本小节/);
+  assert.match(chordEditorSource, /清空 Chord/);
+  assert.doesNotMatch(chordEditorSource, /Clear phrase/);
+  assert.match(chordEditorSource, /aria-pressed=\{active \|\| added\}/);
+  assert.match(chordEditorSource, /onChordPreview\(chordName\)/);
+  assert.match(chordEditorSource, /onChordTemplatePreview\(template\.chords\)/);
+  assert.match(chordEditorSource, /onClose/);
+  assert.match(chordEditorSource, /const handleClose = \(\) => \{[\s\S]*setPickerOpen\(false\);[\s\S]*setAddChordPanel\(null\);[\s\S]*onClose\(\);[\s\S]*\}/);
+  assert.match(chordEditorSource, /className="editor-close"[\s\S]*onClick=\{handleClose\}/);
+  const previewButtons = chordEditorSource.match(/<button[^>]*data-action="preview"[\s\S]*?<\/button>/g) ?? [];
+  assert.ok(previewButtons.length >= 2);
+  assert.equal(previewButtons.every((button) => button.includes('play-glyph')), true);
+  assert.equal(previewButtons.every((button) => !button.includes('renderIcon(Piano)')), true);
   assert.match(source, /useKeyboardCommands/);
   assert.match(source, /createUiAudioDispatcher/);
   assert.match(source, /audioEngine/);
+  assert.match(source, /createChordNotes/);
+  assert.match(source, /previewChordSequence/);
+  assert.match(source, /handleChordPreview/);
+  assert.match(source, /handleChordTemplatePreview/);
   assert.match(source, /seedDefaultDrumsPattern/);
+  assert.match(source, /handleCloseEditor/);
+  assert.match(source, /selectedClip/);
+  assert.match(source, /handleRenameClip/);
+  assert.match(source, /renameClip\(selectedClipId,\s*name\)/);
+  assert.match(source, /setSelectedClipId\(null\)/);
+  assert.match(source, /selectedClipId/);
+  assert.match(source, /onCloseEditor:\s*handleCloseEditor/);
+  assert.match(bottomEditorSource, /selectedClipId/);
+  assert.match(bottomEditorSource, /selectedClipName/);
+  assert.match(bottomEditorSource, /onRenameClip/);
+  assert.match(bottomEditorSource, /activeTrackId === 'chord' && selectedClipId/);
+  assert.match(bottomEditorSource, /onClose:\s*onCloseEditor/);
   assert.match(source, /handleChordCellSelect/);
+  assert.match(source, /handleChordPick/);
+  assert.match(source, /const step = getChordSpanStep\(spanIndex\)/);
+  assert.match(source, /setChordCell\(state\.matrix,\s*selectedBar,\s*spanIndex,\s*root\)/);
+  assert.doesNotMatch(source, /targetSpanIndex\s*=\s*0/);
+  assert.doesNotMatch(chordEditorSource, /sustain/);
   assert.match(source, /handleChordNoteSelect/);
   assert.match(source, /handleChordTemplateApply/);
   assert.match(source, /handleClearChordBar/);
+  assert.match(source, /handleClearChord/);
+  assert.match(source, /clearTrack\('chord'\)/);
   assert.match(source, /CHORD_SET_CELL/);
   assert.match(source, /CHORD_CLEAR_CELL/);
   assert.match(source, /setChordCell/);
@@ -111,7 +198,12 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(source, /ref:\s*tracksScrollRef/);
   assert.match(source, /ref:\s*timelineScrollRef/);
   assert.match(source, /onAddClip/);
+  assert.match(source, /onTrackSelect:\s*handleTrackSelect/);
   assert.match(timelineSource, /onAddClip\(track\.id,\s*bar\.bar\)/);
+  assert.match(timelineSource, /onTrackSelect/);
+  assert.match(timelineSource, /handleTrackRowClick/);
+  assert.match(timelineSource, /target\.closest\('button'\)/);
+  assert.match(timelineSource, /onClick=\{\(event\) => handleTrackRowClick\(event,\s*track\.id\)\}/);
   assert.match(source, /handleMoveClip/);
   assert.match(timelineSource, /onMouseDown/);
   assert.match(timelineSource, /mousemove/);
@@ -126,6 +218,7 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(timelineSource, /drop-move/);
   assert.match(timelineSource, /drop-swap/);
   assert.match(timelineSource, /clip-dragging/);
+  assert.match(timelineSource, /clip\.hasContent/);
   assert.match(timelineSource, /bar\.canAddClip/);
   assert.match(source, /createClip\(trackId,\s*barIndex\)/);
   assert.match(source, /moveClipToBar\(clipId,\s*targetBar\)/);
@@ -133,8 +226,12 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(source, /volumes/);
   assert.match(source, /setTrackVolume\(trackId,\s*volume\)/);
   assert.match(source, /onVolumeChange:\s*handleTrackVolumeChange/);
+  assert.match(source, /setVolumeSource/);
+  assert.match(source, /useMusicStore\.getState\(\)\.volumes/);
   assert.match(tracksColumnSource, /type="range"/);
   assert.match(tracksColumnSource, /aria-label=\{`\$\{track\.label\} volume`\}/);
+  assert.match(tracksColumnSource, /className=\{classes\}[\s\S]*onClick=\{\(\) => onSelect\(track\.id\)\}/);
+  assert.match(tracksColumnSource, /handleVolumePointerDown[\s\S]*onSelect\(track\.id\)/);
   assert.match(tracksColumnSource, /onVolumeChange\(track\.id/);
   assert.match(tracksColumnSource, /handleVolumePointerDown/);
   assert.match(tracksColumnSource, /getTrackVolumeFromClientX/);
@@ -147,13 +244,19 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(drumSequencerSource, /全局生成基础律动/);
   assert.match(drumSequencerSource, /清空本小节/);
   assert.match(drumSequencerSource, /清空 Drums/);
+  assert.match(drumSequencerSource, /onClose/);
+  assert.match(drumSequencerSource, /className="editor-close"[\s\S]*onClick=\{onClose\}/);
   assert.match(source, /applyBasicDrumsBar/);
   assert.match(source, /getDrumsClipBarIndexes/);
   assert.match(source, /applyBasicDrumsAllBars/);
   assert.match(source, /applyBasicDrumsAllBars\(state\.matrix,\s*drumsClipBars\)/);
   assert.match(source, /clearDrumsBar/);
-  assert.match(bottomEditorSource, /activeTrackId === 'drums'/);
+  assert.match(bottomEditorSource, /activeTrackId === 'drums' && selectedClipId/);
+  assert.match(bottomEditorSource, /onClose:\s*onCloseEditor/);
   assert.match(bottomEditorSource, /activeTrackId === 'chord'/);
+  assert.match(bottomEditorSource, /onChordPick/);
   assert.match(bottomEditorSource, /onChordNoteSelect/);
+  assert.match(bottomEditorSource, /onChordPreview/);
+  assert.match(bottomEditorSource, /onChordTemplatePreview/);
   assert.match(bottomEditorSource, /onChordTemplateApply/);
 });

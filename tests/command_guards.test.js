@@ -13,7 +13,9 @@ test('app command constants use drums naming', () => {
   assert.equal(APP_COMMAND_TYPES.DRUMS_TOGGLE, 'drums.toggle');
   assert.equal(APP_COMMAND_TYPES.CHORD_SET_CELL, 'chord.setCell');
   assert.equal(APP_COMMAND_TYPES.CHORD_CLEAR_CELL, 'chord.clearCell');
+  assert.equal(APP_COMMAND_TYPES.CLIP_DELETE_SELECTED, 'clip.deleteSelected');
   assert.equal(Object.values(APP_COMMAND_TYPES).includes('unknown.toggle'), false);
+  assert.equal(COMMAND_GROUPS.clip.includes(APP_COMMAND_TYPES.CLIP_DELETE_SELECTED), true);
   assert.equal(COMMAND_GROUPS.drums.includes(APP_COMMAND_TYPES.DRUMS_TOGGLE), true);
   assert.equal(COMMAND_GROUPS.chord.includes(APP_COMMAND_TYPES.CHORD_SET_CELL), true);
   assert.equal(COMMAND_GROUPS.chord.includes(APP_COMMAND_TYPES.CHORD_CLEAR_CELL), true);
@@ -52,6 +54,11 @@ test('tutorial and chord commands validate exact payloads', () => {
   assert.equal(isValidAppCommand({ type: 'chord.clearCell', bar: 8, span: 0 }), false);
   assert.equal(isValidAppCommand({ type: 'chord.clearCell', bar: 0, span: 4 }), false);
   assert.equal(isValidAppCommand({ type: 'chord.clearCell', bar: 0, span: 0, root: 'C' }), false);
+});
+
+test('clip commands validate exact payloads', () => {
+  assert.equal(isValidAppCommand({ type: 'clip.deleteSelected' }), true);
+  assert.equal(isValidAppCommand({ type: 'clip.deleteSelected', clipId: 'drums-bar-0' }), false);
 });
 
 test('drums command validates track step and known instruments', () => {
