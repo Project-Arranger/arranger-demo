@@ -37,22 +37,25 @@ test('createChordNotes maps major chord roots to playable triads', () => {
   assert.deepEqual(createChordNotes('C'), ['C4', 'E4', 'G4']);
   assert.deepEqual(createChordNotes('F#'), ['F#4', 'A#4', 'C#5']);
   assert.deepEqual(createChordNotes('A#'), ['A#4', 'D5', 'F5']);
+  assert.deepEqual(createChordNotes('Cmaj7'), ['C4', 'E4', 'G4', 'B4']);
+  assert.deepEqual(createChordNotes('Am9'), ['A4', 'C5', 'E5', 'G5', 'B5']);
   assert.deepEqual(createChordNotes('H'), []);
 });
 
 test('extractChordEvent reads chord cells into playable chord events', () => {
   assert.equal(extractChordEvent(null, 0, 0), null);
+  assert.deepEqual(extractChordEvent({ type: 'note', note: 'C', label: 'C' }, 2, 4), null);
   assert.deepEqual(
-    extractChordEvent({ root: 'D#', quality: 'maj', label: 'D#' }, 2, 4),
+    extractChordEvent({ type: 'chord', root: 'C', chordRoot: 'C', quality: 'maj7', label: 'Cmaj7', toneRoots: ['C', 'E', 'G', 'B'] }, 2, 4),
     {
       type: 'chord',
       trackId: 'chord',
       bar: 2,
       step: 4,
-      root: 'D#',
-      quality: 'maj',
-      label: 'D#',
-      notes: ['D#4', 'G4', 'A#4'],
+      root: 'C',
+      quality: 'maj7',
+      label: 'Cmaj7',
+      notes: ['C4', 'E4', 'G4', 'B4'],
       duration: '4n',
     },
   );
@@ -61,8 +64,8 @@ test('extractChordEvent reads chord cells into playable chord events', () => {
 test('matrix playback adapter returns chord events for chord span starts only', () => {
   const matrix = createInitialMatrix();
   matrix.drums[0][4] = { instruments: ['hihat'] };
-  matrix.chord[0][4] = { root: 'G', quality: 'maj', label: 'G' };
-  matrix.chord[0][5] = { root: 'C', quality: 'maj', label: 'C' };
+  matrix.chord[0][4] = { type: 'chord', root: 'G', chordRoot: 'G', quality: '7', label: 'G7', toneRoots: ['G', 'B', 'D', 'F'] };
+  matrix.chord[0][5] = { type: 'chord', root: 'C', chordRoot: 'C', quality: 'maj', label: 'C', toneRoots: ['C', 'E', 'G'] };
 
   const adapter = createMatrixPlaybackAdapter(() => matrix);
 
@@ -74,9 +77,9 @@ test('matrix playback adapter returns chord events for chord span starts only', 
       bar: 0,
       step: 4,
       root: 'G',
-      quality: 'maj',
-      label: 'G',
-      notes: ['G4', 'B4', 'D5'],
+      quality: '7',
+      label: 'G7',
+      notes: ['G4', 'B4', 'D5', 'F5'],
       duration: '4n',
     },
   ]);

@@ -41,6 +41,8 @@ test('tutorial and chord commands validate exact payloads', () => {
   assert.equal(isValidAppCommand({ type: 'chord.confirm' }), true);
   assert.equal(isValidAppCommand({ type: 'chord.confirm', optionIndex: 0 }), false);
   assert.equal(isValidAppCommand({ type: 'chord.setCell', bar: 0, span: 0, root: 'C' }), true);
+  assert.equal(isValidAppCommand({ type: 'chord.setCell', bar: 0, span: 0, root: 'Cmaj7' }), true);
+  assert.equal(isValidAppCommand({ type: 'chord.setCell', bar: 0, span: 0, root: 'Am9' }), true);
   assert.equal(isValidAppCommand({ type: 'chord.setCell', bar: 7, span: 3, root: 'A#' }), true);
   assert.equal(isValidAppCommand({ type: 'chord.setCell', bar: 0, span: 4, root: 'C' }), false);
   assert.equal(isValidAppCommand({ type: 'chord.setCell', bar: 0, span: 0, root: 'H' }), false);

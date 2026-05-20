@@ -6,6 +6,7 @@ import {
 import { getDrumsCellInstruments } from '../domain/drumsCells.js';
 import {
   CHORD_ROOTS,
+  getChordDefinition,
   getChordToneRoots,
 } from '../domain/chordCells.js';
 
@@ -27,16 +28,27 @@ function createDrumsEvent(bar, step, instrument) {
   };
 }
 
-function createChordNotes(root) {
-  const toneRoots = getChordToneRoots(root);
+function createNotesFromToneRoots(root, toneRoots) {
   if (!toneRoots.length) return [];
 
   const rootIndex = CHORD_ROOTS.indexOf(root);
+  if (rootIndex === -1) return [];
+  let octave = 4;
+  let previousToneIndex = rootIndex;
+
   return toneRoots.map((toneRoot) => {
     const toneIndex = CHORD_ROOTS.indexOf(toneRoot);
-    const octave = toneIndex < rootIndex ? 5 : 4;
+    if (toneIndex < previousToneIndex) octave += 1;
+    previousToneIndex = toneIndex;
     return `${toneRoot}${octave}`;
   });
+}
+
+function createChordNotes(root) {
+  const definition = getChordDefinition(root);
+  if (!definition) return [];
+
+  return createNotesFromToneRoots(definition.root, definition.toneRoots);
 }
 
 function isChordTriggerStep(step) {
@@ -44,9 +56,10 @@ function isChordTriggerStep(step) {
 }
 
 function extractChordEvent(cell, bar, step) {
-  if (!cell || !isChordTriggerStep(step)) return null;
+  if (!cell || cell.type === 'note' || !isChordTriggerStep(step)) return null;
 
-  const notes = createChordNotes(cell.root);
+  const toneRoots = cell.toneRoots ?? getChordToneRoots(cell.label ?? cell.root);
+  const notes = createNotesFromToneRoots(cell.root, toneRoots);
   if (!notes.length) return null;
 
   return {

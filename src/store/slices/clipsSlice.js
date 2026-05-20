@@ -54,7 +54,6 @@ function isValidClipLocation(trackId, bar) {
 function createInitialClips() {
   const initialClips = [
     createClipRecord('drums', 0),
-    createClipRecord('chord', 0),
   ];
 
   return {

@@ -104,3 +104,25 @@ test('chord pitch rail rows align with chord grid rows', async () => {
   assert.match(css, /\.beat-cells\s*\{[^}]*gap:\s*var\(--chord-cell-gap\);/s);
   assert.match(css, /\.beat-cells\s*\{[^}]*padding:\s*var\(--chord-cell-padding\);/s);
 });
+
+test('chord template picker has enough room and can scroll full card content', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.app:has\(\.editor\[data-picker="open"\]\)\s*\{[^}]*--app-editor-height:\s*clamp\(380px,\s*55vh,\s*560px\);/s);
+  assert.match(css, /\.tpl-body\s*\{[^}]*overflow:\s*auto;/s);
+  assert.match(css, /\.tpl-list\s*\{[^}]*height:\s*auto;/s);
+  assert.match(css, /\.tpl-list\s*\{[^}]*min-height:\s*100%;/s);
+  assert.doesNotMatch(css, /\.tpl-body\s*\{[^}]*overflow:\s*hidden;/s);
+});
+
+test('active chord template button aligns icon and label on one baseline', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.btn-template-active\s*\{[^}]*display:\s*inline-flex;/s);
+  assert.match(css, /\.btn-template-active\s*\{[^}]*align-items:\s*center;/s);
+  assert.match(css, /\.btn-template-active\s*\{[^}]*justify-content:\s*center;/s);
+  assert.match(css, /\.btn-template-active\s*\{[^}]*line-height:\s*1;/s);
+  assert.match(css, /\.btn-template-active svg\s*\{[^}]*width:\s*14px;/s);
+  assert.match(css, /\.btn-template-active svg\s*\{[^}]*height:\s*14px;/s);
+  assert.match(css, /\.btn-template-active svg\s*\{[^}]*flex:\s*0 0 auto;/s);
+});

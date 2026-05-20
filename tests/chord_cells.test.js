@@ -2,13 +2,17 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { CHORD_SPAN, STEPS_PER_BAR } from '../src/domain/musicConstants.js';
 import {
+  CHORD_TEMPLATES,
   CHORD_ROOTS,
   createChordCell,
+  createChordNoteCell,
   getChordToneRoots,
   getChordSpanStep,
+  isChordName,
   isChordRoot,
   isChordCellActive,
   toggleChordCell,
+  toggleChordNoteCell,
 } from '../src/domain/chordCells.js';
 
 test('chord roots cover the twelve editor notes', () => {
@@ -27,9 +31,41 @@ test('getChordSpanStep maps four chord spans to matrix steps', () => {
 });
 
 test('createChordCell normalizes valid roots and rejects invalid roots', () => {
-  assert.deepEqual(createChordCell('C'), { root: 'C', quality: 'maj', label: 'C' });
-  assert.deepEqual(createChordCell('F#'), { root: 'F#', quality: 'maj', label: 'F#' });
+  assert.deepEqual(createChordCell('C'), {
+    type: 'chord',
+    root: 'C',
+    chordRoot: 'C',
+    quality: 'maj',
+    label: 'C',
+    toneRoots: ['C', 'E', 'G'],
+  });
+  assert.deepEqual(createChordCell('F#'), {
+    type: 'chord',
+    root: 'F#',
+    chordRoot: 'F#',
+    quality: 'maj',
+    label: 'F#',
+    toneRoots: ['F#', 'A#', 'C#'],
+  });
   assert.equal(createChordCell('H'), null);
+});
+
+test('chord definitions include template and variant chord colors', () => {
+  assert.equal(isChordName('Cmaj7'), true);
+  assert.equal(isChordName('Am9'), true);
+  assert.equal(isChordName('Hmaj7'), false);
+  assert.deepEqual(getChordToneRoots('Cmaj7'), ['C', 'E', 'G', 'B']);
+  assert.deepEqual(getChordToneRoots('Dm7'), ['D', 'F', 'A', 'C']);
+  assert.deepEqual(createChordCell('Am9'), {
+    type: 'chord',
+    root: 'A',
+    chordRoot: 'Am',
+    quality: 'm9',
+    label: 'Am9',
+    toneRoots: ['A', 'C', 'E', 'G', 'B'],
+  });
+  assert.deepEqual(CHORD_TEMPLATES.doowop.chords, ['C', 'Am', 'F', 'G']);
+  assert.equal(Object.keys(CHORD_TEMPLATES).length, 6);
 });
 
 test('chord active tones light the triad only in the first grid column', () => {
@@ -48,11 +84,24 @@ test('chord active tones light the triad only in the first grid column', () => {
 });
 
 test('toggleChordCell clears matching roots and replaces different roots', () => {
-  assert.deepEqual(toggleChordCell(null, 'D'), { root: 'D', quality: 'maj', label: 'D' });
-  assert.equal(toggleChordCell({ root: 'D', quality: 'maj', label: 'D' }, 'D'), null);
+  assert.deepEqual(toggleChordCell(null, 'D'), createChordCell('D'));
+  assert.equal(toggleChordCell(createChordCell('D'), 'D'), null);
   assert.deepEqual(
-    toggleChordCell({ root: 'D', quality: 'maj', label: 'D' }, 'A'),
-    { root: 'A', quality: 'maj', label: 'A' },
+    toggleChordCell(createChordCell('D'), 'A'),
+    createChordCell('A'),
   );
   assert.equal(toggleChordCell(null, 'H'), null);
+});
+
+test('note cells support one saved note per non-primary beat', () => {
+  const cNote = createChordNoteCell('C#');
+
+  assert.deepEqual(cNote, { type: 'note', note: 'C#', label: 'C#' });
+  assert.equal(createChordNoteCell('H'), null);
+  assert.equal(isChordCellActive(cNote, 'C#', 2), true);
+  assert.equal(isChordCellActive(cNote, 'C#', 1), true);
+  assert.equal(isChordCellActive(cNote, 'D', 2), false);
+  assert.deepEqual(toggleChordNoteCell(null, 'A'), createChordNoteCell('A'));
+  assert.equal(toggleChordNoteCell(createChordNoteCell('A'), 'A'), null);
+  assert.deepEqual(toggleChordNoteCell(createChordNoteCell('A'), 'G'), createChordNoteCell('G'));
 });
