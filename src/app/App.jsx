@@ -14,10 +14,12 @@ import {
   seedDefaultDrumsPattern,
 } from './audioUiBridge.js';
 import {
+  applyChordTemplateToExistingClips,
   clearChordBar,
   clearChordCell,
   getChordCell,
   setChordCell,
+  toggleChordNoteStep,
 } from './chordActions.js';
 import { BottomEditor } from './components/BottomEditor.jsx';
 import { Timeline } from './components/Timeline.jsx';
@@ -97,10 +99,11 @@ export default function App() {
   const tracks = useMemo(() => createTimelineTracks({
     barNumbers: BAR_NUMBERS,
     clips,
+    matrix,
     selectedBar,
     trackUi: TRACK_UI,
     volumes,
-  }), [clips, selectedBar, volumes]);
+  }), [clips, matrix, selectedBar, volumes]);
 
   const handleTrackSelect = useCallback((trackId) => {
     const state = useMusicStore.getState();
@@ -205,6 +208,29 @@ export default function App() {
     });
   }, [dispatchAppCommand, selectedBar]);
 
+  const handleChordNoteSelect = useCallback((spanIndex, columnIndex, note) => {
+    const state = useMusicStore.getState();
+    const nextMatrix = toggleChordNoteStep(state.matrix, selectedBar, spanIndex, columnIndex, note);
+    const step = getChordSpanStep(spanIndex);
+    if (step === null) return;
+
+    for (let offset = 0; offset < 4; offset += 1) {
+      state.setCell('chord', selectedBar, step + offset, nextMatrix.chord[selectedBar][step + offset]);
+    }
+  }, [selectedBar]);
+
+  const handleChordTemplateApply = useCallback((templateId) => {
+    const state = useMusicStore.getState();
+    const nextMatrix = applyChordTemplateToExistingClips(state.matrix, state.clips, templateId);
+
+    state.clips.ids
+      .map((id) => state.clips.byId[id])
+      .filter((clip) => clip?.trackId === 'chord')
+      .forEach((clip) => {
+        state.setCell('chord', clip.bar, 0, nextMatrix.chord[clip.bar][0]);
+      });
+  }, []);
+
   const handleClearChordBar = useCallback(() => {
     const state = useMusicStore.getState();
     const nextMatrix = clearChordBar(state.matrix, selectedBar);
@@ -251,6 +277,8 @@ export default function App() {
         activeTrackId,
         matrix,
         onChordCellSelect: handleChordCellSelect,
+        onChordNoteSelect: handleChordNoteSelect,
+        onChordTemplateApply: handleChordTemplateApply,
         onClearCurrentDrumsBar: handleClearCurrentDrumsBar,
         onClearChordBar: handleClearChordBar,
         onClearDrums: handleClearDrums,

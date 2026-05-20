@@ -7,22 +7,17 @@ beforeEach(() => {
   useMusicStore.setState(useMusicStore.getInitialState(), true);
 });
 
-test('clips slice starts with migrated drums and chord phrase clips', () => {
+test('clips slice starts with drums only and does not preseed chord clips', () => {
   const state = useMusicStore.getState();
 
-  assert.deepEqual(state.clips.ids, ['drums-bar-0', 'chord-bar-0']);
+  assert.deepEqual(state.clips.ids, ['drums-bar-0']);
   assert.deepEqual(state.clips.byId['drums-bar-0'], {
     id: 'drums-bar-0',
     trackId: 'drums',
     bar: 0,
     name: 'Drum 01',
   });
-  assert.deepEqual(state.clips.byId['chord-bar-0'], {
-    id: 'chord-bar-0',
-    trackId: 'chord',
-    bar: 0,
-    name: 'Chord 01',
-  });
+  assert.equal(state.getClipForTrackBar('chord', 0), null);
 });
 
 test('getClipForTrackBar returns a clip for one track and bar only', () => {
@@ -65,7 +60,7 @@ test('createClip re-selects an existing clip without duplicating it', () => {
 
   assert.equal(first.id, 'drums-bar-0');
   assert.equal(second.id, 'drums-bar-0');
-  assert.deepEqual(useMusicStore.getState().clips.ids, ['drums-bar-0', 'chord-bar-0']);
+  assert.deepEqual(useMusicStore.getState().clips.ids, ['drums-bar-0']);
   assert.equal(useMusicStore.getState().selectedClipId, 'drums-bar-0');
 });
 
@@ -103,7 +98,7 @@ test('moveClipToBar swaps same-track clips and their matrix bar data', () => {
 
   assert.equal(movedClip.id, 'drums-bar-2');
   assert.equal(movedClip.name, 'Drum 03');
-  assert.deepEqual(useMusicStore.getState().clips.ids, ['drums-bar-0', 'chord-bar-0', 'drums-bar-2']);
+  assert.deepEqual(useMusicStore.getState().clips.ids, ['drums-bar-0', 'drums-bar-2']);
   assert.equal(useMusicStore.getState().getClipForTrackBar('drums', 0).id, 'drums-bar-0');
   assert.equal(useMusicStore.getState().getClipForTrackBar('drums', 0).name, 'Drum 01');
   assert.equal(useMusicStore.getState().getClipForTrackBar('drums', 2).id, 'drums-bar-2');
@@ -127,6 +122,7 @@ test('moveClipToBar ignores invalid clips and bars without changing state', () =
 
 test('selectClip links selectedClipId, activeTrackId, and selectedBar', () => {
   const state = useMusicStore.getState();
+  state.createClip('chord', 0);
 
   state.selectClip('chord-bar-0');
 

@@ -1,5 +1,5 @@
 import { DRUMS_INSTRUMENT_IDS, STEPS_PER_BAR, TOTAL_BARS } from '../domain/musicConstants.js';
-import { isChordRoot, isChordSpan } from '../domain/chordCells.js';
+import { isChordName, isChordSpan } from '../domain/chordCells.js';
 import { APP_COMMAND_TYPES, CHORD_OPTION_COUNT, LEAD_NOTE_IDS } from './appCommands.js';
 
 function isPlainObject(value) {
@@ -44,7 +44,7 @@ function hasValidChordSetCellPayload(command) {
     hasOnlyKeys(command, ['type', 'bar', 'span', 'root']) &&
     isIntegerInRange(command.bar, 0, TOTAL_BARS - 1) &&
     isChordSpan(command.span) &&
-    isChordRoot(command.root)
+    isChordName(command.root)
   );
 }
 

@@ -7,6 +7,8 @@ function BottomEditor({
   activeTrackId,
   matrix,
   onChordCellSelect,
+  onChordNoteSelect,
+  onChordTemplateApply,
   onClearCurrentDrumsBar,
   onClearChordBar,
   onClearDrums,
@@ -32,6 +34,8 @@ function BottomEditor({
     return createElement(ChordEditor, {
       matrix,
       onChordCellSelect,
+      onChordNoteSelect,
+      onChordTemplateApply,
       onClearChordBar,
       rootKey,
       selectedBar,

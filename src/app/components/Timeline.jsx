@@ -98,6 +98,13 @@ function Clip({
 
     onOpenClip(clip.id);
   };
+  const chordLabel = track.id === 'chord' ? clip.chordLabel : null;
+  const clipName = chordLabel ? (
+    <>
+      <span className="clip-idx">{clip.name.toUpperCase()}</span>
+      <span className="clip-chord-name">{chordLabel}</span>
+    </>
+  ) : clip.name;
 
   return (
     <button
@@ -116,9 +123,9 @@ function Clip({
       onMouseDown={(event) => onMouseDownClip(event, clip, track.id)}
     >
       <div className="clip-name">
-        {clip.name}
+        {clipName}
       </div>
-      <div className="clip-empty-tag">empty</div>
+      {chordLabel ? null : <div className="clip-empty-tag">empty</div>}
     </button>
   );
 }

@@ -46,10 +46,17 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(chordEditorSource, /data-screen-label="Chord Editor"/);
   assert.match(chordEditorSource, /CHORD EDITOR - BAR/);
   assert.match(chordEditorSource, /选择和弦进行模板/);
+  assert.match(chordEditorSource, /Chord Template Picker/);
+  assert.match(chordEditorSource, /丰富和弦色彩/);
   assert.match(chordEditorSource, /CHORD_NOTES\.flatMap/);
+  assert.match(chordEditorSource, /CHORD_TEMPLATES/);
+  assert.match(chordEditorSource, /CHORD_VARIANTS/);
   assert.match(chordEditorSource, /getChordCell/);
+  assert.match(chordEditorSource, /getChordStepCell/);
   assert.match(chordEditorSource, /isChordCellActive/);
   assert.match(chordEditorSource, /onChordCellSelect/);
+  assert.match(chordEditorSource, /onChordNoteSelect/);
+  assert.match(chordEditorSource, /onChordTemplateApply/);
   assert.match(chordEditorSource, /onClearChordBar/);
   assert.match(chordEditorSource, /aria-pressed=\{active\}/);
   assert.match(source, /useKeyboardCommands/);
@@ -57,6 +64,8 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(source, /audioEngine/);
   assert.match(source, /seedDefaultDrumsPattern/);
   assert.match(source, /handleChordCellSelect/);
+  assert.match(source, /handleChordNoteSelect/);
+  assert.match(source, /handleChordTemplateApply/);
   assert.match(source, /handleClearChordBar/);
   assert.match(source, /CHORD_SET_CELL/);
   assert.match(source, /CHORD_CLEAR_CELL/);
@@ -145,4 +154,6 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(source, /clearDrumsBar/);
   assert.match(bottomEditorSource, /activeTrackId === 'drums'/);
   assert.match(bottomEditorSource, /activeTrackId === 'chord'/);
+  assert.match(bottomEditorSource, /onChordNoteSelect/);
+  assert.match(bottomEditorSource, /onChordTemplateApply/);
 });

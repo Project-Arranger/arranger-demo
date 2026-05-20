@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { BAR_NUMBERS, TRACK_UI } from '../src/app/uiShellData.js';
 import { createInitialClips } from '../src/store/slices/clipsSlice.js';
 import { createTimelineTracks } from '../src/app/timelineViewModels.js';
+import createInitialMatrix from '../src/store/createInitialMatrix.js';
 
 test('createTimelineTracks decorates static track UI with clip state by bar', () => {
   const clips = createInitialClips();
@@ -36,9 +37,41 @@ test('createTimelineTracks decorates static track UI with clip state by bar', ()
   assert.equal(drums.clipsByBar.length, BAR_NUMBERS.length);
   assert.equal(drums.clipsByBar[0].id, 'drums-bar-0');
   assert.equal(drums.clipsByBar[1], null);
-  assert.equal(chord.clip.id, 'chord-bar-0');
+  assert.equal(chord.clip, null);
   assert.equal(bass.clip, null);
   assert.equal(bass.hasClip, false);
+});
+
+test('createTimelineTracks decorates chord clips with the current chord label', () => {
+  const clips = createInitialClips();
+  const matrix = createInitialMatrix();
+  clips.ids.push('chord-bar-2');
+  clips.byId['chord-bar-2'] = {
+    id: 'chord-bar-2',
+    trackId: 'chord',
+    bar: 2,
+    name: 'Chord 03',
+  };
+  matrix.chord[2][0] = {
+    type: 'chord',
+    root: 'C',
+    chordRoot: 'C',
+    quality: 'maj7',
+    label: 'Cmaj7',
+    toneRoots: ['C', 'E', 'G', 'B'],
+  };
+
+  const tracks = createTimelineTracks({
+    barNumbers: BAR_NUMBERS,
+    clips,
+    matrix,
+    selectedBar: 2,
+    trackUi: TRACK_UI,
+  });
+  const chord = tracks.find((track) => track.id === 'chord');
+
+  assert.equal(chord.clip.chordLabel, 'Cmaj7');
+  assert.equal(chord.bars[2].clip.chordLabel, 'Cmaj7');
 });
 
 test('createTimelineTracks marks tracks with clips outside the selected bar', () => {
