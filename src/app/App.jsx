@@ -6,6 +6,7 @@ import {
   useRef,
 } from 'react';
 import audioEngine from '../audio/audioEngineSingleton.js';
+import { createChordNotes } from '../audio/matrixPlaybackAdapter.js';
 import { APP_COMMAND_TYPES } from '../input/appCommands.js';
 import useKeyboardCommands from '../input/useKeyboardCommands.js';
 import useMusicStore from '../store/useMusicStore.js';
@@ -70,6 +71,14 @@ export default function App() {
     seedDefaultDrumsPattern(useMusicStore);
   }, []);
 
+  useEffect(() => {
+    audioEngine.setVolumeSource?.(() => useMusicStore.getState().volumes);
+
+    return () => {
+      audioEngine.setVolumeSource?.(null);
+    };
+  }, []);
+
   useEffect(() => (
     syncTrackScrollContainers(tracksScrollRef.current, timelineScrollRef.current)
   ), []);
@@ -104,10 +113,11 @@ export default function App() {
     trackUi: TRACK_UI,
     volumes,
   }), [clips, matrix, selectedBar, volumes]);
+  const selectedClip = selectedClipId ? clips.byId[selectedClipId] : null;
 
-  const handleTrackSelect = useCallback((trackId) => {
+  const handleTrackSelect = useCallback((trackId, barIndex = selectedBar) => {
     const state = useMusicStore.getState();
-    const clip = state.getClipForTrackBar(trackId, selectedBar);
+    const clip = state.getClipForTrackBar(trackId, barIndex);
     if (clip) {
       state.selectClip(clip.id);
       return;
@@ -115,7 +125,7 @@ export default function App() {
 
     const { setActiveTrackId, setSelectedBar, setSelectedClipId } = state;
     setActiveTrackId(trackId);
-    setSelectedBar(selectedBar);
+    setSelectedBar(barIndex);
     setSelectedClipId(null);
   }, [selectedBar]);
 
@@ -134,6 +144,15 @@ export default function App() {
   const handleOpenClip = useCallback((clipId) => {
     useMusicStore.getState().selectClip(clipId);
   }, []);
+
+  const handleCloseEditor = useCallback(() => {
+    useMusicStore.getState().setSelectedClipId(null);
+  }, []);
+
+  const handleRenameClip = useCallback((name) => {
+    if (!selectedClipId) return;
+    useMusicStore.getState().renameClip(selectedClipId, name);
+  }, [selectedClipId]);
 
   const writeDrumsBars = useCallback((nextMatrix, barIndexes) => {
     const state = useMusicStore.getState();
@@ -189,7 +208,9 @@ export default function App() {
 
     if (nextCell) {
       const nextMatrix = setChordCell(state.matrix, selectedBar, spanIndex, root);
-      state.setCell('chord', selectedBar, step, nextMatrix.chord[selectedBar][step]);
+      for (let offset = 0; offset < 2; offset += 1) {
+        state.setCell('chord', selectedBar, step + offset, nextMatrix.chord[selectedBar][step + offset]);
+      }
       void dispatchAppCommand({
         type: APP_COMMAND_TYPES.CHORD_SET_CELL,
         bar: selectedBar,
@@ -200,7 +221,9 @@ export default function App() {
     }
 
     const nextMatrix = clearChordCell(state.matrix, selectedBar, spanIndex);
-    state.setCell('chord', selectedBar, step, nextMatrix.chord[selectedBar][step]);
+    for (let offset = 0; offset < 4; offset += 1) {
+      state.setCell('chord', selectedBar, step + offset, nextMatrix.chord[selectedBar][step + offset]);
+    }
     void dispatchAppCommand({
       type: APP_COMMAND_TYPES.CHORD_CLEAR_CELL,
       bar: selectedBar,
@@ -208,15 +231,47 @@ export default function App() {
     });
   }, [dispatchAppCommand, selectedBar]);
 
+  const handleChordPick = useCallback((spanIndex, root) => {
+    const state = useMusicStore.getState();
+    const step = getChordSpanStep(spanIndex);
+    if (step === null) return;
+
+    const nextMatrix = setChordCell(state.matrix, selectedBar, spanIndex, root);
+    for (let offset = 0; offset < 2; offset += 1) {
+      state.setCell('chord', selectedBar, step + offset, nextMatrix.chord[selectedBar][step + offset]);
+    }
+    void dispatchAppCommand({
+      type: APP_COMMAND_TYPES.CHORD_SET_CELL,
+      bar: selectedBar,
+      span: spanIndex,
+      root,
+    });
+  }, [dispatchAppCommand, selectedBar]);
+
+  const previewChordNames = useCallback((chordNames) => {
+    const noteGroups = chordNames
+      .map((chordName) => createChordNotes(chordName))
+      .filter((notes) => notes.length);
+
+    if (!noteGroups.length) return;
+    void audioEngine.previewChordSequence(noteGroups);
+  }, []);
+
+  const handleChordPreview = useCallback((chordName) => {
+    previewChordNames([chordName]);
+  }, [previewChordNames]);
+
+  const handleChordTemplatePreview = useCallback((chords) => {
+    previewChordNames(chords);
+  }, [previewChordNames]);
+
   const handleChordNoteSelect = useCallback((spanIndex, columnIndex, note) => {
     const state = useMusicStore.getState();
     const nextMatrix = toggleChordNoteStep(state.matrix, selectedBar, spanIndex, columnIndex, note);
     const step = getChordSpanStep(spanIndex);
     if (step === null) return;
 
-    for (let offset = 0; offset < 4; offset += 1) {
-      state.setCell('chord', selectedBar, step + offset, nextMatrix.chord[selectedBar][step + offset]);
-    }
+    state.setCell('chord', selectedBar, step + columnIndex, nextMatrix.chord[selectedBar][step + columnIndex]);
   }, [selectedBar]);
 
   const handleChordTemplateApply = useCallback((templateId) => {
@@ -228,6 +283,7 @@ export default function App() {
       .filter((clip) => clip?.trackId === 'chord')
       .forEach((clip) => {
         state.setCell('chord', clip.bar, 0, nextMatrix.chord[clip.bar][0]);
+        state.setCell('chord', clip.bar, 1, nextMatrix.chord[clip.bar][1]);
       });
   }, []);
 
@@ -239,6 +295,10 @@ export default function App() {
       state.setCell('chord', selectedBar, step, cell);
     });
   }, [selectedBar]);
+
+  const handleClearChord = useCallback(() => {
+    useMusicStore.getState().clearTrack('chord');
+  }, []);
 
   return (
     <div className="app" data-screen-label="Main" aria-label="Project Arranger workspace">
@@ -268,6 +328,7 @@ export default function App() {
           onAddClip: handleAddClip,
           onMoveClip: handleMoveClip,
           onOpenClip: handleOpenClip,
+          onTrackSelect: handleTrackSelect,
           ref: timelineScrollRef,
           selectedClipId,
           tracks,
@@ -276,17 +337,25 @@ export default function App() {
       {createElement(BottomEditor, {
         activeTrackId,
         matrix,
+        selectedClipName: selectedClip?.name ?? '',
         onChordCellSelect: handleChordCellSelect,
         onChordNoteSelect: handleChordNoteSelect,
+        onChordPick: handleChordPick,
+        onChordPreview: handleChordPreview,
+        onChordTemplatePreview: handleChordTemplatePreview,
         onChordTemplateApply: handleChordTemplateApply,
+        onCloseEditor: handleCloseEditor,
+        onRenameClip: handleRenameClip,
         onClearCurrentDrumsBar: handleClearCurrentDrumsBar,
         onClearChordBar: handleClearChordBar,
+        onClearChord: handleClearChord,
         onClearDrums: handleClearDrums,
         onGenerateAllDrumsBars: handleGenerateAllDrumsBars,
         onGenerateCurrentDrumsBar: handleGenerateCurrentDrumsBar,
         onDrumsStepToggle: handleDrumsStepToggle,
         rootKey,
         selectedBar,
+        selectedClipId,
       })}
     </div>
   );

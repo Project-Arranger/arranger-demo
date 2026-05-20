@@ -21,6 +21,7 @@ function createMockStore(initial = {}) {
     currentBar: 0,
     currentStep: 0,
     ...initial,
+    deleteSelectedClip: () => calls.push(['deleteSelectedClip']),
     play: () => calls.push(['play']),
     pause: () => calls.push(['pause']),
     stop: () => calls.push(['stop']),
@@ -163,6 +164,13 @@ test('createCommandDispatcher binds dependencies', async () => {
   assert.deepEqual(store.calls, [['stop']]);
 });
 
+test('clip commands dispatch to the selected clip store action', async () => {
+  const store = createMockStore();
+
+  assert.deepEqual(await dispatchCommand({ type: 'clip.deleteSelected' }, { store }), { ok: true });
+  assert.deepEqual(store.calls, [['deleteSelectedClip']]);
+});
+
 test('keyboard map turns common keys into app commands', () => {
   assert.deepEqual(mapKeyboardEventToCommand({ type: 'keydown', key: ' ' }), { type: 'transport.togglePlay' });
   assert.deepEqual(mapKeyboardEventToCommand({ type: 'keydown', code: 'Space' }), { type: 'transport.togglePlay' });
@@ -187,6 +195,22 @@ test('keyboard map turns common keys into app commands', () => {
   assert.deepEqual(
     mapKeyboardEventToCommand({ type: 'keydown', key: '4' }, { activeTrackId: 'chord' }),
     { type: 'chord.selectOption', optionIndex: 3 },
+  );
+  assert.deepEqual(
+    mapKeyboardEventToCommand({ type: 'keydown', key: 'Delete' }, { selectedClipId: 'drums-bar-0' }),
+    { type: 'clip.deleteSelected' },
+  );
+  assert.deepEqual(
+    mapKeyboardEventToCommand({ type: 'keydown', key: 'Backspace' }, { selectedClipId: 'drums-bar-0' }),
+    { type: 'clip.deleteSelected' },
+  );
+  assert.equal(mapKeyboardEventToCommand({ type: 'keydown', key: 'Delete' }, { selectedClipId: null }), null);
+  assert.equal(
+    mapKeyboardEventToCommand(
+      { type: 'keydown', key: 'Delete', target: { tagName: 'INPUT', isContentEditable: false } },
+      { selectedClipId: 'drums-bar-0' },
+    ),
+    null,
   );
   assert.equal(mapKeyboardEventToCommand({ type: 'keydown', key: '8' }, { activeTrackId: 'lead' }), null);
   assert.equal(mapKeyboardEventToCommand({ type: 'keydown', key: '4', repeat: true }, { activeTrackId: 'lead' }), null);

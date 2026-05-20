@@ -1,20 +1,25 @@
-import { Drum } from 'lucide-react';
+import { Drum, X } from 'lucide-react';
+import { createElement } from 'react';
 import { STEPS_PER_BAR } from '../../store/useMusicStore.js';
 import {
   DRUM_SEQUENCER_ROWS,
   isDrumsStepActive,
 } from '../drumSequencerData.js';
+import { ClipNameInput } from './ClipNameInput.jsx';
 import { renderIcon } from './icons.js';
 
 const STEP_NUMBERS = Array.from({ length: STEPS_PER_BAR }, (_, index) => index + 1);
 
 function DrumSequencer({
   matrix,
+  clipName,
+  onClose = () => {},
   onClearCurrentBar,
   onClearDrums,
   onGenerateAllBars,
   onGenerateCurrentBar,
   onStepToggle,
+  onRenameClip,
   selectedBar,
 }) {
   return (
@@ -26,7 +31,8 @@ function DrumSequencer({
           </div>
           <div className="clip-title">
             <div className="crumb">Drums · Phrase</div>
-            <div className="clip-name-input">
+            {createElement(ClipNameInput, { clipName, onRenameClip })}
+            <div className="clip-name-meta">
               DRUM SEQUENCER - BAR
               {' '}
               {selectedBar + 1}
@@ -46,6 +52,15 @@ function DrumSequencer({
           </button>
           <button className="btn-template drum-clear-action" type="button" onClick={onClearDrums}>
             清空 Drums
+          </button>
+          <button
+            className="editor-close"
+            aria-label="Close editor"
+            title="Close"
+            type="button"
+            onClick={onClose}
+          >
+            {renderIcon(X)}
           </button>
         </div>
       </header>

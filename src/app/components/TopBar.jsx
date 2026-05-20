@@ -1,5 +1,4 @@
 import {
-  Play,
   Plus,
   Settings,
   SkipBack,
@@ -56,7 +55,7 @@ function TopBar({
             type="button"
             onClick={onPlayToggle}
           >
-            {renderIcon(Play)}
+            <span className="play-glyph" aria-hidden="true" />
           </button>
         </div>
 

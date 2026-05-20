@@ -47,11 +47,20 @@ function mapNumberKeyToCommand(eventType, key, state) {
   };
 }
 
+function isEditableKeyboardTarget(target) {
+  if (!target) return false;
+  if (target.isContentEditable) return true;
+
+  const tagName = typeof target.tagName === 'string' ? target.tagName.toLowerCase() : '';
+  return tagName === 'input' || tagName === 'textarea' || tagName === 'select';
+}
+
 function mapKeyboardEventToCommand(event, state = {}) {
   const key = getEventKey(event);
   const eventType = event.type ?? 'keydown';
 
   if (event.repeat) return null;
+  if (isEditableKeyboardTarget(event.target)) return null;
 
   if (eventType === 'keydown' && key === ' ') {
     return { type: APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY };
@@ -63,6 +72,14 @@ function mapKeyboardEventToCommand(event, state = {}) {
 
   if (eventType === 'keydown' && key === 'Enter') {
     return { type: APP_COMMAND_TYPES.TUTORIAL_NEXT };
+  }
+
+  if (
+    eventType === 'keydown'
+    && (key === 'Delete' || key === 'Backspace')
+    && state.selectedClipId
+  ) {
+    return { type: APP_COMMAND_TYPES.CLIP_DELETE_SELECTED };
   }
 
   if (eventType === 'keydown' && (key === 'ArrowLeft' || key === 'ArrowRight')) {

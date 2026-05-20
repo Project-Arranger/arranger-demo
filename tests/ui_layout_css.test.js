@@ -97,12 +97,23 @@ test('chord pitch rail rows align with chord grid rows', async () => {
   assert.match(css, /--chord-cell-padding:\s*6px;/);
   assert.match(css, /\.scale-rail\s*\{[^}]*grid-template-rows:\s*var\(--chord-beat-head-height\) var\(--chord-cell-grid-height\) 22px;/s);
   assert.match(css, /\.scale-rail\s*\{[^}]*gap:\s*var\(--chord-beat-gap\);/s);
+  assert.match(css, /\.scale-notes\s*\{[^}]*grid-template-rows:\s*repeat\(12,\s*minmax\(0,\s*1fr\)\);/s);
   assert.match(css, /\.scale-notes\s*\{[^}]*height:\s*var\(--chord-cell-grid-height\);/s);
   assert.match(css, /\.scale-notes\s*\{[^}]*gap:\s*var\(--chord-cell-gap\);/s);
   assert.match(css, /\.scale-notes\s*\{[^}]*padding:\s*var\(--chord-cell-padding\);/s);
+  assert.match(css, /\.note-key\s*\{[^}]*min-height:\s*0;/s);
+  assert.match(css, /\.beat-cells\s*\{[^}]*grid-template-rows:\s*repeat\(12,\s*minmax\(0,\s*1fr\)\);/s);
   assert.match(css, /\.beat-cells\s*\{[^}]*height:\s*var\(--chord-cell-grid-height\);/s);
   assert.match(css, /\.beat-cells\s*\{[^}]*gap:\s*var\(--chord-cell-gap\);/s);
   assert.match(css, /\.beat-cells\s*\{[^}]*padding:\s*var\(--chord-cell-padding\);/s);
+  assert.doesNotMatch(css, /\.cell\.sustain/);
+  assert.match(css, /--chord-extension:\s*oklch\(84% 0\.075 215\);/);
+  assert.match(css, /--chord-extension-ink:\s*oklch\(37% 0\.08 215\);/);
+  assert.match(css, /\.cell\.added,\s*\.cell\.active\.added\s*\{[^}]*background:\s*color-mix\(in oklab,\s*var\(--c-chord\) 35%,\s*white\);/s);
+  assert.doesNotMatch(css, /\.cell\.active\.added\s*\{[^}]*linear-gradient/s);
+  assert.match(css, /\.cell\.extension\.active,\s*\.cell\.extension\.added,\s*\.cell\.extension\.active\.added\s*\{/s);
+  assert.match(css, /\.cell\.extension\.active,\s*\.cell\.extension\.added,\s*\.cell\.extension\.active\.added\s*\{[^}]*background:\s*var\(--chord-extension\);/s);
+  assert.match(css, /\.cell\.extension\.active,\s*\.cell\.extension\.added,\s*\.cell\.extension\.active\.added\s*\{[^}]*border-color:\s*color-mix\(in oklab,\s*var\(--chord-extension-ink\) 45%,\s*var\(--border\)\);/s);
 });
 
 test('chord template picker has enough room and can scroll full card content', async () => {
@@ -125,4 +136,30 @@ test('active chord template button aligns icon and label on one baseline', async
   assert.match(css, /\.btn-template-active svg\s*\{[^}]*width:\s*14px;/s);
   assert.match(css, /\.btn-template-active svg\s*\{[^}]*height:\s*14px;/s);
   assert.match(css, /\.btn-template-active svg\s*\{[^}]*flex:\s*0 0 auto;/s);
+});
+
+test('clip name edit icon sits beside the shared clip name input', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.clip-name-field\s*\{[^}]*display:\s*inline-flex;/s);
+  assert.match(css, /\.clip-name-field\s*\{[^}]*align-items:\s*center;/s);
+  assert.match(css, /\.clip-name-edit-icon\s*\{[^}]*flex:\s*0 0 auto;/s);
+  assert.match(css, /\.clip-name-edit-icon\s*\{[^}]*pointer-events:\s*none;/s);
+});
+
+test('add chord secondary panel matches the two-tab reference picker layout', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.chord-variants\s*\{[^}]*position:\s*fixed;/s);
+  assert.match(css, /\.chord-variants\s*\{[^}]*width:\s*min\(760px,\s*calc\(100vw - 32px\)\);/s);
+  assert.match(css, /\.cv-tabs\s*\{[^}]*display:\s*flex;/s);
+  assert.match(css, /\.cv-tab\[aria-selected="true"\]::after\s*\{/);
+  assert.match(css, /\.cv-panel\[hidden\]\s*\{[^}]*display:\s*none !important;/s);
+  assert.match(css, /\.cv-grid\.diatonic\s*\{[^}]*grid-template-columns:\s*repeat\(7,\s*minmax\(0,\s*1fr\)\);/s);
+  assert.match(css, /\.cv-grid\.enrich\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\);/s);
+  assert.match(css, /\.cv-grid\.diatonic \.cv-card\s*\{[^}]*min-height:\s*150px;/s);
+  assert.match(css, /\.cv-grid\.diatonic \.cv-foot\s*\{[^}]*margin-top:\s*auto;/s);
+  assert.match(css, /\.cv-context\s*\{[^}]*display:\s*flex;/s);
+  assert.match(css, /\.cv-empty\s*\{[^}]*border:\s*1px dashed var\(--border\);/s);
+  assert.match(css, /\.cv-roman\s*\{/);
 });

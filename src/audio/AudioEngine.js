@@ -4,6 +4,7 @@ import {
   STEPS_PER_BAR,
   TOTAL_BARS,
 } from '../domain/musicConstants.js';
+import { clampTrackVolume } from '../domain/trackVolume.js';
 import { AUDIO_STATUSES } from './audioStatus.js';
 import { createMatrixPlaybackAdapter } from './matrixPlaybackAdapter.js';
 
@@ -52,11 +53,33 @@ function callToDestination(player) {
   return result && typeof result === 'object' ? result : player;
 }
 
+function readVolumeSource(volumeSource) {
+  if (!volumeSource) return {};
+  return typeof volumeSource === 'function' ? volumeSource() : volumeSource;
+}
+
+function getVolumeForTrack(volumeSource, trackId) {
+  const volumes = readVolumeSource(volumeSource);
+  return clampTrackVolume(volumes?.[trackId]);
+}
+
+function applyVolume(node, volume) {
+  if (!node) return;
+
+  if (node.volume && typeof node.volume === 'object' && 'value' in node.volume) {
+    node.volume.value = volume;
+    return;
+  }
+
+  node.set?.({ volume });
+}
+
 export default class AudioEngine {
   constructor(options = {}) {
     this.tone = options.tone;
     this.baseUrl = options.baseUrl ?? getDefaultBaseUrl();
     this.matrixSource = options.matrixSource ?? null;
+    this.volumeSource = options.volumeSource ?? null;
     this.onPositionChange = options.onPositionChange ?? null;
     this.playerFactory = options.playerFactory ?? null;
     this.fallbackSynthFactory = options.fallbackSynthFactory ?? null;
@@ -79,6 +102,10 @@ export default class AudioEngine {
 
   getSampleUrls() {
     return createDrumsSampleUrls(this.baseUrl);
+  }
+
+  getTrackVolume(trackId) {
+    return getVolumeForTrack(this.volumeSource, trackId);
   }
 
   createPlayer(url, instrument) {
@@ -147,12 +174,13 @@ export default class AudioEngine {
     }
   }
 
-  triggerDrumsInstrument(instrument, time = this.now()) {
+  triggerDrumsInstrument(instrument, time = this.now(), volume = this.getTrackVolume('drums')) {
     if (!DRUMS_INSTRUMENT_IDS.includes(instrument)) return false;
 
     const player = this.drumPlayers.get(instrument);
     if (player?.start) {
       try {
+        applyVolume(player, volume);
         player.start(time);
         return true;
       } catch {
@@ -162,6 +190,7 @@ export default class AudioEngine {
 
     if (this.fallbackSynth?.triggerAttackRelease) {
       try {
+        applyVolume(this.fallbackSynth, volume);
         this.fallbackSynth.triggerAttackRelease(DRUM_FALLBACK_NOTES[instrument], '16n', time);
         return true;
       } catch {
@@ -176,15 +205,17 @@ export default class AudioEngine {
     await this.startAudio();
 
     const instrumentList = Array.isArray(instruments) ? instruments : [instruments];
+    const volume = this.getTrackVolume('drums');
     return instrumentList
-      .filter((instrument) => this.triggerDrumsInstrument(instrument, time));
+      .filter((instrument) => this.triggerDrumsInstrument(instrument, time, volume));
   }
 
-  triggerChordNotes(notes, duration = '4n', time = this.now()) {
+  triggerChordNotes(notes, duration = '4n', time = this.now(), volume = this.getTrackVolume('chord')) {
     if (!Array.isArray(notes) || !notes.length) return false;
     if (!this.chordSynth?.triggerAttackRelease) return false;
 
     try {
+      applyVolume(this.chordSynth, volume);
       this.chordSynth.triggerAttackRelease(notes, duration, time);
       return true;
     } catch {
@@ -197,13 +228,52 @@ export default class AudioEngine {
     return this.triggerChordNotes(notes, duration, time);
   }
 
+  async previewChordSequence(noteGroups, options = {}) {
+    const {
+      duration = '8n',
+      intervalSeconds = 0.55,
+    } = options;
+
+    await this.startAudio();
+
+    const startTime = this.now();
+    const volume = this.getTrackVolume('chord');
+    return noteGroups.map((notes, index) => this.triggerChordNotes(
+      notes,
+      duration,
+      startTime + index * intervalSeconds,
+      volume,
+    ));
+  }
+
   triggerChordEvent(event, time = this.now()) {
-    return this.triggerChordNotes(event.notes, event.duration, time);
+    return this.triggerChordNotes(
+      event.notes,
+      event.duration,
+      time,
+      this.getTrackVolume(event.trackId ?? 'chord'),
+    );
   }
 
   setMatrixSource(matrixSource) {
     this.matrixSource = matrixSource;
     this.matrixAdapter = null;
+  }
+
+  setVolumeSource(volumeSource) {
+    this.volumeSource = volumeSource;
+  }
+
+  hasTransportEvent() {
+    return this.transportEventId !== null && this.transportEventId !== undefined;
+  }
+
+  clearMatrixPlaybackSchedule() {
+    if (!this.hasTransportEvent() || !this.transport?.clear) return false;
+
+    this.transport.clear(this.transportEventId);
+    this.transportEventId = null;
+    return true;
   }
 
   getMatrixAdapter(matrixSource = this.matrixSource) {
@@ -219,9 +289,7 @@ export default class AudioEngine {
     const adapter = this.getMatrixAdapter(matrixSource);
     if (!adapter || !this.transport?.scheduleRepeat) return null;
 
-    if (this.transportEventId && this.transport?.clear) {
-      this.transport.clear(this.transportEventId);
-    }
+    this.clearMatrixPlaybackSchedule();
 
     this.transportEventId = this.transport.scheduleRepeat((time) => {
       const position = adapter.getPositionForFlatStep(this.transportFlatStep);
@@ -264,6 +332,9 @@ export default class AudioEngine {
 
   async play(options = {}) {
     await this.startAudio();
+    if (Object.hasOwn(options, 'volumeSource')) {
+      this.setVolumeSource(options.volumeSource);
+    }
     this.syncTransport(options);
 
     if (options.matrixSource || this.matrixSource) {
@@ -279,6 +350,7 @@ export default class AudioEngine {
 
   async stop() {
     this.transport?.stop?.();
+    this.clearMatrixPlaybackSchedule();
     this.seekToStep(0, 0);
   }
 }

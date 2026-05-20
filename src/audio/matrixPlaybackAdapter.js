@@ -6,6 +6,7 @@ import {
 import { getDrumsCellInstruments } from '../domain/drumsCells.js';
 import {
   CHORD_ROOTS,
+  getChordCellNotes,
   getChordDefinition,
   getChordToneRoots,
 } from '../domain/chordCells.js';
@@ -51,15 +52,59 @@ function createChordNotes(root) {
   return createNotesFromToneRoots(definition.root, definition.toneRoots);
 }
 
+function createSingleNotes(noteRoots) {
+  if (!noteRoots.length) return [];
+  return createNotesFromToneRoots(noteRoots[0], noteRoots);
+}
+
 function isChordTriggerStep(step) {
   return Number.isInteger(step) && step % CHORD_SPAN === 0;
 }
 
 function extractChordEvent(cell, bar, step) {
-  if (!cell || cell.type === 'note' || !isChordTriggerStep(step)) return null;
+  if (!cell) return null;
+
+  if (cell.type === 'note' || cell.type === 'notes') {
+    const noteRoots = getChordCellNotes(cell);
+    const notes = createSingleNotes(noteRoots);
+    if (!notes.length) return null;
+
+    return {
+      type: 'chord',
+      trackId: 'chord',
+      bar,
+      step,
+      root: null,
+      quality: 'notes',
+      label: cell.label ?? noteRoots.join('/'),
+      notes,
+      duration: '16n',
+    };
+  }
+
+  const isChordLike = cell.type === 'chord' || (!cell.type && (cell.root || cell.label));
+  if (!isChordLike) return null;
+
+  const addedNotes = getChordCellNotes(cell);
+  if (!isChordTriggerStep(step)) {
+    const notes = createSingleNotes(addedNotes);
+    if (!notes.length) return null;
+
+    return {
+      type: 'chord',
+      trackId: 'chord',
+      bar,
+      step,
+      root: null,
+      quality: 'notes',
+      label: addedNotes.join('/'),
+      notes,
+      duration: '16n',
+    };
+  }
 
   const toneRoots = cell.toneRoots ?? getChordToneRoots(cell.label ?? cell.root);
-  const notes = createNotesFromToneRoots(cell.root, toneRoots);
+  const notes = createNotesFromToneRoots(cell.root, [...toneRoots, ...addedNotes]);
   if (!notes.length) return null;
 
   return {

@@ -44,9 +44,30 @@ test('createChordNotes maps major chord roots to playable triads', () => {
 
 test('extractChordEvent reads chord cells into playable chord events', () => {
   assert.equal(extractChordEvent(null, 0, 0), null);
-  assert.deepEqual(extractChordEvent({ type: 'note', note: 'C', label: 'C' }, 2, 4), null);
+  assert.deepEqual(extractChordEvent({ type: 'note', note: 'C', label: 'C' }, 2, 6), {
+    type: 'chord',
+    trackId: 'chord',
+    bar: 2,
+    step: 6,
+    root: null,
+    quality: 'notes',
+    label: 'C',
+    notes: ['C4'],
+    duration: '16n',
+  });
+  assert.deepEqual(extractChordEvent({ type: 'notes', notes: ['D', 'F'], label: 'D/F' }, 2, 6), {
+    type: 'chord',
+    trackId: 'chord',
+    bar: 2,
+    step: 6,
+    root: null,
+    quality: 'notes',
+    label: 'D/F',
+    notes: ['D4', 'F4'],
+    duration: '16n',
+  });
   assert.deepEqual(
-    extractChordEvent({ type: 'chord', root: 'C', chordRoot: 'C', quality: 'maj7', label: 'Cmaj7', toneRoots: ['C', 'E', 'G', 'B'] }, 2, 4),
+    extractChordEvent({ type: 'chord', root: 'C', chordRoot: 'C', quality: 'maj7', label: 'Cmaj7', toneRoots: ['C', 'E', 'G', 'B'], addedNotes: ['D'] }, 2, 4),
     {
       type: 'chord',
       trackId: 'chord',
@@ -55,17 +76,18 @@ test('extractChordEvent reads chord cells into playable chord events', () => {
       root: 'C',
       quality: 'maj7',
       label: 'Cmaj7',
-      notes: ['C4', 'E4', 'G4', 'B4'],
+      notes: ['C4', 'E4', 'G4', 'B4', 'D5'],
       duration: '4n',
     },
   );
 });
 
-test('matrix playback adapter returns chord events for chord span starts only', () => {
+test('matrix playback adapter treats Beat 1 column 2 as sustain and plays multi-notes separately', () => {
   const matrix = createInitialMatrix();
   matrix.drums[0][4] = { instruments: ['hihat'] };
   matrix.chord[0][4] = { type: 'chord', root: 'G', chordRoot: 'G', quality: '7', label: 'G7', toneRoots: ['G', 'B', 'D', 'F'] };
   matrix.chord[0][5] = { type: 'chord', root: 'C', chordRoot: 'C', quality: 'maj', label: 'C', toneRoots: ['C', 'E', 'G'] };
+  matrix.chord[0][6] = { type: 'notes', notes: ['D', 'F'], label: 'D/F' };
 
   const adapter = createMatrixPlaybackAdapter(() => matrix);
 
@@ -84,6 +106,19 @@ test('matrix playback adapter returns chord events for chord span starts only', 
     },
   ]);
   assert.deepEqual(adapter.getEventsForStep(0, 5), []);
+  assert.deepEqual(adapter.getEventsForStep(0, 6), [
+    {
+      type: 'chord',
+      trackId: 'chord',
+      bar: 0,
+      step: 6,
+      root: null,
+      quality: 'notes',
+      label: 'D/F',
+      notes: ['D4', 'F4'],
+      duration: '16n',
+    },
+  ]);
 });
 
 test('matrix playback adapter wraps flat transport steps across eight bars', () => {

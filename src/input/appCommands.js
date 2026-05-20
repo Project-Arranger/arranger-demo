@@ -2,6 +2,7 @@ const APP_COMMAND_TYPES = Object.freeze({
   TRANSPORT_TOGGLE_PLAY: 'transport.togglePlay',
   TRANSPORT_STOP: 'transport.stop',
   TRANSPORT_SEEK: 'transport.seek',
+  CLIP_DELETE_SELECTED: 'clip.deleteSelected',
   TUTORIAL_NEXT: 'tutorial.next',
   TUTORIAL_COMPLETE_TASK: 'tutorial.completeTask',
   DRUMS_TOGGLE: 'drums.toggle',
@@ -21,6 +22,9 @@ const COMMAND_GROUPS = Object.freeze({
     APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY,
     APP_COMMAND_TYPES.TRANSPORT_STOP,
     APP_COMMAND_TYPES.TRANSPORT_SEEK,
+  ]),
+  clip: Object.freeze([
+    APP_COMMAND_TYPES.CLIP_DELETE_SELECTED,
   ]),
   tutorial: Object.freeze([
     APP_COMMAND_TYPES.TUTORIAL_NEXT,
@@ -43,11 +47,12 @@ const COMMAND_GROUPS = Object.freeze({
 
 /**
  * @typedef {{ type: 'transport.togglePlay' } | { type: 'transport.stop' } | { type: 'transport.seek', bar: number, step: number }} TransportCommand
+ * @typedef {{ type: 'clip.deleteSelected' }} ClipCommand
  * @typedef {{ type: 'tutorial.next' } | { type: 'tutorial.completeTask' }} TutorialCommand
  * @typedef {{ type: 'drums.toggle', bar: number, step: number, instrument: 'kick' | 'snare' | 'hihat' }} DrumsCommand
  * @typedef {{ type: 'chord.selectOption', optionIndex: number } | { type: 'chord.confirm' } | { type: 'chord.setCell', bar: number, span: number, root: string } | { type: 'chord.clearCell', bar: number, span: number }} ChordCommand
  * @typedef {{ type: 'lead.noteOn', note: string } | { type: 'lead.noteOff', note: string }} LeadCommand
- * @typedef {TransportCommand | TutorialCommand | DrumsCommand | ChordCommand | LeadCommand} AppCommand
+ * @typedef {TransportCommand | ClipCommand | TutorialCommand | DrumsCommand | ChordCommand | LeadCommand} AppCommand
  */
 
 export {
