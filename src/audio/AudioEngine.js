@@ -268,10 +268,22 @@ export default class AudioEngine {
     return this.transportEventId !== null && this.transportEventId !== undefined;
   }
 
-  clearMatrixPlaybackSchedule() {
-    if (!this.hasTransportEvent() || !this.transport?.clear) return false;
+  hasStartedAudio() {
+    return (
+      this.status === AUDIO_STATUSES.READY
+      || this.status === AUDIO_STATUSES.SAMPLE_FALLBACK
+    );
+  }
 
-    this.transport.clear(this.transportEventId);
+  getStartedTransport() {
+    return this.hasStartedAudio() ? this.transport : null;
+  }
+
+  clearMatrixPlaybackSchedule() {
+    const transport = this.getStartedTransport();
+    if (!this.hasTransportEvent() || !transport?.clear) return false;
+
+    transport.clear(this.transportEventId);
     this.transportEventId = null;
     return true;
   }
@@ -287,11 +299,12 @@ export default class AudioEngine {
 
   scheduleMatrixPlayback(matrixSource = this.matrixSource) {
     const adapter = this.getMatrixAdapter(matrixSource);
-    if (!adapter || !this.transport?.scheduleRepeat) return null;
+    const transport = this.getStartedTransport();
+    if (!adapter || !transport?.scheduleRepeat) return null;
 
     this.clearMatrixPlaybackSchedule();
 
-    this.transportEventId = this.transport.scheduleRepeat((time) => {
+    this.transportEventId = transport.scheduleRepeat((time) => {
       const position = adapter.getPositionForFlatStep(this.transportFlatStep);
       this.currentBar = position.bar;
       this.currentStep = position.step;
@@ -313,8 +326,9 @@ export default class AudioEngine {
   }
 
   syncTransport({ bpm = DEFAULT_BPM, bar = this.currentBar, step = this.currentStep } = {}) {
-    if (this.transport?.bpm) {
-      this.transport.bpm.value = bpm;
+    const transport = this.getStartedTransport();
+    if (transport?.bpm) {
+      transport.bpm.value = bpm;
     }
 
     return this.seekToStep(bar, step);
@@ -325,8 +339,9 @@ export default class AudioEngine {
     this.currentStep = step;
     this.transportFlatStep = (bar * STEPS_PER_BAR + step) % (TOTAL_BARS * STEPS_PER_BAR);
 
-    if (this.transport) {
-      this.transport.position = formatToneTransportPosition(bar, step);
+    const transport = this.getStartedTransport();
+    if (transport) {
+      transport.position = formatToneTransportPosition(bar, step);
     }
   }
 
@@ -341,15 +356,15 @@ export default class AudioEngine {
       this.scheduleMatrixPlayback(options.matrixSource ?? this.matrixSource);
     }
 
-    this.transport?.start?.();
+    this.getStartedTransport()?.start?.();
   }
 
   async pause() {
-    this.transport?.pause?.();
+    this.getStartedTransport()?.pause?.();
   }
 
   async stop() {
-    this.transport?.stop?.();
+    this.getStartedTransport()?.stop?.();
     this.clearMatrixPlaybackSchedule();
     this.seekToStep(0, 0);
   }

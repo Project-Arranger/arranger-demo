@@ -55,6 +55,14 @@ function createFakeToneWithEventIds(eventIds) {
   return tone;
 }
 
+function createToneWithBlockedTransport() {
+  return {
+    get Transport() {
+      throw new Error('Transport should not be touched before audio starts');
+    },
+  };
+}
+
 function createPlayerFactory(calls) {
   return (url, instrument) => ({
     start: (time) => calls.push(['player.start', instrument, url, time]),
@@ -254,6 +262,18 @@ test('AudioEngine syncs transport play pause stop and seek', async () => {
     ['transport.stop'],
     ['transport.clear', 'repeat-id'],
   ]);
+});
+
+test('AudioEngine avoids touching Tone transport before audio starts', async () => {
+  const engine = new AudioEngine({ tone: createToneWithBlockedTransport() });
+
+  engine.seekToStep(2, 8);
+  await engine.pause();
+  await engine.stop();
+
+  assert.equal(engine.currentBar, 0);
+  assert.equal(engine.currentStep, 0);
+  assert.equal(engine.transportFlatStep, 0);
 });
 
 test('AudioEngine matrix playback triggers drums and chord events', async () => {
