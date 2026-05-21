@@ -268,3 +268,18 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(bottomEditorSource, /onChordTemplatePreview/);
   assert.match(bottomEditorSource, /onChordTemplateApply/);
 });
+
+test('app mounts the drums tutorial preview overlay', async () => {
+  const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
+  const overlaySource = await readFile(
+    new URL('../src/app/components/TutorialOverlay.jsx', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /TutorialOverlay/);
+  assert.match(source, /DRUMS_TUTORIAL_STEPS/);
+  assert.match(source, /currentTutorialStepIndex/);
+  assert.match(overlaySource, /tutorial-panel/);
+  assert.match(overlaySource, /onPrimaryAction/);
+  assert.match(overlaySource, /跳过教程/);
+});

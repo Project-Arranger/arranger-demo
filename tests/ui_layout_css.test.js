@@ -138,6 +138,15 @@ test('active chord template button aligns icon and label on one baseline', async
   assert.match(css, /\.btn-template-active svg\s*\{[^}]*flex:\s*0 0 auto;/s);
 });
 
+test('tutorial preview panel is fixed on the right side', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.tutorial-panel\s*\{[^}]*position:\s*fixed;/s);
+  assert.match(css, /\.tutorial-panel\s*\{[^}]*right:\s*0;/s);
+  assert.match(css, /\.tutorial-panel\s*\{[^}]*width:\s*min\(25vw,\s*360px\);/s);
+  assert.match(css, /\.tutorial-panel\s*\{[^}]*min-width:\s*280px;/s);
+});
+
 test('clip name edit icon sits beside the shared clip name input', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 

@@ -4,12 +4,14 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from 'react';
 import audioEngine from '../audio/audioEngineSingleton.js';
 import { createChordNotes } from '../audio/matrixPlaybackAdapter.js';
 import { APP_COMMAND_TYPES } from '../input/appCommands.js';
 import useKeyboardCommands from '../input/useKeyboardCommands.js';
 import useMusicStore from '../store/useMusicStore.js';
+import { DRUMS_TUTORIAL_STEPS } from '../tutorial/drumsTutorialSteps.js';
 import {
   createUiAudioDispatcher,
   seedDefaultDrumsPattern,
@@ -26,6 +28,7 @@ import { BottomEditor } from './components/BottomEditor.jsx';
 import { Timeline } from './components/Timeline.jsx';
 import { TopBar } from './components/TopBar.jsx';
 import { TracksColumn } from './components/TracksColumn.jsx';
+import { TutorialOverlay } from './components/TutorialOverlay.jsx';
 import { toggleInstrumentInCell } from './drumSequencerData.js';
 import {
   getChordSpanStep,
@@ -57,8 +60,11 @@ export default function App() {
   const selectedClipId = useMusicStore((state) => state.selectedClipId);
   const clips = useMusicStore((state) => state.clips);
   const volumes = useMusicStore((state) => state.volumes);
+  const [currentTutorialStepIndex, setCurrentTutorialStepIndex] = useState(0);
+  const [tutorialVisible, setTutorialVisible] = useState(true);
   const tracksScrollRef = useRef(null);
   const timelineScrollRef = useRef(null);
+  const currentTutorialStep = DRUMS_TUTORIAL_STEPS[currentTutorialStepIndex];
 
   const dispatchAppCommand = useMemo(
     () => createUiAudioDispatcher({ store: useMusicStore, audio: audioEngine }),
@@ -300,6 +306,16 @@ export default function App() {
     useMusicStore.getState().clearTrack('chord');
   }, []);
 
+  const handleTutorialNext = useCallback(() => {
+    setCurrentTutorialStepIndex((stepIndex) => (
+      Math.min(stepIndex + 1, DRUMS_TUTORIAL_STEPS.length - 1)
+    ));
+  }, []);
+
+  const handleTutorialBack = useCallback(() => {
+    setCurrentTutorialStepIndex((stepIndex) => Math.max(stepIndex - 1, 0));
+  }, []);
+
   return (
     <div className="app" data-screen-label="Main" aria-label="Project Arranger workspace">
       {createElement(TopBar, {
@@ -357,6 +373,14 @@ export default function App() {
         selectedBar,
         selectedClipId,
       })}
+      {tutorialVisible ? createElement(TutorialOverlay, {
+        canGoBack: currentTutorialStepIndex > 0,
+        isLastStep: currentTutorialStepIndex === DRUMS_TUTORIAL_STEPS.length - 1,
+        onBack: handleTutorialBack,
+        onPrimaryAction: handleTutorialNext,
+        onSkip: () => setTutorialVisible(false),
+        step: currentTutorialStep,
+      }) : null}
     </div>
   );
 }
