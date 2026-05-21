@@ -145,6 +145,8 @@ test('tutorial preview panel is fixed on the right side', async () => {
   assert.match(css, /\.tutorial-panel\s*\{[^}]*right:\s*0;/s);
   assert.match(css, /\.tutorial-panel\s*\{[^}]*width:\s*min\(25vw,\s*360px\);/s);
   assert.match(css, /\.tutorial-panel\s*\{[^}]*min-width:\s*280px;/s);
+  assert.match(css, /\.tutorial-target-active\s*\{[^}]*outline:\s*3px solid/s);
+  assert.match(css, /\.tutorial-target-active\s*\{[^}]*box-shadow:\s*0 0 0 6px/s);
 });
 
 test('clip name edit icon sits beside the shared clip name input', async () => {

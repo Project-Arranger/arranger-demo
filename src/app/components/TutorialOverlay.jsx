@@ -5,6 +5,7 @@ function TutorialOverlay({
   onPrimaryAction,
   onSkip,
   step,
+  targetName,
 }) {
   if (!step) return null;
 
@@ -16,6 +17,13 @@ function TutorialOverlay({
         <div className="tutorial-phase">{step.phase}</div>
         <h2>{step.title}</h2>
         <p>{step.copy}</p>
+        {targetName ? (
+          <div className="tutorial-target-note">
+            正在指引：
+            {' '}
+            {targetName}
+          </div>
+        ) : null}
       </div>
 
       <div className="tutorial-panel-actions">
@@ -39,4 +47,3 @@ function TutorialOverlay({
 }
 
 export { TutorialOverlay };
-

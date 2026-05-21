@@ -65,6 +65,7 @@ export default function App() {
   const tracksScrollRef = useRef(null);
   const timelineScrollRef = useRef(null);
   const currentTutorialStep = DRUMS_TUTORIAL_STEPS[currentTutorialStepIndex];
+  const activeTutorialTarget = currentTutorialStep?.target?.name ?? null;
 
   const dispatchAppCommand = useMemo(
     () => createUiAudioDispatcher({ store: useMusicStore, audio: audioEngine }),
@@ -319,6 +320,7 @@ export default function App() {
   return (
     <div className="app" data-screen-label="Main" aria-label="Project Arranger workspace">
       {createElement(TopBar, {
+        activeTutorialTarget,
         bpm,
         currentBar,
         currentStep,
@@ -338,6 +340,7 @@ export default function App() {
           tracks,
         })}
         {createElement(Timeline, {
+          activeTutorialTarget,
           activeTrackId,
           currentBar,
           currentStep,
@@ -352,6 +355,7 @@ export default function App() {
       </main>
       {createElement(BottomEditor, {
         activeTrackId,
+        activeTutorialTarget,
         matrix,
         selectedClipName: selectedClip?.name ?? '',
         onChordCellSelect: handleChordCellSelect,
@@ -380,6 +384,7 @@ export default function App() {
         onPrimaryAction: handleTutorialNext,
         onSkip: () => setTutorialVisible(false),
         step: currentTutorialStep,
+        targetName: activeTutorialTarget,
       }) : null}
     </div>
   );

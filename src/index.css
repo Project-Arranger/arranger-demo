@@ -125,6 +125,33 @@ button {
   line-height: 1.55;
 }
 
+.tutorial-target-note {
+  padding: 9px 10px;
+  color: var(--c-drums-ink);
+  background: color-mix(in oklab, var(--c-drums) 32%, white);
+  border: 1px solid color-mix(in oklab, var(--c-drums-ink) 18%, transparent);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.tutorial-target-active {
+  position: relative;
+  z-index: 20;
+  outline: 3px solid color-mix(in oklab, var(--c-drums-ink) 72%, white);
+  outline-offset: -3px;
+  box-shadow: 0 0 0 6px color-mix(in oklab, var(--c-drums) 52%, transparent);
+}
+
+.track-editor-target {
+  min-height: 0;
+}
+
+.track-editor-target > .editor {
+  height: 100%;
+}
+
 .tutorial-panel-actions {
   display: grid;
   gap: 8px;

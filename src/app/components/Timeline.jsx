@@ -133,6 +133,7 @@ function Clip({
 
 const Timeline = forwardRef(function Timeline(
   {
+    activeTutorialTarget,
     activeTrackId,
     currentBar,
     currentStep,
@@ -152,6 +153,7 @@ const Timeline = forwardRef(function Timeline(
   const feedbackTimerRef = useRef(null);
   const flatStep = currentBar * STEPS_PER_BAR + currentStep;
   const playheadLeft = `${(flatStep / (TOTAL_BARS * STEPS_PER_BAR)) * 100}%`;
+  const active = activeTutorialTarget === 'track-area';
 
   const shouldIgnoreClick = () => {
     if (!suppressNextClick) return false;
@@ -230,7 +232,12 @@ const Timeline = forwardRef(function Timeline(
   }, [dragSession, onMoveClip, showDragFeedback, tracks]);
 
   return (
-    <section className="timeline-col" ref={scrollRef} style={{ '--bars': TOTAL_BARS }}>
+    <section
+      className={`timeline-col${active ? ' tutorial-target-active' : ''}`}
+      data-tutorial-target="track-area"
+      ref={scrollRef}
+      style={{ '--bars': TOTAL_BARS }}
+    >
       <div className="ruler" aria-label="Timeline bars">
         {BAR_NUMBERS.map((barNumber) => (
           <div

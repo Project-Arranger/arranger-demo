@@ -283,3 +283,29 @@ test('app mounts the drums tutorial preview overlay', async () => {
   assert.match(overlaySource, /onPrimaryAction/);
   assert.match(overlaySource, /跳过教程/);
 });
+
+test('tutorial preview points to real app regions', async () => {
+  const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
+  const topBarSource = await readFile(new URL('../src/app/components/TopBar.jsx', import.meta.url), 'utf8');
+  const timelineSource = await readFile(
+    new URL('../src/app/components/Timeline.jsx', import.meta.url),
+    'utf8',
+  );
+  const bottomEditorSource = await readFile(
+    new URL('../src/app/components/BottomEditor.jsx', import.meta.url),
+    'utf8',
+  );
+  const overlaySource = await readFile(
+    new URL('../src/app/components/TutorialOverlay.jsx', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /activeTutorialTarget/);
+  assert.match(topBarSource, /data-tutorial-target="top-bar"/);
+  assert.match(topBarSource, /tutorial-target-active/);
+  assert.match(timelineSource, /data-tutorial-target="track-area"/);
+  assert.match(timelineSource, /tutorial-target-active/);
+  assert.match(bottomEditorSource, /data-tutorial-target="track-editor"/);
+  assert.match(bottomEditorSource, /tutorial-target-active/);
+  assert.match(overlaySource, /正在指引/);
+});
