@@ -138,10 +138,50 @@ button {
 
 .tutorial-target-active {
   position: relative;
-  z-index: 20;
-  outline: 3px solid color-mix(in oklab, var(--c-drums-ink) 72%, white);
-  outline-offset: -3px;
-  box-shadow: 0 0 0 6px color-mix(in oklab, var(--c-drums) 52%, transparent);
+  z-index: 55;
+  outline: 5px solid color-mix(in oklab, var(--c-drums-ink) 82%, white);
+  outline-offset: -5px;
+  box-shadow:
+    0 0 0 4px white,
+    0 0 0 12px color-mix(in oklab, var(--c-drums) 72%, transparent),
+    0 20px 46px color-mix(in oklab, black 24%, transparent);
+  animation: tutorial-target-pulse 1.15s ease-in-out infinite;
+}
+
+.tutorial-target-active::after {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  padding: 5px 8px;
+  color: white;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1;
+  pointer-events: none;
+  content: "当前步骤";
+  background: color-mix(in oklab, var(--c-drums-ink) 88%, black);
+  border: 1px solid color-mix(in oklab, white 55%, transparent);
+  border-radius: 999px;
+  box-shadow: 0 6px 18px color-mix(in oklab, black 24%, transparent);
+}
+
+@keyframes tutorial-target-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 4px white,
+      0 0 0 12px color-mix(in oklab, var(--c-drums) 72%, transparent),
+      0 20px 46px color-mix(in oklab, black 24%, transparent);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 5px white,
+      0 0 0 17px color-mix(in oklab, var(--c-drums) 86%, transparent),
+      0 24px 54px color-mix(in oklab, black 28%, transparent);
+  }
 }
 
 .track-editor-target {

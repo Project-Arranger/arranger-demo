@@ -145,8 +145,11 @@ test('tutorial preview panel is fixed on the right side', async () => {
   assert.match(css, /\.tutorial-panel\s*\{[^}]*right:\s*0;/s);
   assert.match(css, /\.tutorial-panel\s*\{[^}]*width:\s*min\(25vw,\s*360px\);/s);
   assert.match(css, /\.tutorial-panel\s*\{[^}]*min-width:\s*280px;/s);
-  assert.match(css, /\.tutorial-target-active\s*\{[^}]*outline:\s*3px solid/s);
-  assert.match(css, /\.tutorial-target-active\s*\{[^}]*box-shadow:\s*0 0 0 6px/s);
+  assert.match(css, /\.tutorial-target-active\s*\{[^}]*outline:\s*5px solid/s);
+  assert.match(css, /\.tutorial-target-active\s*\{[^}]*box-shadow:\s*0 0 0 4px white,\s*0 0 0 12px/s);
+  assert.match(css, /\.tutorial-target-active\s*\{[^}]*animation:\s*tutorial-target-pulse/s);
+  assert.match(css, /\.tutorial-target-active::after\s*\{[^}]*content:\s*"当前步骤";/s);
+  assert.match(css, /@keyframes tutorial-target-pulse/);
 });
 
 test('clip name edit icon sits beside the shared clip name input', async () => {
