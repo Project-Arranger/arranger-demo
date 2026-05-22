@@ -1,5 +1,10 @@
 import { Drum, X } from 'lucide-react';
-import { createElement, useState } from 'react';
+import {
+  createElement,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { STEPS_PER_BAR } from '../../store/useMusicStore.js';
 import {
   DRUM_SEQUENCER_ROWS,
@@ -9,6 +14,25 @@ import { ClipNameInput } from './ClipNameInput.jsx';
 import { renderIcon } from './icons.js';
 
 const STEP_NUMBERS = Array.from({ length: STEPS_PER_BAR }, (_, index) => index + 1);
+const DRAG_THRESHOLD_PX = 6;
+
+function didPointerDrag(event, dragSession) {
+  return Math.abs(event.clientX - dragSession.startX) > DRAG_THRESHOLD_PX
+    || Math.abs(event.clientY - dragSession.startY) > DRAG_THRESHOLD_PX;
+}
+
+function getDropTargetFromPoint(event, dragSession) {
+  const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('.drum-step');
+  if (!target) return null;
+  if (target.dataset.instrument !== dragSession.instrument) return null;
+  if (target.getAttribute('aria-disabled') === 'true') return null;
+  if (target.getAttribute('aria-pressed') === 'true') return null;
+
+  const step = Number(target.dataset.step);
+  if (!Number.isInteger(step) || step === dragSession.step) return null;
+
+  return { instrument: dragSession.instrument, step };
+}
 
 function getTutorialCellRole(tutorialTargets, bar, instrument, step) {
   const cellTargets = tutorialTargets?.drumCells ?? [];
@@ -37,6 +61,60 @@ function DrumSequencer({
   tutorialTargets,
 }) {
   const [dragSource, setDragSource] = useState(null);
+  const [dragOverStep, setDragOverStep] = useState(null);
+  const [suppressNextClick, setSuppressNextClick] = useState(false);
+  const dragSessionRef = useRef(null);
+
+  const handleMouseDownStep = (event, instrument, step, canDrag) => {
+    if (!canDrag || event.button !== 0) return;
+    const dragSession = {
+      dragging: false,
+      instrument,
+      startX: event.clientX,
+      startY: event.clientY,
+      step,
+    };
+    dragSessionRef.current = dragSession;
+    setDragSource({ instrument, step });
+  };
+
+  useEffect(() => {
+    if (!dragSource) return undefined;
+
+    const handleMouseMove = (event) => {
+      const dragSession = dragSessionRef.current;
+      if (!dragSession) return;
+      if (!didPointerDrag(event, dragSession)) return;
+
+      dragSession.dragging = true;
+      const target = getDropTargetFromPoint(event, dragSession);
+      setDragOverStep(target ? { instrument: target.instrument, step: target.step } : null);
+    };
+
+    const handleMouseUp = (event) => {
+      const dragSession = dragSessionRef.current;
+      const target = dragSession?.dragging ? getDropTargetFromPoint(event, dragSession) : null;
+
+      if (dragSession?.dragging) {
+        setSuppressNextClick(true);
+      }
+      if (target) {
+        onStepMove?.(dragSession.instrument, dragSession.step, target.step);
+      }
+
+      dragSessionRef.current = null;
+      setDragSource(null);
+      setDragOverStep(null);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [dragSource, onStepMove]);
 
   return (
     <section className="editor drum-editor" data-screen-label="Drum Sequencer">
@@ -115,11 +193,16 @@ function DrumSequencer({
                   );
                   const interactiveTutorialCell = tutorialRole === 'target' || tutorialRole === 'source';
                   const locked = tutorialLocked && !interactiveTutorialCell;
+                  const canDrag = active && !locked;
+                  const dragOver = dragOverStep?.instrument === row.id
+                    && dragOverStep.step === stepIndex;
                   return (
                     <button
                       className={[
                         'drum-step',
                         active ? 'active' : '',
+                        canDrag ? 'drum-step-drag-source' : '',
+                        dragOver ? 'drag-over' : '',
                         stepNumber % 4 === 0 ? 'beat-end' : '',
                         locked ? 'tutorial-locked' : '',
                         tutorialRole === 'target' ? 'tutorial-cell-target' : '',
@@ -135,24 +218,15 @@ function DrumSequencer({
                       aria-pressed={active}
                       aria-disabled={locked}
                       disabled={locked}
-                      draggable={tutorialRole === 'source'}
-                      onDragEnd={() => setDragSource(null)}
-                      onDragOver={(event) => {
-                        if (tutorialRole !== 'target' || !dragSource) return;
-                        event.preventDefault();
+                      draggable={false}
+                      onMouseDown={(event) => handleMouseDownStep(event, row.id, stepIndex, canDrag)}
+                      onClick={() => {
+                        if (suppressNextClick) {
+                          setSuppressNextClick(false);
+                          return;
+                        }
+                        onStepToggle(row.id, stepIndex);
                       }}
-                      onDragStart={(event) => {
-                        if (tutorialRole !== 'source') return;
-                        setDragSource({ instrument: row.id, step: stepIndex });
-                        event.dataTransfer.effectAllowed = 'move';
-                      }}
-                      onDrop={(event) => {
-                        if (tutorialRole !== 'target' || !dragSource) return;
-                        event.preventDefault();
-                        onStepMove?.(dragSource.instrument, dragSource.step, stepIndex);
-                        setDragSource(null);
-                      }}
-                      onClick={() => onStepToggle(row.id, stepIndex)}
                     />
                   );
                 })}

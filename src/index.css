@@ -95,6 +95,8 @@ button {
   background: oklch(98% 0.012 165 / 0.84);
   border: 1px solid color-mix(in oklab, var(--c-drums-ink) 14%, transparent);
   border-radius: 8px;
+  font-family: "Baloo 2", "Nunito", "Arial Rounded MT Bold", "Avenir Next Rounded", "Trebuchet MS", "PingFang SC", "Microsoft YaHei", sans-serif;
+  text-align: center;
   box-shadow:
     0 14px 36px color-mix(in oklab, black 14%, transparent),
     0 1px 0 color-mix(in oklab, white 68%, transparent) inset;
@@ -128,26 +130,29 @@ button {
 .tutorial-panel-body {
   display: grid;
   align-content: start;
+  justify-items: center;
   gap: 8px;
   min-width: 0;
 }
 
 .tutorial-panel p {
   margin: 0;
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 800;
   line-height: 1.48;
+  text-align: center;
+  text-wrap: balance;
 }
 
 .tutorial-target-active {
   position: relative;
   z-index: 55;
-  outline: 7px solid color-mix(in oklab, var(--c-drums-ink) 88%, white);
-  outline-offset: -7px;
+  outline: 0;
   box-shadow:
-    0 0 0 6px white,
-    0 0 0 18px color-mix(in oklab, var(--c-drums) 84%, transparent),
-    0 24px 62px color-mix(in oklab, black 28%, transparent);
-  animation: tutorial-target-pulse 1.15s ease-in-out infinite;
+    inset 0 0 0 2px color-mix(in oklab, var(--c-drums-ink) 76%, white),
+    inset 0 0 24px color-mix(in oklab, var(--c-drums) 20%, transparent),
+    0 0 18px color-mix(in oklab, var(--c-drums-ink) 16%, transparent);
+  animation: tutorial-target-pulse 1.35s ease-in-out infinite;
 }
 
 .tutorial-target-active::after {
@@ -173,16 +178,16 @@ button {
   0%,
   100% {
     box-shadow:
-      0 0 0 6px white,
-      0 0 0 18px color-mix(in oklab, var(--c-drums) 84%, transparent),
-      0 24px 62px color-mix(in oklab, black 28%, transparent);
+      inset 0 0 0 2px color-mix(in oklab, var(--c-drums-ink) 76%, white),
+      inset 0 0 24px color-mix(in oklab, var(--c-drums) 20%, transparent),
+      0 0 18px color-mix(in oklab, var(--c-drums-ink) 16%, transparent);
   }
 
   50% {
     box-shadow:
-      0 0 0 7px white,
-      0 0 0 24px color-mix(in oklab, var(--c-drums) 92%, transparent),
-      0 28px 72px color-mix(in oklab, black 34%, transparent);
+      inset 0 0 0 3px color-mix(in oklab, var(--c-drums-ink) 84%, white),
+      inset 0 0 32px color-mix(in oklab, var(--c-drums) 26%, transparent),
+      0 0 24px color-mix(in oklab, var(--c-drums-ink) 20%, transparent);
   }
 }
 
@@ -261,7 +266,7 @@ button {
   z-index: 50;
   pointer-events: none;
   content: "";
-  background: color-mix(in oklab, black 42%, transparent);
+  background: color-mix(in oklab, black 34%, transparent);
 }
 
 .app .tutorial-target-active {
@@ -780,6 +785,7 @@ button {
 }
 
 .ruler {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(var(--bars), minmax(80px, 1fr));
   min-width: var(--timeline-min-width);
@@ -1046,13 +1052,129 @@ button {
   }
 }
 
+.ruler-playhead,
 .playhead {
+  position: absolute;
+  z-index: 6;
+  width: 2px;
+  pointer-events: none;
+  background: color-mix(in oklab, var(--brand) 65%, black);
+  box-shadow: 0 0 0 1px oklch(100% 0 0 / 0.35);
+}
+
+.ruler-playhead {
+  top: 0;
+  bottom: -1px;
+}
+
+.playhead {
+  top: 0;
+  bottom: 0;
+}
+
+.playhead-hit {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 2px;
-  background: color-mix(in oklab, var(--brand) 65%, black);
-  box-shadow: 0 0 0 1px oklch(100% 0 0 / 0.35);
+  left: 50%;
+  width: 14px;
+  padding: 0;
+  cursor: ew-resize;
+  background: transparent;
+  border: 0;
+  outline: none;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.playhead-hit:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--brand) 28%, transparent);
+}
+
+.timeline-col.playhead-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.timeline-col.playhead-dragging .playhead-hit {
+  cursor: grabbing;
+}
+
+.ruler-playhead.tutorial-playhead-target {
+  z-index: 12;
+  background: transparent;
+  box-shadow: none;
+  animation: none;
+}
+
+.playhead.tutorial-playhead-target {
+  background: color-mix(in oklab, var(--c-drums-ink) 86%, white);
+  box-shadow:
+    0 0 0 2px color-mix(in oklab, white 72%, transparent),
+    0 0 12px color-mix(in oklab, var(--c-drums-ink) 46%, transparent);
+  animation: tutorial-playhead-pulse 0.95s ease-in-out infinite;
+}
+
+.ruler-playhead.tutorial-playhead-target::after,
+.ruler-playhead.tutorial-playhead-completed::after {
+  position: absolute;
+  z-index: 13;
+  right: auto;
+  bottom: -8px;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  content: "";
+  pointer-events: none;
+}
+
+.ruler-playhead.tutorial-playhead-target::after {
+  background: color-mix(in oklab, var(--c-drums-ink) 88%, black);
+  border: 2px solid color-mix(in oklab, white 90%, transparent);
+  box-shadow:
+    0 0 0 2px color-mix(in oklab, var(--c-drums) 44%, transparent),
+    0 0 14px color-mix(in oklab, var(--c-drums) 74%, transparent);
+}
+
+.ruler-playhead.tutorial-playhead-completed {
+  z-index: 12;
+  background: transparent;
+  box-shadow: none;
+}
+
+.playhead.tutorial-playhead-completed {
+  background: color-mix(in oklab, var(--play) 72%, white);
+  box-shadow:
+    0 0 0 2px color-mix(in oklab, white 70%, transparent),
+    0 0 10px color-mix(in oklab, var(--play) 42%, transparent);
+}
+
+.ruler-playhead.tutorial-playhead-completed::after {
+  background: color-mix(in oklab, var(--play) 72%, black);
+  border: 2px solid color-mix(in oklab, white 88%, transparent);
+  box-shadow:
+    0 0 0 2px color-mix(in oklab, var(--play) 32%, transparent),
+    0 0 12px color-mix(in oklab, var(--play) 56%, transparent);
+}
+
+@keyframes tutorial-playhead-pulse {
+  0%,
+  100% {
+    opacity: 0.88;
+    box-shadow:
+      0 0 0 2px color-mix(in oklab, white 78%, transparent),
+      0 0 13px color-mix(in oklab, var(--c-drums-ink) 48%, transparent);
+  }
+
+  50% {
+    opacity: 1;
+    box-shadow:
+      0 0 0 3px color-mix(in oklab, white 86%, transparent),
+      0 0 20px color-mix(in oklab, var(--c-drums-ink) 58%, transparent);
+  }
 }
 
 .editor {
@@ -2099,6 +2221,22 @@ button {
   transform: translateY(-1px);
 }
 
+.drum-step-drag-source {
+  cursor: grab;
+}
+
+.drum-step-drag-source:active {
+  cursor: grabbing;
+}
+
+.drum-step.drag-over {
+  outline: 2px solid color-mix(in oklab, var(--brand) 64%, white);
+  outline-offset: 2px;
+  box-shadow:
+    inset 0 0 0 2px color-mix(in oklab, var(--brand) 22%, transparent),
+    0 0 0 4px color-mix(in oklab, var(--brand) 20%, transparent);
+}
+
 .drum-step.active[data-instrument="kick"] {
   background: var(--drum-kick);
   border-color: color-mix(in oklab, var(--drum-kick) 70%, black);
@@ -2143,7 +2281,7 @@ button {
     0 0 0 3px color-mix(in oklab, var(--play) 28%, transparent);
 }
 
-.drum-step.tutorial-locked:not(.tutorial-cell-target):not(.tutorial-cell-source) {
+.drum-step.tutorial-locked:not(.active):not(.tutorial-cell-target):not(.tutorial-cell-source) {
   opacity: 0.18;
   cursor: default;
   background: color-mix(in oklab, var(--surface) 45%, var(--ink-4));

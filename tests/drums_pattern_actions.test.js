@@ -6,6 +6,7 @@ import {
   applyBasicDrumsBar,
   clearDrumsBar,
   createBasicDrumsBar,
+  createBasicDrumsBarWithoutKick,
   getDrumsClipBarIndexes,
 } from '../src/app/drumsPatternActions.js';
 import createInitialMatrix from '../src/store/createInitialMatrix.js';
@@ -21,6 +22,20 @@ test('createBasicDrumsBar returns the default sixteen-step drums groove', () => 
   assert.equal(bar[1], null);
   assert.equal(bar[15], null);
   assert.notEqual(createBasicDrumsBar()[0], createBasicDrumsBar()[0]);
+});
+
+test('createBasicDrumsBarWithoutKick preserves matched snare and hihat only', () => {
+  const bar = createBasicDrumsBarWithoutKick();
+
+  assert.equal(bar.length, 16);
+  assert.deepEqual(bar[0], { instruments: ['hihat'] });
+  assert.deepEqual(bar[4], { instruments: ['hihat'] });
+  assert.deepEqual(bar[8], { instruments: ['snare', 'hihat'] });
+  assert.deepEqual(bar[12], { instruments: ['hihat'] });
+  assert.equal(bar[2], null);
+  assert.equal(bar[15], null);
+  assert.equal(bar.some((cell) => cell?.instruments?.includes('kick')), false);
+  assert.notEqual(createBasicDrumsBarWithoutKick()[0], createBasicDrumsBarWithoutKick()[0]);
 });
 
 test('applyBasicDrumsBar only writes the requested drums bar', () => {

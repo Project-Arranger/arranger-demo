@@ -33,3 +33,10 @@ test('drums tutorial keeps priority copy in configuration', () => {
   assert.match(stepsById[TUTORIAL_STEP_IDS.DRUMS_TASK_4].copy, /底鼓战士/);
 });
 
+test('drums tutorial fills the basic groove only on the autofill step', () => {
+  const setupSteps = DRUMS_TUTORIAL_STEPS
+    .filter((step) => step.setup?.type === 'generate-initial-drums')
+    .map((step) => step.id);
+
+  assert.deepEqual(setupSteps, [TUTORIAL_STEP_IDS.DRUMS_AUTOFILL]);
+});

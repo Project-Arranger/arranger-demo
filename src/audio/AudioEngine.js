@@ -364,9 +364,12 @@ export default class AudioEngine {
   }
 
   async stop() {
-    this.getStartedTransport()?.stop?.();
+    const transport = this.getStartedTransport();
+    transport?.stop?.();
+    if (transport) {
+      transport.position = formatToneTransportPosition(this.currentBar, this.currentStep);
+    }
     this.clearMatrixPlaybackSchedule();
-    this.seekToStep(0, 0);
   }
 }
 

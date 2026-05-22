@@ -38,7 +38,7 @@ const DRUMS_TUTORIAL_STEPS = Object.freeze([
     copy: '在这里，你可以对操作构成你的乐曲的每个音轨，并可以拖动进度条到你想要的位置',
     uiMode: 'target-popover',
     target: { name: TUTORIAL_TARGETS.TRACK_AREA },
-    completion: { type: 'manual' },
+    completion: { type: 'track-area-tour', trackId: 'drums', bar: 0 },
   },
   {
     id: TUTORIAL_STEP_IDS.UI_EDITOR,

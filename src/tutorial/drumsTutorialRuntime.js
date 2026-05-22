@@ -2,6 +2,8 @@ import {
   createDrumsCell,
   getDrumsCellInstruments,
 } from '../domain/drumsCells.js';
+import { createDrumsStepMovePatch } from '../domain/drumsStepMove.js';
+import { STEPS_PER_BAR } from '../domain/musicConstants.js';
 import {
   DRUMS_TASK_1_TARGET_STEPS,
   DRUMS_TASK_2_SOURCE_STEP,
@@ -13,6 +15,7 @@ import {
 import { TUTORIAL_STEP_IDS } from './tutorialStepIds.js';
 
 const TASK_TOTALS = Object.freeze({
+  [TUTORIAL_STEP_IDS.UI_TRACK_AREA]: 2,
   [TUTORIAL_STEP_IDS.DRUMS_TASK_1]: 2,
   [TUTORIAL_STEP_IDS.DRUMS_TASK_2]: 1,
   [TUTORIAL_STEP_IDS.DRUMS_TASK_3]: 1,
@@ -30,8 +33,12 @@ const TASK_GUIDED_BARS = Object.freeze({
   [TUTORIAL_STEP_IDS.DRUMS_TASK_3]: 3,
 });
 
+const ALL_DRUM_STEPS = Object.freeze(Array.from({ length: STEPS_PER_BAR }, (_, step) => step));
+
 function createTutorialState() {
   return {
+    trackAreaClipOpened: false,
+    trackAreaPlayheadDragged: false,
     task1Count: 0,
     task1EditedBars: [],
     task1EditedSteps: [],
@@ -39,6 +46,7 @@ function createTutorialState() {
     task2EditedBar: null,
     task3Count: 0,
     task3EditedBar: null,
+    task3EditedStep: null,
     task4Complete: false,
   };
 }
@@ -46,18 +54,28 @@ function createTutorialState() {
 function createEmptyTargets() {
   return {
     drumCells: [],
+    playhead: null,
     timelineBars: [],
   };
 }
 
 function getProgressCount(step, progress) {
+  if (step?.id === TUTORIAL_STEP_IDS.UI_TRACK_AREA) {
+    return Number(Boolean(progress?.trackAreaClipOpened))
+      + Number(Boolean(progress?.trackAreaPlayheadDragged));
+  }
+
   const field = TASK_COUNT_FIELDS[step?.id];
   return field ? progress?.[field] ?? 0 : 0;
 }
 
 function withProgressCount(copy, count, total) {
   if (!total) return copy;
-  return copy.replace(/（\d+\/\d+）/, `（${count}/${total}）`);
+  const progressText = `（${count}/${total}）`;
+  if (/（\d+\/\d+）/.test(copy)) {
+    return copy.replace(/（\d+\/\d+）/, progressText);
+  }
+  return `${copy}${progressText}`;
 }
 
 function uniqueSortedBars(bars) {
@@ -81,6 +99,12 @@ function hasInstrument(matrix, bar, step, instrument) {
   return getDrumsCellInstruments(matrix?.drums?.[bar]?.[step]).includes(instrument);
 }
 
+function hasDrumsInstrumentInBar(matrix, bar, instrument) {
+  return (matrix?.drums?.[bar] ?? []).some((cell) => (
+    getDrumsCellInstruments(cell).includes(instrument)
+  ));
+}
+
 function makeCellWithoutInstrument(cell, instrument) {
   const instruments = getDrumsCellInstruments(cell).filter((item) => item !== instrument);
   return createDrumsCell(instruments);
@@ -90,7 +114,16 @@ function makeCellWithInstrument(cell, instrument) {
   return createDrumsCell([...getDrumsCellInstruments(cell), instrument]);
 }
 
+function createRemoveKickPatches(matrix, bar, steps) {
+  return steps.map((step) => ({
+    bar,
+    cell: makeCellWithoutInstrument(matrix?.drums?.[bar]?.[step] ?? null, 'kick'),
+    step,
+  }));
+}
+
 function getTutorialViewModel({
+  matrix,
   progress = createTutorialState(),
   selectedBar = 0,
   step,
@@ -113,7 +146,14 @@ function getTutorialViewModel({
   let showCompleteButton = false;
   let suggestedSelectedBar = null;
 
-  if (step.id === TUTORIAL_STEP_IDS.DRUMS_TASK_1) {
+  if (step.id === TUTORIAL_STEP_IDS.UI_TRACK_AREA) {
+    locked = true;
+    const clipRole = progress.trackAreaClipOpened ? 'completed' : 'target';
+    targets.timelineBars = [{ bar: step.completion.bar, role: clipRole }];
+    if (progress.trackAreaClipOpened) {
+      targets.playhead = { role: progress.trackAreaPlayheadDragged ? 'completed' : 'target' };
+    }
+  } else if (step.id === TUTORIAL_STEP_IDS.DRUMS_TASK_1) {
     locked = true;
     const targetBar = TASK_GUIDED_BARS[TUTORIAL_STEP_IDS.DRUMS_TASK_1];
     const isComplete = count >= TASK_TOTALS[TUTORIAL_STEP_IDS.DRUMS_TASK_1];
@@ -131,6 +171,9 @@ function getTutorialViewModel({
     ) {
       suggestedSelectedBar = targetBar;
     }
+  } else if (step.completion?.type === 'open-clip') {
+    locked = true;
+    targets.timelineBars = [{ bar: step.completion.bar, role: 'target' }];
   } else if (step.id === TUTORIAL_STEP_IDS.DRUMS_TASK_2) {
     locked = true;
     const availableBars = getTask2AvailableBars();
@@ -172,7 +215,10 @@ function getTutorialViewModel({
   } else if (step.id === TUTORIAL_STEP_IDS.DRUMS_TASK_4) {
     locked = true;
     showCompleteButton = true;
-    targets.timelineBars = DRUMS_TUTORIAL_FREE_BARS.map((bar) => ({ bar, role: 'target' }));
+    targets.timelineBars = DRUMS_TUTORIAL_FREE_BARS.map((bar) => ({
+      bar,
+      role: hasDrumsInstrumentInBar(matrix, bar, 'kick') ? 'completed' : 'target',
+    }));
     if (!DRUMS_TUTORIAL_FREE_BARS.includes(selectedBar)) {
       suggestedSelectedBar = DRUMS_TUTORIAL_FREE_BARS[0];
     }
@@ -246,6 +292,7 @@ function handleTask3Toggle({ instrument, matrix, progress, selectedBar, stepInde
     ...progress,
     task3Count: 1,
     task3EditedBar: selectedBar,
+    task3EditedStep: stepIndex,
   };
 
   return {
@@ -263,6 +310,69 @@ function handleTask4Toggle({ instrument, progress, selectedBar }) {
     allowed: true,
     nextProgress: progress,
     shouldAdvance: false,
+  };
+}
+
+function handleTutorialClipOpen({
+  bar,
+  progress = createTutorialState(),
+  step,
+  trackId,
+} = {}) {
+  if (step?.id === TUTORIAL_STEP_IDS.UI_TRACK_AREA) {
+    const allowed = trackId === step.completion.trackId && bar === step.completion.bar;
+    if (!allowed) return createRejectedAction(progress);
+
+    const nextProgress = {
+      ...progress,
+      trackAreaClipOpened: true,
+    };
+
+    return {
+      allowed: true,
+      nextProgress,
+      shouldAdvance: Boolean(nextProgress.trackAreaPlayheadDragged),
+    };
+  }
+
+  if (step?.completion?.type !== 'open-clip') {
+    return {
+      allowed: true,
+      nextProgress: progress,
+      shouldAdvance: false,
+    };
+  }
+
+  const allowed = trackId === step.completion.trackId && bar === step.completion.bar;
+  return {
+    allowed,
+    nextProgress: progress,
+    shouldAdvance: allowed,
+  };
+}
+
+function handleTutorialPlayheadDrag({
+  progress = createTutorialState(),
+  step,
+} = {}) {
+  if (step?.id !== TUTORIAL_STEP_IDS.UI_TRACK_AREA) {
+    return {
+      allowed: true,
+      nextProgress: progress,
+      shouldAdvance: false,
+    };
+  }
+  if (!progress.trackAreaClipOpened) return createRejectedAction(progress);
+
+  const nextProgress = {
+    ...progress,
+    trackAreaPlayheadDragged: true,
+  };
+
+  return {
+    allowed: true,
+    nextProgress,
+    shouldAdvance: !progress.trackAreaPlayheadDragged,
   };
 }
 
@@ -303,6 +413,27 @@ function handleTutorialDrumMove({
   step,
   toStep,
 }) {
+  if (step?.id === TUTORIAL_STEP_IDS.DRUMS_TASK_4) {
+    if (instrument !== 'kick') return createRejectedAction(progress);
+    if (!DRUMS_TUTORIAL_FREE_BARS.includes(selectedBar)) return createRejectedAction(progress);
+
+    const movePatch = createDrumsStepMovePatch({
+      bar: selectedBar,
+      fromStep,
+      instrument,
+      matrix,
+      toStep,
+    });
+    if (!movePatch.allowed) return createRejectedAction(progress);
+
+    return {
+      allowed: true,
+      nextMatrixPatch: movePatch.nextMatrixPatch,
+      nextProgress: progress,
+      shouldAdvance: false,
+    };
+  }
+
   if (step?.id !== TUTORIAL_STEP_IDS.DRUMS_TASK_2) return createRejectedAction(progress);
   if (instrument !== 'kick') return createRejectedAction(progress);
   if (!getTask2AvailableBars().includes(selectedBar)) return createRejectedAction(progress);
@@ -317,15 +448,18 @@ function handleTutorialDrumMove({
     task2Count: 1,
     task2EditedBar: selectedBar,
   };
-  const sourceCell = matrix?.drums?.[selectedBar]?.[fromStep] ?? null;
-  const targetCell = matrix?.drums?.[selectedBar]?.[toStep] ?? null;
+  const movePatch = createDrumsStepMovePatch({
+    bar: selectedBar,
+    fromStep,
+    instrument,
+    matrix,
+    toStep,
+  });
+  if (!movePatch.allowed) return createRejectedAction(progress);
 
   return {
     allowed: true,
-    nextMatrixPatch: [
-      { bar: selectedBar, cell: makeCellWithoutInstrument(sourceCell, 'kick'), step: fromStep },
-      { bar: selectedBar, cell: makeCellWithInstrument(targetCell, 'kick'), step: toStep },
-    ],
+    nextMatrixPatch: movePatch.nextMatrixPatch,
     nextProgress,
     shouldAdvance: true,
   };
@@ -338,11 +472,140 @@ function completeTutorialTask4(progress = createTutorialState()) {
   };
 }
 
+function createEmptyReset(progress) {
+  return {
+    nextMatrixPatch: [],
+    nextProgress: progress,
+  };
+}
+
+function resetTrackAreaForRetry({ progress }) {
+  return {
+    nextMatrixPatch: [],
+    nextProgress: {
+      ...progress,
+      trackAreaClipOpened: false,
+      trackAreaPlayheadDragged: false,
+    },
+    nextTransportPosition: { bar: 0, step: 0 },
+  };
+}
+
+function resetTask1ForRetry({ matrix, progress }) {
+  const targetBar = TASK_GUIDED_BARS[TUTORIAL_STEP_IDS.DRUMS_TASK_1];
+  const stepsToReset = getTask1EditedSteps(progress);
+
+  return {
+    nextMatrixPatch: createRemoveKickPatches(matrix, targetBar, stepsToReset),
+    nextProgress: {
+      ...progress,
+      task1Count: 0,
+      task1EditedBars: [],
+      task1EditedSteps: [],
+    },
+  };
+}
+
+function resetTask2ForRetry({ matrix, progress }) {
+  const targetBar = progress?.task2EditedBar ?? TASK_GUIDED_BARS[TUTORIAL_STEP_IDS.DRUMS_TASK_2];
+  const sourceCell = matrix?.drums?.[targetBar]?.[DRUMS_TASK_2_SOURCE_STEP] ?? null;
+  const targetCell = matrix?.drums?.[targetBar]?.[DRUMS_TASK_2_TARGET_STEP] ?? null;
+
+  return {
+    nextMatrixPatch: [
+      {
+        bar: targetBar,
+        cell: makeCellWithInstrument(sourceCell, 'kick'),
+        step: DRUMS_TASK_2_SOURCE_STEP,
+      },
+      {
+        bar: targetBar,
+        cell: makeCellWithoutInstrument(targetCell, 'kick'),
+        step: DRUMS_TASK_2_TARGET_STEP,
+      },
+    ],
+    nextProgress: {
+      ...progress,
+      task2Count: 0,
+      task2EditedBar: null,
+    },
+  };
+}
+
+function resetTask3ForRetry({ matrix, progress = createTutorialState() } = {}) {
+  const targetBar = getTask3TargetBar();
+  const stepsToReset = Number.isInteger(progress?.task3EditedStep)
+    ? [progress.task3EditedStep]
+    : [...DRUMS_TASK_3_TARGET_STEPS];
+
+  return {
+    nextMatrixPatch: createRemoveKickPatches(matrix, targetBar, stepsToReset),
+    nextProgress: {
+      ...progress,
+      task3Count: 0,
+      task3EditedBar: null,
+      task3EditedStep: null,
+    },
+  };
+}
+
+function resetTask4ForRetry({ matrix, progress }) {
+  return {
+    nextMatrixPatch: DRUMS_TUTORIAL_FREE_BARS.flatMap((bar) => (
+      createRemoveKickPatches(matrix, bar, ALL_DRUM_STEPS)
+    )),
+    nextProgress: {
+      ...progress,
+      task4Complete: false,
+    },
+  };
+}
+
+function resetInitialDrumsForRetry({ progress }) {
+  return {
+    nextMatrixPatch: DRUMS_TUTORIAL_INITIAL_BARS.flatMap((bar) => (
+      ALL_DRUM_STEPS.map((step) => ({ bar, cell: null, step }))
+    )),
+    nextProgress: progress,
+  };
+}
+
+function resetTutorialStepForRetry({
+  matrix,
+  progress = createTutorialState(),
+  step,
+} = {}) {
+  if (step?.id === TUTORIAL_STEP_IDS.UI_TRACK_AREA) {
+    return resetTrackAreaForRetry({ progress });
+  }
+  if (step?.id === TUTORIAL_STEP_IDS.DRUMS_AUTOFILL) {
+    return resetInitialDrumsForRetry({ progress });
+  }
+  if (step?.id === TUTORIAL_STEP_IDS.DRUMS_TASK_1) {
+    return resetTask1ForRetry({ matrix, progress });
+  }
+  if (step?.id === TUTORIAL_STEP_IDS.DRUMS_TASK_2) {
+    return resetTask2ForRetry({ matrix, progress });
+  }
+  if (step?.id === TUTORIAL_STEP_IDS.DRUMS_TASK_3) {
+    return resetTask3ForRetry({ matrix, progress });
+  }
+  if (step?.id === TUTORIAL_STEP_IDS.DRUMS_TASK_4) {
+    return resetTask4ForRetry({ matrix, progress });
+  }
+
+  return createEmptyReset(progress);
+}
+
 export {
   completeTutorialTask4,
   createTutorialState,
   getTutorialViewModel,
+  handleTutorialClipOpen,
+  handleTutorialPlayheadDrag,
   handleTutorialDrumMove,
   handleTutorialDrumToggle,
   isTutorialStepComplete,
+  resetTask3ForRetry,
+  resetTutorialStepForRetry,
 };

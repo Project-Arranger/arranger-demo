@@ -19,15 +19,15 @@ import {
   completeTutorialTask4,
   createTutorialState,
   getTutorialViewModel,
+  handleTutorialClipOpen,
   handleTutorialDrumMove,
   handleTutorialDrumToggle,
+  handleTutorialPlayheadDrag,
+  resetTutorialStepForRetry,
 } from '../tutorial/drumsTutorialRuntime.js';
 import { DRUMS_TUTORIAL_STEPS } from '../tutorial/drumsTutorialSteps.js';
 import { TUTORIAL_STEP_IDS } from '../tutorial/tutorialStepIds.js';
-import {
-  createUiAudioDispatcher,
-  seedDefaultDrumsPattern,
-} from './audioUiBridge.js';
+import { createUiAudioDispatcher } from './audioUiBridge.js';
 import {
   applyChordTemplateToExistingClips,
   clearChordBar,
@@ -46,11 +46,13 @@ import {
   getChordSpanStep,
   toggleChordCell,
 } from '../domain/chordCells.js';
+import { getDrumsCellInstruments } from '../domain/drumsCells.js';
+import { createDrumsStepMovePatch } from '../domain/drumsStepMove.js';
 import {
   applyBasicDrumsAllBars,
   applyBasicDrumsBar,
   clearDrumsBar,
-  createEmptyDrumsBar,
+  createBasicDrumsBarWithoutKick,
   getDrumsClipBarIndexes,
 } from './drumsPatternActions.js';
 import { createTimelineTracks } from './timelineViewModels.js';
@@ -69,9 +71,33 @@ const TUTORIAL_COMPLETION_STEP_BY_TASK = Object.freeze({
 });
 
 const TUTORIAL_AUTO_ADVANCE_MS = 450;
+const TUTORIAL_BACK_TARGET_RESET_STEP_IDS = new Set([
+  TUTORIAL_STEP_IDS.UI_TRACK_AREA,
+  TUTORIAL_STEP_IDS.DRUMS_TASK_1,
+  TUTORIAL_STEP_IDS.DRUMS_TASK_2,
+  TUTORIAL_STEP_IDS.DRUMS_TASK_3,
+  TUTORIAL_STEP_IDS.DRUMS_TASK_4,
+]);
+
+let tutorialAutoAdvanceTimerId = null;
 
 function getTutorialStepIndex(stepId) {
   return DRUMS_TUTORIAL_STEPS.findIndex((step) => step.id === stepId);
+}
+
+function clearTutorialAutoAdvanceTimer() {
+  if (tutorialAutoAdvanceTimerId === null) return;
+
+  window.clearTimeout(tutorialAutoAdvanceTimerId);
+  tutorialAutoAdvanceTimerId = null;
+}
+
+function scheduleTutorialAutoAdvance(callback) {
+  clearTutorialAutoAdvanceTimer();
+  tutorialAutoAdvanceTimerId = window.setTimeout(() => {
+    tutorialAutoAdvanceTimerId = null;
+    callback();
+  }, TUTORIAL_AUTO_ADVANCE_MS);
 }
 
 export default function App() {
@@ -90,7 +116,7 @@ export default function App() {
   const [currentTutorialStepIndex, setCurrentTutorialStepIndex] = useState(0);
   const [tutorialProgress, setTutorialProgress] = useState(() => createTutorialState());
   const [tutorialVisible, setTutorialVisible] = useState(true);
-  const appliedTutorialSetupsRef = useRef(new Set());
+  const [appliedTutorialSetups, setAppliedTutorialSetups] = useState(() => new Set());
   const tracksScrollRef = useRef(null);
   const timelineScrollRef = useRef(null);
   const currentTutorialStep = DRUMS_TUTORIAL_STEPS[currentTutorialStepIndex];
@@ -119,14 +145,14 @@ export default function App() {
 
   const advanceTutorialAfterTask = useCallback((step, nextProgress) => {
     setTutorialProgress(nextProgress);
-    window.setTimeout(() => {
+    scheduleTutorialAutoAdvance(() => {
       const nextStepId = TUTORIAL_COMPLETION_STEP_BY_TASK[step?.id];
       if (nextStepId) advanceTutorialToStep(nextStepId);
-    }, TUTORIAL_AUTO_ADVANCE_MS);
+    });
   }, [advanceTutorialToStep]);
 
-  useEffect(() => {
-    seedDefaultDrumsPattern(useMusicStore);
+  useEffect(() => () => {
+    clearTutorialAutoAdvanceTimer();
   }, []);
 
   useEffect(() => {
@@ -143,7 +169,7 @@ export default function App() {
 
   useEffect(() => {
     audioEngine.onPositionChange = (bar, step) => {
-      useMusicStore.getState().setPosition(bar, step);
+      useMusicStore.getState().setTransportPosition(bar, step);
     };
 
     return () => {
@@ -248,11 +274,10 @@ export default function App() {
     useMusicStore.getState().clearTrack('drums');
   }, []);
 
-  useEffect(() => {
-    const setupType = currentTutorialStep?.setup?.type;
-    if (!setupType || appliedTutorialSetupsRef.current.has(currentTutorialStep.id)) return;
+  const applyTutorialStepSetup = useCallback((step) => {
+    const setupType = step?.setup?.type;
+    if (!setupType || appliedTutorialSetups.has(step.id)) return;
 
-    appliedTutorialSetupsRef.current.add(currentTutorialStep.id);
     const state = useMusicStore.getState();
 
     if (setupType === 'generate-initial-drums') {
@@ -267,13 +292,48 @@ export default function App() {
     if (setupType === 'create-free-drums-bars') {
       DRUMS_TUTORIAL_FREE_BARS.forEach((barIndex) => {
         state.createClip('drums', barIndex);
-        createEmptyDrumsBar().forEach((cell, step) => {
+        createBasicDrumsBarWithoutKick().forEach((cell, step) => {
           state.setCell('drums', barIndex, step, cell);
         });
       });
       state.selectClip(state.getClipForTrackBar('drums', DRUMS_TUTORIAL_FREE_BARS[0])?.id);
     }
-  }, [currentTutorialStep, writeDrumsBars]);
+
+    setAppliedTutorialSetups((setups) => {
+      if (setups.has(step.id)) return setups;
+      return new Set(setups).add(step.id);
+    });
+  }, [appliedTutorialSetups, writeDrumsBars]);
+
+  const handleTransportSeek = useCallback((bar, step) => {
+    if (tutorialVisible) {
+      const tutorialAction = handleTutorialPlayheadDrag({
+        progress: tutorialProgress,
+        step: currentTutorialStep,
+      });
+      if (!tutorialAction.allowed) return;
+
+      if (tutorialAction.shouldAdvance) {
+        setTutorialProgress(tutorialAction.nextProgress);
+        scheduleTutorialAutoAdvance(() => {
+          const nextStepIndex = Math.min(currentTutorialStepIndex + 1, DRUMS_TUTORIAL_STEPS.length - 1);
+          applyTutorialStepSetup(DRUMS_TUTORIAL_STEPS[nextStepIndex]);
+          setCurrentTutorialStepIndex(nextStepIndex);
+        });
+      } else if (tutorialAction.nextProgress !== tutorialProgress) {
+        setTutorialProgress(tutorialAction.nextProgress);
+      }
+    }
+
+    void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_SEEK, bar, step });
+  }, [
+    applyTutorialStepSetup,
+    currentTutorialStep,
+    currentTutorialStepIndex,
+    dispatchAppCommand,
+    tutorialProgress,
+    tutorialVisible,
+  ]);
 
   useEffect(() => {
     if (!tutorialVisible) return;
@@ -328,12 +388,14 @@ export default function App() {
     if (!tutorialAction.allowed) return;
 
     const currentCell = state.matrix.drums[selectedBar]?.[step] ?? null;
-    state.setCell('drums', selectedBar, step, toggleInstrumentInCell(currentCell, instrument));
+    const nextCell = toggleInstrumentInCell(currentCell, instrument);
+    state.setCell('drums', selectedBar, step, nextCell);
     void dispatchAppCommand({
       type: APP_COMMAND_TYPES.DRUMS_TOGGLE,
       bar: selectedBar,
       step,
       instrument,
+      previewInstruments: getDrumsCellInstruments(nextCell),
     });
 
     if (tutorialAction.shouldAdvance) {
@@ -352,32 +414,47 @@ export default function App() {
 
   const handleDrumsStepMove = useCallback((instrument, fromStep, toStep) => {
     const state = useMusicStore.getState();
-    const tutorialAction = handleTutorialDrumMove({
+    const tutorialAction = tutorialVisible && tutorialViewModel.locked
+      ? handleTutorialDrumMove({
+        fromStep,
+        instrument,
+        matrix: state.matrix,
+        progress: tutorialProgress,
+        selectedBar,
+        step: currentTutorialStep,
+        toStep,
+      })
+      : null;
+    const moveAction = tutorialAction ?? createDrumsStepMovePatch({
+      bar: selectedBar,
       fromStep,
       instrument,
       matrix: state.matrix,
-      progress: tutorialProgress,
-      selectedBar,
-      step: currentTutorialStep,
       toStep,
     });
 
-    if (!tutorialVisible || !tutorialAction.allowed) return;
+    if (!moveAction.allowed) return;
 
-    tutorialAction.nextMatrixPatch.forEach((patch) => {
+    moveAction.nextMatrixPatch.forEach((patch) => {
       state.setCell('drums', patch.bar, patch.step, patch.cell);
     });
+    const targetPatch = moveAction.nextMatrixPatch.find((patch) => (
+      patch.bar === selectedBar && patch.step === toStep
+    ));
     void dispatchAppCommand({
       type: APP_COMMAND_TYPES.DRUMS_TOGGLE,
       bar: selectedBar,
       step: toStep,
       instrument,
+      previewInstruments: getDrumsCellInstruments(targetPatch?.cell ?? null),
     });
 
-    if (tutorialAction.shouldAdvance) {
-      advanceTutorialAfterTask(currentTutorialStep, tutorialAction.nextProgress);
-    } else {
-      setTutorialProgress(tutorialAction.nextProgress);
+    if (tutorialAction) {
+      if (tutorialAction.shouldAdvance) {
+        advanceTutorialAfterTask(currentTutorialStep, tutorialAction.nextProgress);
+      } else {
+        setTutorialProgress(tutorialAction.nextProgress);
+      }
     }
   }, [
     advanceTutorialAfterTask,
@@ -385,6 +462,7 @@ export default function App() {
     dispatchAppCommand,
     selectedBar,
     tutorialProgress,
+    tutorialViewModel.locked,
     tutorialVisible,
   ]);
 
@@ -490,19 +568,117 @@ export default function App() {
     useMusicStore.getState().clearTrack('chord');
   }, []);
 
+  const stopTutorialPreviewPlayback = useCallback(() => {
+    void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
+  }, [dispatchAppCommand]);
+
+  const resetTutorialStepsForBack = useCallback((steps) => {
+    const state = useMusicStore.getState();
+    let nextProgress = tutorialProgress;
+    const resetStepIds = new Set();
+
+    steps.forEach((step) => {
+      if (!step || resetStepIds.has(step.id)) return;
+      resetStepIds.add(step.id);
+
+      const reset = resetTutorialStepForRetry({
+        matrix: useMusicStore.getState().matrix,
+        progress: nextProgress,
+        step,
+      });
+
+      reset.nextMatrixPatch.forEach(({ bar, cell, step: stepIndex }) => {
+        state.setCell('drums', bar, stepIndex, cell);
+      });
+      if (reset.nextTransportPosition) {
+        void dispatchAppCommand({
+          type: APP_COMMAND_TYPES.TRANSPORT_SEEK,
+          bar: reset.nextTransportPosition.bar,
+          step: reset.nextTransportPosition.step,
+        });
+      }
+      nextProgress = reset.nextProgress;
+    });
+
+    if (currentTutorialStep?.setup) {
+      setAppliedTutorialSetups((setups) => {
+        if (!setups.has(currentTutorialStep.id)) return setups;
+        const nextSetups = new Set(setups);
+        nextSetups.delete(currentTutorialStep.id);
+        return nextSetups;
+      });
+    }
+
+    setTutorialProgress(nextProgress);
+  }, [currentTutorialStep, dispatchAppCommand, tutorialProgress]);
+
   const handleTutorialNext = useCallback(() => {
     if (!tutorialViewModel.canManualNext) return;
-    if (currentTutorialStep?.playback?.autoStart) {
-      void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
+    clearTutorialAutoAdvanceTimer();
+    stopTutorialPreviewPlayback();
+    const nextStepIndex = Math.min(currentTutorialStepIndex + 1, DRUMS_TUTORIAL_STEPS.length - 1);
+    applyTutorialStepSetup(DRUMS_TUTORIAL_STEPS[nextStepIndex]);
+    setCurrentTutorialStepIndex(nextStepIndex);
+  }, [
+    applyTutorialStepSetup,
+    currentTutorialStepIndex,
+    stopTutorialPreviewPlayback,
+    tutorialViewModel.canManualNext,
+  ]);
+
+  const handleTutorialOpenClip = useCallback((clip) => {
+    if (!tutorialVisible) return true;
+
+    const tutorialAction = handleTutorialClipOpen({
+      bar: clip?.bar,
+      progress: tutorialProgress,
+      step: currentTutorialStep,
+      trackId: clip?.trackId,
+    });
+    if (!tutorialAction.allowed) return false;
+
+    setTutorialProgress(tutorialAction.nextProgress);
+
+    if (tutorialAction.shouldAdvance) {
+      const nextStepIndex = Math.min(currentTutorialStepIndex + 1, DRUMS_TUTORIAL_STEPS.length - 1);
+      applyTutorialStepSetup(DRUMS_TUTORIAL_STEPS[nextStepIndex]);
+      setCurrentTutorialStepIndex(nextStepIndex);
     }
-    setCurrentTutorialStepIndex((stepIndex) => (
-      Math.min(stepIndex + 1, DRUMS_TUTORIAL_STEPS.length - 1)
-    ));
-  }, [currentTutorialStep, dispatchAppCommand, tutorialViewModel.canManualNext]);
+
+    return true;
+  }, [
+    applyTutorialStepSetup,
+    currentTutorialStep,
+    currentTutorialStepIndex,
+    tutorialProgress,
+    tutorialVisible,
+  ]);
 
   const handleTutorialBack = useCallback(() => {
-    setCurrentTutorialStepIndex((stepIndex) => Math.max(stepIndex - 1, 0));
-  }, []);
+    clearTutorialAutoAdvanceTimer();
+    stopTutorialPreviewPlayback();
+    const nextStepIndex = Math.max(currentTutorialStepIndex - 1, 0);
+    const nextStep = DRUMS_TUTORIAL_STEPS[nextStepIndex];
+    const stepsToReset = [currentTutorialStep];
+
+    if (TUTORIAL_BACK_TARGET_RESET_STEP_IDS.has(nextStep?.id)) {
+      stepsToReset.push(nextStep);
+    }
+
+    resetTutorialStepsForBack(stepsToReset);
+    setCurrentTutorialStepIndex(nextStepIndex);
+  }, [
+    currentTutorialStep,
+    currentTutorialStepIndex,
+    resetTutorialStepsForBack,
+    stopTutorialPreviewPlayback,
+  ]);
+
+  const handleTutorialSkip = useCallback(() => {
+    clearTutorialAutoAdvanceTimer();
+    stopTutorialPreviewPlayback();
+    setTutorialVisible(false);
+  }, [stopTutorialPreviewPlayback]);
 
   const handleTutorialCompleteTask = useCallback(() => {
     if (currentTutorialStep?.id !== TUTORIAL_STEP_IDS.DRUMS_TASK_4) return;
@@ -541,6 +717,8 @@ export default function App() {
           onAddClip: handleAddClip,
           onMoveClip: handleMoveClip,
           onOpenClip: handleOpenClip,
+          onTransportSeek: handleTransportSeek,
+          onTutorialOpenClip: handleTutorialOpenClip,
           onTrackSelect: handleTrackSelect,
           ref: timelineScrollRef,
           selectedClipId,
@@ -584,7 +762,7 @@ export default function App() {
         onBack: handleTutorialBack,
         onCompleteTask: handleTutorialCompleteTask,
         onPrimaryAction: handleTutorialNext,
-        onSkip: () => setTutorialVisible(false),
+        onSkip: handleTutorialSkip,
         showCompleteButton: tutorialViewModel.showCompleteButton,
         step: currentTutorialStep,
         targetName: activeTutorialTarget,

@@ -254,7 +254,10 @@ test('AudioEngine syncs transport play pause stop and seek', async () => {
   await engine.stop();
 
   assert.equal(tone.Transport.bpm.value, 96);
-  assert.equal(tone.Transport.position, '0:0:0');
+  assert.equal(tone.Transport.position, '3:3:0');
+  assert.equal(engine.currentBar, 3);
+  assert.equal(engine.currentStep, 12);
+  assert.equal(engine.transportFlatStep, 60);
   assert.deepEqual(tone.calls.filter(([name]) => name.startsWith('transport.')), [
     ['transport.scheduleRepeat', '16n'],
     ['transport.start'],
@@ -271,9 +274,9 @@ test('AudioEngine avoids touching Tone transport before audio starts', async () 
   await engine.pause();
   await engine.stop();
 
-  assert.equal(engine.currentBar, 0);
-  assert.equal(engine.currentStep, 0);
-  assert.equal(engine.transportFlatStep, 0);
+  assert.equal(engine.currentBar, 2);
+  assert.equal(engine.currentStep, 8);
+  assert.equal(engine.transportFlatStep, 40);
 });
 
 test('AudioEngine matrix playback triggers drums and chord events', async () => {
