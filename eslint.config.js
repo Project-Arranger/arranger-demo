@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 
 export default [
   {
-    ignores: ['dist', '.vite'],
+    ignores: ['dist', '.vite', '.worktrees'],
   },
   js.configs.recommended,
   {
