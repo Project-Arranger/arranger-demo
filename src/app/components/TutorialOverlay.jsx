@@ -35,16 +35,7 @@ function TutorialOverlay({
   return (
     <aside className="tutorial-panel" data-placement={placement} aria-live="polite">
       <div className="tutorial-panel-body">
-        <div className="tutorial-phase">{step.phase}</div>
-        <h2>{step.title}</h2>
         <p>{displayCopy ?? step.copy}</p>
-        {targetName ? (
-          <div className="tutorial-target-note">
-            正在指引：
-            {' '}
-            {targetName}
-          </div>
-        ) : null}
       </div>
 
       <div className="tutorial-panel-actions">

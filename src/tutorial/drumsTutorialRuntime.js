@@ -24,10 +24,17 @@ const TASK_COUNT_FIELDS = Object.freeze({
   [TUTORIAL_STEP_IDS.DRUMS_TASK_3]: 'task3Count',
 });
 
+const TASK_GUIDED_BARS = Object.freeze({
+  [TUTORIAL_STEP_IDS.DRUMS_TASK_1]: 1,
+  [TUTORIAL_STEP_IDS.DRUMS_TASK_2]: 2,
+  [TUTORIAL_STEP_IDS.DRUMS_TASK_3]: 3,
+});
+
 function createTutorialState() {
   return {
     task1Count: 0,
     task1EditedBars: [],
+    task1EditedSteps: [],
     task2Count: 0,
     task2EditedBar: null,
     task3Count: 0,
@@ -57,21 +64,17 @@ function uniqueSortedBars(bars) {
   return [...new Set(bars)].sort((left, right) => left - right);
 }
 
-function getTask1EditedBars(progress) {
-  return uniqueSortedBars(progress?.task1EditedBars ?? []);
+function getTask1EditedSteps(progress) {
+  return [...new Set(progress?.task1EditedSteps ?? [])].sort((left, right) => left - right);
 }
 
-function getTask2AvailableBars(progress) {
-  const usedBars = new Set(getTask1EditedBars(progress));
-  return DRUMS_TUTORIAL_INITIAL_BARS.filter((bar) => !usedBars.has(bar));
+function getTask2AvailableBars() {
+  const targetBar = TASK_GUIDED_BARS[TUTORIAL_STEP_IDS.DRUMS_TASK_2];
+  return DRUMS_TUTORIAL_INITIAL_BARS.includes(targetBar) ? [targetBar] : [];
 }
 
-function getTask3TargetBar(progress) {
-  const usedBars = new Set([
-    ...getTask1EditedBars(progress),
-    progress?.task2EditedBar,
-  ].filter(Number.isInteger));
-  return DRUMS_TUTORIAL_INITIAL_BARS.find((bar) => !usedBars.has(bar)) ?? null;
+function getTask3TargetBar() {
+  return TASK_GUIDED_BARS[TUTORIAL_STEP_IDS.DRUMS_TASK_3];
 }
 
 function hasInstrument(matrix, bar, step, instrument) {
@@ -112,28 +115,25 @@ function getTutorialViewModel({
 
   if (step.id === TUTORIAL_STEP_IDS.DRUMS_TASK_1) {
     locked = true;
-    const editedBars = new Set(getTask1EditedBars(progress));
-    const nextTargetBar = DRUMS_TUTORIAL_INITIAL_BARS.find((bar) => !editedBars.has(bar));
-    targets.timelineBars = DRUMS_TUTORIAL_INITIAL_BARS.map((bar) => ({
-      bar,
-      role: editedBars.has(bar) ? 'completed' : 'target',
-    }));
-    targets.drumCells = DRUMS_TUTORIAL_INITIAL_BARS.map((bar) => ({
-      bar,
+    const targetBar = TASK_GUIDED_BARS[TUTORIAL_STEP_IDS.DRUMS_TASK_1];
+    const isComplete = count >= TASK_TOTALS[TUTORIAL_STEP_IDS.DRUMS_TASK_1];
+    targets.timelineBars = [{ bar: targetBar, role: isComplete ? 'completed' : 'target' }];
+    targets.drumCells = [{
+      bar: targetBar,
       instrument: 'kick',
-      role: editedBars.has(bar) ? 'completed' : 'target',
+      role: isComplete ? 'completed' : 'target',
       steps: [...DRUMS_TASK_1_TARGET_STEPS],
-    }));
+    }];
     if (
-      Number.isInteger(nextTargetBar)
+      Number.isInteger(targetBar)
       && count < TASK_TOTALS[TUTORIAL_STEP_IDS.DRUMS_TASK_1]
-      && (editedBars.has(selectedBar) || !DRUMS_TUTORIAL_INITIAL_BARS.includes(selectedBar))
+      && selectedBar !== targetBar
     ) {
-      suggestedSelectedBar = nextTargetBar;
+      suggestedSelectedBar = targetBar;
     }
   } else if (step.id === TUTORIAL_STEP_IDS.DRUMS_TASK_2) {
     locked = true;
-    const availableBars = getTask2AvailableBars(progress);
+    const availableBars = getTask2AvailableBars();
     targets.timelineBars = availableBars.map((bar) => ({ bar, role: 'target' }));
     if (availableBars.length && !availableBars.includes(selectedBar)) {
       suggestedSelectedBar = availableBars[0];
@@ -156,7 +156,7 @@ function getTutorialViewModel({
     }
   } else if (step.id === TUTORIAL_STEP_IDS.DRUMS_TASK_3) {
     locked = true;
-    const targetBar = getTask3TargetBar(progress);
+    const targetBar = getTask3TargetBar();
     targets.timelineBars = Number.isInteger(targetBar) ? [{ bar: targetBar, role: 'target' }] : [];
     if (Number.isInteger(targetBar) && selectedBar !== targetBar) {
       suggestedSelectedBar = targetBar;
@@ -211,19 +211,21 @@ function createRejectedAction(progress) {
 }
 
 function handleTask1Toggle({ instrument, matrix, progress, selectedBar, stepIndex }) {
+  const targetBar = TASK_GUIDED_BARS[TUTORIAL_STEP_IDS.DRUMS_TASK_1];
   if (instrument !== 'kick') return createRejectedAction(progress);
-  if (!DRUMS_TUTORIAL_INITIAL_BARS.includes(selectedBar)) return createRejectedAction(progress);
+  if (selectedBar !== targetBar) return createRejectedAction(progress);
   if (!DRUMS_TASK_1_TARGET_STEPS.includes(stepIndex)) return createRejectedAction(progress);
   if (hasInstrument(matrix, selectedBar, stepIndex, 'kick')) return createRejectedAction(progress);
 
-  const editedBars = getTask1EditedBars(progress);
-  if (editedBars.includes(selectedBar)) return createRejectedAction(progress);
+  const editedSteps = getTask1EditedSteps(progress);
+  if (editedSteps.includes(stepIndex)) return createRejectedAction(progress);
 
-  const nextEditedBars = uniqueSortedBars([...editedBars, selectedBar]);
+  const nextEditedSteps = uniqueSortedBars([...editedSteps, stepIndex]);
   const nextProgress = {
     ...progress,
-    task1Count: Math.min(nextEditedBars.length, TASK_TOTALS[TUTORIAL_STEP_IDS.DRUMS_TASK_1]),
-    task1EditedBars: nextEditedBars,
+    task1Count: Math.min(nextEditedSteps.length, TASK_TOTALS[TUTORIAL_STEP_IDS.DRUMS_TASK_1]),
+    task1EditedBars: [targetBar],
+    task1EditedSteps: nextEditedSteps,
   };
 
   return {
@@ -234,7 +236,7 @@ function handleTask1Toggle({ instrument, matrix, progress, selectedBar, stepInde
 }
 
 function handleTask3Toggle({ instrument, matrix, progress, selectedBar, stepIndex }) {
-  const targetBar = getTask3TargetBar(progress);
+  const targetBar = getTask3TargetBar();
   if (instrument !== 'kick') return createRejectedAction(progress);
   if (selectedBar !== targetBar) return createRejectedAction(progress);
   if (!DRUMS_TASK_3_TARGET_STEPS.includes(stepIndex)) return createRejectedAction(progress);
@@ -303,7 +305,7 @@ function handleTutorialDrumMove({
 }) {
   if (step?.id !== TUTORIAL_STEP_IDS.DRUMS_TASK_2) return createRejectedAction(progress);
   if (instrument !== 'kick') return createRejectedAction(progress);
-  if (!getTask2AvailableBars(progress).includes(selectedBar)) return createRejectedAction(progress);
+  if (!getTask2AvailableBars().includes(selectedBar)) return createRejectedAction(progress);
   if (fromStep !== DRUMS_TASK_2_SOURCE_STEP || toStep !== DRUMS_TASK_2_TARGET_STEP) {
     return createRejectedAction(progress);
   }

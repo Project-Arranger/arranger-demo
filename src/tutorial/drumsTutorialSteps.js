@@ -84,8 +84,8 @@ const DRUMS_TUTORIAL_STEPS = Object.freeze([
     phase: 'Drums Task 1',
     title: '任务1《动次打次》',
     trigger: '四个节奏乐句 block 与可点击格子开始闪烁',
-    copy: '任务1《动次打次》：挑选任意两小节，在闪烁位置增加一个底鼓音符（0/2）',
-    progressCopy: '挑选任意两小节，在闪烁位置增加一个底鼓音符',
+    copy: '任务1《动次打次》：在第2小节的闪烁位置增加两个底鼓音符（0/2）',
+    progressCopy: '在第2小节的闪烁位置增加两个底鼓音符',
     uiMode: 'task-progress',
     completion: { type: 'drums-task-1' },
   },
@@ -122,8 +122,8 @@ const DRUMS_TUTORIAL_STEPS = Object.freeze([
     phase: 'Drums Task 2',
     title: '任务2《拖和拽》',
     trigger: '未编辑两小节开始闪烁',
-    copy: '任务2《拖和拽》：在尚未编辑的两小节中的任意一小节，将底鼓音符向右移动两格（0/1）',
-    progressCopy: '在尚未编辑的两小节，将底鼓音符向右移动两格',
+    copy: '任务2《拖和拽》：在第3小节，将底鼓音符向右移动两格（0/1）',
+    progressCopy: '在第3小节，将底鼓音符向右移动两格',
     uiMode: 'task-progress',
     completion: { type: 'drums-task-2' },
   },
@@ -160,8 +160,8 @@ const DRUMS_TUTORIAL_STEPS = Object.freeze([
     phase: 'Drums Task 3',
     title: '任务3《循规蹈矩》',
     trigger: '最后一个未编辑小节开始闪烁',
-    copy: '任务3《循规蹈矩》：在最后一个尚未编辑的小节中的第5或第13格增加一个底鼓音符（0/1）',
-    progressCopy: '在最后一个尚未编辑的小节中，在最后一个尚未编辑的小节中的第5或第13格增加一个底鼓音符',
+    copy: '任务3《循规蹈矩》：在第4小节中的第5或第13格增加一个底鼓音符（0/1）',
+    progressCopy: '在第4小节中的第5或第13格增加一个底鼓音符',
     uiMode: 'task-progress',
     completion: { type: 'drums-task-3' },
   },
@@ -207,4 +207,3 @@ const DRUMS_TUTORIAL_STEPS = Object.freeze([
 ]);
 
 export { DRUMS_TUTORIAL_STEPS };
-

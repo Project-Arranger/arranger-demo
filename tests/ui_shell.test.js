@@ -269,6 +269,14 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(bottomEditorSource, /onChordTemplateApply/);
 });
 
+test('app keeps the editor focused on the playback bar while transport is playing', async () => {
+  const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
+
+  assert.match(source, /syncEditorToPlaybackBar/);
+  assert.match(source, /syncEditorToPlaybackBar\(useMusicStore\.getState\(\),\s*currentBar\)/);
+  assert.match(source, /\[\s*activeTrackId,\s*currentBar,\s*isPlaying,\s*selectedBar\s*\]/);
+});
+
 test('app mounts the drums tutorial preview overlay', async () => {
   const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
   const overlaySource = await readFile(
@@ -281,6 +289,9 @@ test('app mounts the drums tutorial preview overlay', async () => {
   assert.match(source, /currentTutorialStepIndex/);
   assert.match(source, /getTutorialViewModel/);
   assert.match(source, /tutorialViewModel\.displayCopy/);
+  assert.match(source, /currentTutorialStep\?\.playback\?\.autoStart/);
+  assert.match(source, /APP_COMMAND_TYPES\.TRANSPORT_STOP/);
+  assert.match(source, /dispatchAppCommand\(\{\s*type:\s*APP_COMMAND_TYPES\.TRANSPORT_STOP\s*\}\)/);
   assert.match(overlaySource, /tutorial-panel/);
   assert.match(overlaySource, /getTutorialPlacement/);
   assert.match(overlaySource, /data-placement=/);
@@ -288,6 +299,11 @@ test('app mounts the drums tutorial preview overlay', async () => {
   assert.match(overlaySource, /showCompleteButton/);
   assert.match(overlaySource, /onPrimaryAction/);
   assert.match(overlaySource, /跳过教程/);
+  assert.doesNotMatch(overlaySource, /step\.phase/);
+  assert.doesNotMatch(overlaySource, /step\.title/);
+  assert.doesNotMatch(overlaySource, /tutorial-phase/);
+  assert.doesNotMatch(overlaySource, /正在指引/);
+  assert.doesNotMatch(overlaySource, /tutorial-target-note/);
 });
 
 test('tutorial preview points to real app regions', async () => {
@@ -313,7 +329,7 @@ test('tutorial preview points to real app regions', async () => {
   assert.match(timelineSource, /tutorial-target-active/);
   assert.match(bottomEditorSource, /data-tutorial-target="track-editor"/);
   assert.match(bottomEditorSource, /tutorial-target-active/);
-  assert.match(overlaySource, /正在指引/);
+  assert.match(overlaySource, /getTutorialPlacement\(targetName\)/);
 });
 
 test('app routes drums tutorial tasks through guards and target props', async () => {

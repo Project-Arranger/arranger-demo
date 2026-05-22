@@ -54,6 +54,7 @@ import {
   getDrumsClipBarIndexes,
 } from './drumsPatternActions.js';
 import { createTimelineTracks } from './timelineViewModels.js';
+import { syncEditorToPlaybackBar } from './playbackEditorSync.js';
 import { syncTrackScrollContainers } from './syncTrackScroll.js';
 import {
   BAR_NUMBERS,
@@ -149,6 +150,10 @@ export default function App() {
       audioEngine.onPositionChange = null;
     };
   }, []);
+
+  useEffect(() => {
+    syncEditorToPlaybackBar(useMusicStore.getState(), currentBar);
+  }, [activeTrackId, currentBar, isPlaying, selectedBar]);
 
   const handleBackToStart = useCallback(() => {
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_SEEK, bar: 0, step: 0 });
@@ -487,10 +492,13 @@ export default function App() {
 
   const handleTutorialNext = useCallback(() => {
     if (!tutorialViewModel.canManualNext) return;
+    if (currentTutorialStep?.playback?.autoStart) {
+      void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
+    }
     setCurrentTutorialStepIndex((stepIndex) => (
       Math.min(stepIndex + 1, DRUMS_TUTORIAL_STEPS.length - 1)
     ));
-  }, [tutorialViewModel.canManualNext]);
+  }, [currentTutorialStep, dispatchAppCommand, tutorialViewModel.canManualNext]);
 
   const handleTutorialBack = useCallback(() => {
     setCurrentTutorialStepIndex((stepIndex) => Math.max(stepIndex - 1, 0));
