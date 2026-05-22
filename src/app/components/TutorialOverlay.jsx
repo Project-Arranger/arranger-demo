@@ -12,24 +12,32 @@ function getTutorialPlacement(targetName) {
 
 function TutorialOverlay({
   canGoBack = true,
+  canManualNext = true,
+  displayCopy,
   isLastStep = false,
   onBack,
+  onCompleteTask,
   onPrimaryAction,
   onSkip,
+  showCompleteButton = false,
   step,
   targetName,
 }) {
   if (!step) return null;
 
-  const primaryLabel = step.id === 'opening' ? '开始创造' : '下一步';
+  const primaryLabel = showCompleteButton
+    ? '完成'
+    : step.id === 'opening' ? '开始创造' : '下一步';
   const placement = getTutorialPlacement(targetName);
+  const primaryDisabled = showCompleteButton ? false : isLastStep || !canManualNext;
+  const handlePrimaryAction = showCompleteButton ? onCompleteTask : onPrimaryAction;
 
   return (
     <aside className="tutorial-panel" data-placement={placement} aria-live="polite">
       <div className="tutorial-panel-body">
         <div className="tutorial-phase">{step.phase}</div>
         <h2>{step.title}</h2>
-        <p>{step.copy}</p>
+        <p>{displayCopy ?? step.copy}</p>
         {targetName ? (
           <div className="tutorial-target-note">
             正在指引：
@@ -43,8 +51,8 @@ function TutorialOverlay({
         <button
           className="tutorial-primary"
           type="button"
-          onClick={onPrimaryAction}
-          disabled={isLastStep}
+          onClick={handlePrimaryAction}
+          disabled={primaryDisabled}
         >
           {primaryLabel}
         </button>

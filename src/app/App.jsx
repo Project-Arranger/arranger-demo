@@ -11,7 +11,19 @@ import { createChordNotes } from '../audio/matrixPlaybackAdapter.js';
 import { APP_COMMAND_TYPES } from '../input/appCommands.js';
 import useKeyboardCommands from '../input/useKeyboardCommands.js';
 import useMusicStore from '../store/useMusicStore.js';
+import {
+  DRUMS_TUTORIAL_FREE_BARS,
+  DRUMS_TUTORIAL_INITIAL_BARS,
+} from '../tutorial/drumsTutorialConstants.js';
+import {
+  completeTutorialTask4,
+  createTutorialState,
+  getTutorialViewModel,
+  handleTutorialDrumMove,
+  handleTutorialDrumToggle,
+} from '../tutorial/drumsTutorialRuntime.js';
 import { DRUMS_TUTORIAL_STEPS } from '../tutorial/drumsTutorialSteps.js';
+import { TUTORIAL_STEP_IDS } from '../tutorial/tutorialStepIds.js';
 import {
   createUiAudioDispatcher,
   seedDefaultDrumsPattern,
@@ -38,6 +50,7 @@ import {
   applyBasicDrumsAllBars,
   applyBasicDrumsBar,
   clearDrumsBar,
+  createEmptyDrumsBar,
   getDrumsClipBarIndexes,
 } from './drumsPatternActions.js';
 import { createTimelineTracks } from './timelineViewModels.js';
@@ -46,6 +59,19 @@ import {
   BAR_NUMBERS,
   TRACK_UI,
 } from './uiShellData.js';
+
+const TUTORIAL_COMPLETION_STEP_BY_TASK = Object.freeze({
+  [TUTORIAL_STEP_IDS.DRUMS_TASK_1]: TUTORIAL_STEP_IDS.DRUMS_TASK_1_COMPLETE,
+  [TUTORIAL_STEP_IDS.DRUMS_TASK_2]: TUTORIAL_STEP_IDS.DRUMS_TASK_2_COMPLETE,
+  [TUTORIAL_STEP_IDS.DRUMS_TASK_3]: TUTORIAL_STEP_IDS.DRUMS_TASK_3_COMPLETE,
+  [TUTORIAL_STEP_IDS.DRUMS_TASK_4]: TUTORIAL_STEP_IDS.DRUMS_TASK_4_COMPLETE,
+});
+
+const TUTORIAL_AUTO_ADVANCE_MS = 450;
+
+function getTutorialStepIndex(stepId) {
+  return DRUMS_TUTORIAL_STEPS.findIndex((step) => step.id === stepId);
+}
 
 export default function App() {
   const bpm = useMusicStore((state) => state.bpm);
@@ -61,10 +87,19 @@ export default function App() {
   const clips = useMusicStore((state) => state.clips);
   const volumes = useMusicStore((state) => state.volumes);
   const [currentTutorialStepIndex, setCurrentTutorialStepIndex] = useState(0);
+  const [tutorialProgress, setTutorialProgress] = useState(() => createTutorialState());
   const [tutorialVisible, setTutorialVisible] = useState(true);
+  const appliedTutorialSetupsRef = useRef(new Set());
   const tracksScrollRef = useRef(null);
   const timelineScrollRef = useRef(null);
   const currentTutorialStep = DRUMS_TUTORIAL_STEPS[currentTutorialStepIndex];
+  const tutorialViewModel = useMemo(() => getTutorialViewModel({
+    clips,
+    matrix,
+    progress: tutorialProgress,
+    selectedBar,
+    step: currentTutorialStep,
+  }), [clips, currentTutorialStep, matrix, selectedBar, tutorialProgress]);
   const activeTutorialTarget = currentTutorialStep?.target?.name ?? null;
 
   const dispatchAppCommand = useMemo(
@@ -73,6 +108,21 @@ export default function App() {
   );
 
   useKeyboardCommands({ dispatch: dispatchAppCommand });
+
+  const advanceTutorialToStep = useCallback((stepId) => {
+    const stepIndex = getTutorialStepIndex(stepId);
+    if (stepIndex >= 0) {
+      setCurrentTutorialStepIndex(stepIndex);
+    }
+  }, []);
+
+  const advanceTutorialAfterTask = useCallback((step, nextProgress) => {
+    setTutorialProgress(nextProgress);
+    window.setTimeout(() => {
+      const nextStepId = TUTORIAL_COMPLETION_STEP_BY_TASK[step?.id];
+      if (nextStepId) advanceTutorialToStep(nextStepId);
+    }, TUTORIAL_AUTO_ADVANCE_MS);
+  }, [advanceTutorialToStep]);
 
   useEffect(() => {
     seedDefaultDrumsPattern(useMusicStore);
@@ -193,8 +243,67 @@ export default function App() {
     useMusicStore.getState().clearTrack('drums');
   }, []);
 
+  useEffect(() => {
+    const setupType = currentTutorialStep?.setup?.type;
+    if (!setupType || appliedTutorialSetupsRef.current.has(currentTutorialStep.id)) return;
+
+    appliedTutorialSetupsRef.current.add(currentTutorialStep.id);
+    const state = useMusicStore.getState();
+
+    if (setupType === 'generate-initial-drums') {
+      DRUMS_TUTORIAL_INITIAL_BARS.forEach((barIndex) => {
+        state.createClip('drums', barIndex);
+      });
+      const nextMatrix = applyBasicDrumsAllBars(state.matrix, DRUMS_TUTORIAL_INITIAL_BARS);
+      writeDrumsBars(nextMatrix, DRUMS_TUTORIAL_INITIAL_BARS);
+      state.selectClip(state.getClipForTrackBar('drums', DRUMS_TUTORIAL_INITIAL_BARS[0])?.id);
+    }
+
+    if (setupType === 'create-free-drums-bars') {
+      DRUMS_TUTORIAL_FREE_BARS.forEach((barIndex) => {
+        state.createClip('drums', barIndex);
+        createEmptyDrumsBar().forEach((cell, step) => {
+          state.setCell('drums', barIndex, step, cell);
+        });
+      });
+      state.selectClip(state.getClipForTrackBar('drums', DRUMS_TUTORIAL_FREE_BARS[0])?.id);
+    }
+  }, [currentTutorialStep, writeDrumsBars]);
+
+  useEffect(() => {
+    const playback = currentTutorialStep?.playback;
+    if (!playback?.autoStart || !playback.bars?.length) return undefined;
+
+    const firstBar = playback.bars[0];
+    void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_SEEK, bar: firstBar, step: 0 });
+    if (!useMusicStore.getState().isPlaying) {
+      void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY });
+    }
+
+    const beats = playback.bars.length * 4;
+    const stopDelayMs = Math.max(1200, Math.round((60 / bpm) * beats * 1000));
+    const playbackTimer = window.setTimeout(() => {
+      void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
+    }, stopDelayMs);
+
+    return () => {
+      window.clearTimeout(playbackTimer);
+    };
+  }, [bpm, currentTutorialStep, dispatchAppCommand]);
+
   const handleDrumsStepToggle = useCallback((instrument, step) => {
     const state = useMusicStore.getState();
+    const tutorialAction = tutorialVisible ? handleTutorialDrumToggle({
+      instrument,
+      matrix: state.matrix,
+      progress: tutorialProgress,
+      selectedBar,
+      step: currentTutorialStep,
+      stepIndex: step,
+    }) : { allowed: true, nextProgress: tutorialProgress, shouldAdvance: false };
+
+    if (!tutorialAction.allowed) return;
+
     const currentCell = state.matrix.drums[selectedBar]?.[step] ?? null;
     state.setCell('drums', selectedBar, step, toggleInstrumentInCell(currentCell, instrument));
     void dispatchAppCommand({
@@ -203,7 +312,58 @@ export default function App() {
       step,
       instrument,
     });
-  }, [dispatchAppCommand, selectedBar]);
+
+    if (tutorialAction.shouldAdvance) {
+      advanceTutorialAfterTask(currentTutorialStep, tutorialAction.nextProgress);
+    } else {
+      setTutorialProgress(tutorialAction.nextProgress);
+    }
+  }, [
+    advanceTutorialAfterTask,
+    currentTutorialStep,
+    dispatchAppCommand,
+    selectedBar,
+    tutorialProgress,
+    tutorialVisible,
+  ]);
+
+  const handleDrumsStepMove = useCallback((instrument, fromStep, toStep) => {
+    const state = useMusicStore.getState();
+    const tutorialAction = handleTutorialDrumMove({
+      fromStep,
+      instrument,
+      matrix: state.matrix,
+      progress: tutorialProgress,
+      selectedBar,
+      step: currentTutorialStep,
+      toStep,
+    });
+
+    if (!tutorialVisible || !tutorialAction.allowed) return;
+
+    tutorialAction.nextMatrixPatch.forEach((patch) => {
+      state.setCell('drums', patch.bar, patch.step, patch.cell);
+    });
+    void dispatchAppCommand({
+      type: APP_COMMAND_TYPES.DRUMS_TOGGLE,
+      bar: selectedBar,
+      step: toStep,
+      instrument,
+    });
+
+    if (tutorialAction.shouldAdvance) {
+      advanceTutorialAfterTask(currentTutorialStep, tutorialAction.nextProgress);
+    } else {
+      setTutorialProgress(tutorialAction.nextProgress);
+    }
+  }, [
+    advanceTutorialAfterTask,
+    currentTutorialStep,
+    dispatchAppCommand,
+    selectedBar,
+    tutorialProgress,
+    tutorialVisible,
+  ]);
 
   const handleChordCellSelect = useCallback((spanIndex, root) => {
     const state = useMusicStore.getState();
@@ -308,14 +468,22 @@ export default function App() {
   }, []);
 
   const handleTutorialNext = useCallback(() => {
+    if (!tutorialViewModel.canManualNext) return;
     setCurrentTutorialStepIndex((stepIndex) => (
       Math.min(stepIndex + 1, DRUMS_TUTORIAL_STEPS.length - 1)
     ));
-  }, []);
+  }, [tutorialViewModel.canManualNext]);
 
   const handleTutorialBack = useCallback(() => {
     setCurrentTutorialStepIndex((stepIndex) => Math.max(stepIndex - 1, 0));
   }, []);
+
+  const handleTutorialCompleteTask = useCallback(() => {
+    if (currentTutorialStep?.id !== TUTORIAL_STEP_IDS.DRUMS_TASK_4) return;
+    const nextProgress = completeTutorialTask4(tutorialProgress);
+    setTutorialProgress(nextProgress);
+    advanceTutorialToStep(TUTORIAL_STEP_IDS.DRUMS_TASK_4_COMPLETE);
+  }, [advanceTutorialToStep, currentTutorialStep, tutorialProgress]);
 
   return (
     <div className="app" data-screen-label="Main" aria-label="Project Arranger workspace">
@@ -350,12 +518,16 @@ export default function App() {
           onTrackSelect: handleTrackSelect,
           ref: timelineScrollRef,
           selectedClipId,
+          tutorialLocked: tutorialViewModel.locked,
+          tutorialTargets: tutorialViewModel.targets,
           tracks,
         })}
       </main>
       {createElement(BottomEditor, {
         activeTrackId,
         activeTutorialTarget,
+        tutorialLocked: tutorialViewModel.locked,
+        tutorialTargets: tutorialViewModel.targets,
         matrix,
         selectedClipName: selectedClip?.name ?? '',
         onChordCellSelect: handleChordCellSelect,
@@ -372,6 +544,7 @@ export default function App() {
         onClearDrums: handleClearDrums,
         onGenerateAllDrumsBars: handleGenerateAllDrumsBars,
         onGenerateCurrentDrumsBar: handleGenerateCurrentDrumsBar,
+        onDrumsStepMove: handleDrumsStepMove,
         onDrumsStepToggle: handleDrumsStepToggle,
         rootKey,
         selectedBar,
@@ -379,10 +552,14 @@ export default function App() {
       })}
       {tutorialVisible ? createElement(TutorialOverlay, {
         canGoBack: currentTutorialStepIndex > 0,
+        canManualNext: tutorialViewModel.canManualNext,
+        displayCopy: tutorialViewModel.displayCopy,
         isLastStep: currentTutorialStepIndex === DRUMS_TUTORIAL_STEPS.length - 1,
         onBack: handleTutorialBack,
+        onCompleteTask: handleTutorialCompleteTask,
         onPrimaryAction: handleTutorialNext,
         onSkip: () => setTutorialVisible(false),
+        showCompleteButton: tutorialViewModel.showCompleteButton,
         step: currentTutorialStep,
         targetName: activeTutorialTarget,
       }) : null}

@@ -279,9 +279,13 @@ test('app mounts the drums tutorial preview overlay', async () => {
   assert.match(source, /TutorialOverlay/);
   assert.match(source, /DRUMS_TUTORIAL_STEPS/);
   assert.match(source, /currentTutorialStepIndex/);
+  assert.match(source, /getTutorialViewModel/);
+  assert.match(source, /tutorialViewModel\.displayCopy/);
   assert.match(overlaySource, /tutorial-panel/);
   assert.match(overlaySource, /getTutorialPlacement/);
   assert.match(overlaySource, /data-placement=/);
+  assert.match(overlaySource, /displayCopy/);
+  assert.match(overlaySource, /showCompleteButton/);
   assert.match(overlaySource, /onPrimaryAction/);
   assert.match(overlaySource, /跳过教程/);
 });
@@ -310,4 +314,35 @@ test('tutorial preview points to real app regions', async () => {
   assert.match(bottomEditorSource, /data-tutorial-target="track-editor"/);
   assert.match(bottomEditorSource, /tutorial-target-active/);
   assert.match(overlaySource, /正在指引/);
+});
+
+test('app routes drums tutorial tasks through guards and target props', async () => {
+  const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
+  const timelineSource = await readFile(
+    new URL('../src/app/components/Timeline.jsx', import.meta.url),
+    'utf8',
+  );
+  const bottomEditorSource = await readFile(
+    new URL('../src/app/components/BottomEditor.jsx', import.meta.url),
+    'utf8',
+  );
+  const drumSequencerSource = await readFile(
+    new URL('../src/app/components/DrumSequencer.jsx', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /handleTutorialDrumToggle/);
+  assert.match(source, /handleTutorialDrumMove/);
+  assert.match(source, /completeTutorialTask4/);
+  assert.match(source, /tutorialViewModel\.targets/);
+  assert.match(source, /tutorialViewModel\.locked/);
+  assert.match(source, /onDrumsStepMove:\s*handleDrumsStepMove/);
+  assert.match(timelineSource, /tutorialTargets/);
+  assert.match(timelineSource, /tutorial-bar-target/);
+  assert.match(bottomEditorSource, /tutorialTargets/);
+  assert.match(bottomEditorSource, /tutorialLocked/);
+  assert.match(drumSequencerSource, /onStepMove/);
+  assert.match(drumSequencerSource, /tutorial-cell-target/);
+  assert.match(drumSequencerSource, /tutorial-cell-source/);
+  assert.match(drumSequencerSource, /tutorial-cell-completed/);
 });

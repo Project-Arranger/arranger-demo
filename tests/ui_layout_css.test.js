@@ -158,6 +158,19 @@ test('tutorial preview panel floats above the workspace', async () => {
   assert.match(css, /@keyframes tutorial-target-pulse/);
 });
 
+test('tutorial task targets make allowed cells and bars obvious', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.tutorial-cell-target\s*\{[^}]*animation:\s*tutorial-cell-pulse/s);
+  assert.match(css, /\.tutorial-cell-source\s*\{[^}]*cursor:\s*grab;/s);
+  assert.match(css, /\.tutorial-cell-completed\s*\{[^}]*box-shadow:\s*inset 0 0 0 2px/s);
+  assert.match(css, /\.drum-step\.tutorial-locked:not\(\.tutorial-cell-target\):not\(\.tutorial-cell-source\)\s*\{[^}]*opacity:\s*0\.38;/s);
+  assert.match(css, /\.tutorial-bar-target\s*\{[^}]*animation:\s*tutorial-bar-pulse/s);
+  assert.match(css, /\.tutorial-bar-completed\s*\{[^}]*box-shadow:\s*inset 0 0 0 2px/s);
+  assert.match(css, /@keyframes tutorial-cell-pulse/);
+  assert.match(css, /@keyframes tutorial-bar-pulse/);
+});
+
 test('clip name edit icon sits beside the shared clip name input', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 

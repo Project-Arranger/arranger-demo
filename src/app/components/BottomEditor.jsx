@@ -6,6 +6,8 @@ import { TrackEditorPlaceholder } from './TrackEditorPlaceholder.jsx';
 function BottomEditor({
   activeTrackId,
   activeTutorialTarget,
+  tutorialLocked = false,
+  tutorialTargets,
   selectedClipName = '',
   matrix,
   onChordCellSelect,
@@ -22,6 +24,7 @@ function BottomEditor({
   onClearDrums,
   onGenerateAllDrumsBars,
   onGenerateCurrentDrumsBar,
+  onDrumsStepMove,
   onDrumsStepToggle,
   rootKey,
   selectedBar,
@@ -42,9 +45,12 @@ function BottomEditor({
       onClearDrums,
       onGenerateAllBars: onGenerateAllDrumsBars,
       onGenerateCurrentBar: onGenerateCurrentDrumsBar,
+      onStepMove: onDrumsStepMove,
       onStepToggle: onDrumsStepToggle,
       onRenameClip,
       selectedBar,
+      tutorialLocked,
+      tutorialTargets,
     });
   } else if (activeTrackId === 'chord' && selectedClipId) {
     editor = createElement(ChordEditor, {

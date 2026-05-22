@@ -1,5 +1,5 @@
 import { Drum, X } from 'lucide-react';
-import { createElement } from 'react';
+import { createElement, useState } from 'react';
 import { STEPS_PER_BAR } from '../../store/useMusicStore.js';
 import {
   DRUM_SEQUENCER_ROWS,
@@ -10,6 +10,17 @@ import { renderIcon } from './icons.js';
 
 const STEP_NUMBERS = Array.from({ length: STEPS_PER_BAR }, (_, index) => index + 1);
 
+function getTutorialCellRole(tutorialTargets, bar, instrument, step) {
+  const cellTargets = tutorialTargets?.drumCells ?? [];
+  const target = cellTargets.find((item) => (
+    item.bar === bar
+    && item.instrument === instrument
+    && item.steps.includes(step)
+  ));
+
+  return target?.role ?? null;
+}
+
 function DrumSequencer({
   matrix,
   clipName,
@@ -18,10 +29,15 @@ function DrumSequencer({
   onClearDrums,
   onGenerateAllBars,
   onGenerateCurrentBar,
+  onStepMove,
   onStepToggle,
   onRenameClip,
   selectedBar,
+  tutorialLocked = false,
+  tutorialTargets,
 }) {
+  const [dragSource, setDragSource] = useState(null);
+
   return (
     <section className="editor drum-editor" data-screen-label="Drum Sequencer">
       <header className="editor-head">
@@ -91,19 +107,51 @@ function DrumSequencer({
                 {STEP_NUMBERS.map((stepNumber) => {
                   const stepIndex = stepNumber - 1;
                   const active = isDrumsStepActive(matrix, selectedBar, stepIndex, row.id);
+                  const tutorialRole = getTutorialCellRole(
+                    tutorialTargets,
+                    selectedBar,
+                    row.id,
+                    stepIndex,
+                  );
+                  const interactiveTutorialCell = tutorialRole === 'target' || tutorialRole === 'source';
+                  const locked = tutorialLocked && !interactiveTutorialCell;
                   return (
                     <button
                       className={[
                         'drum-step',
                         active ? 'active' : '',
                         stepNumber % 4 === 0 ? 'beat-end' : '',
+                        locked ? 'tutorial-locked' : '',
+                        tutorialRole === 'target' ? 'tutorial-cell-target' : '',
+                        tutorialRole === 'source' ? 'tutorial-cell-source' : '',
+                        tutorialRole === 'completed' ? 'tutorial-cell-completed' : '',
                       ].filter(Boolean).join(' ')}
                       data-instrument={row.id}
                       data-step={stepIndex}
+                      data-tutorial-role={tutorialRole ?? undefined}
                       key={stepNumber}
                       type="button"
                       aria-label={`Toggle ${row.label} step ${stepNumber}`}
                       aria-pressed={active}
+                      aria-disabled={locked}
+                      disabled={locked}
+                      draggable={tutorialRole === 'source'}
+                      onDragEnd={() => setDragSource(null)}
+                      onDragOver={(event) => {
+                        if (tutorialRole !== 'target' || !dragSource) return;
+                        event.preventDefault();
+                      }}
+                      onDragStart={(event) => {
+                        if (tutorialRole !== 'source') return;
+                        setDragSource({ instrument: row.id, step: stepIndex });
+                        event.dataTransfer.effectAllowed = 'move';
+                      }}
+                      onDrop={(event) => {
+                        if (tutorialRole !== 'target' || !dragSource) return;
+                        event.preventDefault();
+                        onStepMove?.(dragSource.instrument, dragSource.step, stepIndex);
+                        setDragSource(null);
+                      }}
                       onClick={() => onStepToggle(row.id, stepIndex)}
                     />
                   );

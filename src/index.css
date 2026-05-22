@@ -976,6 +976,19 @@ button {
     0 0 0 4px color-mix(in oklab, var(--track-color, var(--brand)) 32%, transparent);
 }
 
+.tutorial-bar-target {
+  animation: tutorial-bar-pulse 1.05s ease-in-out infinite;
+  box-shadow:
+    inset 0 0 0 2px color-mix(in oklab, var(--c-drums-ink) 56%, transparent),
+    0 0 0 5px color-mix(in oklab, var(--c-drums) 58%, transparent);
+}
+
+.tutorial-bar-completed {
+  box-shadow:
+    inset 0 0 0 2px color-mix(in oklab, var(--play) 72%, white),
+    0 0 0 3px color-mix(in oklab, var(--play) 28%, transparent);
+}
+
 .hover-row:hover .add-clip {
   opacity: 1;
 }
@@ -1017,6 +1030,17 @@ button {
   100% {
     opacity: 0;
     transform: scaleX(1);
+  }
+}
+
+@keyframes tutorial-bar-pulse {
+  0%,
+  100% {
+    opacity: 0.72;
+  }
+
+  50% {
+    opacity: 1;
   }
 }
 
@@ -2086,6 +2110,48 @@ button {
 .drum-step.active[data-instrument="hihat"] {
   background: var(--drum-hihat);
   border-color: color-mix(in oklab, var(--drum-hihat) 70%, black);
+}
+
+.tutorial-cell-target {
+  animation: tutorial-cell-pulse 0.95s ease-in-out infinite;
+  border-color: color-mix(in oklab, var(--c-drums-ink) 74%, white);
+  box-shadow:
+    0 0 0 3px color-mix(in oklab, white 80%, transparent),
+    0 0 0 7px color-mix(in oklab, var(--c-drums) 70%, transparent);
+}
+
+.tutorial-cell-source {
+  cursor: grab;
+  border-color: color-mix(in oklab, var(--brand) 62%, white);
+  box-shadow:
+    0 0 0 3px color-mix(in oklab, white 80%, transparent),
+    0 0 0 7px color-mix(in oklab, var(--brand) 34%, transparent);
+}
+
+.tutorial-cell-source:active {
+  cursor: grabbing;
+}
+
+.tutorial-cell-completed {
+  box-shadow:
+    inset 0 0 0 2px color-mix(in oklab, var(--play) 72%, white),
+    0 0 0 3px color-mix(in oklab, var(--play) 28%, transparent);
+}
+
+.drum-step.tutorial-locked:not(.tutorial-cell-target):not(.tutorial-cell-source) {
+  opacity: 0.38;
+  cursor: default;
+}
+
+@keyframes tutorial-cell-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.08);
+  }
 }
 
 .drum-bar-indicator {
