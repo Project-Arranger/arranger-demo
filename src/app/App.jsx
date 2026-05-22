@@ -271,6 +271,24 @@ export default function App() {
   }, [currentTutorialStep, writeDrumsBars]);
 
   useEffect(() => {
+    if (!tutorialVisible) return;
+
+    const suggestedBar = tutorialViewModel.suggestedSelectedBar;
+    if (!Number.isInteger(suggestedBar) || suggestedBar === selectedBar) return;
+
+    const state = useMusicStore.getState();
+    const clip = state.getClipForTrackBar('drums', suggestedBar) ?? state.createClip('drums', suggestedBar);
+    if (clip) {
+      state.selectClip(clip.id);
+      return;
+    }
+
+    state.setActiveTrackId('drums');
+    state.setSelectedBar(suggestedBar);
+    state.setSelectedClipId(null);
+  }, [selectedBar, tutorialViewModel.suggestedSelectedBar, tutorialVisible]);
+
+  useEffect(() => {
     const playback = currentTutorialStep?.playback;
     if (!playback?.autoStart || !playback.bars?.length) return undefined;
 

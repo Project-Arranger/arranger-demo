@@ -98,6 +98,7 @@ function getTutorialViewModel({
       displayCopy: '',
       locked: false,
       showCompleteButton: false,
+      suggestedSelectedBar: null,
       targets: createEmptyTargets(),
     };
   }
@@ -107,10 +108,12 @@ function getTutorialViewModel({
   const targets = createEmptyTargets();
   let locked = false;
   let showCompleteButton = false;
+  let suggestedSelectedBar = null;
 
   if (step.id === TUTORIAL_STEP_IDS.DRUMS_TASK_1) {
     locked = true;
     const editedBars = new Set(getTask1EditedBars(progress));
+    const nextTargetBar = DRUMS_TUTORIAL_INITIAL_BARS.find((bar) => !editedBars.has(bar));
     targets.timelineBars = DRUMS_TUTORIAL_INITIAL_BARS.map((bar) => ({
       bar,
       role: editedBars.has(bar) ? 'completed' : 'target',
@@ -121,10 +124,20 @@ function getTutorialViewModel({
       role: editedBars.has(bar) ? 'completed' : 'target',
       steps: [...DRUMS_TASK_1_TARGET_STEPS],
     }));
+    if (
+      Number.isInteger(nextTargetBar)
+      && count < TASK_TOTALS[TUTORIAL_STEP_IDS.DRUMS_TASK_1]
+      && (editedBars.has(selectedBar) || !DRUMS_TUTORIAL_INITIAL_BARS.includes(selectedBar))
+    ) {
+      suggestedSelectedBar = nextTargetBar;
+    }
   } else if (step.id === TUTORIAL_STEP_IDS.DRUMS_TASK_2) {
     locked = true;
     const availableBars = getTask2AvailableBars(progress);
     targets.timelineBars = availableBars.map((bar) => ({ bar, role: 'target' }));
+    if (availableBars.length && !availableBars.includes(selectedBar)) {
+      suggestedSelectedBar = availableBars[0];
+    }
     if (availableBars.includes(selectedBar)) {
       targets.drumCells = [
         {
@@ -145,6 +158,9 @@ function getTutorialViewModel({
     locked = true;
     const targetBar = getTask3TargetBar(progress);
     targets.timelineBars = Number.isInteger(targetBar) ? [{ bar: targetBar, role: 'target' }] : [];
+    if (Number.isInteger(targetBar) && selectedBar !== targetBar) {
+      suggestedSelectedBar = targetBar;
+    }
     if (selectedBar === targetBar) {
       targets.drumCells = [{
         bar: targetBar,
@@ -157,6 +173,9 @@ function getTutorialViewModel({
     locked = true;
     showCompleteButton = true;
     targets.timelineBars = DRUMS_TUTORIAL_FREE_BARS.map((bar) => ({ bar, role: 'target' }));
+    if (!DRUMS_TUTORIAL_FREE_BARS.includes(selectedBar)) {
+      suggestedSelectedBar = DRUMS_TUTORIAL_FREE_BARS[0];
+    }
     if (DRUMS_TUTORIAL_FREE_BARS.includes(selectedBar)) {
       targets.drumCells = [{
         bar: selectedBar,
@@ -172,6 +191,7 @@ function getTutorialViewModel({
     displayCopy: withProgressCount(step.copy, count, total),
     locked,
     showCompleteButton,
+    suggestedSelectedBar,
     targets,
   };
 }

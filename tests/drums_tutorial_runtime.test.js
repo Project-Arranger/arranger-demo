@@ -66,6 +66,15 @@ test('task 1 only accepts highlighted kick targets and tracks two distinct bars'
   assert.deepEqual(first.nextProgress.task1EditedBars, [0]);
   assert.equal(first.nextProgress.task1Count, 1);
 
+  const nextTargetViewModel = getTutorialViewModel({
+    clips: createClips([0, 1, 2, 3]),
+    matrix,
+    progress: first.nextProgress,
+    selectedBar: 0,
+    step,
+  });
+  assert.equal(nextTargetViewModel.suggestedSelectedBar, 1);
+
   progress = first.nextProgress;
   const sameBarAgain = handleTutorialDrumToggle({
     instrument: 'kick',
@@ -107,6 +116,7 @@ test('task 1 only accepts highlighted kick targets and tracks two distinct bars'
     role: 'completed',
     steps: [2, 6, 10, 14],
   });
+  assert.equal(viewModel.suggestedSelectedBar, null);
 });
 
 test('task 2 only accepts moving a kick in an unedited bar two steps right', () => {
@@ -134,6 +144,14 @@ test('task 2 only accepts moving a kick in an unedited bar two steps right', () 
     { bar: 2, instrument: 'kick', role: 'source', steps: [0] },
     { bar: 2, instrument: 'kick', role: 'target', steps: [2] },
   ]);
+  const reselectionViewModel = getTutorialViewModel({
+    clips: createClips([0, 1, 2, 3]),
+    matrix,
+    progress,
+    selectedBar: 1,
+    step,
+  });
+  assert.equal(reselectionViewModel.suggestedSelectedBar, 2);
 
   const clickInsteadOfDrag = handleTutorialDrumToggle({
     instrument: 'kick',
@@ -208,6 +226,14 @@ test('task 3 accepts only step 5 or 13 in the final unedited bar', () => {
   assert.deepEqual(viewModel.targets.drumCells, [
     { bar: 3, instrument: 'kick', role: 'target', steps: [4, 12] },
   ]);
+  const reselectionViewModel = getTutorialViewModel({
+    clips: createClips([0, 1, 2, 3]),
+    matrix,
+    progress,
+    selectedBar: 2,
+    step,
+  });
+  assert.equal(reselectionViewModel.suggestedSelectedBar, 3);
 
   const wrongStep = handleTutorialDrumToggle({
     instrument: 'kick',

@@ -336,6 +336,7 @@ test('app routes drums tutorial tasks through guards and target props', async ()
   assert.match(source, /completeTutorialTask4/);
   assert.match(source, /tutorialViewModel\.targets/);
   assert.match(source, /tutorialViewModel\.locked/);
+  assert.match(source, /tutorialViewModel\.suggestedSelectedBar/);
   assert.match(source, /onDrumsStepMove:\s*handleDrumsStepMove/);
   assert.match(timelineSource, /tutorialTargets/);
   assert.match(timelineSource, /tutorial-bar-target/);
