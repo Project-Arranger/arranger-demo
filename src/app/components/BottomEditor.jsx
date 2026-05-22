@@ -5,6 +5,9 @@ import { TrackEditorPlaceholder } from './TrackEditorPlaceholder.jsx';
 
 function BottomEditor({
   activeTrackId,
+  activeTutorialTarget,
+  tutorialLocked = false,
+  tutorialTargets,
   selectedClipName = '',
   matrix,
   onChordCellSelect,
@@ -21,13 +24,20 @@ function BottomEditor({
   onClearDrums,
   onGenerateAllDrumsBars,
   onGenerateCurrentDrumsBar,
+  onDrumsStepMove,
   onDrumsStepToggle,
   rootKey,
   selectedBar,
   selectedClipId,
 }) {
+  const editorTargetClass = [
+    'track-editor-target',
+    activeTutorialTarget === 'track-editor' ? 'tutorial-target-active' : '',
+  ].filter(Boolean).join(' ');
+  let editor;
+
   if (activeTrackId === 'drums' && selectedClipId) {
-    return createElement(DrumSequencer, {
+    editor = createElement(DrumSequencer, {
       matrix,
       clipName: selectedClipName,
       onClose: onCloseEditor,
@@ -35,14 +45,15 @@ function BottomEditor({
       onClearDrums,
       onGenerateAllBars: onGenerateAllDrumsBars,
       onGenerateCurrentBar: onGenerateCurrentDrumsBar,
+      onStepMove: onDrumsStepMove,
       onStepToggle: onDrumsStepToggle,
       onRenameClip,
       selectedBar,
+      tutorialLocked,
+      tutorialTargets,
     });
-  }
-
-  if (activeTrackId === 'chord' && selectedClipId) {
-    return createElement(ChordEditor, {
+  } else if (activeTrackId === 'chord' && selectedClipId) {
+    editor = createElement(ChordEditor, {
       matrix,
       clipName: selectedClipName,
       onChordCellSelect,
@@ -58,13 +69,19 @@ function BottomEditor({
       rootKey,
       selectedBar,
     });
+  } else {
+    editor = createElement(TrackEditorPlaceholder, {
+      activeTrackId,
+      clipName: selectedClipName,
+      onRenameClip,
+    });
   }
 
-  return createElement(TrackEditorPlaceholder, {
-    activeTrackId,
-    clipName: selectedClipName,
-    onRenameClip,
-  });
+  return (
+    <div className={editorTargetClass} data-tutorial-target="track-editor">
+      {editor}
+    </div>
+  );
 }
 
 export { BottomEditor };

@@ -12,6 +12,7 @@ test('ui shell keeps the editor usable and confines mobile overflow to panels', 
   assert.match(css, /--timeline-min-width:\s*min\(640px,\s*100%\);/);
   assert.match(css, /\.app\s*\{[^}]*grid-template-rows:\s*var\(--app-topbar-height\) minmax\(0,\s*1fr\) var\(--app-editor-height\);/s);
   assert.match(css, /\.app\s*\{[^}]*height:\s*100dvh;/s);
+  assert.match(css, /\.app\s*\{[^}]*position:\s*relative;/s);
   assert.match(css, /\.workspace\s*\{[^}]*grid-template-columns:\s*clamp\(188px,\s*18vw,\s*246px\) minmax\(0,\s*1fr\);/s);
   assert.match(css, /\.editor\s*\{[^}]*overflow:\s*hidden;/s);
   assert.match(css, /\.seq-body\s*\{[^}]*overflow:\s*hidden;/s);
@@ -39,6 +40,22 @@ test('timeline clips fill exactly one bar grid cell', async () => {
   assert.doesNotMatch(css, /\.clip\s*\{[^}]*- 20px/s);
   assert.doesNotMatch(css, /\.clip-mini\s*\{/);
   assert.doesNotMatch(css, /var\(--bars\) \* 1\.55/);
+});
+
+test('timeline playhead spans ruler and track grid', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.ruler\s*\{[^}]*position:\s*relative;/s);
+  assert.match(css, /\.ruler-playhead,\s*\n\.playhead\s*\{[^}]*position:\s*absolute;/s);
+  assert.match(css, /\.ruler-playhead,\s*\n\.playhead\s*\{[^}]*width:\s*2px;/s);
+  assert.match(css, /\.ruler-playhead\s*\{[^}]*top:\s*0;/s);
+  assert.match(css, /\.ruler-playhead\s*\{[^}]*bottom:\s*-1px;/s);
+  assert.match(css, /\.playhead\s*\{[^}]*top:\s*0;/s);
+  assert.match(css, /\.playhead\s*\{[^}]*bottom:\s*0;/s);
+  assert.match(css, /\.playhead-hit\s*\{[^}]*width:\s*14px;/s);
+  assert.match(css, /\.playhead-hit\s*\{[^}]*cursor:\s*ew-resize;/s);
+  assert.match(css, /\.playhead-hit\s*\{[^}]*background:\s*transparent;/s);
+  assert.match(css, /\.timeline-col\.playhead-dragging\s*\{[^}]*cursor:\s*grabbing;/s);
 });
 
 test('track list rows align with timeline hover rows', async () => {
@@ -136,6 +153,85 @@ test('active chord template button aligns icon and label on one baseline', async
   assert.match(css, /\.btn-template-active svg\s*\{[^}]*width:\s*14px;/s);
   assert.match(css, /\.btn-template-active svg\s*\{[^}]*height:\s*14px;/s);
   assert.match(css, /\.btn-template-active svg\s*\{[^}]*flex:\s*0 0 auto;/s);
+});
+
+test('tutorial preview panel floats above the workspace', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.tutorial-panel\s*\{[^}]*position:\s*fixed;/s);
+  assert.match(css, /\.tutorial-panel\s*\{[^}]*width:\s*min\(360px,\s*calc\(100vw - 32px\)\);/s);
+  assert.match(css, /\.tutorial-panel\s*\{[^}]*height:\s*auto;/s);
+  assert.match(css, /\.tutorial-panel\s*\{[^}]*padding:\s*16px;/s);
+  assert.match(css, /\.tutorial-panel\s*\{[^}]*background:\s*oklch\(98% 0\.012 165 \/ 0\.84\);/s);
+  assert.match(css, /\.tutorial-panel\s*\{[^}]*backdrop-filter:\s*blur\(12px\);/s);
+  assert.match(css, /\.tutorial-panel\s*\{[^}]*border-radius:\s*8px;/s);
+  assert.match(css, /\.tutorial-panel\s*\{[^}]*font-family:\s*"Baloo 2",\s*"Nunito",\s*"Arial Rounded MT Bold",\s*"Avenir Next Rounded",\s*"Trebuchet MS",\s*"PingFang SC",\s*"Microsoft YaHei",\s*sans-serif;/s);
+  assert.match(css, /\.tutorial-panel\s*\{[^}]*text-align:\s*center;/s);
+  assert.match(css, /\.tutorial-panel-body\s*\{[^}]*justify-items:\s*center;/s);
+  assert.match(css, /\.tutorial-panel p\s*\{[^}]*font-size:\s*15px;/s);
+  assert.match(css, /\.tutorial-panel p\s*\{[^}]*font-weight:\s*800;/s);
+  assert.match(css, /\.tutorial-panel p\s*\{[^}]*text-align:\s*center;/s);
+  assert.match(css, /\.tutorial-panel-actions\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\);/s);
+  assert.match(css, /\.tutorial-panel-actions\s*\{[^}]*gap:\s*6px;/s);
+  assert.match(css, /\.tutorial-panel-actions\s*\{[^}]*margin-top:\s*12px;/s);
+  assert.match(css, /\.tutorial-primary,\s*\n\.tutorial-secondary,\s*\n\.tutorial-link\s*\{[^}]*min-height:\s*36px;/s);
+  assert.match(css, /\.tutorial-primary,\s*\n\.tutorial-secondary,\s*\n\.tutorial-link\s*\{[^}]*border-radius:\s*999px;/s);
+  assert.match(css, /\.tutorial-primary,\s*\n\.tutorial-secondary,\s*\n\.tutorial-link\s*\{[^}]*font-size:\s*13px;/s);
+  assert.doesNotMatch(css, /\.tutorial-panel\s*\{[^}]*right:\s*0;/s);
+  assert.doesNotMatch(css, /\.tutorial-panel\s*\{[^}]*height:\s*100dvh;/s);
+  assert.match(css, /\.tutorial-panel\[data-placement="center"\]\s*\{[^}]*top:\s*50%;/s);
+  assert.match(css, /\.tutorial-panel\[data-placement="center"\]\s*\{[^}]*left:\s*50%;/s);
+  assert.match(css, /\.tutorial-panel\[data-placement="top"\]\s*\{[^}]*top:\s*calc\(var\(--app-topbar-height\) \+ 14px\);/s);
+  assert.match(css, /\.tutorial-panel\[data-placement="editor"\]\s*\{[^}]*bottom:\s*calc\(var\(--app-editor-height\) \+ 14px\);/s);
+  assert.match(css, /\.tutorial-target-active\s*\{[^}]*outline:\s*0;/s);
+  assert.match(css, /\.tutorial-target-active\s*\{[^}]*box-shadow:\s*inset 0 0 0 2px/s);
+  assert.doesNotMatch(css, /\.tutorial-target-active\s*\{[^}]*0 0 0 6px white/s);
+  assert.doesNotMatch(css, /\.tutorial-target-active\s*\{[^}]*0 0 0 18px/s);
+  assert.match(css, /\.tutorial-target-active\s*\{[^}]*animation:\s*tutorial-target-pulse/s);
+  assert.match(css, /\.app:has\(\.tutorial-target-active\)::before\s*\{[^}]*position:\s*fixed;/s);
+  assert.match(css, /\.app:has\(\.tutorial-target-active\)::before\s*\{[^}]*background:\s*color-mix\(in oklab,\s*black 34%,\s*transparent\);/s);
+  assert.match(css, /\.app:has\(\.tutorial-target-active\)::before\s*\{[^}]*z-index:\s*50;/s);
+  assert.match(css, /\.tutorial-target-active::after\s*\{[^}]*content:\s*"当前步骤";/s);
+  assert.match(css, /\.tutorial-target-active::after\s*\{[^}]*font-size:\s*13px;/s);
+  assert.match(css, /@keyframes tutorial-target-pulse/);
+});
+
+test('tutorial task targets make allowed cells and bars obvious', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.tutorial-cell-target\s*\{[^}]*animation:\s*tutorial-cell-pulse/s);
+  assert.match(css, /\.tutorial-cell-target\s*\{[^}]*outline:\s*3px solid/s);
+  assert.match(css, /\.tutorial-cell-target\s*\{[^}]*box-shadow:\s*0 0 0 4px/s);
+  assert.match(css, /\.tutorial-cell-source\s*\{[^}]*cursor:\s*grab;/s);
+  assert.match(css, /\.tutorial-cell-completed\s*\{[^}]*box-shadow:\s*inset 0 0 0 2px/s);
+  assert.match(css, /\.drum-step\.tutorial-locked:not\(\.active\):not\(\.tutorial-cell-target\):not\(\.tutorial-cell-source\)\s*\{[^}]*opacity:\s*0\.18;/s);
+  assert.match(css, /\.drum-step\.tutorial-locked:not\(\.active\):not\(\.tutorial-cell-target\):not\(\.tutorial-cell-source\)\s*\{[^}]*background:\s*color-mix\(in oklab,\s*var\(--surface\) 45%,\s*var\(--ink-4\)\);/s);
+  assert.match(css, /\.drum-step\.tutorial-locked:not\(\.active\):not\(\.tutorial-cell-target\):not\(\.tutorial-cell-source\)\s*\{[^}]*border-color:\s*color-mix\(in oklab,\s*var\(--border\) 42%,\s*var\(--ink-4\)\);/s);
+  assert.match(css, /\.drum-step\.tutorial-locked:not\(\.active\):not\(\.tutorial-cell-target\):not\(\.tutorial-cell-source\)\s*\{[^}]*filter:\s*grayscale\(1\) saturate\(0\.2\);/s);
+  assert.match(css, /\.drum-step\.tutorial-locked:not\(\.active\):not\(\.tutorial-cell-target\):not\(\.tutorial-cell-source\)\s*\{[^}]*transform:\s*none;/s);
+  assert.doesNotMatch(css, /\.drum-step\.tutorial-locked:not\(\.tutorial-cell-target\):not\(\.tutorial-cell-source\)\s*\{[^}]*opacity:\s*0\.18;/s);
+  assert.match(css, /\.tutorial-bar-target\s*\{[^}]*animation:\s*tutorial-bar-pulse/s);
+  assert.match(css, /\.tutorial-bar-target\s*\{[^}]*outline:\s*3px solid/s);
+  assert.match(css, /\.tutorial-bar-target\s*\{[^}]*box-shadow:\s*inset 0 0 0 4px/s);
+  assert.match(css, /\.tutorial-bar-completed\s*\{[^}]*box-shadow:\s*inset 0 0 0 2px/s);
+  assert.match(css, /\.playhead\.tutorial-playhead-target\s*\{[^}]*animation:\s*tutorial-playhead-pulse/s);
+  assert.match(css, /\.ruler-playhead\.tutorial-playhead-target\s*\{[^}]*z-index:\s*12;/s);
+  assert.match(css, /\.ruler-playhead\.tutorial-playhead-target\s*\{[^}]*background:\s*transparent;/s);
+  assert.match(css, /\.ruler-playhead\.tutorial-playhead-target\s*\{[^}]*animation:\s*none;/s);
+  assert.match(css, /\.playhead\.tutorial-playhead-target\s*\{[^}]*background:\s*color-mix\(in oklab,\s*var\(--c-drums-ink\) 86%,\s*white\);/s);
+  assert.match(css, /\.playhead\.tutorial-playhead-target\s*\{[^}]*box-shadow:/s);
+  assert.match(css, /\.ruler-playhead\.tutorial-playhead-target::after,\s*\n\.ruler-playhead\.tutorial-playhead-completed::after\s*\{[^}]*z-index:\s*13;[^}]*width:\s*16px;[^}]*height:\s*16px;[^}]*border-radius:\s*50%;/s);
+  assert.match(css, /\.ruler-playhead\.tutorial-playhead-target::after\s*\{[^}]*background:\s*color-mix\(in oklab,\s*var\(--c-drums-ink\) 88%,\s*black\);/s);
+  assert.match(css, /\.ruler-playhead\.tutorial-playhead-target::after\s*\{[^}]*border:\s*2px solid color-mix\(in oklab,\s*white 90%,\s*transparent\);/s);
+  assert.match(css, /\.ruler-playhead\.tutorial-playhead-target::after\s*\{[^}]*box-shadow:[^}]*0 0 14px/s);
+  assert.doesNotMatch(css, /\.playhead-hit\.tutorial-playhead-target/);
+  assert.doesNotMatch(css, /\.ruler-playhead\.tutorial-playhead-target::before/);
+  assert.doesNotMatch(css, /\.ruler-playhead\.tutorial-playhead-completed::before/);
+  assert.doesNotMatch(css, /\.playhead\.tutorial-playhead-target::after/);
+  assert.doesNotMatch(css, /\.tutorial-playhead-target\s*\{[^}]*outline:\s*3px solid/s);
+  assert.match(css, /@keyframes tutorial-cell-pulse/);
+  assert.match(css, /@keyframes tutorial-bar-pulse/);
+  assert.match(css, /@keyframes tutorial-playhead-pulse/);
 });
 
 test('clip name edit icon sits beside the shared clip name input', async () => {

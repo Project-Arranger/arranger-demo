@@ -14,6 +14,7 @@ import {
   STEPS_PER_BAR,
   TOTAL_BARS,
 } from '../../store/useMusicStore.js';
+import { getTimelinePlayheadSeekPosition } from '../timelinePlayhead.js';
 import { BAR_NUMBERS } from '../uiShellData.js';
 import { renderIcon } from './icons.js';
 
@@ -81,6 +82,16 @@ function getClipFeedbackClass(trackId, bar, dragFeedback) {
   return DROP_FEEDBACK_CLASS_BY_TYPE[dragFeedback.type];
 }
 
+function getTutorialBarRole(tutorialTargets, bar) {
+  return tutorialTargets?.timelineBars?.find((target) => target.bar === bar)?.role ?? null;
+}
+
+function getTutorialBarClass(role) {
+  if (role === 'completed') return 'tutorial-bar-completed';
+  if (role === 'target') return 'tutorial-bar-target';
+  return '';
+}
+
 function Clip({
   active,
   clip,
@@ -88,7 +99,11 @@ function Clip({
   dragging,
   onMouseDownClip,
   onOpenClip,
+  onTutorialOpenClip,
   shouldIgnoreClick,
+  tutorialLocked,
+  tutorialBarRole,
+  tutorialTimelineBarsCount,
   track,
 }) {
   if (!clip) return null;
@@ -96,7 +111,16 @@ function Clip({
   const handleClick = (event) => {
     event.stopPropagation();
     if (shouldIgnoreClick()) return;
+    if (
+      tutorialLocked
+      && track.id === 'drums'
+      && tutorialTimelineBarsCount
+      && tutorialBarRole !== 'target'
+    ) {
+      return;
+    }
 
+    if (onTutorialOpenClip(clip) === false) return;
     onOpenClip(clip.id);
   };
   const chordLabel = track.id === 'chord' ? clip.chordLabel : null;
@@ -114,6 +138,7 @@ function Clip({
         active ? 'selected' : '',
         dragging ? 'clip-dragging' : '',
         dragFeedbackClass,
+        getTutorialBarClass(tutorialBarRole),
       ].filter(Boolean).join(' ')}
       data-type={track.id}
       data-bar-index={clip.bar}
@@ -121,7 +146,17 @@ function Clip({
       aria-label={`${track.label} clip bar ${clip.bar + 1}`}
       type="button"
       onClick={handleClick}
-      onMouseDown={(event) => onMouseDownClip(event, clip, track.id)}
+      onMouseDown={(event) => {
+        if (
+          tutorialLocked
+          && track.id === 'drums'
+          && tutorialTimelineBarsCount
+          && tutorialBarRole !== 'target'
+        ) {
+          return;
+        }
+        onMouseDownClip(event, clip, track.id);
+      }}
     >
       <div className="clip-name">
         {clipName}
@@ -139,8 +174,12 @@ const Timeline = forwardRef(function Timeline(
     onAddClip,
     onMoveClip,
     onOpenClip,
+    onTransportSeek = () => {},
+    onTutorialOpenClip = () => true,
     onTrackSelect,
     selectedClipId,
+    tutorialLocked = false,
+    tutorialTargets,
     tracks,
   },
   scrollRef,
@@ -148,10 +187,24 @@ const Timeline = forwardRef(function Timeline(
   const [dragSession, setDragSession] = useState(null);
   const [dragFeedback, setDragFeedback] = useState(null);
   const [dragOverBar, setDragOverBar] = useState(null);
+  const [isPlayheadDragging, setIsPlayheadDragging] = useState(false);
   const [suppressNextClick, setSuppressNextClick] = useState(false);
   const feedbackTimerRef = useRef(null);
+  const rulerRef = useRef(null);
   const flatStep = currentBar * STEPS_PER_BAR + currentStep;
   const playheadLeft = `${(flatStep / (TOTAL_BARS * STEPS_PER_BAR)) * 100}%`;
+  const tutorialPlayheadRole = tutorialTargets?.playhead?.role ?? null;
+  const getPlayheadTutorialClass = (baseClass) => [
+    baseClass,
+    tutorialPlayheadRole === 'target' ? 'tutorial-playhead-target' : '',
+    tutorialPlayheadRole === 'completed' ? 'tutorial-playhead-completed' : '',
+  ].filter(Boolean).join(' ');
+  const playheadLineClass = getPlayheadTutorialClass('ruler-playhead');
+  const playheadGridClass = getPlayheadTutorialClass('playhead');
+  const playheadHitClass = 'playhead-hit';
+  const tutorialTimelineBars = new Set(
+    (tutorialTargets?.timelineBars ?? []).map((target) => target.bar),
+  );
 
   const shouldIgnoreClick = () => {
     if (!suppressNextClick) return false;
@@ -187,7 +240,33 @@ const Timeline = forwardRef(function Timeline(
       ? Number(target.dataset.barIndex)
       : getBarFromRow(event.currentTarget, event.clientX);
 
+    if (
+      tutorialLocked
+      && trackId === 'drums'
+      && tutorialTimelineBars.size
+      && !tutorialTimelineBars.has(barIndex)
+    ) {
+      return;
+    }
+
     onTrackSelect(trackId, Number.isInteger(barIndex) ? barIndex : undefined);
+  };
+
+  const seekPlayheadFromClientX = useCallback((clientX) => {
+    const nextPosition = getTimelinePlayheadSeekPosition(
+      clientX,
+      rulerRef.current?.getBoundingClientRect(),
+    );
+    if (!nextPosition) return;
+
+    onTransportSeek(nextPosition.bar, nextPosition.step);
+  }, [onTransportSeek]);
+
+  const handlePlayheadMouseDown = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsPlayheadDragging(true);
+    seekPlayheadFromClientX(event.clientX);
   };
 
   useEffect(() => () => {
@@ -229,9 +308,37 @@ const Timeline = forwardRef(function Timeline(
     };
   }, [dragSession, onMoveClip, showDragFeedback, tracks]);
 
+  useEffect(() => {
+    if (!isPlayheadDragging) return undefined;
+
+    const handleMouseMove = (event) => {
+      seekPlayheadFromClientX(event.clientX);
+    };
+    const handleMouseUp = (event) => {
+      seekPlayheadFromClientX(event.clientX);
+      setIsPlayheadDragging(false);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isPlayheadDragging, seekPlayheadFromClientX]);
+
   return (
-    <section className="timeline-col" ref={scrollRef} style={{ '--bars': TOTAL_BARS }}>
-      <div className="ruler" aria-label="Timeline bars">
+    <section
+      className={[
+        'timeline-col',
+        isPlayheadDragging ? 'playhead-dragging' : '',
+      ].filter(Boolean).join(' ')}
+      data-tutorial-target="track-area"
+      ref={scrollRef}
+      style={{ '--bars': TOTAL_BARS }}
+    >
+      <div className="ruler" aria-label="Timeline bars" ref={rulerRef}>
         {BAR_NUMBERS.map((barNumber) => (
           <div
             className={`bar-label${barNumber === 1 || barNumber === 5 ? ' major' : ''} mono`}
@@ -240,6 +347,18 @@ const Timeline = forwardRef(function Timeline(
             {barNumber}
           </div>
         ))}
+        <div className={playheadLineClass} style={{ left: playheadLeft }}>
+          <div
+            aria-label="Drag transport playhead"
+            aria-valuemax={TOTAL_BARS * STEPS_PER_BAR - 1}
+            aria-valuemin={0}
+            aria-valuenow={flatStep}
+            className={playheadHitClass}
+            onMouseDown={handlePlayheadMouseDown}
+            role="slider"
+            tabIndex={0}
+          />
+        </div>
       </div>
 
       <div className="grid">
@@ -265,12 +384,18 @@ const Timeline = forwardRef(function Timeline(
             >
               {track.bars.map((bar) => {
                 const dropZoneClass = getDropZoneClass(track.id, bar.bar, dragOverBar, dragFeedback);
+                const tutorialBarRole = track.id === 'drums'
+                  ? getTutorialBarRole(tutorialTargets, bar.bar)
+                  : null;
+                const dropZoneTutorialRole = bar.clip ? null : tutorialBarRole;
 
                 return (
                   <div
-                    className={dropZoneClass}
+                    className={[dropZoneClass, getTutorialBarClass(dropZoneTutorialRole)]
+                      .filter(Boolean).join(' ')}
                     aria-label={`Drop clip on ${track.label} bar ${bar.barNumber}`}
                     data-bar-index={bar.bar}
+                    data-tutorial-role={dropZoneTutorialRole ?? undefined}
                     key={`${track.id}-drop-${bar.bar}`}
                     style={{ '--bar-index': bar.bar }}
                   />
@@ -284,7 +409,13 @@ const Timeline = forwardRef(function Timeline(
                 key: bar.clip?.id ?? `${track.id}-empty-${bar.bar}`,
                 onMouseDownClip: handleMouseDown,
                 onOpenClip,
+                onTutorialOpenClip,
                 shouldIgnoreClick,
+                tutorialLocked,
+                tutorialBarRole: track.id === 'drums'
+                  ? getTutorialBarRole(tutorialTargets, bar.bar)
+                  : null,
+                tutorialTimelineBarsCount: tutorialTimelineBars.size,
                 track,
               }))}
               {track.bars.map((bar) => (
@@ -296,8 +427,20 @@ const Timeline = forwardRef(function Timeline(
                     key={`${track.id}-add-${bar.bar}`}
                     style={{ '--bar-index': bar.bar }}
                     type="button"
+                    disabled={tutorialLocked
+                      && track.id === 'drums'
+                      && tutorialTimelineBars.size
+                      && !tutorialTimelineBars.has(bar.bar)}
                     onClick={(event) => {
                       event.stopPropagation();
+                      if (
+                        tutorialLocked
+                        && track.id === 'drums'
+                        && tutorialTimelineBars.size
+                        && !tutorialTimelineBars.has(bar.bar)
+                      ) {
+                        return;
+                      }
                       onAddClip(track.id, bar.bar);
                     }}
                   >
@@ -309,7 +452,18 @@ const Timeline = forwardRef(function Timeline(
           ))}
         </div>
 
-        <div className="playhead" style={{ left: playheadLeft }} />
+        <div className={playheadGridClass} style={{ left: playheadLeft }}>
+          <div
+            aria-label="Drag transport playhead"
+            aria-valuemax={TOTAL_BARS * STEPS_PER_BAR - 1}
+            aria-valuemin={0}
+            aria-valuenow={flatStep}
+            className={playheadHitClass}
+            onMouseDown={handlePlayheadMouseDown}
+            role="slider"
+            tabIndex={0}
+          />
+        </div>
       </div>
     </section>
   );

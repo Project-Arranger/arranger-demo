@@ -48,7 +48,12 @@ async function dispatchTransportCommand(command, deps) {
       return { ok: true };
 
     case APP_COMMAND_TYPES.TRANSPORT_SEEK:
-      state.setSeekPosition?.(command.bar, command.step);
+      if (typeof state.setTransportPosition === 'function') {
+        state.setTransportPosition(command.bar, command.step);
+      } else {
+        state.setPosition?.(command.bar, command.step);
+        state.setSeekPosition?.(command.bar, command.step);
+      }
       await maybeCallMethod(deps.audio, 'seekToStep', command.bar, command.step);
       return { ok: true };
 
@@ -85,7 +90,11 @@ async function dispatchHandlerCommand(command, deps) {
 
     case APP_COMMAND_TYPES.DRUMS_TOGGLE:
       await maybeCall(handlers.drums?.toggle, command);
-      await maybeCallMethod(deps.audio, 'triggerDrumsStep', command.instrument);
+      await maybeCallMethod(
+        deps.audio,
+        'triggerDrumsStep',
+        command.previewInstruments ?? command.instrument,
+      );
       return { ok: true };
 
     case APP_COMMAND_TYPES.CHORD_SELECT_OPTION:

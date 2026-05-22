@@ -73,7 +73,13 @@ test('createUiAudioDispatcher connects transport commands and drums preview audi
   });
 
   await dispatch({ type: 'transport.togglePlay' });
-  await dispatch({ type: 'drums.toggle', bar: 0, step: 0, instrument: 'kick' });
+  await dispatch({
+    type: 'drums.toggle',
+    bar: 0,
+    step: 0,
+    instrument: 'kick',
+    previewInstruments: ['kick', 'hihat'],
+  });
   await dispatch({ type: 'transport.stop' });
 
   assert.deepEqual(store.calls, [
@@ -86,7 +92,7 @@ test('createUiAudioDispatcher connects transport commands and drums preview audi
   assert.equal(audioCalls[0][3], 4);
   assert.equal(audioCalls[0][4], store.getState().matrix);
   assert.deepEqual(audioCalls.slice(1), [
-    ['preview', 'kick'],
+    ['preview', ['kick', 'hihat']],
     ['stop'],
   ]);
 });

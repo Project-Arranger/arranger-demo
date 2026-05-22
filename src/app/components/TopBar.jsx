@@ -12,6 +12,7 @@ import {
 import { renderIcon } from './icons.js';
 
 function TopBar({
+  activeTutorialTarget,
   bpm,
   currentBar,
   currentStep,
@@ -22,8 +23,13 @@ function TopBar({
   rootKey,
   scale,
 }) {
+  const active = activeTutorialTarget === 'top-bar';
+
   return (
-    <header className="topbar">
+    <header
+      className={`topbar${active ? ' tutorial-target-active' : ''}`}
+      data-tutorial-target="top-bar"
+    >
       <div className="brand">
         <div className="name">Project Arranger</div>
         <div className="project">v0.22</div>

@@ -63,10 +63,24 @@ test('clip commands validate exact payloads', () => {
 
 test('drums command validates track step and known instruments', () => {
   assert.equal(isValidAppCommand({ type: 'drums.toggle', bar: 0, step: 0, instrument: 'kick' }), true);
+  assert.equal(isValidAppCommand({
+    type: 'drums.toggle',
+    bar: 0,
+    step: 0,
+    instrument: 'kick',
+    previewInstruments: ['kick', 'hihat'],
+  }), true);
   assert.equal(isValidAppCommand({ type: 'drums.toggle', bar: 0, step: 0, instrument: 'snare' }), true);
   assert.equal(isValidAppCommand({ type: 'drums.toggle', bar: 0, step: 0, instrument: 'hihat' }), true);
   assert.equal(isValidAppCommand({ type: 'unknown.toggle', bar: 0, step: 0, instrument: 'kick' }), false);
   assert.equal(isValidAppCommand({ type: 'drums.toggle', bar: 0, step: 0, instrument: 'tom' }), false);
+  assert.equal(isValidAppCommand({
+    type: 'drums.toggle',
+    bar: 0,
+    step: 0,
+    instrument: 'kick',
+    previewInstruments: ['kick', 'tom'],
+  }), false);
 });
 
 test('lead note commands only accept configured lead notes', () => {

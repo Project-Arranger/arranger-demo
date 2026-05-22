@@ -26,6 +26,17 @@ function createBasicDrumsBar() {
   return bar;
 }
 
+function createBasicDrumsBarWithoutKick() {
+  const bar = createEmptyDrumsBar();
+
+  for (const event of BASIC_DRUMS_STEPS) {
+    const instruments = event.instruments.filter((instrument) => instrument !== 'kick');
+    bar[event.step] = instruments.length ? createCell(instruments) : null;
+  }
+
+  return bar;
+}
+
 function createDefaultDrumsPattern() {
   return BASIC_DRUMS_STEPS.flatMap((event) => (
     event.instruments.map((instrument) => ({
@@ -89,6 +100,7 @@ export {
   applyBasicDrumsBar,
   clearDrumsBar,
   createBasicDrumsBar,
+  createBasicDrumsBarWithoutKick,
   createDefaultDrumsPattern,
   createEmptyDrumsBar,
   getDrumsClipBarIndexes,

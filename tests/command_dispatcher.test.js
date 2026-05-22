@@ -25,6 +25,7 @@ function createMockStore(initial = {}) {
     play: () => calls.push(['play']),
     pause: () => calls.push(['pause']),
     stop: () => calls.push(['stop']),
+    setTransportPosition: (bar, step) => calls.push(['setTransportPosition', bar, step]),
     setSeekPosition: (bar, step) => calls.push(['setSeekPosition', bar, step]),
   };
 
@@ -71,7 +72,7 @@ test('transport commands dispatch to store and optional audio dependencies', asy
   assert.deepEqual(store.calls, [
     ['play'],
     ['pause'],
-    ['setSeekPosition', 2, 8],
+    ['setTransportPosition', 2, 8],
     ['stop'],
   ]);
   assert.deepEqual(audioCalls, [
@@ -132,7 +133,13 @@ test('domain commands dispatch to injected handlers with drums naming', async ()
 
   await dispatchCommand({ type: 'tutorial.next' }, { handlers });
   await dispatchCommand({ type: 'tutorial.completeTask' }, { handlers });
-  await dispatchCommand({ type: 'drums.toggle', bar: 0, step: 4, instrument: 'kick' }, { handlers, audio });
+  await dispatchCommand({
+    type: 'drums.toggle',
+    bar: 0,
+    step: 4,
+    instrument: 'kick',
+    previewInstruments: ['kick', 'hihat'],
+  }, { handlers, audio });
   await dispatchCommand({ type: 'chord.selectOption', optionIndex: 3 }, { handlers });
   await dispatchCommand({ type: 'chord.confirm' }, { handlers });
   await dispatchCommand({ type: 'chord.setCell', bar: 2, span: 1, root: 'G#' }, { handlers });
@@ -152,7 +159,7 @@ test('domain commands dispatch to injected handlers with drums naming', async ()
     ['lead.noteOff', 'C3'],
   ]);
   assert.deepEqual(audioCalls, [
-    ['audio.triggerDrumsStep', 'kick'],
+    ['audio.triggerDrumsStep', ['kick', 'hihat']],
   ]);
 });
 
@@ -225,11 +232,15 @@ test('dispatcher can use the real music store for existing transport actions', a
   useMusicStore.setState(useMusicStore.getInitialState(), true);
 
   await dispatchCommand({ type: 'transport.seek', bar: 3, step: 12 });
+  assert.equal(useMusicStore.getState().currentBar, 3);
+  assert.equal(useMusicStore.getState().currentStep, 12);
   assert.equal(useMusicStore.getState().seekBar, 3);
   assert.equal(useMusicStore.getState().seekStep, 12);
 
   await dispatchCommand({ type: 'transport.stop' });
   assert.equal(useMusicStore.getState().isPlaying, false);
-  assert.equal(useMusicStore.getState().currentBar, 0);
-  assert.equal(useMusicStore.getState().currentStep, 0);
+  assert.equal(useMusicStore.getState().currentBar, 3);
+  assert.equal(useMusicStore.getState().currentStep, 12);
+  assert.equal(useMusicStore.getState().seekBar, 3);
+  assert.equal(useMusicStore.getState().seekStep, 12);
 });

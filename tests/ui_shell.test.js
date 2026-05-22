@@ -24,6 +24,16 @@ test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async
   assert.match(source, /DRUMS_TOGGLE/);
   assert.match(source, /createTimelineTracks/);
   assert.match(timelineSource, /BAR_NUMBERS\.map/);
+  assert.match(timelineSource, /const playheadLeft/);
+  assert.match(timelineSource, /className=\{playheadLineClass\}/);
+  assert.match(timelineSource, /className=\{playheadGridClass\}/);
+  assert.match(timelineSource, /style=\{\{ left: playheadLeft \}\}/);
+  assert.match(timelineSource, /onTransportSeek/);
+  assert.match(timelineSource, /getTimelinePlayheadSeekPosition/);
+  assert.match(timelineSource, /handlePlayheadMouseDown/);
+  assert.match(timelineSource, /playhead-hit/);
+  assert.match(source, /handleTransportSeek/);
+  assert.match(source, /onTransportSeek:\s*handleTransportSeek/);
   assert.match(source, /clips/);
   assert.match(source, /getClipForTrackBar/);
   assert.match(source, /createClip\(trackId,\s*barIndex\)/);
@@ -138,7 +148,7 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(source, /previewChordSequence/);
   assert.match(source, /handleChordPreview/);
   assert.match(source, /handleChordTemplatePreview/);
-  assert.match(source, /seedDefaultDrumsPattern/);
+  assert.doesNotMatch(source, /seedDefaultDrumsPattern/);
   assert.match(source, /handleCloseEditor/);
   assert.match(source, /selectedClip/);
   assert.match(source, /handleRenameClip/);
@@ -258,6 +268,8 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(source, /getDrumsClipBarIndexes/);
   assert.match(source, /applyBasicDrumsAllBars/);
   assert.match(source, /applyBasicDrumsAllBars\(state\.matrix,\s*drumsClipBars\)/);
+  assert.match(source, /createBasicDrumsBarWithoutKick/);
+  assert.match(source, /createBasicDrumsBarWithoutKick\(\)\.forEach\(\(cell,\s*step\) => \{/);
   assert.match(source, /clearDrumsBar/);
   assert.match(bottomEditorSource, /activeTrackId === 'drums' && selectedClipId/);
   assert.match(bottomEditorSource, /onClose:\s*onCloseEditor/);
@@ -267,4 +279,142 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(bottomEditorSource, /onChordPreview/);
   assert.match(bottomEditorSource, /onChordTemplatePreview/);
   assert.match(bottomEditorSource, /onChordTemplateApply/);
+});
+
+test('app keeps the editor focused on the playback bar while transport is playing', async () => {
+  const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
+
+  assert.match(source, /syncEditorToPlaybackBar/);
+  assert.match(source, /syncEditorToPlaybackBar\(useMusicStore\.getState\(\),\s*currentBar\)/);
+  assert.match(source, /\[\s*activeTrackId,\s*currentBar,\s*isPlaying,\s*selectedBar\s*\]/);
+});
+
+test('app mounts the drums tutorial preview overlay', async () => {
+  const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
+  const overlaySource = await readFile(
+    new URL('../src/app/components/TutorialOverlay.jsx', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /TutorialOverlay/);
+  assert.match(source, /DRUMS_TUTORIAL_STEPS/);
+  assert.match(source, /currentTutorialStepIndex/);
+  assert.match(source, /getTutorialViewModel/);
+  assert.match(source, /tutorialViewModel\.displayCopy/);
+  assert.match(source, /APP_COMMAND_TYPES\.TRANSPORT_STOP/);
+  assert.match(source, /stopTutorialPreviewPlayback/);
+  assert.match(overlaySource, /tutorial-panel/);
+  assert.match(overlaySource, /getTutorialPlacement/);
+  assert.match(overlaySource, /data-placement=/);
+  assert.match(overlaySource, /displayCopy/);
+  assert.match(overlaySource, /showCompleteButton/);
+  assert.match(overlaySource, /onPrimaryAction/);
+  assert.match(overlaySource, /跳过教程/);
+  assert.doesNotMatch(overlaySource, /step\.phase/);
+  assert.doesNotMatch(overlaySource, /step\.title/);
+  assert.doesNotMatch(overlaySource, /tutorial-phase/);
+  assert.doesNotMatch(overlaySource, /正在指引/);
+  assert.doesNotMatch(overlaySource, /tutorial-target-note/);
+});
+
+test('tutorial navigation buttons interrupt preview playback', async () => {
+  const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
+
+  assert.match(source, /const stopTutorialPreviewPlayback = useCallback/);
+  assert.match(source, /let tutorialAutoAdvanceTimerId = null/);
+  assert.match(source, /function clearTutorialAutoAdvanceTimer\(\)/);
+  assert.match(source, /window\.clearTimeout\(tutorialAutoAdvanceTimerId\)/);
+  assert.match(source, /function scheduleTutorialAutoAdvance\(callback\)/);
+  assert.match(source, /TUTORIAL_STEP_IDS\.UI_TRACK_AREA,[\s\S]*TUTORIAL_STEP_IDS\.DRUMS_TASK_1/);
+  assert.match(source, /stopTutorialPreviewPlayback\(\);[\s\S]*setCurrentTutorialStepIndex/);
+  assert.match(source, /handleTutorialBack = useCallback\(\(\) => \{[\s\S]*stopTutorialPreviewPlayback\(\);/);
+  assert.match(source, /handleTutorialBack = useCallback\(\(\) => \{[\s\S]*clearTutorialAutoAdvanceTimer\(\);[\s\S]*stopTutorialPreviewPlayback\(\);/);
+  assert.match(source, /resetTutorialStepForRetry/);
+  assert.match(source, /TUTORIAL_BACK_TARGET_RESET_STEP_IDS\.has\(nextStep\?\.id\)/);
+  assert.match(source, /resetTutorialStepsForBack/);
+  assert.match(source, /reset\.nextTransportPosition/);
+  assert.match(source, /APP_COMMAND_TYPES\.TRANSPORT_SEEK,[\s\S]*bar:\s*reset\.nextTransportPosition\.bar,[\s\S]*step:\s*reset\.nextTransportPosition\.step/);
+  assert.match(source, /nextSetups\.delete\(currentTutorialStep\.id\)/);
+  assert.match(source, /handleTutorialNext = useCallback\(\(\) => \{[\s\S]*clearTutorialAutoAdvanceTimer\(\);[\s\S]*stopTutorialPreviewPlayback\(\);/);
+  assert.match(source, /handleTutorialSkip = useCallback\(\(\) => \{[\s\S]*clearTutorialAutoAdvanceTimer\(\);[\s\S]*stopTutorialPreviewPlayback\(\);[\s\S]*setTutorialVisible\(false\);/);
+  assert.match(source, /onSkip:\s*handleTutorialSkip/);
+});
+
+test('tutorial preview points to real app regions', async () => {
+  const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
+  const topBarSource = await readFile(new URL('../src/app/components/TopBar.jsx', import.meta.url), 'utf8');
+  const timelineSource = await readFile(
+    new URL('../src/app/components/Timeline.jsx', import.meta.url),
+    'utf8',
+  );
+  const bottomEditorSource = await readFile(
+    new URL('../src/app/components/BottomEditor.jsx', import.meta.url),
+    'utf8',
+  );
+  const overlaySource = await readFile(
+    new URL('../src/app/components/TutorialOverlay.jsx', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /activeTutorialTarget/);
+  assert.match(topBarSource, /data-tutorial-target="top-bar"/);
+  assert.match(topBarSource, /tutorial-target-active/);
+  assert.match(timelineSource, /data-tutorial-target="track-area"/);
+  assert.doesNotMatch(timelineSource, /tutorial-target-active/);
+  assert.doesNotMatch(timelineSource, /activeTutorialTarget === 'track-area'/);
+  assert.match(bottomEditorSource, /data-tutorial-target="track-editor"/);
+  assert.match(bottomEditorSource, /tutorial-target-active/);
+  assert.match(overlaySource, /getTutorialPlacement\(targetName\)/);
+});
+
+test('app routes drums tutorial tasks through guards and target props', async () => {
+  const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
+  const timelineSource = await readFile(
+    new URL('../src/app/components/Timeline.jsx', import.meta.url),
+    'utf8',
+  );
+  const bottomEditorSource = await readFile(
+    new URL('../src/app/components/BottomEditor.jsx', import.meta.url),
+    'utf8',
+  );
+  const drumSequencerSource = await readFile(
+    new URL('../src/app/components/DrumSequencer.jsx', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /handleTutorialDrumToggle/);
+  assert.match(source, /handleTutorialDrumMove/);
+  assert.match(source, /handleTutorialClipOpen/);
+  assert.match(source, /handleTutorialPlayheadDrag/);
+  assert.match(source, /handleTransportSeek/);
+  assert.match(source, /if \(!tutorialAction\.allowed\) return false;\n\n {4}setTutorialProgress\(tutorialAction\.nextProgress\);\n\n {4}if \(tutorialAction\.shouldAdvance\)/);
+  assert.match(source, /handleTutorialOpenClip/);
+  assert.match(source, /createDrumsStepMovePatch/);
+  assert.match(source, /completeTutorialTask4/);
+  assert.match(source, /getDrumsCellInstruments/);
+  assert.match(source, /previewInstruments:\s*getDrumsCellInstruments\(nextCell\)/);
+  assert.match(source, /tutorialViewModel\.targets/);
+  assert.match(source, /tutorialViewModel\.locked/);
+  assert.match(source, /tutorialViewModel\.suggestedSelectedBar/);
+  assert.match(source, /onDrumsStepMove:\s*handleDrumsStepMove/);
+  assert.match(timelineSource, /tutorialTargets/);
+  assert.match(timelineSource, /tutorial-bar-target/);
+  assert.match(timelineSource, /getTutorialBarClass\(tutorialBarRole\)/);
+  assert.doesNotMatch(timelineSource, /className=\{\[dropZoneClass,\s*getTutorialBarClass\(tutorialBarRole\)\]/);
+  assert.match(timelineSource, /tutorialTargets\?\.playhead/);
+  assert.match(timelineSource, /tutorial-playhead-target/);
+  assert.match(timelineSource, /playheadLineClass/);
+  assert.match(timelineSource, /className=\{playheadLineClass\}/);
+  assert.match(timelineSource, /className=\{playheadGridClass\}/);
+  assert.doesNotMatch(timelineSource, /playhead-hit',\s*\n\s*tutorialPlayheadRole === 'target'/);
+  assert.match(timelineSource, /onTutorialOpenClip/);
+  assert.match(bottomEditorSource, /tutorialTargets/);
+  assert.match(bottomEditorSource, /tutorialLocked/);
+  assert.match(drumSequencerSource, /onStepMove/);
+  assert.match(drumSequencerSource, /handleMouseDownStep/);
+  assert.match(drumSequencerSource, /getDropTargetFromPoint/);
+  assert.match(drumSequencerSource, /drag-over/);
+  assert.match(drumSequencerSource, /tutorial-cell-target/);
+  assert.match(drumSequencerSource, /tutorial-cell-source/);
+  assert.match(drumSequencerSource, /tutorial-cell-completed/);
 });

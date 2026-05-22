@@ -49,7 +49,7 @@ const COMMAND_GROUPS = Object.freeze({
  * @typedef {{ type: 'transport.togglePlay' } | { type: 'transport.stop' } | { type: 'transport.seek', bar: number, step: number }} TransportCommand
  * @typedef {{ type: 'clip.deleteSelected' }} ClipCommand
  * @typedef {{ type: 'tutorial.next' } | { type: 'tutorial.completeTask' }} TutorialCommand
- * @typedef {{ type: 'drums.toggle', bar: number, step: number, instrument: 'kick' | 'snare' | 'hihat' }} DrumsCommand
+ * @typedef {{ type: 'drums.toggle', bar: number, step: number, instrument: 'kick' | 'snare' | 'hihat', previewInstruments?: Array<'kick' | 'snare' | 'hihat'> }} DrumsCommand
  * @typedef {{ type: 'chord.selectOption', optionIndex: number } | { type: 'chord.confirm' } | { type: 'chord.setCell', bar: number, span: number, root: string } | { type: 'chord.clearCell', bar: number, span: number }} ChordCommand
  * @typedef {{ type: 'lead.noteOn', note: string } | { type: 'lead.noteOff', note: string }} LeadCommand
  * @typedef {TransportCommand | ClipCommand | TutorialCommand | DrumsCommand | ChordCommand | LeadCommand} AppCommand
