@@ -58,6 +58,7 @@ import {
 import { createTimelineTracks } from './timelineViewModels.js';
 import { syncEditorToPlaybackBar } from './playbackEditorSync.js';
 import { syncTrackScrollContainers } from './syncTrackScroll.js';
+import { syncEditorToTutorialSuggestedBar } from './tutorialEditorSync.js';
 import {
   BAR_NUMBERS,
   TRACK_UI,
@@ -339,19 +340,8 @@ export default function App() {
     if (!tutorialVisible) return;
 
     const suggestedBar = tutorialViewModel.suggestedSelectedBar;
-    if (!Number.isInteger(suggestedBar) || suggestedBar === selectedBar) return;
-
-    const state = useMusicStore.getState();
-    const clip = state.getClipForTrackBar('drums', suggestedBar) ?? state.createClip('drums', suggestedBar);
-    if (clip) {
-      state.selectClip(clip.id);
-      return;
-    }
-
-    state.setActiveTrackId('drums');
-    state.setSelectedBar(suggestedBar);
-    state.setSelectedClipId(null);
-  }, [selectedBar, tutorialViewModel.suggestedSelectedBar, tutorialVisible]);
+    syncEditorToTutorialSuggestedBar(useMusicStore.getState(), suggestedBar, { isPlaying });
+  }, [isPlaying, selectedBar, tutorialViewModel.suggestedSelectedBar, tutorialVisible]);
 
   useEffect(() => {
     const playback = currentTutorialStep?.playback;
