@@ -1,3 +1,15 @@
+import { TUTORIAL_TARGETS } from '../../tutorial/drumsTutorialConstants.js';
+
+const TUTORIAL_TARGET_PLACEMENTS = Object.freeze({
+  [TUTORIAL_TARGETS.TOP_BAR]: 'top',
+  [TUTORIAL_TARGETS.TRACK_AREA]: 'middle',
+  [TUTORIAL_TARGETS.TRACK_EDITOR]: 'editor',
+});
+
+function getTutorialPlacement(targetName) {
+  return TUTORIAL_TARGET_PLACEMENTS[targetName] ?? 'center';
+}
+
 function TutorialOverlay({
   canGoBack = true,
   isLastStep = false,
@@ -10,9 +22,10 @@ function TutorialOverlay({
   if (!step) return null;
 
   const primaryLabel = step.id === 'opening' ? '开始创造' : '下一步';
+  const placement = getTutorialPlacement(targetName);
 
   return (
-    <aside className="tutorial-panel" aria-live="polite">
+    <aside className="tutorial-panel" data-placement={placement} aria-live="polite">
       <div className="tutorial-panel-body">
         <div className="tutorial-phase">{step.phase}</div>
         <h2>{step.title}</h2>

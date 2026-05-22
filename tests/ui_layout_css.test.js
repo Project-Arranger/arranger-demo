@@ -138,13 +138,19 @@ test('active chord template button aligns icon and label on one baseline', async
   assert.match(css, /\.btn-template-active svg\s*\{[^}]*flex:\s*0 0 auto;/s);
 });
 
-test('tutorial preview panel is fixed on the right side', async () => {
+test('tutorial preview panel floats above the workspace', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
   assert.match(css, /\.tutorial-panel\s*\{[^}]*position:\s*fixed;/s);
-  assert.match(css, /\.tutorial-panel\s*\{[^}]*right:\s*0;/s);
-  assert.match(css, /\.tutorial-panel\s*\{[^}]*width:\s*min\(25vw,\s*360px\);/s);
-  assert.match(css, /\.tutorial-panel\s*\{[^}]*min-width:\s*280px;/s);
+  assert.match(css, /\.tutorial-panel\s*\{[^}]*width:\s*min\(420px,\s*calc\(100vw - 32px\)\);/s);
+  assert.match(css, /\.tutorial-panel\s*\{[^}]*height:\s*auto;/s);
+  assert.match(css, /\.tutorial-panel\s*\{[^}]*border-radius:\s*8px;/s);
+  assert.doesNotMatch(css, /\.tutorial-panel\s*\{[^}]*right:\s*0;/s);
+  assert.doesNotMatch(css, /\.tutorial-panel\s*\{[^}]*height:\s*100dvh;/s);
+  assert.match(css, /\.tutorial-panel\[data-placement="center"\]\s*\{[^}]*top:\s*50%;/s);
+  assert.match(css, /\.tutorial-panel\[data-placement="center"\]\s*\{[^}]*left:\s*50%;/s);
+  assert.match(css, /\.tutorial-panel\[data-placement="top"\]\s*\{[^}]*top:\s*calc\(var\(--app-topbar-height\) \+ 14px\);/s);
+  assert.match(css, /\.tutorial-panel\[data-placement="editor"\]\s*\{[^}]*bottom:\s*calc\(var\(--app-editor-height\) \+ 14px\);/s);
   assert.match(css, /\.tutorial-target-active\s*\{[^}]*outline:\s*5px solid/s);
   assert.match(css, /\.tutorial-target-active\s*\{[^}]*box-shadow:\s*0 0 0 4px white,\s*0 0 0 12px/s);
   assert.match(css, /\.tutorial-target-active\s*\{[^}]*animation:\s*tutorial-target-pulse/s);

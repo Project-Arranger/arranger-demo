@@ -280,6 +280,8 @@ test('app mounts the drums tutorial preview overlay', async () => {
   assert.match(source, /DRUMS_TUTORIAL_STEPS/);
   assert.match(source, /currentTutorialStepIndex/);
   assert.match(overlaySource, /tutorial-panel/);
+  assert.match(overlaySource, /getTutorialPlacement/);
+  assert.match(overlaySource, /data-placement=/);
   assert.match(overlaySource, /onPrimaryAction/);
   assert.match(overlaySource, /跳过教程/);
 });
