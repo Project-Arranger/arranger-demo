@@ -1,9 +1,12 @@
-import * as Tone from 'tone';
 import AudioEngine from './AudioEngine.js';
+
+function loadToneDependency() {
+  return import('tone');
+}
 
 export default function createAudioEngine(options = {}) {
   return new AudioEngine({
-    tone: Tone,
+    loadTone: loadToneDependency,
     ...options,
   });
 }

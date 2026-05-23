@@ -6,7 +6,10 @@ import {
   PASSING_CHORD_DEFAULT_OPTIONS,
   PASSING_CHORD_OPTIONS,
   CHORD_TEMPLATES,
+  CHORD_GRID_OCTAVES,
+  CHORD_GRID_PITCHES,
   CHORD_ROOTS,
+  DEFAULT_CHORD_GRID_OCTAVE,
   createChordCell,
   createChordNoteCell,
   createChordNotesCell,
@@ -15,6 +18,7 @@ import {
   getChordVariantOptions,
   getChordToneRoots,
   getChordSpanStep,
+  isChordGridPitch,
   isChordName,
   isChordRoot,
   isChordCellActive,
@@ -28,6 +32,28 @@ test('chord roots cover the twelve editor notes', () => {
   assert.equal(isChordRoot('C'), true);
   assert.equal(isChordRoot('A#'), true);
   assert.equal(isChordRoot('H'), false);
+});
+
+test('chord grid pitches cover three visual octaves from B down to C', () => {
+  assert.deepEqual(CHORD_GRID_OCTAVES, [5, 4, 3]);
+  assert.equal(DEFAULT_CHORD_GRID_OCTAVE, 4);
+  assert.equal(CHORD_GRID_PITCHES.length, 36);
+  assert.deepEqual(
+    CHORD_GRID_PITCHES.map((pitch) => pitch.label).slice(0, 12),
+    ['B5', 'A#5', 'A5', 'G#5', 'G5', 'F#5', 'F5', 'E5', 'D#5', 'D5', 'C#5', 'C5'],
+  );
+  assert.deepEqual(
+    CHORD_GRID_PITCHES.map((pitch) => pitch.label).slice(12, 24),
+    ['B4', 'A#4', 'A4', 'G#4', 'G4', 'F#4', 'F4', 'E4', 'D#4', 'D4', 'C#4', 'C4'],
+  );
+  assert.equal(CHORD_GRID_PITCHES.at(-1).label, 'C3');
+  assert.equal(isChordGridPitch('C3'), true);
+  assert.equal(isChordGridPitch('C4'), true);
+  assert.equal(isChordGridPitch('C5'), true);
+  assert.equal(isChordGridPitch('F#5'), true);
+  assert.equal(isChordGridPitch('C2'), false);
+  assert.equal(isChordGridPitch('C6'), false);
+  assert.equal(isChordGridPitch('H4'), false);
 });
 
 test('getChordSpanStep maps four chord spans to matrix steps', () => {
@@ -145,17 +171,34 @@ test('note cells support multi-select saved notes per column', () => {
   const cNote = createChordNoteCell('C#');
 
   assert.deepEqual(cNote, { type: 'notes', notes: ['C#'], label: 'C#' });
+  assert.deepEqual(createChordNoteCell('C3'), { type: 'notes', notes: ['C3'], label: 'C3' });
+  assert.deepEqual(createChordNoteCell('C4'), { type: 'notes', notes: ['C4'], label: 'C4' });
+  assert.deepEqual(createChordNoteCell('C5'), { type: 'notes', notes: ['C5'], label: 'C5' });
+  assert.deepEqual(createChordNoteCell('F#5'), { type: 'notes', notes: ['F#5'], label: 'F#5' });
+  assert.equal(createChordNoteCell('C2'), null);
+  assert.equal(createChordNoteCell('C6'), null);
+  assert.equal(createChordNoteCell('H4'), null);
   assert.deepEqual(createChordNotesCell(['F', 'A', 'F']), { type: 'notes', notes: ['F', 'A'], label: 'F/A' });
+  assert.deepEqual(createChordNotesCell(['F3', 'A5', 'F3']), { type: 'notes', notes: ['F3', 'A5'], label: 'F3/A5' });
   assert.equal(createChordNoteCell('H'), null);
   assert.deepEqual(getChordCellNotes({ type: 'note', note: 'C', label: 'C' }), ['C']);
+  assert.deepEqual(getChordCellNotes({ type: 'note', note: 'C5', label: 'C5' }), ['C5']);
   assert.deepEqual(getChordCellNotes(createChordNotesCell(['D', 'F'])), ['D', 'F']);
+  assert.deepEqual(getChordCellNotes(createChordNotesCell(['D3', 'F5'])), ['D3', 'F5']);
   assert.equal(isChordCellActive(cNote, 'C#', 2), true);
+  assert.equal(isChordCellActive(cNote, 'C#4', 2), true);
+  assert.equal(isChordCellActive(cNote, 'C#3', 2), false);
   assert.equal(isChordCellActive(cNote, 'C#', 1), true);
   assert.equal(isChordCellActive(cNote, 'D', 2), false);
   assert.equal(isChordAddedNoteActive(cNote, 'C#'), true);
+  assert.equal(isChordAddedNoteActive(cNote, 'C#4'), true);
+  assert.equal(isChordAddedNoteActive(cNote, 'C#5'), false);
   assert.deepEqual(toggleChordNoteCell(null, 'A'), createChordNoteCell('A'));
+  assert.deepEqual(toggleChordNoteCell(null, 'A3'), createChordNoteCell('A3'));
   assert.deepEqual(toggleChordNoteCell(createChordNoteCell('A'), 'G'), createChordNotesCell(['A', 'G']));
+  assert.deepEqual(toggleChordNoteCell(createChordNoteCell('A3'), 'G5'), createChordNotesCell(['A3', 'G5']));
   assert.deepEqual(toggleChordNoteCell(createChordNotesCell(['A', 'G']), 'A'), createChordNoteCell('G'));
+  assert.deepEqual(toggleChordNoteCell(createChordNoteCell('A'), 'A4'), null);
   assert.equal(toggleChordNoteCell(createChordNoteCell('A'), 'A'), null);
 });
 
@@ -169,7 +212,10 @@ test('chord cells can carry added notes without changing the main chord label', 
   });
   assert.equal(enrichedCell.label, 'C');
   assert.equal(isChordAddedNoteActive(enrichedCell, 'D'), true);
+  assert.equal(isChordAddedNoteActive(enrichedCell, 'D4'), true);
+  assert.equal(isChordAddedNoteActive(enrichedCell, 'D3'), false);
   assert.equal(isChordCellActive(enrichedCell, 'D', 0), false);
   assert.deepEqual(toggleChordNoteCell(enrichedCell, 'F').addedNotes, ['D', 'F']);
+  assert.deepEqual(toggleChordNoteCell(enrichedCell, 'F5').addedNotes, ['D', 'F5']);
   assert.deepEqual(toggleChordNoteCell({ ...cCell, addedNotes: ['D'] }, 'D'), cCell);
 });

@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import { TOTAL_BARS, TRACK_IDS } from '../src/domain/musicConstants.js';
 import {
   BAR_NUMBERS,
+  CHORD_GRID_PITCHES,
   BEAT_NUMBERS,
   CHORD_NOTES,
   TRACK_UI,
@@ -20,6 +21,32 @@ test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async
   assert.match(topBarSource, /play-glyph/);
   assert.doesNotMatch(topBarSource, /import\s*\{[^}]*Play/);
   assert.match(source, /data-screen-label="Main"/);
+  assert.match(source, /EDITOR_RESIZE_MIN_HEIGHT\s*=\s*180/);
+  assert.match(source, /EDITOR_RESIZE_WORKSPACE_MIN_HEIGHT\s*=\s*180/);
+  assert.match(source, /EDITOR_RESIZE_KEYBOARD_STEP\s*=\s*16/);
+  assert.match(source, /editorHeightPx/);
+  assert.match(source, /setEditorHeightPx/);
+  assert.match(source, /handleEditorResizePointerDown/);
+  assert.match(source, /handleEditorResizeKeyDown/);
+  assert.match(source, /pointermove/);
+  assert.match(source, /pointerup/);
+  assert.match(source, /--app-editor-height/);
+  assert.match(source, /className="editor-resizer"/);
+  assert.match(source, /role="separator"/);
+  assert.match(source, /aria-orientation="horizontal"/);
+  assert.match(source, /aria-valuemin=\{EDITOR_RESIZE_MIN_HEIGHT\}/);
+  assert.match(source, /aria-valuemax=\{editorResizeMaxHeight\}/);
+  assert.match(source, /aria-valuenow=\{currentEditorResizeValue\}/);
+  assert.match(source, /tabIndex=\{0\}/);
+  assert.match(source, /onPointerDown=\{handleEditorResizePointerDown\}/);
+  assert.match(source, /onKeyDown=\{handleEditorResizeKeyDown\}/);
+  assert.match(source, /className="editor-resizer-grip"/);
+  assert.match(source, /<\/main>[\s\S]*className="editor-resizer"[\s\S]*createElement\(BottomEditor/);
+  assert.match(source, /case 'ArrowUp':/);
+  assert.match(source, /case 'ArrowDown':/);
+  assert.match(source, /case 'Home':/);
+  assert.match(source, /case 'End':/);
+  assert.doesNotMatch(source, /localStorage/);
   assert.match(source, /drums/);
   assert.match(source, /DRUMS_TOGGLE/);
   assert.match(source, /createTimelineTracks/);
@@ -107,7 +134,19 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(chordEditorSource, /mode === 'empty'/);
   assert.match(chordEditorSource, /cvPanelEnrich/);
   assert.match(chordEditorSource, /暂无可用丰富和弦/);
-  assert.match(chordEditorSource, /CHORD_NOTES\.flatMap/);
+  assert.match(chordEditorSource, /CHORD_GRID_PITCHES\.flatMap/);
+  assert.match(chordEditorSource, /scalePitchViewportRef/);
+  assert.match(chordEditorSource, /beatCellsViewportRefs/);
+  assert.match(chordEditorSource, /syncPitchScroll/);
+  assert.match(chordEditorSource, /handlePitchViewportScroll/);
+  assert.match(chordEditorSource, /handlePitchWheel/);
+  assert.match(chordEditorSource, /scrollPitchByOctave/);
+  assert.match(chordEditorSource, /window\.requestAnimationFrame/);
+  assert.match(chordEditorSource, /className="scale-notes-viewport"/);
+  assert.match(chordEditorSource, /className="beat-cells-viewport"/);
+  assert.match(chordEditorSource, /disabled=\{!canScrollPitchUp\}/);
+  assert.match(chordEditorSource, /disabled=\{!canScrollPitchDown\}/);
+  assert.match(chordEditorSource, /className="beat-head"[\s\S]*className="beat-cells-viewport"/);
   assert.match(chordEditorSource, /CHORD_TEMPLATES/);
   assert.match(chordEditorSource, /onChordPick/);
   assert.match(chordEditorSource, /addChordPanel/);
@@ -185,6 +224,11 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.equal(CHORD_NOTES.length, 12);
   assert.equal(CHORD_NOTES.at(-1).label, 'C');
   assert.equal(CHORD_NOTES.at(-1).root, true);
+  assert.equal(CHORD_GRID_PITCHES.length, 36);
+  assert.equal(CHORD_GRID_PITCHES.at(0).label, 'B5');
+  assert.equal(CHORD_GRID_PITCHES.at(12).label, 'B4');
+  assert.equal(CHORD_GRID_PITCHES.at(23).label, 'C4');
+  assert.equal(CHORD_GRID_PITCHES.at(-1).label, 'C3');
 });
 
 test('timeline add clip controls switch the persistent editor by track row', async () => {

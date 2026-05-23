@@ -273,8 +273,71 @@ button {
   z-index: 55;
 }
 
+.app.editor-resizing {
+  user-select: none;
+}
+
+.app:has(.editor[data-screen-label="Chord Editor"]:not([data-picker="open"])) {
+  --app-editor-height: clamp(360px, 46vh, 430px);
+}
+
 .app:has(.editor[data-picker="open"]) {
   --app-editor-height: clamp(380px, 55vh, 560px);
+}
+
+.editor-resizer {
+  position: absolute;
+  z-index: 45;
+  right: 0;
+  bottom: var(--app-editor-height);
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 12px;
+  cursor: ns-resize;
+  outline: none;
+  transform: translateY(50%);
+  touch-action: none;
+}
+
+.editor-resizer::before {
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 1px;
+  content: "";
+  background: color-mix(in oklab, var(--border) 76%, transparent);
+}
+
+.editor-resizer-grip {
+  position: relative;
+  width: 44px;
+  height: 4px;
+  background: color-mix(in oklab, var(--ink-4) 70%, var(--surface));
+  border-radius: 999px;
+  box-shadow:
+    0 0 0 3px color-mix(in oklab, var(--surface) 78%, transparent),
+    0 1px 4px color-mix(in oklab, black 12%, transparent);
+  transition:
+    background 0.12s ease,
+    transform 0.12s ease;
+}
+
+.editor-resizer:hover .editor-resizer-grip,
+.app.editor-resizing .editor-resizer-grip {
+  background: color-mix(in oklab, var(--brand) 70%, var(--ink-3));
+  transform: scaleX(1.18);
+}
+
+.editor-resizer:focus-visible .editor-resizer-grip {
+  box-shadow:
+    0 0 0 3px color-mix(in oklab, var(--surface) 82%, transparent),
+    0 0 0 6px color-mix(in oklab, var(--brand) 28%, transparent);
+}
+
+.app.editor-resizing .editor-resizer {
+  cursor: ns-resize;
 }
 
 .topbar {
@@ -1344,7 +1407,7 @@ button {
 
 .scale-rail {
   display: grid;
-  grid-template-rows: var(--chord-beat-head-height) var(--chord-cell-grid-height) 22px;
+  grid-template-rows: 22px var(--chord-cell-grid-height) 22px;
   gap: var(--chord-beat-gap);
   min-height: 0;
   padding: 14px 8px 16px 14px;
@@ -1358,15 +1421,37 @@ button {
   background: var(--bg-deep);
 }
 
-.scale-notes {
-  display: grid;
-  grid-template-rows: repeat(12, minmax(0, 1fr));
-  gap: var(--chord-cell-gap);
+.scale-arrow:disabled {
+  cursor: default;
+  opacity: 0.38;
+}
+
+.scale-arrow:disabled:hover {
+  color: var(--ink-2);
+  background: var(--bg-deep);
+  box-shadow: none;
+}
+
+.scale-notes-viewport {
   height: var(--chord-cell-grid-height);
   min-height: 0;
-  padding: var(--chord-cell-padding);
+  overflow-y: auto;
   border: 1px solid transparent;
   border-radius: 10px;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.scale-notes-viewport::-webkit-scrollbar {
+  display: none;
+}
+
+.scale-notes {
+  display: grid;
+  grid-template-rows: repeat(36, minmax(0, 1fr));
+  gap: var(--chord-cell-gap);
+  min-height: calc(var(--chord-cell-grid-height) * 3);
+  padding: var(--chord-cell-padding);
 }
 
 .note-key {
@@ -1454,17 +1539,28 @@ button {
   letter-spacing: 0.14em;
 }
 
-.beat-cells {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(12, minmax(0, 1fr));
-  gap: var(--chord-cell-gap);
+.beat-cells-viewport {
   height: var(--chord-cell-grid-height);
-  min-height: var(--chord-cell-grid-height);
-  padding: var(--chord-cell-padding);
+  min-height: 0;
+  overflow-y: auto;
   background: color-mix(in oklab, var(--bg) 50%, var(--surface));
   border: 1px dashed color-mix(in oklab, var(--border) 75%, transparent);
   border-radius: 10px;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.beat-cells-viewport::-webkit-scrollbar {
+  display: none;
+}
+
+.beat-cells {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(36, minmax(0, 1fr));
+  gap: var(--chord-cell-gap);
+  min-height: calc(var(--chord-cell-grid-height) * 3);
+  padding: var(--chord-cell-padding);
 }
 
 .cell {
@@ -1528,7 +1624,7 @@ button {
   border-color: color-mix(in oklab, var(--c-chord-ink) 28%, transparent);
 }
 
-.beat-group.has-chord .beat-cells {
+.beat-group.has-chord .beat-cells-viewport {
   border-style: solid;
   border-color: color-mix(in oklab, var(--c-chord-ink) 30%, transparent);
   background: color-mix(in oklab, var(--c-chord) 14%, var(--surface));
@@ -2407,7 +2503,7 @@ button {
   }
 
   .beat-cells {
-    min-height: var(--chord-cell-grid-height);
+    min-height: calc(var(--chord-cell-grid-height) * 3);
   }
 
   .drum-seq-body {

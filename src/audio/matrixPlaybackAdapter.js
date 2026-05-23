@@ -5,9 +5,11 @@ import {
 } from '../domain/musicConstants.js';
 import { getDrumsCellInstruments } from '../domain/drumsCells.js';
 import {
-  CHORD_ROOTS,
+  createChordTonePitches,
   getChordCellNotes,
   getChordDefinition,
+  getChordNoteOctave,
+  getChordNotePitch,
   getChordToneRoots,
 } from '../domain/chordCells.js';
 
@@ -30,19 +32,7 @@ function createDrumsEvent(bar, step, instrument) {
 }
 
 function createNotesFromToneRoots(root, toneRoots) {
-  if (!toneRoots.length) return [];
-
-  const rootIndex = CHORD_ROOTS.indexOf(root);
-  if (rootIndex === -1) return [];
-  let octave = 4;
-  let previousToneIndex = rootIndex;
-
-  return toneRoots.map((toneRoot) => {
-    const toneIndex = CHORD_ROOTS.indexOf(toneRoot);
-    if (toneIndex < previousToneIndex) octave += 1;
-    previousToneIndex = toneIndex;
-    return `${toneRoot}${octave}`;
-  });
+  return createChordTonePitches(root, toneRoots);
 }
 
 function createChordNotes(root) {
@@ -54,7 +44,24 @@ function createChordNotes(root) {
 
 function createSingleNotes(noteRoots) {
   if (!noteRoots.length) return [];
-  return createNotesFromToneRoots(noteRoots[0], noteRoots);
+
+  const hasExplicitOctave = noteRoots.some((noteRoot) => getChordNoteOctave(noteRoot) !== null);
+  if (!hasExplicitOctave) return createNotesFromToneRoots(noteRoots[0], noteRoots);
+
+  return noteRoots.map((noteRoot) => getChordNotePitch(noteRoot)).filter(Boolean);
+}
+
+function createChordNotesWithAddedNotes(root, toneRoots, addedNotes) {
+  const legacyAddedNotes = addedNotes.filter((note) => getChordNoteOctave(note) === null);
+  const exactAddedNotes = addedNotes
+    .filter((note) => getChordNoteOctave(note) !== null)
+    .map((note) => getChordNotePitch(note))
+    .filter(Boolean);
+
+  return [
+    ...createNotesFromToneRoots(root, [...toneRoots, ...legacyAddedNotes]),
+    ...exactAddedNotes,
+  ];
 }
 
 function isChordTriggerStep(step) {
@@ -104,7 +111,7 @@ function extractChordEvent(cell, bar, step) {
   }
 
   const toneRoots = cell.toneRoots ?? getChordToneRoots(cell.label ?? cell.root);
-  const notes = createNotesFromToneRoots(cell.root, [...toneRoots, ...addedNotes]);
+  const notes = createChordNotesWithAddedNotes(cell.root, toneRoots, addedNotes);
   if (!notes.length) return null;
 
   return {

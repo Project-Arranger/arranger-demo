@@ -58,6 +58,24 @@ test('timeline playhead spans ruler and track grid', async () => {
   assert.match(css, /\.timeline-col\.playhead-dragging\s*\{[^}]*cursor:\s*grabbing;/s);
 });
 
+test('editor resize handle overlays the workspace editor boundary', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.app\s*\{[^}]*grid-template-rows:\s*var\(--app-topbar-height\) minmax\(0,\s*1fr\) var\(--app-editor-height\);/s);
+  assert.match(css, /\.editor-resizer\s*\{[^}]*position:\s*absolute;/s);
+  assert.match(css, /\.editor-resizer\s*\{[^}]*right:\s*0;/s);
+  assert.match(css, /\.editor-resizer\s*\{[^}]*bottom:\s*var\(--app-editor-height\);/s);
+  assert.match(css, /\.editor-resizer\s*\{[^}]*height:\s*12px;/s);
+  assert.match(css, /\.editor-resizer\s*\{[^}]*cursor:\s*ns-resize;/s);
+  assert.match(css, /\.editor-resizer::before\s*\{[^}]*height:\s*1px;/s);
+  assert.match(css, /\.editor-resizer-grip\s*\{[^}]*width:\s*44px;/s);
+  assert.match(css, /\.editor-resizer-grip\s*\{[^}]*height:\s*4px;/s);
+  assert.match(css, /\.editor-resizer-grip\s*\{[^}]*border-radius:\s*999px;/s);
+  assert.match(css, /\.editor-resizer:hover \.editor-resizer-grip,\s*\n\.app\.editor-resizing \.editor-resizer-grip\s*\{/s);
+  assert.match(css, /\.app\.editor-resizing\s*\{[^}]*user-select:\s*none;/s);
+  assert.match(css, /\.app\.editor-resizing \.editor-resizer\s*\{[^}]*cursor:\s*ns-resize;/s);
+});
+
 test('track list rows align with timeline hover rows', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
@@ -112,15 +130,20 @@ test('chord pitch rail rows align with chord grid rows', async () => {
   assert.match(css, /--chord-cell-grid-height:\s*220px;/);
   assert.match(css, /--chord-cell-gap:\s*3px;/);
   assert.match(css, /--chord-cell-padding:\s*6px;/);
-  assert.match(css, /\.scale-rail\s*\{[^}]*grid-template-rows:\s*var\(--chord-beat-head-height\) var\(--chord-cell-grid-height\) 22px;/s);
+  assert.match(css, /\.app:has\(\.editor\[data-screen-label="Chord Editor"\]:not\(\[data-picker="open"\]\)\)\s*\{[^}]*--app-editor-height:\s*clamp\(360px,\s*46vh,\s*430px\);/s);
+  assert.match(css, /\.scale-rail\s*\{[^}]*grid-template-rows:\s*22px var\(--chord-cell-grid-height\) 22px;/s);
   assert.match(css, /\.scale-rail\s*\{[^}]*gap:\s*var\(--chord-beat-gap\);/s);
-  assert.match(css, /\.scale-notes\s*\{[^}]*grid-template-rows:\s*repeat\(12,\s*minmax\(0,\s*1fr\)\);/s);
-  assert.match(css, /\.scale-notes\s*\{[^}]*height:\s*var\(--chord-cell-grid-height\);/s);
+  assert.match(css, /\.scale-notes-viewport\s*\{[^}]*height:\s*var\(--chord-cell-grid-height\);/s);
+  assert.match(css, /\.scale-notes-viewport\s*\{[^}]*overflow-y:\s*auto;/s);
+  assert.match(css, /\.scale-notes\s*\{[^}]*grid-template-rows:\s*repeat\(36,\s*minmax\(0,\s*1fr\)\);/s);
+  assert.match(css, /\.scale-notes\s*\{[^}]*min-height:\s*calc\(var\(--chord-cell-grid-height\) \* 3\);/s);
   assert.match(css, /\.scale-notes\s*\{[^}]*gap:\s*var\(--chord-cell-gap\);/s);
   assert.match(css, /\.scale-notes\s*\{[^}]*padding:\s*var\(--chord-cell-padding\);/s);
   assert.match(css, /\.note-key\s*\{[^}]*min-height:\s*0;/s);
-  assert.match(css, /\.beat-cells\s*\{[^}]*grid-template-rows:\s*repeat\(12,\s*minmax\(0,\s*1fr\)\);/s);
-  assert.match(css, /\.beat-cells\s*\{[^}]*height:\s*var\(--chord-cell-grid-height\);/s);
+  assert.match(css, /\.beat-cells-viewport\s*\{[^}]*height:\s*var\(--chord-cell-grid-height\);/s);
+  assert.match(css, /\.beat-cells-viewport\s*\{[^}]*overflow-y:\s*auto;/s);
+  assert.match(css, /\.beat-cells\s*\{[^}]*grid-template-rows:\s*repeat\(36,\s*minmax\(0,\s*1fr\)\);/s);
+  assert.match(css, /\.beat-cells\s*\{[^}]*min-height:\s*calc\(var\(--chord-cell-grid-height\) \* 3\);/s);
   assert.match(css, /\.beat-cells\s*\{[^}]*gap:\s*var\(--chord-cell-gap\);/s);
   assert.match(css, /\.beat-cells\s*\{[^}]*padding:\s*var\(--chord-cell-padding\);/s);
   assert.doesNotMatch(css, /\.cell\.sustain/);
