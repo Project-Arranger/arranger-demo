@@ -9,13 +9,15 @@ import {
 } from 'lucide-react';
 import {
   createElement,
+  useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import {
   BEAT_NUMBERS,
-  CHORD_NOTES,
+  CHORD_GRID_PITCHES,
 } from '../uiShellData.js';
 import {
   getChordBarDisplayLabel,
@@ -40,6 +42,15 @@ const TEMPLATE_PAGE_SIZE = 3;
 const ADD_CHORD_PANEL_WIDTH = 760;
 const VIEWPORT_MARGIN = 16;
 const PANEL_GAP = 12;
+
+function getMaxPitchScroll(viewport) {
+  return viewport ? Math.max(0, viewport.scrollHeight - viewport.clientHeight) : 0;
+}
+
+function getOctavePitchScrollStep(viewport) {
+  const maxScroll = getMaxPitchScroll(viewport);
+  return maxScroll > 0 ? maxScroll / 2 : 0;
+}
 
 function getBeatValueLabel(matrix, selectedBar, spanIndex) {
   const chordLabel = getChordSpanDisplayLabel(matrix, selectedBar, spanIndex);
@@ -321,6 +332,14 @@ function ChordEditor({
   const [selectedTemplateId, setSelectedTemplateId] = useState(null);
   const [addChordPanel, setAddChordPanel] = useState(null);
   const [activeChordTab, setActiveChordTab] = useState('diatonic');
+  const scalePitchViewportRef = useRef(null);
+  const beatCellsViewportRefs = useRef([]);
+  const pitchScrollTopRef = useRef(0);
+  const syncPitchScrollGuardRef = useRef(false);
+  const syncPitchScrollFrameRef = useRef(null);
+  const hasInitializedPitchScrollRef = useRef(false);
+  const [pitchScrollTop, setPitchScrollTop] = useState(0);
+  const [pitchMaxScroll, setPitchMaxScroll] = useState(0);
   const templates = useMemo(() => Object.values(CHORD_TEMPLATES), []);
   const pageCount = Math.ceil(templates.length / TEMPLATE_PAGE_SIZE);
   const visibleTemplates = templates.slice(
@@ -328,6 +347,75 @@ function ChordEditor({
     templatePage * TEMPLATE_PAGE_SIZE + TEMPLATE_PAGE_SIZE,
   );
   const primaryChordLabel = getChordBarDisplayLabel(matrix, selectedBar);
+
+  const setBeatCellsViewportRef = useCallback((spanIndex, viewport) => {
+    beatCellsViewportRefs.current[spanIndex] = viewport;
+    if (viewport) viewport.scrollTop = pitchScrollTopRef.current;
+  }, []);
+
+  const syncPitchScroll = useCallback((nextScrollTop) => {
+    const scaleViewport = scalePitchViewportRef.current;
+    const fallbackViewport = beatCellsViewportRefs.current.find(Boolean);
+    const scrollViewport = scaleViewport ?? fallbackViewport;
+    const maxScroll = getMaxPitchScroll(scrollViewport);
+    const clampedScrollTop = Math.max(0, Math.min(maxScroll, nextScrollTop));
+    const viewports = [scaleViewport, ...beatCellsViewportRefs.current].filter(Boolean);
+
+    setPitchMaxScroll((currentMaxScroll) => (
+      Math.abs(currentMaxScroll - maxScroll) > 0.5 ? maxScroll : currentMaxScroll
+    ));
+    pitchScrollTopRef.current = clampedScrollTop;
+    syncPitchScrollGuardRef.current = true;
+    viewports.forEach((viewport) => {
+      if (Math.abs(viewport.scrollTop - clampedScrollTop) > 0.5) {
+        viewport.scrollTop = clampedScrollTop;
+      }
+    });
+
+    if (typeof window !== 'undefined' && window.requestAnimationFrame) {
+      if (syncPitchScrollFrameRef.current) {
+        window.cancelAnimationFrame(syncPitchScrollFrameRef.current);
+      }
+      syncPitchScrollFrameRef.current = window.requestAnimationFrame(() => {
+        syncPitchScrollGuardRef.current = false;
+        syncPitchScrollFrameRef.current = null;
+      });
+    } else {
+      syncPitchScrollGuardRef.current = false;
+    }
+
+    setPitchScrollTop((currentScrollTop) => (
+      Math.abs(currentScrollTop - clampedScrollTop) > 0.5 ? clampedScrollTop : currentScrollTop
+    ));
+  }, []);
+
+  const handlePitchViewportScroll = useCallback((event) => {
+    if (syncPitchScrollGuardRef.current) return;
+    syncPitchScroll(event.currentTarget.scrollTop);
+    setAddChordPanel(null);
+  }, [syncPitchScroll]);
+
+  const handlePitchWheel = useCallback((event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    if (target?.closest('.scale-notes-viewport, .beat-cells-viewport')) return;
+    if (!event.deltaY) return;
+
+    event.preventDefault();
+    setAddChordPanel(null);
+    syncPitchScroll(pitchScrollTopRef.current + event.deltaY);
+  }, [syncPitchScroll]);
+
+  const scrollPitchByOctave = useCallback((direction) => {
+    const scrollViewport = scalePitchViewportRef.current ?? beatCellsViewportRefs.current.find(Boolean);
+    const octaveStep = getOctavePitchScrollStep(scrollViewport);
+    if (!octaveStep) return;
+
+    setAddChordPanel(null);
+    syncPitchScroll(pitchScrollTopRef.current + direction * octaveStep);
+  }, [syncPitchScroll]);
+
+  const canScrollPitchUp = pitchScrollTop > 1;
+  const canScrollPitchDown = pitchMaxScroll - pitchScrollTop > 1;
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -338,6 +426,26 @@ function ChordEditor({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    if (hasInitializedPitchScrollRef.current) return;
+
+    const scaleViewport = scalePitchViewportRef.current;
+    if (!scaleViewport) return;
+
+    hasInitializedPitchScrollRef.current = true;
+    syncPitchScroll(getOctavePitchScrollStep(scaleViewport));
+  }, [syncPitchScroll]);
+
+  useEffect(() => () => {
+    if (
+      syncPitchScrollFrameRef.current
+      && typeof window !== 'undefined'
+      && window.cancelAnimationFrame
+    ) {
+      window.cancelAnimationFrame(syncPitchScrollFrameRef.current);
+    }
   }, []);
 
   useEffect(() => {
@@ -439,26 +547,46 @@ function ChordEditor({
         </div>
       </header>
 
-      <div className="seq-body">
+      <div className="seq-body" onWheel={handlePitchWheel}>
         <aside className="scale-rail" aria-label="Scale ruler">
-          <button className="scale-arrow" aria-label="Scroll up an octave" title="Scroll up an octave">
+          <button
+            className="scale-arrow"
+            aria-label="Scroll up an octave"
+            title="Scroll up an octave"
+            type="button"
+            disabled={!canScrollPitchUp}
+            onClick={() => scrollPitchByOctave(-1)}
+          >
             {renderIcon(ChevronUp)}
           </button>
-          <div className="scale-notes">
-            {CHORD_NOTES.map((note) => (
-              <div
-                className={[
-                  'note-key',
-                  note.sharp ? 'sharp' : '',
-                  note.root ? 'root' : '',
-                ].filter(Boolean).join(' ')}
-                key={note.label}
-              >
-                {note.label}
-              </div>
-            ))}
+          <div
+            className="scale-notes-viewport"
+            ref={scalePitchViewportRef}
+            onScroll={handlePitchViewportScroll}
+          >
+            <div className="scale-notes">
+              {CHORD_GRID_PITCHES.map((note) => (
+                <div
+                  className={[
+                    'note-key',
+                    note.sharp ? 'sharp' : '',
+                    note.root ? 'root' : '',
+                  ].filter(Boolean).join(' ')}
+                  key={note.label}
+                >
+                  {note.label}
+                </div>
+              ))}
+            </div>
           </div>
-          <button className="scale-arrow" aria-label="Scroll down an octave" title="Scroll down an octave">
+          <button
+            className="scale-arrow"
+            aria-label="Scroll down an octave"
+            title="Scroll down an octave"
+            type="button"
+            disabled={!canScrollPitchDown}
+            onClick={() => scrollPitchByOctave(1)}
+          >
             {renderIcon(ChevronDown)}
           </button>
         </aside>
@@ -499,39 +627,45 @@ function ChordEditor({
                   </button>
                   <span className="beat-num mono">{beatNumber}</span>
                 </div>
-                <div className="beat-cells">
-                  {CHORD_NOTES.flatMap((note, rowIndex) => (
-                    BEAT_NUMBERS.map((stepNumber, colIndex) => {
-                      const stepCell = getChordStepCell(matrix, selectedBar, spanIndex, colIndex);
-                      const active = isChordCellActive(stepCell, note.label, colIndex);
-                      const added = isChordAddedNoteActive(stepCell, note.label);
+                <div
+                  className="beat-cells-viewport"
+                  ref={(viewport) => setBeatCellsViewportRef(spanIndex, viewport)}
+                  onScroll={handlePitchViewportScroll}
+                >
+                  <div className="beat-cells">
+                    {CHORD_GRID_PITCHES.flatMap((note, rowIndex) => (
+                      BEAT_NUMBERS.map((stepNumber, colIndex) => {
+                        const stepCell = getChordStepCell(matrix, selectedBar, spanIndex, colIndex);
+                        const active = isChordCellActive(stepCell, note.label, colIndex);
+                        const added = isChordAddedNoteActive(stepCell, note.label);
 
-                      return (
-                        <button
-                          className={[
-                            'cell',
-                            active ? 'active' : '',
-                            added ? 'added' : '',
-                            note.sharp ? 'sharp' : '',
-                            colIndex < 2 ? 'downbeat' : '',
-                            colIndex >= 2 ? 'extension' : '',
-                          ].filter(Boolean).join(' ')}
-                          data-row={rowIndex}
-                          data-col={colIndex}
-                          data-span-index={spanIndex}
-                          data-chord-root={note.label}
-                          key={`${note.label}-${stepNumber}`}
-                          type="button"
-                          aria-label={`${note.label} beat ${beatNumber}.${stepNumber}`}
-                          aria-pressed={active || added}
-                          onClick={() => {
-                            onChordNoteSelect(spanIndex, colIndex, note.label);
-                            setAddChordPanel(null);
-                          }}
-                        />
-                      );
-                    })
-                  ))}
+                        return (
+                          <button
+                            className={[
+                              'cell',
+                              active ? 'active' : '',
+                              added ? 'added' : '',
+                              note.sharp ? 'sharp' : '',
+                              colIndex < 2 ? 'downbeat' : '',
+                              colIndex >= 2 ? 'extension' : '',
+                            ].filter(Boolean).join(' ')}
+                            data-row={rowIndex}
+                            data-col={colIndex}
+                            data-span-index={spanIndex}
+                            data-chord-root={note.label}
+                            key={`${note.label}-${stepNumber}`}
+                            type="button"
+                            aria-label={`${note.label} beat ${beatNumber}.${stepNumber}`}
+                            aria-pressed={active || added}
+                            onClick={() => {
+                              onChordNoteSelect(spanIndex, colIndex, note.label);
+                              setAddChordPanel(null);
+                            }}
+                          />
+                        );
+                      })
+                    ))}
+                  </div>
                 </div>
               </div>
             );

@@ -4,6 +4,20 @@ import {
 } from './musicConstants.js';
 
 const CHORD_ROOTS = Object.freeze(['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']);
+const CHORD_GRID_ROOTS = Object.freeze(['B', 'A#', 'A', 'G#', 'G', 'F#', 'F', 'E', 'D#', 'D', 'C#', 'C']);
+const CHORD_GRID_OCTAVES = Object.freeze([5, 4, 3]);
+const DEFAULT_CHORD_GRID_OCTAVE = 4;
+const CHORD_GRID_PITCHES = Object.freeze(
+  CHORD_GRID_OCTAVES.flatMap((octave) => (
+    CHORD_GRID_ROOTS.map((root) => Object.freeze({
+      label: `${root}${octave}`,
+      rootName: root,
+      octave,
+      sharp: root.includes('#'),
+      root: root === 'C',
+    }))
+  )),
+);
 const MAJOR_TRIAD_INTERVALS = Object.freeze([0, 4, 7]);
 const DIATONIC_CHORD_OPTIONS = Object.freeze([
   Object.freeze({ name: 'C', roman: 'I', desc: '调式中心，最稳定、最有归属感的主和弦。' }),
@@ -179,6 +193,70 @@ function isChordRoot(root) {
   return CHORD_ROOTS.includes(root);
 }
 
+function parseChordGridPitch(note) {
+  if (typeof note !== 'string') return null;
+
+  const match = /^([A-G]#?)([0-9])$/.exec(note);
+  if (!match) return null;
+
+  const [, root, octaveText] = match;
+  const octave = Number(octaveText);
+  if (!isChordRoot(root) || !CHORD_GRID_OCTAVES.includes(octave)) return null;
+
+  return { label: `${root}${octave}`, octave, root };
+}
+
+function isChordGridPitch(note) {
+  return Boolean(parseChordGridPitch(note));
+}
+
+function isChordNoteLabel(note) {
+  return isChordRoot(note) || isChordGridPitch(note);
+}
+
+function getChordNoteRoot(note) {
+  const pitch = parseChordGridPitch(note);
+  if (pitch) return pitch.root;
+  return isChordRoot(note) ? note : null;
+}
+
+function getChordNoteOctave(note) {
+  return parseChordGridPitch(note)?.octave ?? null;
+}
+
+function getChordNotePitch(note) {
+  const root = getChordNoteRoot(note);
+  if (!root) return null;
+
+  return `${root}${getChordNoteOctave(note) ?? DEFAULT_CHORD_GRID_OCTAVE}`;
+}
+
+function doChordNotesMatch(currentNote, candidateNote) {
+  if (isChordRoot(candidateNote)) return getChordNoteRoot(currentNote) === candidateNote;
+
+  const currentPitch = getChordNotePitch(currentNote);
+  const candidatePitch = getChordNotePitch(candidateNote);
+  return Boolean(currentPitch && candidatePitch && currentPitch === candidatePitch);
+}
+
+function createChordTonePitches(root, toneRoots) {
+  if (!toneRoots.length) return [];
+
+  const rootIndex = CHORD_ROOTS.indexOf(root);
+  if (rootIndex === -1) return [];
+
+  let octave = DEFAULT_CHORD_GRID_OCTAVE;
+  let previousToneIndex = rootIndex;
+
+  return toneRoots.map((toneRoot) => {
+    const toneIndex = CHORD_ROOTS.indexOf(toneRoot);
+    if (toneIndex === -1) return null;
+    if (toneIndex < previousToneIndex) octave += 1;
+    previousToneIndex = toneIndex;
+    return `${toneRoot}${octave}`;
+  }).filter(Boolean);
+}
+
 function createMajorDefinition(root) {
   const rootIndex = CHORD_ROOTS.indexOf(root);
   if (rootIndex === -1) return null;
@@ -256,7 +334,7 @@ function normalizeChordNotes(notes) {
   if (!Array.isArray(notes)) return [];
 
   return notes.reduce((uniqueNotes, note) => {
-    if (isChordRoot(note) && !uniqueNotes.includes(note)) uniqueNotes.push(note);
+    if (isChordNoteLabel(note) && !uniqueNotes.includes(note)) uniqueNotes.push(note);
     return uniqueNotes;
   }, []);
 }
@@ -277,7 +355,7 @@ function createChordNoteCell(note) {
 }
 
 function getChordCellNotes(cell) {
-  if (cell?.type === 'note' && isChordRoot(cell.note)) return [cell.note];
+  if (cell?.type === 'note' && isChordNoteLabel(cell.note)) return [cell.note];
   if (cell?.type === 'notes') return normalizeChordNotes(cell.notes);
   if (cell?.type === 'chord') return normalizeChordNotes(cell.addedNotes);
 
@@ -293,11 +371,11 @@ function withChordAddedNotes(cell, notes) {
 }
 
 function toggleChordNoteCell(cell, note) {
-  if (!isChordRoot(note)) return null;
+  if (!isChordNoteLabel(note)) return null;
 
   const currentNotes = getChordCellNotes(cell);
-  const nextNotes = currentNotes.includes(note)
-    ? currentNotes.filter((currentNote) => currentNote !== note)
+  const nextNotes = currentNotes.some((currentNote) => doChordNotesMatch(currentNote, note))
+    ? currentNotes.filter((currentNote) => !doChordNotesMatch(currentNote, note))
     : [...currentNotes, note];
 
   if (cell?.type === 'chord') return withChordAddedNotes(cell, nextNotes);
@@ -311,17 +389,25 @@ function getChordToneRoots(root) {
 
 function isChordCellActive(cell, root, columnIndex = 0) {
   if (cell?.type === 'note' || cell?.type === 'notes') {
-    return getChordCellNotes(cell).includes(root) && Number.isInteger(columnIndex);
+    return Number.isInteger(columnIndex)
+      && getChordCellNotes(cell).some((note) => doChordNotesMatch(note, root));
   }
   if (cell?.type !== 'chord' || ![0, 1].includes(columnIndex)) return false;
-  return (cell.toneRoots ?? getChordToneRoots(cell.label)).includes(root);
+
+  const toneRoots = cell.toneRoots ?? getChordToneRoots(cell.label);
+  if (isChordGridPitch(root)) return createChordTonePitches(cell.root, toneRoots).includes(root);
+  return toneRoots.includes(root);
 }
 
 function isChordAddedNoteActive(cell, root) {
-  return getChordCellNotes(cell).includes(root);
+  return getChordCellNotes(cell).some((note) => doChordNotesMatch(note, root));
 }
 
 export {
+  CHORD_GRID_OCTAVES,
+  CHORD_GRID_PITCHES,
+  CHORD_GRID_ROOTS,
+  DEFAULT_CHORD_GRID_OCTAVE,
   DIATONIC_CHORD_OPTIONS,
   PASSING_CHORD_DEFAULT_OPTIONS,
   PASSING_CHORD_OPTIONS,
@@ -331,8 +417,11 @@ export {
   createChordCell,
   createChordNoteCell,
   createChordNotesCell,
+  createChordTonePitches,
   getChordDefinition,
   getChordCellNotes,
+  getChordNoteOctave,
+  getChordNotePitch,
   getChordRootName,
   getChordToneRoots,
   getChordVariantOptions,
@@ -340,6 +429,7 @@ export {
   getChordSpanStep,
   isChordAddedNoteActive,
   isChordCellActive,
+  isChordGridPitch,
   isChordName,
   isChordRoot,
   isChordSpan,

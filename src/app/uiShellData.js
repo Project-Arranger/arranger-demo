@@ -1,4 +1,5 @@
 import { TOTAL_BARS, TRACK_IDS } from '../domain/musicConstants.js';
+import { CHORD_GRID_PITCHES } from '../domain/chordCells.js';
 import { createTrackVolumeView } from './trackVolumeViewModels.js';
 
 const trackLabels = {
@@ -40,4 +41,4 @@ const CHORD_NOTES = Object.freeze([
 
 const BEAT_NUMBERS = Object.freeze([1, 2, 3, 4]);
 
-export { BAR_NUMBERS, BEAT_NUMBERS, CHORD_NOTES, TRACK_UI };
+export { BAR_NUMBERS, BEAT_NUMBERS, CHORD_GRID_PITCHES, CHORD_NOTES, TRACK_UI };

@@ -55,6 +55,17 @@ test('extractChordEvent reads chord cells into playable chord events', () => {
     notes: ['C4'],
     duration: '16n',
   });
+  assert.deepEqual(extractChordEvent({ type: 'note', note: 'C5', label: 'C5' }, 2, 6), {
+    type: 'chord',
+    trackId: 'chord',
+    bar: 2,
+    step: 6,
+    root: null,
+    quality: 'notes',
+    label: 'C5',
+    notes: ['C5'],
+    duration: '16n',
+  });
   assert.deepEqual(extractChordEvent({ type: 'notes', notes: ['D', 'F'], label: 'D/F' }, 2, 6), {
     type: 'chord',
     trackId: 'chord',
@@ -64,6 +75,17 @@ test('extractChordEvent reads chord cells into playable chord events', () => {
     quality: 'notes',
     label: 'D/F',
     notes: ['D4', 'F4'],
+    duration: '16n',
+  });
+  assert.deepEqual(extractChordEvent({ type: 'notes', notes: ['D3', 'F5'], label: 'D3/F5' }, 2, 6), {
+    type: 'chord',
+    trackId: 'chord',
+    bar: 2,
+    step: 6,
+    root: null,
+    quality: 'notes',
+    label: 'D3/F5',
+    notes: ['D3', 'F5'],
     duration: '16n',
   });
   assert.deepEqual(
@@ -77,6 +99,20 @@ test('extractChordEvent reads chord cells into playable chord events', () => {
       quality: 'maj7',
       label: 'Cmaj7',
       notes: ['C4', 'E4', 'G4', 'B4', 'D5'],
+      duration: '4n',
+    },
+  );
+  assert.deepEqual(
+    extractChordEvent({ type: 'chord', root: 'C', chordRoot: 'C', quality: 'maj7', label: 'Cmaj7', toneRoots: ['C', 'E', 'G', 'B'], addedNotes: ['D3', 'F5'] }, 2, 4),
+    {
+      type: 'chord',
+      trackId: 'chord',
+      bar: 2,
+      step: 4,
+      root: 'C',
+      quality: 'maj7',
+      label: 'Cmaj7',
+      notes: ['C4', 'E4', 'G4', 'B4', 'D3', 'F5'],
       duration: '4n',
     },
   );

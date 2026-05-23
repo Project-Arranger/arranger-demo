@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import { AUDIO_STATUSES } from '../src/audio/audioStatus.js';
 import AudioEngine, {
@@ -389,9 +390,28 @@ test('AudioEngine previews chord sequences with one audio start and timed chord 
   ]);
 });
 
-test('createAudioEngine injects the default Tone dependency', () => {
-  const engine = createAudioEngine();
+test('createAudioEngine defers the default Tone dependency until audio starts', async () => {
+  const tone = createFakeTone();
+  const loadToneCalls = [];
+  const engine = createAudioEngine({
+    loadTone: async () => {
+      loadToneCalls.push('loadTone');
+      return tone;
+    },
+    playerFactory: createPlayerFactory(tone.calls),
+  });
 
   assert.equal(engine.status, AUDIO_STATUSES.IDLE);
-  assert.ok(engine.tone);
+  assert.equal(engine.tone, null);
+  assert.deepEqual(loadToneCalls, []);
+
+  assert.equal(await engine.startAudio(), AUDIO_STATUSES.READY);
+  assert.equal(engine.tone, tone);
+  assert.deepEqual(loadToneCalls, ['loadTone']);
+});
+
+test('createAudioEngine does not statically import Tone on module load', async () => {
+  const source = await readFile(new URL('../src/audio/createAudioEngine.js', import.meta.url), 'utf8');
+
+  assert.doesNotMatch(source, /import\s+\*\s+as\s+Tone\s+from ['"]tone['"]/);
 });

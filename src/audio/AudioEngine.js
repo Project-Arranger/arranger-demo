@@ -76,7 +76,9 @@ function applyVolume(node, volume) {
 
 export default class AudioEngine {
   constructor(options = {}) {
-    this.tone = options.tone;
+    this.tone = options.tone ?? null;
+    this.loadTone = options.loadTone ?? null;
+    this.toneLoadPromise = null;
     this.baseUrl = options.baseUrl ?? getDefaultBaseUrl();
     this.matrixSource = options.matrixSource ?? null;
     this.volumeSource = options.volumeSource ?? null;
@@ -98,6 +100,25 @@ export default class AudioEngine {
 
   get transport() {
     return this.tone?.Transport;
+  }
+
+  async ensureTone() {
+    if (this.tone) return this.tone;
+    if (!this.loadTone) return null;
+
+    if (!this.toneLoadPromise) {
+      this.toneLoadPromise = this.loadTone()
+        .then((tone) => {
+          this.tone = tone?.default ?? tone;
+          return this.tone;
+        })
+        .catch((error) => {
+          this.toneLoadPromise = null;
+          throw error;
+        });
+    }
+
+    return this.toneLoadPromise;
   }
 
   getSampleUrls() {
@@ -146,6 +167,7 @@ export default class AudioEngine {
     this.status = AUDIO_STATUSES.STARTING;
 
     try {
+      await this.ensureTone();
       await this.tone?.start?.();
       this.fallbackSynth = this.fallbackSynth ?? this.createFallbackSynth();
       this.chordSynth = this.chordSynth ?? this.createChordSynth();
