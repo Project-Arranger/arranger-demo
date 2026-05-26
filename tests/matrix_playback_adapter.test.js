@@ -157,6 +157,37 @@ test('matrix playback adapter treats Beat 1 column 2 as sustain and plays multi-
   ]);
 });
 
+test('matrix playback adapter plays groove-authored short chord hits on any sixteenth step', () => {
+  const matrix = createInitialMatrix();
+  matrix.chord[0][6] = {
+    type: 'chord',
+    root: 'G',
+    chordRoot: 'G',
+    quality: '7',
+    label: 'G7',
+    toneRoots: ['G', 'B', 'D', 'F'],
+    duration: '16n',
+    grooveTemplateId: 'block-syncopated',
+    sourceChordLabel: 'G7',
+  };
+
+  const adapter = createMatrixPlaybackAdapter(() => matrix);
+
+  assert.deepEqual(adapter.getEventsForStep(0, 6), [
+    {
+      type: 'chord',
+      trackId: 'chord',
+      bar: 0,
+      step: 6,
+      root: 'G',
+      quality: '7',
+      label: 'G7',
+      notes: ['G4', 'B4', 'D5', 'F5'],
+      duration: '16n',
+    },
+  ]);
+});
+
 test('matrix playback adapter wraps flat transport steps across eight bars', () => {
   const matrix = createInitialMatrix();
   matrix.drums[7][15] = { instruments: ['kick'] };

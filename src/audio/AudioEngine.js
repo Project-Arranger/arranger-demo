@@ -268,6 +268,24 @@ export default class AudioEngine {
     ));
   }
 
+  async previewChordPattern(events, options = {}) {
+    const {
+      bpm = DEFAULT_BPM,
+    } = options;
+
+    await this.startAudio();
+
+    const secondsPerSixteenth = 60 / bpm / 4;
+    const startTime = this.now();
+    const volume = this.getTrackVolume('chord');
+    return events.map((event) => this.triggerChordNotes(
+      event.notes,
+      event.duration ?? '16n',
+      startTime + event.step * secondsPerSixteenth,
+      volume,
+    ));
+  }
+
   triggerChordEvent(event, time = this.now()) {
     return this.triggerChordNotes(
       event.notes,

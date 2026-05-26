@@ -390,6 +390,30 @@ test('AudioEngine previews chord sequences with one audio start and timed chord 
   ]);
 });
 
+test('AudioEngine previews chord groove patterns with sixteenth-step timing', async () => {
+  const tone = createFakeTone();
+  const volumes = { chord: -5 };
+  const engine = new AudioEngine({
+    tone,
+    volumeSource: () => volumes,
+    playerFactory: createPlayerFactory(tone.calls),
+    chordSynthFactory: createVolumeAwareChordSynthFactory(tone.calls),
+  });
+
+  await engine.previewChordPattern([
+    { step: 0, notes: ['C4', 'E4', 'G4'], duration: '16n' },
+    { step: 6, notes: ['C4', 'E4', 'G4'], duration: '16n' },
+    { step: 12, notes: ['C4', 'E4', 'G4'], duration: '16n' },
+  ], { bpm: 120 });
+
+  assert.equal(tone.calls.filter(([name]) => name === 'tone.start').length, 1);
+  assert.deepEqual(tone.calls.filter(([name]) => name === 'chord.triggerAttackRelease'), [
+    ['chord.triggerAttackRelease', ['C4', 'E4', 'G4'], '16n', 12.5, -5],
+    ['chord.triggerAttackRelease', ['C4', 'E4', 'G4'], '16n', 13.25, -5],
+    ['chord.triggerAttackRelease', ['C4', 'E4', 'G4'], '16n', 14, -5],
+  ]);
+});
+
 test('createAudioEngine defers the default Tone dependency until audio starts', async () => {
   const tone = createFakeTone();
   const loadToneCalls = [];

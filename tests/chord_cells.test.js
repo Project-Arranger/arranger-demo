@@ -141,8 +141,13 @@ test('add chord panel exposes rich variants for supported chord roots', () => {
   assert.deepEqual(getChordVariantOptions(null), []);
 });
 
-test('chord active tones light the sustained chord range only', () => {
+test('chord active tones light wherever the chord cell is placed', () => {
   const cCell = createChordCell('C');
+  const shortGrooveCell = {
+    ...cCell,
+    duration: '16n',
+    grooveTemplateId: 'block-syncopated',
+  };
 
   assert.deepEqual(getChordToneRoots('C'), ['C', 'E', 'G']);
   assert.deepEqual(getChordToneRoots('F#'), ['F#', 'A#', 'C#']);
@@ -153,7 +158,10 @@ test('chord active tones light the sustained chord range only', () => {
   assert.equal(isChordCellActive(cCell, 'B', 0), false);
   assert.equal(isChordCellActive(cCell, 'C', 1), true);
   assert.equal(isChordCellActive(cCell, 'E', 1), true);
-  assert.equal(isChordCellActive(cCell, 'C', 2), false);
+  assert.equal(isChordCellActive(cCell, 'C', 2), true);
+  assert.equal(isChordCellActive(cCell, 'E', 3), true);
+  assert.equal(isChordCellActive(shortGrooveCell, 'C', 2), true);
+  assert.equal(isChordCellActive(shortGrooveCell, 'E', 3), true);
   assert.equal(isChordCellActive(null, 'C', 0), false);
 });
 

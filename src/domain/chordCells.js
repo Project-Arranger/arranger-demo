@@ -392,7 +392,7 @@ function isChordCellActive(cell, root, columnIndex = 0) {
     return Number.isInteger(columnIndex)
       && getChordCellNotes(cell).some((note) => doChordNotesMatch(note, root));
   }
-  if (cell?.type !== 'chord' || ![0, 1].includes(columnIndex)) return false;
+  if (cell?.type !== 'chord') return false;
 
   const toneRoots = cell.toneRoots ?? getChordToneRoots(cell.label);
   if (isChordGridPitch(root)) return createChordTonePitches(cell.root, toneRoots).includes(root);

@@ -1,4 +1,7 @@
-import { STEPS_PER_BAR } from '../domain/musicConstants.js';
+import {
+  BEATS_PER_BAR,
+  STEPS_PER_BAR,
+} from '../domain/musicConstants.js';
 import {
   CHORD_TEMPLATES,
   createChordCell,
@@ -26,13 +29,17 @@ function setChordCell(matrix, barIndex, spanIndex, root) {
   const step = getChordSpanStep(spanIndex);
   if (step === null) return matrix;
   const firstCell = createChordCellWithPreviousNotes(root, getMatrixChordStep(matrix, barIndex, step));
-  const sustainCell = createChordCellWithPreviousNotes(root, getMatrixChordStep(matrix, barIndex, step + 1));
-  if (!firstCell || !sustainCell) return matrix;
+  if (!firstCell) return matrix;
 
-  return setChordStepCells(matrix, barIndex, {
+  const nextCells = {
     [step]: firstCell,
-    [step + 1]: sustainCell,
-  });
+  };
+  const staleSecondCell = getMatrixChordStep(matrix, barIndex, step + 1);
+  if (staleSecondCell?.type === 'chord' && !staleSecondCell.grooveTemplateId) {
+    nextCells[step + 1] = null;
+  }
+
+  return setChordStepCells(matrix, barIndex, nextCells);
 }
 
 function replaceChordBeat(matrix, barIndex, spanIndex, cells) {
@@ -145,16 +152,20 @@ function applyChordTemplateToExistingClips(matrix, clips, templateId) {
 }
 
 function getChordBarDisplayLabel(matrix, barIndex) {
-  return getChordSpanDisplayLabel(matrix, barIndex, 0);
+  return getChordSpanDisplayLabel(matrix, barIndex, 0)
+    ?? getChordBeatDisplaySegments(matrix, barIndex).find((segment) => segment.label)?.label
+    ?? null;
 }
 
 function getChordSpanDisplayLabel(matrix, barIndex, spanIndex) {
+  const cells = getChordBeatCells(matrix, barIndex, spanIndex);
+  const sourceLabel = getChordBeatSourceLabel(cells);
+  if (sourceLabel) return sourceLabel;
+
   const mainCell = getChordCell(matrix, barIndex, spanIndex);
   if (mainCell?.type !== 'chord') return null;
 
-  const addedNotes = Array.from({ length: 4 }, (_, columnIndex) => (
-    getChordStepCell(matrix, barIndex, spanIndex, columnIndex)
-  )).reduce((notes, cell) => {
+  const addedNotes = cells.reduce((notes, cell) => {
     getChordCellNotes(cell).forEach((note) => {
       if (!notes.includes(note)) notes.push(note);
     });
@@ -164,10 +175,82 @@ function getChordSpanDisplayLabel(matrix, barIndex, spanIndex) {
   return addedNotes.length ? `${mainCell.label} + ${addedNotes.join('/')}` : mainCell.label;
 }
 
+function getChordBeatCells(matrix, barIndex, spanIndex) {
+  return Array.from({ length: 4 }, (_, columnIndex) => (
+    getChordStepCell(matrix, barIndex, spanIndex, columnIndex)
+  ));
+}
+
+function getChordBeatSourceLabel(cells) {
+  return cells.find((cell) => cell?.sourceChordLabel)?.sourceChordLabel ?? null;
+}
+
+function getChordBeatFallbackNoteLabel(cells) {
+  const noteLabels = cells.reduce((notes, cell) => {
+    if (cell?.sourceChordLabel) return notes;
+    getChordCellNotes(cell).forEach((note) => {
+      if (!notes.includes(note)) notes.push(note);
+    });
+    return notes;
+  }, []);
+
+  return noteLabels.length ? noteLabels.join('/') : null;
+}
+
+function getChordBeatMergeKey(cells, label) {
+  if (!label) return null;
+
+  const arpeggioCell = cells.find((cell) => (
+    cell?.type === 'notes' && cell.sourceChordLabel && cell.grooveTemplateId
+  ));
+  return arpeggioCell ? `${arpeggioCell.grooveTemplateId}:${label}` : null;
+}
+
+function getChordBeatDisplayInfo(matrix, barIndex, spanIndex) {
+  const cells = getChordBeatCells(matrix, barIndex, spanIndex);
+  const chordCell = getChordCell(matrix, barIndex, spanIndex);
+  const chordLabel = getChordSpanDisplayLabel(matrix, barIndex, spanIndex);
+  const label = chordLabel ?? getChordBeatFallbackNoteLabel(cells);
+
+  return {
+    hasChord: chordCell?.type === 'chord',
+    hasValue: Boolean(label),
+    label,
+    mergeKey: getChordBeatMergeKey(cells, label),
+  };
+}
+
+function getChordBeatDisplaySegments(matrix, barIndex) {
+  const beatInfos = Array.from({ length: BEATS_PER_BAR }, (_, spanIndex) => (
+    getChordBeatDisplayInfo(matrix, barIndex, spanIndex)
+  ));
+  const segments = [];
+
+  beatInfos.forEach((info, spanIndex) => {
+    const previous = segments[segments.length - 1];
+    if (info.mergeKey && previous?.mergeKey === info.mergeKey) {
+      previous.span += 1;
+      return;
+    }
+
+    segments.push({
+      startBeat: spanIndex,
+      span: 1,
+      label: info.label,
+      hasValue: info.hasValue,
+      hasChord: info.hasChord,
+      mergeKey: info.mergeKey,
+    });
+  });
+
+  return segments;
+}
+
 export {
   applyChordTemplateToExistingClips,
   clearChordBar,
   clearChordCell,
+  getChordBeatDisplaySegments,
   getChordStepCell,
   getChordCell,
   getChordBarDisplayLabel,

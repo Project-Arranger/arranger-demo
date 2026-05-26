@@ -36,6 +36,11 @@ import {
   setChordCell,
   toggleChordNoteStep,
 } from './chordActions.js';
+import {
+  applyChordGrooveTemplateToExistingClips,
+  createChordGroovePreviewEvents,
+  getSourceChordLabel,
+} from './chordGrooveActions.js';
 import { BottomEditor } from './components/BottomEditor.jsx';
 import { Timeline } from './components/Timeline.jsx';
 import { TopBar } from './components/TopBar.jsx';
@@ -658,6 +663,15 @@ export default function App() {
     previewChordNames(chords);
   }, [previewChordNames]);
 
+  const handleChordGrooveTemplatePreview = useCallback((templateId) => {
+    const state = useMusicStore.getState();
+    const sourceChordLabel = getSourceChordLabel(state.matrix, selectedBar);
+    const events = createChordGroovePreviewEvents(templateId, sourceChordLabel);
+    if (!events.length) return;
+
+    void audioEngine.previewChordPattern(events);
+  }, [selectedBar]);
+
   const handleChordNoteSelect = useCallback((spanIndex, columnIndex, note) => {
     const state = useMusicStore.getState();
     const nextMatrix = toggleChordNoteStep(state.matrix, selectedBar, spanIndex, columnIndex, note);
@@ -677,6 +691,20 @@ export default function App() {
       .forEach((clip) => {
         state.setCell('chord', clip.bar, 0, nextMatrix.chord[clip.bar][0]);
         state.setCell('chord', clip.bar, 1, nextMatrix.chord[clip.bar][1]);
+      });
+  }, []);
+
+  const handleChordGrooveTemplateApply = useCallback((templateId) => {
+    const state = useMusicStore.getState();
+    const nextMatrix = applyChordGrooveTemplateToExistingClips(state.matrix, state.clips, templateId);
+
+    state.clips.ids
+      .map((id) => state.clips.byId[id])
+      .filter((clip) => clip?.trackId === 'chord')
+      .forEach((clip) => {
+        nextMatrix.chord[clip.bar].forEach((cell, step) => {
+          state.setCell('chord', clip.bar, step, cell);
+        });
       });
   }, []);
 
@@ -890,6 +918,8 @@ export default function App() {
         onChordNoteSelect: handleChordNoteSelect,
         onChordPick: handleChordPick,
         onChordPreview: handleChordPreview,
+        onChordGrooveTemplatePreview: handleChordGrooveTemplatePreview,
+        onChordGrooveTemplateApply: handleChordGrooveTemplateApply,
         onChordTemplatePreview: handleChordTemplatePreview,
         onChordTemplateApply: handleChordTemplateApply,
         onCloseEditor: handleCloseEditor,
