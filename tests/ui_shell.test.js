@@ -364,6 +364,53 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(bottomEditorSource, /onChordGrooveTemplateApply/);
 });
 
+test('app exposes the melody editor and keeps lead as the internal track id', async () => {
+  const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
+  const bottomEditorSource = await readFile(
+    new URL('../src/app/components/BottomEditor.jsx', import.meta.url),
+    'utf8',
+  );
+  const melodyEditorSource = await readFile(
+    new URL('../src/app/components/MelodyEditor.jsx', import.meta.url),
+    'utf8',
+  );
+  const melodyDataSource = await readFile(new URL('../src/data/melodyScales.js', import.meta.url), 'utf8');
+  const uiDataSource = await readFile(new URL('../src/app/uiShellData.js', import.meta.url), 'utf8');
+  const contextSliceSource = await readFile(
+    new URL('../src/store/slices/contextSlice.js', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(uiDataSource, /lead:\s*'Melody'/);
+  assert.match(contextSliceSource, /melodyScaleId:\s*'major'/);
+  assert.match(contextSliceSource, /setMelodyScaleId/);
+  assert.match(bottomEditorSource, /MelodyEditor/);
+  assert.match(bottomEditorSource, /activeTrackId === 'lead' && selectedClipId/);
+  assert.match(bottomEditorSource, /onMelodyStepToggle/);
+  assert.match(bottomEditorSource, /onMelodyPreview/);
+  assert.match(bottomEditorSource, /onMelodyScaleChange/);
+  assert.match(melodyEditorSource, /data-screen-label="Melody Editor"/);
+  assert.match(melodyEditorSource, /Melody · Phrase/);
+  assert.match(melodyEditorSource, /MELODY EDITOR - BAR/);
+  assert.match(melodyEditorSource, /keyboard-strip/);
+  assert.match(melodyEditorSource, /QWERTY ↔ 音阶 对应关系/);
+  assert.match(melodyEditorSource, /选择音阶/);
+  assert.match(melodyEditorSource, /Scale Picker/);
+  assert.match(melodyDataSource, /自然大调音阶/);
+  assert.match(melodyDataSource, /五声音阶/);
+  assert.match(melodyEditorSource, /清空本小节/);
+  assert.match(melodyEditorSource, /清空 Melody/);
+  assert.match(melodyEditorSource, /MELODY_KEY_SEQUENCE/);
+  assert.match(melodyEditorSource, /MELODY_RAIL_NOTES/);
+  assert.match(melodyEditorSource, /isMelodyCellActive/);
+  assert.match(source, /melodyScaleId/);
+  assert.match(source, /handleMelodyStepToggle/);
+  assert.match(source, /handleMelodyPreview/);
+  assert.match(source, /handleMelodyScaleChange/);
+  assert.match(source, /handleClearMelodyBar/);
+  assert.match(source, /clearTrack\('lead'\)/);
+});
+
 test('app keeps the editor focused on the playback bar while transport is playing', async () => {
   const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
 

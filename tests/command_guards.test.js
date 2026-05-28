@@ -20,7 +20,10 @@ test('app command constants use drums naming', () => {
   assert.equal(COMMAND_GROUPS.chord.includes(APP_COMMAND_TYPES.CHORD_SET_CELL), true);
   assert.equal(COMMAND_GROUPS.chord.includes(APP_COMMAND_TYPES.CHORD_CLEAR_CELL), true);
   assert.equal(CHORD_OPTION_COUNT, 8);
-  assert.deepEqual(LEAD_NOTE_IDS, ['C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3']);
+  assert.equal(LEAD_NOTE_IDS.at(0), 'D3');
+  assert.equal(LEAD_NOTE_IDS.includes('C#4'), true);
+  assert.equal(LEAD_NOTE_IDS.includes('F#5'), true);
+  assert.equal(LEAD_NOTE_IDS.at(-1), 'G5');
 });
 
 test('transport commands validate exact payloads', () => {
@@ -84,10 +87,13 @@ test('drums command validates track step and known instruments', () => {
 });
 
 test('lead note commands only accept configured lead notes', () => {
-  assert.equal(isValidAppCommand({ type: 'lead.noteOn', note: 'C3' }), true);
-  assert.equal(isValidAppCommand({ type: 'lead.noteOff', note: 'B3' }), true);
-  assert.equal(isValidAppCommand({ type: 'lead.noteOn', note: 'C4' }), false);
-  assert.equal(isValidAppCommand({ type: 'lead.noteOff', note: 'C3', velocity: 100 }), false);
+  assert.equal(isValidAppCommand({ type: 'lead.noteOn', note: 'D3' }), true);
+  assert.equal(isValidAppCommand({ type: 'lead.noteOff', note: 'E5' }), true);
+  assert.equal(isValidAppCommand({ type: 'lead.noteOn', note: 'C#4' }), true);
+  assert.equal(isValidAppCommand({ type: 'lead.noteOn', note: 'G5' }), true);
+  assert.equal(isValidAppCommand({ type: 'lead.noteOn', note: 'C3' }), false);
+  assert.equal(isValidAppCommand({ type: 'lead.noteOn', note: 'A5' }), false);
+  assert.equal(isValidAppCommand({ type: 'lead.noteOff', note: 'D3', velocity: 100 }), false);
 });
 
 test('unknown or malformed commands are invalid', () => {

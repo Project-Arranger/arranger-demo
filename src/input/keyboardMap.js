@@ -1,5 +1,5 @@
 import { STEPS_PER_BAR, TOTAL_BARS } from '../domain/musicConstants.js';
-import { KEY_TO_LEAD_NOTE } from '../data/leadNotes.js';
+import { getMelodyKeyNote } from '../data/melodyScales.js';
 import { APP_COMMAND_TYPES, CHORD_OPTION_COUNT } from './appCommands.js';
 
 function getEventKey(event) {
@@ -29,10 +29,9 @@ function mapArrowKeyToCommand(key, state) {
 
 function mapNumberKeyToCommand(eventType, key, state) {
   const number = Number.parseInt(key, 10);
-  if (!Number.isInteger(number) || number < 1 || number > CHORD_OPTION_COUNT) return null;
 
   if (state.activeTrackId === 'lead') {
-    const note = KEY_TO_LEAD_NOTE[key];
+    const note = getMelodyKeyNote(state.melodyScaleId, key);
     if (!note || eventType === 'keypress') return null;
     return {
       type: eventType === 'keyup' ? APP_COMMAND_TYPES.LEAD_NOTE_OFF : APP_COMMAND_TYPES.LEAD_NOTE_ON,
@@ -40,6 +39,7 @@ function mapNumberKeyToCommand(eventType, key, state) {
     };
   }
 
+  if (!Number.isInteger(number) || number < 1 || number > CHORD_OPTION_COUNT) return null;
   if (eventType !== 'keydown') return null;
   return {
     type: APP_COMMAND_TYPES.CHORD_SELECT_OPTION,
@@ -86,7 +86,7 @@ function mapKeyboardEventToCommand(event, state = {}) {
     return mapArrowKeyToCommand(key, state);
   }
 
-  if (/^[1-8]$/.test(key)) {
+  if (/^[.0-9\-=]$/.test(key)) {
     return mapNumberKeyToCommand(eventType, key, state);
   }
 

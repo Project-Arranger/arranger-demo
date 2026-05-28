@@ -12,6 +12,7 @@ import {
   getChordNotePitch,
   getChordToneRoots,
 } from '../domain/chordCells.js';
+import { isValidMelodyNote } from '../app/melodyActions.js';
 
 function normalizeMatrixSource(matrixSource) {
   return typeof matrixSource === 'function' ? matrixSource : () => matrixSource;
@@ -149,6 +150,19 @@ function extractChordEvent(cell, bar, step) {
   };
 }
 
+function extractLeadEvent(cell, bar, step) {
+  if (cell?.type !== 'melody' || !isValidMelodyNote(cell.note)) return null;
+
+  return {
+    type: 'lead',
+    trackId: 'lead',
+    bar,
+    step,
+    note: cell.note,
+    duration: cell.duration ?? '16n',
+  };
+}
+
 function createMatrixPlaybackAdapter(matrixSource, options = {}) {
   const readMatrix = normalizeMatrixSource(matrixSource);
   const totalBars = options.totalBars ?? TOTAL_BARS;
@@ -168,13 +182,19 @@ function createMatrixPlaybackAdapter(matrixSource, options = {}) {
     const matrix = readMatrix();
     const drumsCell = matrix?.drums?.[bar]?.[step] ?? null;
     const chordCell = matrix?.chord?.[bar]?.[step] ?? null;
+    const leadCell = matrix?.lead?.[bar]?.[step] ?? null;
 
     const drumEvents = extractDrumsInstruments(drumsCell).map((instrument) => (
       createDrumsEvent(bar, step, instrument)
     ));
     const chordEvent = extractChordEvent(chordCell, bar, step);
+    const leadEvent = extractLeadEvent(leadCell, bar, step);
 
-    return chordEvent ? [...drumEvents, chordEvent] : drumEvents;
+    return [
+      ...drumEvents,
+      ...(chordEvent ? [chordEvent] : []),
+      ...(leadEvent ? [leadEvent] : []),
+    ];
   }
 
   return {
@@ -196,4 +216,5 @@ export {
   createMatrixPlaybackAdapter,
   extractChordEvent,
   extractDrumsInstruments,
+  extractLeadEvent,
 };

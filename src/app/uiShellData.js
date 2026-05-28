@@ -6,7 +6,7 @@ const trackLabels = {
   drums: 'Drums',
   bass: 'Bass',
   chord: 'Chord',
-  lead: 'Lead',
+  lead: 'Melody',
   pad: 'Pad',
   vocal: 'Vocal',
   sample: 'Sample',

@@ -115,6 +115,7 @@ async function dispatchHandlerCommand(command, deps) {
 
     case APP_COMMAND_TYPES.LEAD_NOTE_ON:
       await maybeCall(handlers.lead?.noteOn, command);
+      await maybeCallMethod(deps.audio, 'triggerLeadNote', command.note, '16n');
       return { ok: true };
 
     case APP_COMMAND_TYPES.LEAD_NOTE_OFF:

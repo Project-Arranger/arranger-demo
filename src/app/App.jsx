@@ -41,6 +41,10 @@ import {
   createChordGroovePreviewEvents,
   getSourceChordLabel,
 } from './chordGrooveActions.js';
+import {
+  clearMelodyBar,
+  toggleMelodyCell,
+} from './melodyActions.js';
 import { BottomEditor } from './components/BottomEditor.jsx';
 import { Timeline } from './components/Timeline.jsx';
 import { TopBar } from './components/TopBar.jsx';
@@ -150,6 +154,7 @@ export default function App() {
   const isPlaying = useMusicStore((state) => state.isPlaying);
   const matrix = useMusicStore((state) => state.matrix);
   const activeTrackId = useMusicStore((state) => state.activeTrackId);
+  const melodyScaleId = useMusicStore((state) => state.melodyScaleId);
   const selectedBar = useMusicStore((state) => state.selectedBar);
   const selectedClipId = useMusicStore((state) => state.selectedClipId);
   const clips = useMusicStore((state) => state.clips);
@@ -721,6 +726,39 @@ export default function App() {
     useMusicStore.getState().clearTrack('chord');
   }, []);
 
+  const handleMelodyStepToggle = useCallback((step, note) => {
+    const state = useMusicStore.getState();
+    const nextMatrix = toggleMelodyCell(state.matrix, selectedBar, step, note);
+    state.setCell('lead', selectedBar, step, nextMatrix.lead[selectedBar][step]);
+    void audioEngine.triggerLeadNote(note, '16n');
+  }, [selectedBar]);
+
+  const handleMelodyPreview = useCallback((noteOrNotes) => {
+    if (Array.isArray(noteOrNotes)) {
+      void audioEngine.previewLeadSequence(noteOrNotes);
+      return;
+    }
+
+    void audioEngine.triggerLeadNote(noteOrNotes, '16n');
+  }, []);
+
+  const handleMelodyScaleChange = useCallback((scaleId) => {
+    useMusicStore.getState().setMelodyScaleId(scaleId);
+  }, []);
+
+  const handleClearMelodyBar = useCallback(() => {
+    const state = useMusicStore.getState();
+    const nextMatrix = clearMelodyBar(state.matrix, selectedBar);
+
+    nextMatrix.lead[selectedBar].forEach((cell, step) => {
+      state.setCell('lead', selectedBar, step, cell);
+    });
+  }, [selectedBar]);
+
+  const handleClearMelody = useCallback(() => {
+    useMusicStore.getState().clearTrack('lead');
+  }, []);
+
   const stopTutorialPreviewPlayback = useCallback(() => {
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
   }, [dispatchAppCommand]);
@@ -913,6 +951,7 @@ export default function App() {
         tutorialLocked: tutorialViewModel.locked,
         tutorialTargets: tutorialViewModel.targets,
         matrix,
+        melodyScaleId,
         selectedClipName: selectedClip?.name ?? '',
         onChordCellSelect: handleChordCellSelect,
         onChordNoteSelect: handleChordNoteSelect,
@@ -923,6 +962,11 @@ export default function App() {
         onChordTemplatePreview: handleChordTemplatePreview,
         onChordTemplateApply: handleChordTemplateApply,
         onCloseEditor: handleCloseEditor,
+        onClearMelody: handleClearMelody,
+        onClearMelodyBar: handleClearMelodyBar,
+        onMelodyPreview: handleMelodyPreview,
+        onMelodyScaleChange: handleMelodyScaleChange,
+        onMelodyStepToggle: handleMelodyStepToggle,
         onRenameClip: handleRenameClip,
         onClearCurrentDrumsBar: handleClearCurrentDrumsBar,
         onClearChordBar: handleClearChordBar,

@@ -159,6 +159,23 @@ test('chord pitch rail rows align with chord grid rows', async () => {
   assert.doesNotMatch(css, /\.cell\.extension/);
 });
 
+test('melody editor mirrors the reference keyboard strip and scale picker layout', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.app:has\(\.editor\[data-screen-label="Melody Editor"\]:not\(\[data-picker="scale"\]\)\)\s*\{[^}]*--app-editor-height:\s*clamp\(360px,\s*46vh,\s*430px\);/s);
+  assert.match(css, /\.app:has\(\.editor\[data-picker="scale"\]\)\s*\{[^}]*--app-editor-height:\s*clamp\(380px,\s*55vh,\s*560px\);/s);
+  assert.match(css, /\.editor\[data-screen-label="Melody Editor"\]\s*\{[^}]*grid-template-rows:\s*auto auto minmax\(0,\s*1fr\);/s);
+  assert.match(css, /\.editor\[data-screen-label="Melody Editor"\] \.clip-chip\s*\{[^}]*background:\s*var\(--c-lead\);/s);
+  assert.match(css, /\.keyboard-strip\s*\{[^}]*display:\s*flex;/s);
+  assert.match(css, /\.ks-keys\s*\{[^}]*grid-template-columns:\s*repeat\(13,\s*minmax\(0,\s*1fr\)\);/s);
+  assert.match(css, /\.ks-key\.playing\s*\{[^}]*background:\s*var\(--c-lead\);/s);
+  assert.match(css, /\.melody-grid\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(128px,\s*1fr\)\);/s);
+  assert.match(css, /\.melody-cell\.active\s*\{[^}]*background:\s*var\(--c-lead\);/s);
+  assert.match(css, /\.melody-note-key\.playing\s*\{[^}]*background:\s*var\(--c-lead\)/s);
+  assert.match(css, /\.scale-picker\s*\{[^}]*position:\s*absolute;/s);
+  assert.match(css, /\.sctpl-card\.selected\s*\{[^}]*background:\s*color-mix\(in oklab,\s*var\(--c-lead\) 20%,\s*var\(--surface\)\);/s);
+});
+
 test('chord template picker has enough room and can scroll full card content', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 

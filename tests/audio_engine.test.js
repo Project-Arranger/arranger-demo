@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import { AUDIO_STATUSES } from '../src/audio/audioStatus.js';
 import AudioEngine, {
   createDrumsSampleUrls,
+  createLeadSampleUrls,
   formatToneTransportPosition,
 } from '../src/audio/AudioEngine.js';
 import createAudioEngine from '../src/audio/createAudioEngine.js';
@@ -83,6 +84,43 @@ function createChordSynthFactory(calls) {
   });
 }
 
+function createSamplerFactory(calls) {
+  return (urls) => ({
+    triggerAttackRelease: (note, duration, time) => calls.push([
+      'sampler.triggerAttackRelease',
+      note,
+      duration,
+      time,
+      urls,
+    ]),
+    toDestination: () => calls.push(['sampler.toDestination']),
+  });
+}
+
+function createVolumeAwareSamplerFactory(calls) {
+  return (urls) => {
+    const sampler = {
+      volume: { value: 0 },
+      triggerAttackRelease(note, duration, time) {
+        calls.push([
+          'sampler.triggerAttackRelease',
+          note,
+          duration,
+          time,
+          sampler.volume.value,
+          urls,
+        ]);
+      },
+      toDestination() {
+        calls.push(['sampler.toDestination']);
+        return sampler;
+      },
+    };
+
+    return sampler;
+  };
+}
+
 function createVolumeAwarePlayerFactory(calls) {
   return (url, instrument) => {
     const player = {
@@ -135,6 +173,18 @@ test('createDrumsSampleUrls maps drums instruments to migrated 808 samples', () 
   });
 });
 
+test('createLeadSampleUrls maps existing lead samples for sampler playback', () => {
+  assert.deepEqual(createLeadSampleUrls('/arranger/'), {
+    C3: '/arranger/samples/lead/Lead C3.wav',
+    D3: '/arranger/samples/lead/Lead D3.wav',
+    E3: '/arranger/samples/lead/Lead E3.wav',
+    F3: '/arranger/samples/lead/Lead F3.wav',
+    G3: '/arranger/samples/lead/Lead G3.wav',
+    A3: '/arranger/samples/lead/Lead A3.wav',
+    B3: '/arranger/samples/lead/Lead B3.wav',
+  });
+});
+
 test('formatToneTransportPosition converts matrix bar and step to Tone position', () => {
   assert.equal(formatToneTransportPosition(0, 0), '0:0:0');
   assert.equal(formatToneTransportPosition(2, 9), '2:2:1');
@@ -178,6 +228,37 @@ test('AudioEngine starts audio and triggers chord synth notes', async () => {
   assert.deepEqual(tone.calls.filter(([name]) => name.startsWith('chord.')), [
     ['chord.toDestination'],
     ['chord.triggerAttackRelease', ['C4', 'E4', 'G4'], '4n', 12.5],
+  ]);
+});
+
+test('AudioEngine starts audio and triggers lead sampler notes', async () => {
+  const tone = createFakeTone();
+  const engine = new AudioEngine({
+    tone,
+    playerFactory: createPlayerFactory(tone.calls),
+    samplerFactory: createSamplerFactory(tone.calls),
+  });
+
+  assert.equal(await engine.startAudio(), AUDIO_STATUSES.READY);
+  assert.equal(await engine.triggerLeadNote('E5', '16n'), true);
+
+  assert.deepEqual(tone.calls.filter(([name]) => name.startsWith('sampler.')), [
+    ['sampler.toDestination'],
+    [
+      'sampler.triggerAttackRelease',
+      'E5',
+      '16n',
+      12.5,
+      {
+        C3: '/samples/lead/Lead C3.wav',
+        D3: '/samples/lead/Lead D3.wav',
+        E3: '/samples/lead/Lead E3.wav',
+        F3: '/samples/lead/Lead F3.wav',
+        G3: '/samples/lead/Lead G3.wav',
+        A3: '/samples/lead/Lead A3.wav',
+        B3: '/samples/lead/Lead B3.wav',
+      },
+    ],
   ]);
 });
 
@@ -280,26 +361,43 @@ test('AudioEngine avoids touching Tone transport before audio starts', async () 
   assert.equal(engine.transportFlatStep, 40);
 });
 
-test('AudioEngine matrix playback triggers drums and chord events', async () => {
+test('AudioEngine matrix playback triggers drums chord and lead events', async () => {
   const tone = createFakeTone();
   const matrix = createInitialMatrix();
   matrix.drums[0][0] = { instruments: ['kick'] };
   matrix.chord[0][0] = { root: 'C', quality: 'maj', label: 'C' };
+  matrix.lead[0][0] = { type: 'melody', note: 'G4' };
   const engine = new AudioEngine({
     tone,
     matrixSource: matrix,
     playerFactory: createPlayerFactory(tone.calls),
     chordSynthFactory: createChordSynthFactory(tone.calls),
+    samplerFactory: createSamplerFactory(tone.calls),
   });
 
   await engine.play({ bpm: 120 });
   tone.Transport.scheduledCallback(24);
 
   assert.deepEqual(tone.calls.filter(([name]) => (
-    name === 'player.start' || name === 'chord.triggerAttackRelease'
+    name === 'player.start' || name === 'chord.triggerAttackRelease' || name === 'sampler.triggerAttackRelease'
   )), [
     ['player.start', 'kick', '/samples/808/kick.wav', 24],
     ['chord.triggerAttackRelease', ['C4', 'E4', 'G4'], '4n', 24],
+    [
+      'sampler.triggerAttackRelease',
+      'G4',
+      '16n',
+      24,
+      {
+        C3: '/samples/lead/Lead C3.wav',
+        D3: '/samples/lead/Lead D3.wav',
+        E3: '/samples/lead/Lead E3.wav',
+        F3: '/samples/lead/Lead F3.wav',
+        G3: '/samples/lead/Lead G3.wav',
+        A3: '/samples/lead/Lead A3.wav',
+        B3: '/samples/lead/Lead B3.wav',
+      },
+    ],
   ]);
 });
 
@@ -327,25 +425,43 @@ test('AudioEngine clears existing matrix playback even when Tone returns event i
 test('AudioEngine applies current track volumes to matrix playback events', async () => {
   const tone = createFakeTone();
   const matrix = createInitialMatrix();
-  const volumes = { drums: -18, chord: -9 };
+  const volumes = { drums: -18, chord: -9, lead: -4 };
   matrix.drums[0][0] = { instruments: ['kick'] };
   matrix.chord[0][0] = { root: 'C', quality: 'maj', label: 'C' };
+  matrix.lead[0][0] = { type: 'melody', note: 'A4' };
   const engine = new AudioEngine({
     tone,
     matrixSource: matrix,
     volumeSource: () => volumes,
     playerFactory: createVolumeAwarePlayerFactory(tone.calls),
     chordSynthFactory: createVolumeAwareChordSynthFactory(tone.calls),
+    samplerFactory: createVolumeAwareSamplerFactory(tone.calls),
   });
 
   await engine.play({ bpm: 120 });
   tone.Transport.scheduledCallback(24);
 
   assert.deepEqual(tone.calls.filter(([name]) => (
-    name === 'player.start' || name === 'chord.triggerAttackRelease'
+    name === 'player.start' || name === 'chord.triggerAttackRelease' || name === 'sampler.triggerAttackRelease'
   )), [
     ['player.start', 'kick', '/samples/808/kick.wav', 24, -18],
     ['chord.triggerAttackRelease', ['C4', 'E4', 'G4'], '4n', 24, -9],
+    [
+      'sampler.triggerAttackRelease',
+      'A4',
+      '16n',
+      24,
+      -4,
+      {
+        C3: '/samples/lead/Lead C3.wav',
+        D3: '/samples/lead/Lead D3.wav',
+        E3: '/samples/lead/Lead E3.wav',
+        F3: '/samples/lead/Lead F3.wav',
+        G3: '/samples/lead/Lead G3.wav',
+        A3: '/samples/lead/Lead A3.wav',
+        B3: '/samples/lead/Lead B3.wav',
+      },
+    ],
   ]);
 });
 

@@ -14,6 +14,16 @@ const DRUMS_SAMPLE_FILES = Object.freeze({
   hihat: 'samples/808/hihat.wav',
 });
 
+const LEAD_SAMPLE_FILES = Object.freeze({
+  C3: 'samples/lead/Lead C3.wav',
+  D3: 'samples/lead/Lead D3.wav',
+  E3: 'samples/lead/Lead E3.wav',
+  F3: 'samples/lead/Lead F3.wav',
+  G3: 'samples/lead/Lead G3.wav',
+  A3: 'samples/lead/Lead A3.wav',
+  B3: 'samples/lead/Lead B3.wav',
+});
+
 const DRUM_FALLBACK_NOTES = Object.freeze({
   kick: 'C1',
   snare: 'D1',
@@ -31,6 +41,17 @@ function createDrumsSampleUrls(baseUrl = '/') {
     DRUMS_INSTRUMENT_IDS.map((instrument) => [
       instrument,
       `${normalizedBaseUrl}/${DRUMS_SAMPLE_FILES[instrument]}`,
+    ]),
+  );
+}
+
+function createLeadSampleUrls(baseUrl = '/') {
+  const normalizedBaseUrl = baseUrl === '/' ? '' : trimTrailingSlash(baseUrl);
+
+  return Object.fromEntries(
+    Object.entries(LEAD_SAMPLE_FILES).map(([note, file]) => [
+      note,
+      `${normalizedBaseUrl}/${file}`,
     ]),
   );
 }
@@ -84,6 +105,7 @@ export default class AudioEngine {
     this.volumeSource = options.volumeSource ?? null;
     this.onPositionChange = options.onPositionChange ?? null;
     this.playerFactory = options.playerFactory ?? null;
+    this.samplerFactory = options.samplerFactory ?? null;
     this.fallbackSynthFactory = options.fallbackSynthFactory ?? null;
     this.chordSynthFactory = options.chordSynthFactory ?? null;
     this.now = options.now ?? (() => this.tone?.now?.() ?? 0);
@@ -91,6 +113,7 @@ export default class AudioEngine {
     this.drumPlayers = new Map();
     this.fallbackSynth = null;
     this.chordSynth = null;
+    this.leadSampler = null;
     this.matrixAdapter = null;
     this.transportEventId = null;
     this.transportFlatStep = 0;
@@ -125,6 +148,10 @@ export default class AudioEngine {
     return createDrumsSampleUrls(this.baseUrl);
   }
 
+  getLeadSampleUrls() {
+    return createLeadSampleUrls(this.baseUrl);
+  }
+
   getTrackVolume(trackId) {
     return getVolumeForTrack(this.volumeSource, trackId);
   }
@@ -156,6 +183,14 @@ export default class AudioEngine {
     return callToDestination(synth);
   }
 
+  createLeadSampler() {
+    const urls = this.getLeadSampleUrls();
+    if (this.samplerFactory) return callToDestination(this.samplerFactory(urls));
+    if (!this.tone?.Sampler) return null;
+
+    return callToDestination(new this.tone.Sampler({ urls }));
+  }
+
   async startAudio() {
     if (
       this.status === AUDIO_STATUSES.READY
@@ -171,12 +206,14 @@ export default class AudioEngine {
       await this.tone?.start?.();
       this.fallbackSynth = this.fallbackSynth ?? this.createFallbackSynth();
       this.chordSynth = this.chordSynth ?? this.createChordSynth();
+      this.leadSampler = this.leadSampler ?? this.createLeadSampler();
       this.loadDrumsPlayers();
       this.status = AUDIO_STATUSES.READY;
     } catch {
       this.drumPlayers.clear();
       this.fallbackSynth = this.createFallbackSynth();
       this.chordSynth = this.chordSynth ?? this.createChordSynth();
+      this.leadSampler = this.leadSampler ?? this.createLeadSampler();
       this.status = this.fallbackSynth
         ? AUDIO_STATUSES.SAMPLE_FALLBACK
         : AUDIO_STATUSES.ERROR;
@@ -248,6 +285,41 @@ export default class AudioEngine {
   async triggerChord(notes, duration = '4n', time = this.now()) {
     await this.startAudio();
     return this.triggerChordNotes(notes, duration, time);
+  }
+
+  triggerLeadSampler(note, duration = '16n', time = this.now(), volume = this.getTrackVolume('lead')) {
+    if (!this.leadSampler?.triggerAttackRelease) return false;
+
+    try {
+      applyVolume(this.leadSampler, volume);
+      this.leadSampler.triggerAttackRelease(note, duration, time);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async triggerLeadNote(note, duration = '16n', time = this.now()) {
+    await this.startAudio();
+    return this.triggerLeadSampler(note, duration, time);
+  }
+
+  async previewLeadSequence(notes, options = {}) {
+    const {
+      duration = '16n',
+      intervalSeconds = 0.16,
+    } = options;
+
+    await this.startAudio();
+
+    const startTime = this.now();
+    const volume = this.getTrackVolume('lead');
+    return notes.map((note, index) => this.triggerLeadSampler(
+      note,
+      duration,
+      startTime + index * intervalSeconds,
+      volume,
+    ));
   }
 
   async previewChordSequence(noteGroups, options = {}) {
@@ -357,6 +429,14 @@ export default class AudioEngine {
         if (event.type === 'chord') {
           this.triggerChordEvent(event, time);
         }
+        if (event.type === 'lead') {
+          this.triggerLeadSampler(
+            event.note,
+            event.duration,
+            time,
+            this.getTrackVolume(event.trackId ?? 'lead'),
+          );
+        }
       }
 
       this.transportFlatStep = (this.transportFlatStep + 1) % adapter.totalSteps;
@@ -413,4 +493,4 @@ export default class AudioEngine {
   }
 }
 
-export { createDrumsSampleUrls, formatToneTransportPosition };
+export { createDrumsSampleUrls, createLeadSampleUrls, formatToneTransportPosition };

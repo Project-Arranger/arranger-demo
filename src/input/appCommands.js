@@ -1,3 +1,5 @@
+import { MELODY_NOTE_IDS } from '../data/melodyScales.js';
+
 const APP_COMMAND_TYPES = Object.freeze({
   TRANSPORT_TOGGLE_PLAY: 'transport.togglePlay',
   TRANSPORT_STOP: 'transport.stop',
@@ -15,7 +17,7 @@ const APP_COMMAND_TYPES = Object.freeze({
 });
 
 const CHORD_OPTION_COUNT = 8;
-const LEAD_NOTE_IDS = Object.freeze(['C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3']);
+const LEAD_NOTE_IDS = MELODY_NOTE_IDS;
 
 const COMMAND_GROUPS = Object.freeze({
   transport: Object.freeze([
