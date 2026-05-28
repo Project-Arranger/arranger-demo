@@ -144,8 +144,8 @@ test('domain commands dispatch to injected handlers with drums naming', async ()
   await dispatchCommand({ type: 'chord.confirm' }, { handlers });
   await dispatchCommand({ type: 'chord.setCell', bar: 2, span: 1, root: 'G#' }, { handlers });
   await dispatchCommand({ type: 'chord.clearCell', bar: 2, span: 1 }, { handlers });
-  await dispatchCommand({ type: 'lead.noteOn', note: 'C3' }, { handlers });
-  await dispatchCommand({ type: 'lead.noteOff', note: 'C3' }, { handlers });
+  await dispatchCommand({ type: 'lead.noteOn', note: 'D3' }, { handlers });
+  await dispatchCommand({ type: 'lead.noteOff', note: 'D3' }, { handlers });
 
   assert.deepEqual(calls, [
     ['tutorial.next'],
@@ -155,11 +155,45 @@ test('domain commands dispatch to injected handlers with drums naming', async ()
     ['chord.confirm'],
     ['chord.setCell', 2, 1, 'G#'],
     ['chord.clearCell', 2, 1],
-    ['lead.noteOn', 'C3'],
-    ['lead.noteOff', 'C3'],
+    ['lead.noteOn', 'D3'],
+    ['lead.noteOff', 'D3'],
   ]);
   assert.deepEqual(audioCalls, [
     ['audio.triggerDrumsStep', ['kick', 'hihat']],
+  ]);
+});
+
+test('lead noteOn prioritizes audio before editor recording handlers', async () => {
+  const calls = [];
+  const handlers = {
+    lead: {
+      noteOn: (command) => calls.push(['handler.lead.noteOn', command.note]),
+    },
+  };
+  const audio = {
+    triggerLeadNote: (note, duration) => calls.push(['audio.triggerLeadNote', note, duration]),
+  };
+
+  await dispatchCommand({ type: 'lead.noteOn', note: 'C4' }, { handlers, audio });
+
+  assert.deepEqual(calls, [
+    ['audio.triggerLeadNote', 'C4', '16n'],
+    ['handler.lead.noteOn', 'C4'],
+  ]);
+});
+
+test('lead noteOn still records when audio preview is unavailable', async () => {
+  const calls = [];
+  const handlers = {
+    lead: {
+      noteOn: (command) => calls.push(['handler.lead.noteOn', command.note]),
+    },
+  };
+
+  await dispatchCommand({ type: 'lead.noteOn', note: 'C4' }, { handlers });
+
+  assert.deepEqual(calls, [
+    ['handler.lead.noteOn', 'C4'],
   ]);
 });
 
@@ -192,12 +226,16 @@ test('keyboard map turns common keys into app commands', () => {
     { type: 'transport.seek', bar: 0, step: 0 },
   );
   assert.deepEqual(
-    mapKeyboardEventToCommand({ type: 'keydown', key: '4' }, { activeTrackId: 'lead' }),
-    { type: 'lead.noteOn', note: 'F3' },
+    mapKeyboardEventToCommand({ type: 'keydown', key: '.' }, { activeTrackId: 'lead', melodyScaleId: 'major' }),
+    { type: 'lead.noteOn', note: 'G3' },
   );
   assert.deepEqual(
-    mapKeyboardEventToCommand({ type: 'keyup', key: '4' }, { activeTrackId: 'lead' }),
-    { type: 'lead.noteOff', note: 'F3' },
+    mapKeyboardEventToCommand({ type: 'keydown', key: '4' }, { activeTrackId: 'lead', melodyScaleId: 'pentatonic' }),
+    { type: 'lead.noteOn', note: 'C4' },
+  );
+  assert.deepEqual(
+    mapKeyboardEventToCommand({ type: 'keyup', key: '=' }, { activeTrackId: 'lead', melodyScaleId: 'pentatonic' }),
+    { type: 'lead.noteOff', note: 'G5' },
   );
   assert.deepEqual(
     mapKeyboardEventToCommand({ type: 'keydown', key: '4' }, { activeTrackId: 'chord' }),
@@ -219,7 +257,7 @@ test('keyboard map turns common keys into app commands', () => {
     ),
     null,
   );
-  assert.equal(mapKeyboardEventToCommand({ type: 'keydown', key: '8' }, { activeTrackId: 'lead' }), null);
+  assert.equal(mapKeyboardEventToCommand({ type: 'keydown', key: 'q' }, { activeTrackId: 'lead' }), null);
   assert.equal(mapKeyboardEventToCommand({ type: 'keydown', key: '4', repeat: true }, { activeTrackId: 'lead' }), null);
 });
 

@@ -15,8 +15,6 @@
   --c-bass-ink: oklch(38% 0.07 235);
   --c-chord: oklch(87% 0.06 55);
   --c-chord-ink: oklch(40% 0.08 50);
-  --chord-extension: oklch(84% 0.075 215);
-  --chord-extension-ink: oklch(37% 0.08 215);
   --c-lead: oklch(85% 0.055 350);
   --c-lead-ink: oklch(40% 0.08 350);
   --c-pad: oklch(85% 0.055 290);
@@ -277,11 +275,20 @@ button {
   user-select: none;
 }
 
-.app:has(.editor[data-screen-label="Chord Editor"]:not([data-picker="open"])) {
+.app:has(.editor[data-screen-label="Chord Editor"]:not([data-picker="chord"]):not([data-picker="groove"])) {
   --app-editor-height: clamp(360px, 46vh, 430px);
 }
 
-.app:has(.editor[data-picker="open"]) {
+.app:has(.editor[data-screen-label="Melody Editor"]:not([data-picker="scale"])) {
+  --app-editor-height: clamp(360px, 46vh, 430px);
+}
+
+.app:has(.editor[data-picker="chord"]),
+.app:has(.editor[data-picker="groove"]) {
+  --app-editor-height: clamp(380px, 55vh, 560px);
+}
+
+.app:has(.editor[data-picker="scale"]) {
   --app-editor-height: clamp(380px, 55vh, 560px);
 }
 
@@ -382,6 +389,7 @@ button {
 .btn-new,
 .btn-export,
 .btn-template,
+.btn-template-groove,
 .add-track,
 .add-chord-btn {
   display: inline-flex;
@@ -414,6 +422,7 @@ button {
 
 .btn-new:hover,
 .btn-template:hover,
+.btn-template-groove:hover,
 .add-chord-btn:hover {
   transform: translateY(-1px);
 }
@@ -421,7 +430,8 @@ button {
 .btn-new svg,
 .add-track svg,
 .add-chord-btn svg,
-.btn-template svg {
+.btn-template svg,
+.btn-template-groove svg {
   width: 14px;
   height: 14px;
 }
@@ -1242,7 +1252,7 @@ button {
 
 .editor {
   display: grid;
-  grid-template-rows: 54px 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
   min-height: 0;
   overflow: hidden;
   background: var(--surface);
@@ -1255,6 +1265,7 @@ button {
   justify-content: space-between;
   gap: 16px;
   min-width: 0;
+  min-height: 54px;
   padding: 0 18px;
   border-bottom: 1px solid var(--border-soft);
 }
@@ -1368,6 +1379,31 @@ button {
   font-weight: 800;
 }
 
+.btn-template-groove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  gap: 8px;
+  padding: 0 14px 0 12px;
+  color: var(--ink);
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: 0 1px 0 oklch(100% 0 0 / 0.6) inset;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.btn-template-groove:hover {
+  background: var(--surface-2);
+  border-color: var(--ink-3);
+}
+
+.btn-template-groove svg {
+  color: var(--ink-2);
+}
+
 .drum-action {
   background: var(--brand);
 }
@@ -1391,6 +1427,200 @@ button {
 .editor-close {
   margin-left: 4px;
   background: transparent;
+}
+
+.editor[data-screen-label="Melody Editor"] {
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.editor[data-screen-label="Melody Editor"] .clip-chip {
+  color: var(--c-lead-ink);
+  background: var(--c-lead);
+}
+
+.keyboard-strip {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  min-width: 0;
+  padding: 12px 22px 14px 14px;
+  background:
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--c-lead) 18%, var(--surface)) 0%,
+      color-mix(in oklab, var(--c-lead) 8%, var(--surface)) 100%
+    );
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.ks-intro {
+  display: flex;
+  flex: 0 0 188px;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ks-glyph {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  color: var(--c-lead-ink);
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  box-shadow: var(--shadow-1);
+}
+
+.ks-glyph svg {
+  width: 18px;
+  height: 18px;
+}
+
+.ks-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ks-eyebrow {
+  color: var(--ink-3);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.ks-title {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.ks-scale {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  margin-top: 5px;
+  padding: 3px 9px 3px 8px;
+  color: var(--c-lead-ink);
+  background: var(--surface);
+  border: 1px solid color-mix(in oklab, var(--c-lead-ink) 22%, var(--border-soft));
+  border-radius: 999px;
+  box-shadow: 0 1px 0 oklch(100% 0 0 / 0.55) inset;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.ks-scale::before {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  content: "";
+  background: var(--c-lead-ink);
+  border-radius: 50%;
+}
+
+.ks-keys {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: repeat(13, minmax(0, 1fr));
+  gap: 4px;
+  min-width: 0;
+  user-select: none;
+}
+
+.ks-key {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  gap: 6px;
+  padding: 9px 2px 8px;
+  color: var(--ink);
+  background: oklch(98% 0.002 270);
+  border: 1px solid var(--border-soft);
+  border-radius: 9px;
+  box-shadow:
+    0 1px 0 oklch(100% 0 0 / 0.85) inset,
+    0 1px 2px oklch(20% 0.02 270 / 0.05);
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease,
+    transform 0.08s ease;
+}
+
+.ks-key:hover {
+  border-color: var(--ink-4);
+  transform: translateY(-1px);
+}
+
+.ks-letter {
+  width: 100%;
+  max-width: 30px;
+  padding: 4px 0 5px;
+  color: var(--ink-2);
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 5px;
+  box-shadow:
+    0 1px 0 oklch(100% 0 0 / 0.7) inset,
+    0 1.5px 0 color-mix(in oklab, var(--ink) 12%, transparent);
+  font-family: "SFMono-Regular", "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11.5px;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+}
+
+.ks-note {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 1px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.ks-note .oct {
+  margin-left: 0.5px;
+  color: var(--ink-3);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.ks-key.playing {
+  color: var(--c-lead-ink);
+  background: var(--c-lead);
+  border-color: var(--c-lead-ink);
+  box-shadow:
+    0 0 0 1px var(--c-lead-ink),
+    0 4px 10px color-mix(in oklab, var(--c-lead-ink) 28%, transparent);
+  transform: translateY(-1px);
+}
+
+.ks-key.playing .ks-letter {
+  color: white;
+  background: var(--c-lead-ink);
+  border-color: var(--c-lead-ink);
+  box-shadow: 0 1px 0 oklch(100% 0 0 / 0.18) inset;
+}
+
+.ks-key.playing .ks-note,
+.ks-key.playing .ks-note .oct {
+  color: var(--c-lead-ink);
 }
 
 .seq-body {
@@ -1482,25 +1712,36 @@ button {
 .chord-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(128px, 1fr));
-  gap: 14px;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 6px 14px;
   min-width: 0;
   min-height: 0;
   padding: 14px 22px 16px 14px;
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.chord-label-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(4, minmax(128px, 1fr));
+  gap: 14px;
+  min-width: 0;
+}
+
+.beat-number-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(4, minmax(128px, 1fr));
+  gap: 14px;
+  min-width: 0;
 }
 
 .beat-group {
   display: flex;
   flex-direction: column;
-  gap: var(--chord-beat-gap);
   min-width: 0;
-}
-
-.beat-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  min-height: 0;
 }
 
 .add-chord-btn {
@@ -1513,6 +1754,15 @@ button {
   border-radius: 999px;
   font-size: 11.5px;
   font-weight: 800;
+}
+
+.chord-label-segment {
+  width: 100%;
+  min-width: 0;
+}
+
+.chord-label-segment.merged {
+  justify-content: center;
 }
 
 .add-chord-btn:hover {
@@ -1533,6 +1783,11 @@ button {
 }
 
 .beat-num {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+  padding-right: 4px;
   color: var(--ink-4);
   font-size: 10px;
   font-weight: 800;
@@ -1580,10 +1835,6 @@ button {
   background: color-mix(in oklab, var(--bg-deep) 70%, oklch(96% 0 0));
 }
 
-.cell.downbeat {
-  background: color-mix(in oklab, var(--surface-2) 80%, var(--bg-deep));
-}
-
 .cell.active {
   background: var(--c-chord);
   border-color: color-mix(in oklab, var(--c-chord-ink) 42%, var(--border));
@@ -1599,17 +1850,104 @@ button {
     0 0 0 1px color-mix(in oklab, white 70%, transparent);
 }
 
-.cell.extension.active,
-.cell.extension.added,
-.cell.extension.active.added {
-  background: var(--chord-extension);
-  border-color: color-mix(in oklab, var(--chord-extension-ink) 45%, var(--border));
-  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--chord-extension-ink) 26%, transparent);
-}
-
 .cell:hover {
   background: color-mix(in oklab, var(--c-chord) 60%, white);
   border-color: color-mix(in oklab, var(--c-chord-ink) 30%, var(--border));
+  transform: translateY(-1px);
+}
+
+.melody-seq-body {
+  grid-template-columns: 64px 1fr;
+}
+
+.melody-scale-rail {
+  grid-template-rows: 22px var(--chord-cell-grid-height) 22px;
+}
+
+.melody-scale-notes {
+  grid-template-rows: repeat(12, minmax(0, 1fr));
+  min-height: 0;
+}
+
+.melody-note-key.root {
+  color: var(--c-lead-ink);
+  box-shadow: inset 2px 0 0 var(--c-lead-ink);
+}
+
+.melody-note-key.playing {
+  color: var(--c-lead-ink);
+  background: var(--c-lead);
+  border-color: var(--c-lead-ink);
+  box-shadow:
+    0 0 0 1px var(--c-lead-ink) inset,
+    0 1px 4px color-mix(in oklab, var(--c-lead-ink) 28%, transparent);
+}
+
+.melody-note-key.sharp.playing {
+  color: white;
+  background: var(--c-lead-ink);
+}
+
+.melody-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(128px, 1fr));
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 6px 14px;
+  min-width: 0;
+  min-height: 0;
+  padding: 14px 22px 16px 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.melody-beat-number-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(4, minmax(128px, 1fr));
+  gap: 14px;
+  min-width: 0;
+}
+
+.melody-beat-group {
+  min-width: 0;
+  min-height: 0;
+}
+
+.melody-beat-cells {
+  grid-template-rows: repeat(12, minmax(0, 1fr));
+  min-height: var(--chord-cell-grid-height);
+}
+
+.melody-cell {
+  min-width: 0;
+  min-height: 0;
+  background: oklch(97% 0.003 270);
+  border: 1px solid color-mix(in oklab, var(--border) 35%, transparent);
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    background 0.1s ease,
+    border-color 0.12s ease,
+    transform 0.08s ease;
+}
+
+.melody-cell.sharp {
+  background: color-mix(in oklab, var(--bg-deep) 70%, oklch(96% 0 0));
+}
+
+.melody-cell.downbeat {
+  box-shadow: inset 2px 0 0 color-mix(in oklab, var(--border) 70%, transparent);
+}
+
+.melody-cell.active {
+  background: var(--c-lead);
+  border-color: color-mix(in oklab, var(--c-lead-ink) 42%, var(--border));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c-lead-ink) 24%, transparent);
+}
+
+.melody-cell:hover {
+  background: color-mix(in oklab, var(--c-lead) 60%, white);
+  border-color: color-mix(in oklab, var(--c-lead-ink) 30%, var(--border));
   transform: translateY(-1px);
 }
 
@@ -1617,17 +1955,10 @@ button {
   position: relative;
 }
 
-.beat-group.has-chord .add-chord-btn,
 .add-chord-btn.filled {
   color: var(--c-chord-ink);
   background: var(--c-chord);
   border-color: color-mix(in oklab, var(--c-chord-ink) 28%, transparent);
-}
-
-.beat-group.has-chord .beat-cells-viewport {
-  border-style: solid;
-  border-color: color-mix(in oklab, var(--c-chord-ink) 30%, transparent);
-  background: color-mix(in oklab, var(--c-chord) 14%, var(--surface));
 }
 
 .add-chord-btn.variants-open {
@@ -1646,6 +1977,19 @@ button {
 }
 
 .tpl-picker[hidden] {
+  display: none;
+}
+
+.scale-picker {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  grid-template-rows: 48px 1fr;
+  background: var(--bg);
+}
+
+.scale-picker[hidden] {
   display: none;
 }
 
@@ -1693,6 +2037,58 @@ button {
 }
 
 .btn-template-active svg {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+}
+
+.btn-template-groove-active {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  gap: 8px;
+  padding: 0 14px 0 12px;
+  color: white;
+  background: var(--ink);
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.btn-template-groove-active svg {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+}
+
+.btn-template-scale-active {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  gap: 8px;
+  padding: 0 14px 0 12px;
+  color: white;
+  background: var(--ink);
+  border: 0;
+  border-radius: 999px;
+  box-shadow:
+    0 1px 0 oklch(100% 0 0 / 0.18) inset,
+    0 0 0 3px oklch(20% 0.012 270 / 0.10),
+    0 4px 10px oklch(20% 0.02 270 / 0.22);
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.btn-template-scale-active svg {
   flex: 0 0 auto;
   width: 14px;
   height: 14px;
@@ -1882,6 +2278,407 @@ button {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.gtpl-picker {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  grid-template-rows: 48px 1fr 52px;
+  background: var(--bg);
+}
+
+.gtpl-picker[hidden] {
+  display: none;
+}
+
+.gtpl-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 20px;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  box-shadow: var(--shadow-1);
+  cursor: pointer;
+  transition:
+    background 0.14s ease,
+    border-color 0.14s ease,
+    box-shadow 0.14s ease,
+    transform 0.14s ease;
+}
+
+.gtpl-card:hover {
+  background: color-mix(in oklab, var(--ink) 5%, var(--surface));
+  border-color: var(--ink-4);
+  box-shadow: var(--shadow-2);
+  transform: translateY(-3px);
+}
+
+.gtpl-card.selected {
+  background: color-mix(in oklab, var(--ink) 8%, var(--surface));
+  border-color: var(--ink);
+  box-shadow:
+    0 0 0 2px color-mix(in oklab, var(--ink) 18%, transparent),
+    var(--shadow-2);
+}
+
+.gtpl-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.gtpl-name {
+  margin: 0;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.gtpl-default-tag {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: 20px;
+  padding: 0 9px;
+  color: white;
+  background: var(--ink);
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.gtpl-rhythm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 14px 12px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+}
+
+.gtpl-card:hover .gtpl-rhythm,
+.gtpl-card.selected .gtpl-rhythm {
+  background: color-mix(in oklab, var(--ink) 4%, var(--bg-deep));
+  border-color: color-mix(in oklab, var(--ink) 20%, var(--border-soft));
+}
+
+.gtpl-rhythm-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.gtpl-beat {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-items: end;
+  height: 56px;
+  gap: 2px;
+}
+
+.gtpl-step {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid color-mix(in oklab, var(--border) 40%, transparent);
+  border-radius: 3px;
+}
+
+.gtpl-step.downbeat {
+  background: color-mix(in oklab, var(--bg-deep) 35%, var(--surface));
+}
+
+.gtpl-step.hit-block::after,
+.gtpl-step.hit-arp::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: var(--ink);
+  border-radius: 2px;
+  content: "";
+}
+
+.gtpl-step.hit-block::after {
+  top: 0;
+}
+
+.gtpl-step.hit-arp::after {
+  height: calc(28% + var(--h, 1) * 18%);
+}
+
+.gtpl-beat-num {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 0 1px;
+  color: var(--ink-4);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+.gtpl-desc {
+  flex: 1;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 12.5px;
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+
+.gtpl-detail {
+  margin: 0;
+  padding: 10px 12px;
+  color: var(--ink-3);
+  background: var(--bg-deep);
+  border-left: 2px solid var(--ink-4);
+  border-radius: 8px;
+  font-size: 11.5px;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.gtpl-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border-soft);
+}
+
+.gtpl-foot-label {
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.gtpl-play {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  gap: 7px;
+  padding: 0 14px 0 11px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.gtpl-play:hover {
+  color: white;
+  background: var(--play);
+  border-color: var(--play);
+  box-shadow: 0 2px 8px oklch(52% 0.12 155 / 0.35);
+  transform: translateY(-1px);
+}
+
+.gtpl-play .play-glyph {
+  margin-left: 1px;
+  border-top-width: 5px;
+  border-bottom-width: 5px;
+  border-left-width: 8px;
+}
+
+.gtpl-picker .tpl-pager-btn:hover:not(:disabled) {
+  color: white;
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.gtpl-picker .tpl-search:focus-within {
+  border-color: var(--ink-3);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ink) 8%, transparent);
+}
+
+.scale-picker .tpl-body {
+  padding: 28px 24px;
+}
+
+.scale-picker .tpl-list {
+  grid-template-columns: repeat(2, minmax(260px, 460px));
+  justify-content: center;
+  gap: 22px;
+}
+
+.sctpl-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  padding: 26px 26px 22px;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  box-shadow: var(--shadow-1);
+  cursor: pointer;
+  transition:
+    background 0.14s ease,
+    border-color 0.14s ease,
+    box-shadow 0.14s ease,
+    transform 0.14s ease;
+}
+
+.sctpl-card:hover {
+  background: color-mix(in oklab, var(--c-lead) 14%, var(--surface));
+  border-color: var(--c-lead-ink);
+  box-shadow: var(--shadow-2);
+  transform: translateY(-3px);
+}
+
+.sctpl-card.selected {
+  background: color-mix(in oklab, var(--c-lead) 20%, var(--surface));
+  border-color: var(--c-lead-ink);
+  box-shadow:
+    0 0 0 2px color-mix(in oklab, var(--c-lead-ink) 25%, transparent),
+    var(--shadow-2);
+}
+
+.sctpl-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sctpl-name {
+  margin: 0;
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.sctpl-default-tag {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  height: 22px;
+  padding: 0 10px;
+  color: white;
+  background: var(--c-lead-ink);
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.sctpl-notes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 16px 14px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+}
+
+.sctpl-card:hover .sctpl-notes,
+.sctpl-card.selected .sctpl-notes {
+  background: color-mix(in oklab, var(--c-lead-ink) 5%, var(--bg-deep));
+  border-color: color-mix(in oklab, var(--c-lead-ink) 22%, var(--border-soft));
+}
+
+.sctpl-note {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 9px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  box-shadow: 0 1px 0 oklch(100% 0 0 / 0.6) inset;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.sctpl-card.selected .sctpl-note {
+  color: var(--c-lead-ink);
+  background: var(--c-lead);
+  border-color: var(--c-lead-ink);
+}
+
+.sctpl-note.gap {
+  width: 6px;
+  min-width: 6px;
+  height: 6px;
+  padding: 0;
+  margin: 0 2px;
+  background: var(--border);
+  border: 0;
+  border-radius: 50%;
+  box-shadow: none;
+}
+
+.sctpl-desc {
+  flex: 1;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+
+.sctpl-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border-soft);
+}
+
+.sctpl-foot-label {
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.sctpl-play {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 16px 0 12px;
+  color: white;
+  background: var(--play);
+  border: 1px solid color-mix(in oklab, var(--play) 70%, var(--ink));
+  border-radius: 999px;
+  box-shadow:
+    0 1px 0 oklch(100% 0 0 / 0.25) inset,
+    0 2px 6px oklch(52% 0.12 155 / 0.28);
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.sctpl-play .play-glyph {
+  width: 0;
+  height: 0;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 9px solid currentColor;
 }
 
 .chord-variants {
@@ -2496,6 +3293,12 @@ button {
     grid-template-columns: repeat(4, minmax(116px, 1fr));
     gap: 10px;
     padding: 12px;
+  }
+
+  .chord-label-row,
+  .beat-number-row {
+    grid-template-columns: repeat(4, minmax(116px, 1fr));
+    gap: 10px;
   }
 
   .seq-body {

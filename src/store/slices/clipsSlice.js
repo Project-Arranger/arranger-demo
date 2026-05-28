@@ -4,7 +4,7 @@ const TRACK_LABELS = Object.freeze({
   drums: 'Drum',
   bass: 'Bass',
   chord: 'Chord',
-  lead: 'Lead',
+  lead: 'Melody',
   pad: 'Pad',
   vocal: 'Vocal',
   sample: 'Sample',

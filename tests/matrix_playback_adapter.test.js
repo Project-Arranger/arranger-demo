@@ -5,6 +5,7 @@ import {
   createMatrixPlaybackAdapter,
   extractChordEvent,
   extractDrumsInstruments,
+  extractLeadEvent,
 } from '../src/audio/matrixPlaybackAdapter.js';
 import { STEPS_PER_BAR, TOTAL_BARS } from '../src/domain/musicConstants.js';
 import createInitialMatrix from '../src/store/createInitialMatrix.js';
@@ -31,6 +32,19 @@ test('matrix playback adapter returns drums events for a matrix step', () => {
     { type: 'drums', trackId: 'drums', bar: 1, step: 4, instrument: 'snare' },
   ]);
   assert.deepEqual(adapter.getEventsForStep(0, 1), []);
+});
+
+test('extractLeadEvent reads melody cells into playable lead events', () => {
+  assert.equal(extractLeadEvent(null, 0, 0), null);
+  assert.deepEqual(extractLeadEvent({ type: 'melody', note: 'C4' }, 3, 8), {
+    type: 'lead',
+    trackId: 'lead',
+    bar: 3,
+    step: 8,
+    note: 'C4',
+    duration: '16n',
+  });
+  assert.equal(extractLeadEvent({ type: 'melody', note: 'H4' }, 3, 8), null);
 });
 
 test('createChordNotes maps major chord roots to playable triads', () => {
@@ -152,6 +166,57 @@ test('matrix playback adapter treats Beat 1 column 2 as sustain and plays multi-
       quality: 'notes',
       label: 'D/F',
       notes: ['D4', 'F4'],
+      duration: '16n',
+    },
+  ]);
+});
+
+test('matrix playback adapter plays groove-authored short chord hits on any sixteenth step', () => {
+  const matrix = createInitialMatrix();
+  matrix.chord[0][6] = {
+    type: 'chord',
+    root: 'G',
+    chordRoot: 'G',
+    quality: '7',
+    label: 'G7',
+    toneRoots: ['G', 'B', 'D', 'F'],
+    duration: '16n',
+    grooveTemplateId: 'block-syncopated',
+    sourceChordLabel: 'G7',
+  };
+
+  const adapter = createMatrixPlaybackAdapter(() => matrix);
+
+  assert.deepEqual(adapter.getEventsForStep(0, 6), [
+    {
+      type: 'chord',
+      trackId: 'chord',
+      bar: 0,
+      step: 6,
+      root: 'G',
+      quality: '7',
+      label: 'G7',
+      notes: ['G4', 'B4', 'D5', 'F5'],
+      duration: '16n',
+    },
+  ]);
+});
+
+test('matrix playback adapter includes lead melody events for transport playback', () => {
+  const matrix = createInitialMatrix();
+  matrix.drums[0][0] = { instruments: ['kick'] };
+  matrix.lead[0][0] = { type: 'melody', note: 'E4' };
+
+  const adapter = createMatrixPlaybackAdapter(() => matrix);
+
+  assert.deepEqual(adapter.getEventsForStep(0, 0), [
+    { type: 'drums', trackId: 'drums', bar: 0, step: 0, instrument: 'kick' },
+    {
+      type: 'lead',
+      trackId: 'lead',
+      bar: 0,
+      step: 0,
+      note: 'E4',
       duration: '16n',
     },
   ]);

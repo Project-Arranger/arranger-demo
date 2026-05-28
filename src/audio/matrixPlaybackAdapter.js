@@ -12,6 +12,7 @@ import {
   getChordNotePitch,
   getChordToneRoots,
 } from '../domain/chordCells.js';
+import { isValidMelodyNote } from '../app/melodyActions.js';
 
 function normalizeMatrixSource(matrixSource) {
   return typeof matrixSource === 'function' ? matrixSource : () => matrixSource;
@@ -68,6 +69,10 @@ function isChordTriggerStep(step) {
   return Number.isInteger(step) && step % CHORD_SPAN === 0;
 }
 
+function isGrooveChordHit(cell) {
+  return cell?.type === 'chord' && cell.grooveTemplateId && cell.duration === '16n';
+}
+
 function extractChordEvent(cell, bar, step) {
   if (!cell) return null;
 
@@ -93,6 +98,24 @@ function extractChordEvent(cell, bar, step) {
   if (!isChordLike) return null;
 
   const addedNotes = getChordCellNotes(cell);
+  if (isGrooveChordHit(cell)) {
+    const toneRoots = cell.toneRoots ?? getChordToneRoots(cell.label ?? cell.root);
+    const notes = createChordNotesWithAddedNotes(cell.root, toneRoots, addedNotes);
+    if (!notes.length) return null;
+
+    return {
+      type: 'chord',
+      trackId: 'chord',
+      bar,
+      step,
+      root: cell.root,
+      quality: cell.quality ?? 'maj',
+      label: cell.label ?? cell.root,
+      notes,
+      duration: cell.duration,
+    };
+  }
+
   if (!isChordTriggerStep(step)) {
     const notes = createSingleNotes(addedNotes);
     if (!notes.length) return null;
@@ -127,6 +150,19 @@ function extractChordEvent(cell, bar, step) {
   };
 }
 
+function extractLeadEvent(cell, bar, step) {
+  if (cell?.type !== 'melody' || !isValidMelodyNote(cell.note)) return null;
+
+  return {
+    type: 'lead',
+    trackId: 'lead',
+    bar,
+    step,
+    note: cell.note,
+    duration: cell.duration ?? '16n',
+  };
+}
+
 function createMatrixPlaybackAdapter(matrixSource, options = {}) {
   const readMatrix = normalizeMatrixSource(matrixSource);
   const totalBars = options.totalBars ?? TOTAL_BARS;
@@ -146,13 +182,19 @@ function createMatrixPlaybackAdapter(matrixSource, options = {}) {
     const matrix = readMatrix();
     const drumsCell = matrix?.drums?.[bar]?.[step] ?? null;
     const chordCell = matrix?.chord?.[bar]?.[step] ?? null;
+    const leadCell = matrix?.lead?.[bar]?.[step] ?? null;
 
     const drumEvents = extractDrumsInstruments(drumsCell).map((instrument) => (
       createDrumsEvent(bar, step, instrument)
     ));
     const chordEvent = extractChordEvent(chordCell, bar, step);
+    const leadEvent = extractLeadEvent(leadCell, bar, step);
 
-    return chordEvent ? [...drumEvents, chordEvent] : drumEvents;
+    return [
+      ...drumEvents,
+      ...(chordEvent ? [chordEvent] : []),
+      ...(leadEvent ? [leadEvent] : []),
+    ];
   }
 
   return {
@@ -174,4 +216,5 @@ export {
   createMatrixPlaybackAdapter,
   extractChordEvent,
   extractDrumsInstruments,
+  extractLeadEvent,
 };

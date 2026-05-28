@@ -85,6 +85,10 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
     new URL('../src/app/components/ChordEditor.jsx', import.meta.url),
     'utf8',
   );
+  const chordGrooveActionsSource = await readFile(
+    new URL('../src/app/chordGrooveActions.js', import.meta.url),
+    'utf8',
+  );
   const clipNameInputSource = await readFile(
     new URL('../src/app/components/ClipNameInput.jsx', import.meta.url),
     'utf8',
@@ -120,7 +124,31 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.doesNotMatch(trackEditorPlaceholderSource, /clip-name-display/);
   assert.match(chordEditorSource, /CHORD EDITOR - BAR/);
   assert.match(chordEditorSource, /选择和弦进行模板/);
+  assert.match(chordEditorSource, /选择和弦弹奏律动模板/);
+  assert.ok(
+    chordEditorSource.indexOf('aria-label="选择和弦进行模板"')
+      < chordEditorSource.indexOf('aria-label="选择和弦弹奏律动模板"'),
+    'Chord progression template button should appear before groove template button',
+  );
   assert.match(chordEditorSource, /Chord Template Picker/);
+  assert.match(chordEditorSource, /Groove Template Picker/);
+  assert.match(chordEditorSource, /CHORD_GROOVE_TEMPLATES/);
+  assert.match(chordEditorSource, /onChordGrooveTemplatePreview/);
+  assert.match(chordEditorSource, /onChordGrooveTemplateApply/);
+  assert.match(chordEditorSource, /setPickerMode\('groove'\)/);
+  const grooveApplyHandler = chordEditorSource.match(/const handleGrooveTemplateApply = \(templateId\) => \{(?<body>[\s\S]*?)\n {2}\};/)?.groups.body;
+  assert.ok(grooveApplyHandler);
+  assert.match(grooveApplyHandler, /setSelectedGrooveTemplateId\(templateId\);/);
+  assert.match(grooveApplyHandler, /onChordGrooveTemplateApply\(templateId\);/);
+  assert.match(grooveApplyHandler, /setPickerMode\(null\);/);
+  assert.match(grooveApplyHandler, /setAddChordPanel\(null\);/);
+  assert.match(chordEditorSource, /pickerMode === 'chord'/);
+  assert.match(chordEditorSource, /pickerMode === 'groove'/);
+  assert.match(chordEditorSource, /data-picker=\{pickerMode/);
+  assert.match(chordEditorSource, /gtpl-card/);
+  assert.match(chordEditorSource, /gtpl-rhythm-grid/);
+  assert.match(chordGrooveActionsSource, /柱式音型基础律动/);
+  assert.match(chordGrooveActionsSource, /琶音基础律动/);
   assert.match(chordEditorSource, /添加经过和弦/);
   assert.match(chordEditorSource, /添加调内和弦/);
   assert.match(chordEditorSource, /丰富和弦/);
@@ -140,20 +168,24 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(chordEditorSource, /syncPitchScroll/);
   assert.match(chordEditorSource, /handlePitchViewportScroll/);
   assert.match(chordEditorSource, /handlePitchWheel/);
+  assert.doesNotMatch(chordEditorSource, /closest\('\.scale-notes-viewport, \.beat-cells-viewport'\)\) return/);
+  assert.match(chordEditorSource, /syncPitchScroll\(pitchScrollTopRef\.current \+ event\.deltaY/);
   assert.match(chordEditorSource, /scrollPitchByOctave/);
   assert.match(chordEditorSource, /window\.requestAnimationFrame/);
   assert.match(chordEditorSource, /className="scale-notes-viewport"/);
   assert.match(chordEditorSource, /className="beat-cells-viewport"/);
   assert.match(chordEditorSource, /disabled=\{!canScrollPitchUp\}/);
   assert.match(chordEditorSource, /disabled=\{!canScrollPitchDown\}/);
-  assert.match(chordEditorSource, /className="beat-head"[\s\S]*className="beat-cells-viewport"/);
+  assert.match(chordEditorSource, /className="chord-label-row"/);
+  assert.match(chordEditorSource, /className="beat-number-row"/);
+  assert.match(chordEditorSource, /getChordBeatDisplaySegments/);
   assert.match(chordEditorSource, /CHORD_TEMPLATES/);
   assert.match(chordEditorSource, /onChordPick/);
   assert.match(chordEditorSource, /addChordPanel/);
-  assert.match(chordEditorSource, /aria-label=\{`添加和弦 beat \$\{beatNumber\}`\}/);
-  assert.match(chordEditorSource, /openAddChordPanel\(spanIndex,\s*event\.currentTarget,\s*beatHasChord\)/);
-  assert.match(chordEditorSource, /colIndex < 2 \? 'downbeat' : ''/);
-  assert.match(chordEditorSource, /colIndex >= 2 \? 'extension' : ''/);
+  assert.match(chordEditorSource, /aria-label=\{`添加和弦 beat \$\{segment\.startBeat \+ 1\}`\}/);
+  assert.match(chordEditorSource, /openAddChordPanel\(segment\.startBeat,\s*event\.currentTarget,\s*segment\.hasChord\)/);
+  assert.doesNotMatch(chordEditorSource, /colIndex < 2 \? 'downbeat' : ''/);
+  assert.doesNotMatch(chordEditorSource, /colIndex >= 2 \? 'extension' : ''/);
   assert.doesNotMatch(chordEditorSource, /Beat \$\{beatNumber\} 单音/);
   assert.doesNotMatch(chordEditorSource, /disabled=\{!canOpenChordPanel\}/);
   assert.match(chordEditorSource, /getChordCell/);
@@ -174,7 +206,7 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(chordEditorSource, /onChordPreview\(chordName\)/);
   assert.match(chordEditorSource, /onChordTemplatePreview\(template\.chords\)/);
   assert.match(chordEditorSource, /onClose/);
-  assert.match(chordEditorSource, /const handleClose = \(\) => \{[\s\S]*setPickerOpen\(false\);[\s\S]*setAddChordPanel\(null\);[\s\S]*onClose\(\);[\s\S]*\}/);
+  assert.match(chordEditorSource, /const handleClose = \(\) => \{[\s\S]*setPickerMode\(null\);[\s\S]*setAddChordPanel\(null\);[\s\S]*onClose\(\);[\s\S]*\}/);
   assert.match(chordEditorSource, /className="editor-close"[\s\S]*onClick=\{handleClose\}/);
   const previewButtons = chordEditorSource.match(/<button[^>]*data-action="preview"[\s\S]*?<\/button>/g) ?? [];
   assert.ok(previewButtons.length >= 2);
@@ -187,6 +219,7 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(source, /previewChordSequence/);
   assert.match(source, /handleChordPreview/);
   assert.match(source, /handleChordTemplatePreview/);
+  assert.match(source, /handleChordGrooveTemplatePreview/);
   assert.doesNotMatch(source, /seedDefaultDrumsPattern/);
   assert.match(source, /handleCloseEditor/);
   assert.match(source, /selectedClip/);
@@ -208,6 +241,10 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.doesNotMatch(chordEditorSource, /sustain/);
   assert.match(source, /handleChordNoteSelect/);
   assert.match(source, /handleChordTemplateApply/);
+  assert.match(source, /handleChordGrooveTemplateApply/);
+  assert.match(source, /applyChordGrooveTemplateToExistingClips/);
+  assert.match(source, /createChordGroovePreviewEvents/);
+  assert.match(source, /previewChordPattern/);
   assert.match(source, /handleClearChordBar/);
   assert.match(source, /handleClearChord/);
   assert.match(source, /clearTrack\('chord'\)/);
@@ -323,6 +360,57 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(bottomEditorSource, /onChordPreview/);
   assert.match(bottomEditorSource, /onChordTemplatePreview/);
   assert.match(bottomEditorSource, /onChordTemplateApply/);
+  assert.match(bottomEditorSource, /onChordGrooveTemplatePreview/);
+  assert.match(bottomEditorSource, /onChordGrooveTemplateApply/);
+});
+
+test('app exposes the melody editor and keeps lead as the internal track id', async () => {
+  const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
+  const bottomEditorSource = await readFile(
+    new URL('../src/app/components/BottomEditor.jsx', import.meta.url),
+    'utf8',
+  );
+  const melodyEditorSource = await readFile(
+    new URL('../src/app/components/MelodyEditor.jsx', import.meta.url),
+    'utf8',
+  );
+  const melodyDataSource = await readFile(new URL('../src/data/melodyScales.js', import.meta.url), 'utf8');
+  const uiDataSource = await readFile(new URL('../src/app/uiShellData.js', import.meta.url), 'utf8');
+  const contextSliceSource = await readFile(
+    new URL('../src/store/slices/contextSlice.js', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(uiDataSource, /lead:\s*'Melody'/);
+  assert.match(contextSliceSource, /melodyScaleId:\s*'major'/);
+  assert.match(contextSliceSource, /setMelodyScaleId/);
+  assert.match(bottomEditorSource, /MelodyEditor/);
+  assert.match(bottomEditorSource, /activeTrackId === 'lead' && selectedClipId/);
+  assert.match(bottomEditorSource, /onMelodyStepToggle/);
+  assert.match(bottomEditorSource, /onMelodyPreview/);
+  assert.match(bottomEditorSource, /onMelodyScaleChange/);
+  assert.match(melodyEditorSource, /data-screen-label="Melody Editor"/);
+  assert.match(melodyEditorSource, /Melody · Phrase/);
+  assert.match(melodyEditorSource, /MELODY EDITOR - BAR/);
+  assert.match(melodyEditorSource, /keyboard-strip/);
+  assert.match(melodyEditorSource, /QWERTY ↔ 音阶 对应关系/);
+  assert.match(melodyEditorSource, /选择音阶/);
+  assert.match(melodyEditorSource, /Scale Picker/);
+  assert.match(melodyDataSource, /自然大调音阶/);
+  assert.match(melodyDataSource, /五声音阶/);
+  assert.match(melodyEditorSource, /清空本小节/);
+  assert.match(melodyEditorSource, /清空 Melody/);
+  assert.match(melodyEditorSource, /MELODY_KEY_SEQUENCE/);
+  assert.match(melodyEditorSource, /MELODY_RAIL_NOTES/);
+  assert.match(melodyEditorSource, /isMelodyCellActive/);
+  assert.match(source, /melodyScaleId/);
+  assert.match(source, /handleMelodyStepToggle/);
+  assert.match(source, /handleMelodyPreview/);
+  assert.match(source, /handleMelodyScaleChange/);
+  assert.match(source, /handleClearMelodyBar/);
+  assert.match(source, /clearTrack\('lead'\)/);
+  assert.match(source, /activeTrackId === 'lead' && selectedClipId/);
+  assert.match(source, /audioEngine\.startAudio/);
 });
 
 test('app keeps the editor focused on the playback bar while transport is playing', async () => {

@@ -36,6 +36,15 @@ import {
   setChordCell,
   toggleChordNoteStep,
 } from './chordActions.js';
+import {
+  applyChordGrooveTemplateToExistingClips,
+  createChordGroovePreviewEvents,
+  getSourceChordLabel,
+} from './chordGrooveActions.js';
+import {
+  clearMelodyBar,
+  toggleMelodyCell,
+} from './melodyActions.js';
 import { BottomEditor } from './components/BottomEditor.jsx';
 import { Timeline } from './components/Timeline.jsx';
 import { TopBar } from './components/TopBar.jsx';
@@ -145,10 +154,12 @@ export default function App() {
   const isPlaying = useMusicStore((state) => state.isPlaying);
   const matrix = useMusicStore((state) => state.matrix);
   const activeTrackId = useMusicStore((state) => state.activeTrackId);
+  const melodyScaleId = useMusicStore((state) => state.melodyScaleId);
   const selectedBar = useMusicStore((state) => state.selectedBar);
   const selectedClipId = useMusicStore((state) => state.selectedClipId);
   const clips = useMusicStore((state) => state.clips);
   const volumes = useMusicStore((state) => state.volumes);
+  const melodyEditorIsOpen = activeTrackId === 'lead' && selectedClipId;
   const [currentTutorialStepIndex, setCurrentTutorialStepIndex] = useState(0);
   const [tutorialProgress, setTutorialProgress] = useState(() => createTutorialState());
   const [tutorialVisible, setTutorialVisible] = useState(true);
@@ -177,6 +188,11 @@ export default function App() {
   );
 
   useKeyboardCommands({ dispatch: dispatchAppCommand });
+
+  useEffect(() => {
+    if (!melodyEditorIsOpen) return;
+    void audioEngine.startAudio();
+  }, [melodyEditorIsOpen]);
 
   const advanceTutorialToStep = useCallback((stepId) => {
     const stepIndex = getTutorialStepIndex(stepId);
@@ -658,6 +674,15 @@ export default function App() {
     previewChordNames(chords);
   }, [previewChordNames]);
 
+  const handleChordGrooveTemplatePreview = useCallback((templateId) => {
+    const state = useMusicStore.getState();
+    const sourceChordLabel = getSourceChordLabel(state.matrix, selectedBar);
+    const events = createChordGroovePreviewEvents(templateId, sourceChordLabel);
+    if (!events.length) return;
+
+    void audioEngine.previewChordPattern(events);
+  }, [selectedBar]);
+
   const handleChordNoteSelect = useCallback((spanIndex, columnIndex, note) => {
     const state = useMusicStore.getState();
     const nextMatrix = toggleChordNoteStep(state.matrix, selectedBar, spanIndex, columnIndex, note);
@@ -680,6 +705,20 @@ export default function App() {
       });
   }, []);
 
+  const handleChordGrooveTemplateApply = useCallback((templateId) => {
+    const state = useMusicStore.getState();
+    const nextMatrix = applyChordGrooveTemplateToExistingClips(state.matrix, state.clips, templateId);
+
+    state.clips.ids
+      .map((id) => state.clips.byId[id])
+      .filter((clip) => clip?.trackId === 'chord')
+      .forEach((clip) => {
+        nextMatrix.chord[clip.bar].forEach((cell, step) => {
+          state.setCell('chord', clip.bar, step, cell);
+        });
+      });
+  }, []);
+
   const handleClearChordBar = useCallback(() => {
     const state = useMusicStore.getState();
     const nextMatrix = clearChordBar(state.matrix, selectedBar);
@@ -691,6 +730,39 @@ export default function App() {
 
   const handleClearChord = useCallback(() => {
     useMusicStore.getState().clearTrack('chord');
+  }, []);
+
+  const handleMelodyStepToggle = useCallback((step, note) => {
+    const state = useMusicStore.getState();
+    const nextMatrix = toggleMelodyCell(state.matrix, selectedBar, step, note);
+    state.setCell('lead', selectedBar, step, nextMatrix.lead[selectedBar][step]);
+    void audioEngine.triggerLeadNote(note, '16n');
+  }, [selectedBar]);
+
+  const handleMelodyPreview = useCallback((noteOrNotes) => {
+    if (Array.isArray(noteOrNotes)) {
+      void audioEngine.previewLeadSequence(noteOrNotes);
+      return;
+    }
+
+    void audioEngine.triggerLeadNote(noteOrNotes, '16n');
+  }, []);
+
+  const handleMelodyScaleChange = useCallback((scaleId) => {
+    useMusicStore.getState().setMelodyScaleId(scaleId);
+  }, []);
+
+  const handleClearMelodyBar = useCallback(() => {
+    const state = useMusicStore.getState();
+    const nextMatrix = clearMelodyBar(state.matrix, selectedBar);
+
+    nextMatrix.lead[selectedBar].forEach((cell, step) => {
+      state.setCell('lead', selectedBar, step, cell);
+    });
+  }, [selectedBar]);
+
+  const handleClearMelody = useCallback(() => {
+    useMusicStore.getState().clearTrack('lead');
   }, []);
 
   const stopTutorialPreviewPlayback = useCallback(() => {
@@ -885,14 +957,22 @@ export default function App() {
         tutorialLocked: tutorialViewModel.locked,
         tutorialTargets: tutorialViewModel.targets,
         matrix,
+        melodyScaleId,
         selectedClipName: selectedClip?.name ?? '',
         onChordCellSelect: handleChordCellSelect,
         onChordNoteSelect: handleChordNoteSelect,
         onChordPick: handleChordPick,
         onChordPreview: handleChordPreview,
+        onChordGrooveTemplatePreview: handleChordGrooveTemplatePreview,
+        onChordGrooveTemplateApply: handleChordGrooveTemplateApply,
         onChordTemplatePreview: handleChordTemplatePreview,
         onChordTemplateApply: handleChordTemplateApply,
         onCloseEditor: handleCloseEditor,
+        onClearMelody: handleClearMelody,
+        onClearMelodyBar: handleClearMelodyBar,
+        onMelodyPreview: handleMelodyPreview,
+        onMelodyScaleChange: handleMelodyScaleChange,
+        onMelodyStepToggle: handleMelodyStepToggle,
         onRenameClip: handleRenameClip,
         onClearCurrentDrumsBar: handleClearCurrentDrumsBar,
         onClearChordBar: handleClearChordBar,

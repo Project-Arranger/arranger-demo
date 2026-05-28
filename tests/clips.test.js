@@ -48,8 +48,8 @@ test('createClip adds a new track clip and selects it', () => {
 test('createClip names clips from bar 1 through bar 8', () => {
   const state = useMusicStore.getState();
 
-  assert.equal(state.createClip('lead', 0).name, 'Lead 01');
-  assert.equal(useMusicStore.getState().createClip('lead', 7).name, 'Lead 08');
+  assert.equal(state.createClip('lead', 0).name, 'Melody 01');
+  assert.equal(useMusicStore.getState().createClip('lead', 7).name, 'Melody 08');
 });
 
 test('createClip re-selects an existing clip without duplicating it', () => {

@@ -130,7 +130,9 @@ test('chord pitch rail rows align with chord grid rows', async () => {
   assert.match(css, /--chord-cell-grid-height:\s*220px;/);
   assert.match(css, /--chord-cell-gap:\s*3px;/);
   assert.match(css, /--chord-cell-padding:\s*6px;/);
-  assert.match(css, /\.app:has\(\.editor\[data-screen-label="Chord Editor"\]:not\(\[data-picker="open"\]\)\)\s*\{[^}]*--app-editor-height:\s*clamp\(360px,\s*46vh,\s*430px\);/s);
+  assert.match(css, /\.editor\s*\{[^}]*grid-template-rows:\s*auto minmax\(0,\s*1fr\);/s);
+  assert.match(css, /\.editor-head\s*\{[^}]*min-height:\s*54px;/s);
+  assert.match(css, /\.app:has\(\.editor\[data-screen-label="Chord Editor"\]:not\(\[data-picker="chord"\]\):not\(\[data-picker="groove"\]\)\)\s*\{[^}]*--app-editor-height:\s*clamp\(360px,\s*46vh,\s*430px\);/s);
   assert.match(css, /\.scale-rail\s*\{[^}]*grid-template-rows:\s*22px var\(--chord-cell-grid-height\) 22px;/s);
   assert.match(css, /\.scale-rail\s*\{[^}]*gap:\s*var\(--chord-beat-gap\);/s);
   assert.match(css, /\.scale-notes-viewport\s*\{[^}]*height:\s*var\(--chord-cell-grid-height\);/s);
@@ -147,23 +149,57 @@ test('chord pitch rail rows align with chord grid rows', async () => {
   assert.match(css, /\.beat-cells\s*\{[^}]*gap:\s*var\(--chord-cell-gap\);/s);
   assert.match(css, /\.beat-cells\s*\{[^}]*padding:\s*var\(--chord-cell-padding\);/s);
   assert.doesNotMatch(css, /\.cell\.sustain/);
-  assert.match(css, /--chord-extension:\s*oklch\(84% 0\.075 215\);/);
-  assert.match(css, /--chord-extension-ink:\s*oklch\(37% 0\.08 215\);/);
+  assert.match(css, /\.chord-grid\s*\{[^}]*overflow-x:\s*auto;[^}]*overflow-y:\s*hidden;/s);
+  assert.match(css, /\.chord-label-row\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(128px,\s*1fr\)\);/s);
+  assert.match(css, /\.beat-number-row\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(128px,\s*1fr\)\);/s);
   assert.match(css, /\.cell\.added,\s*\.cell\.active\.added\s*\{[^}]*background:\s*color-mix\(in oklab,\s*var\(--c-chord\) 35%,\s*white\);/s);
   assert.doesNotMatch(css, /\.cell\.active\.added\s*\{[^}]*linear-gradient/s);
-  assert.match(css, /\.cell\.extension\.active,\s*\.cell\.extension\.added,\s*\.cell\.extension\.active\.added\s*\{/s);
-  assert.match(css, /\.cell\.extension\.active,\s*\.cell\.extension\.added,\s*\.cell\.extension\.active\.added\s*\{[^}]*background:\s*var\(--chord-extension\);/s);
-  assert.match(css, /\.cell\.extension\.active,\s*\.cell\.extension\.added,\s*\.cell\.extension\.active\.added\s*\{[^}]*border-color:\s*color-mix\(in oklab,\s*var\(--chord-extension-ink\) 45%,\s*var\(--border\)\);/s);
+  assert.doesNotMatch(css, /--chord-extension:/);
+  assert.doesNotMatch(css, /--chord-extension-ink:/);
+  assert.doesNotMatch(css, /\.cell\.extension/);
+});
+
+test('melody editor mirrors the reference keyboard strip and scale picker layout', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.app:has\(\.editor\[data-screen-label="Melody Editor"\]:not\(\[data-picker="scale"\]\)\)\s*\{[^}]*--app-editor-height:\s*clamp\(360px,\s*46vh,\s*430px\);/s);
+  assert.match(css, /\.app:has\(\.editor\[data-picker="scale"\]\)\s*\{[^}]*--app-editor-height:\s*clamp\(380px,\s*55vh,\s*560px\);/s);
+  assert.match(css, /\.editor\[data-screen-label="Melody Editor"\]\s*\{[^}]*grid-template-rows:\s*auto auto minmax\(0,\s*1fr\);/s);
+  assert.match(css, /\.editor\[data-screen-label="Melody Editor"\] \.clip-chip\s*\{[^}]*background:\s*var\(--c-lead\);/s);
+  assert.match(css, /\.keyboard-strip\s*\{[^}]*display:\s*flex;/s);
+  assert.match(css, /\.ks-keys\s*\{[^}]*grid-template-columns:\s*repeat\(13,\s*minmax\(0,\s*1fr\)\);/s);
+  assert.match(css, /\.ks-key\.playing\s*\{[^}]*background:\s*var\(--c-lead\);/s);
+  assert.match(css, /\.melody-grid\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(128px,\s*1fr\)\);/s);
+  assert.match(css, /\.melody-cell\.active\s*\{[^}]*background:\s*var\(--c-lead\);/s);
+  assert.match(css, /\.melody-note-key\.playing\s*\{[^}]*background:\s*var\(--c-lead\)/s);
+  assert.match(css, /\.scale-picker\s*\{[^}]*position:\s*absolute;/s);
+  assert.match(css, /\.sctpl-card\.selected\s*\{[^}]*background:\s*color-mix\(in oklab,\s*var\(--c-lead\) 20%,\s*var\(--surface\)\);/s);
 });
 
 test('chord template picker has enough room and can scroll full card content', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
-  assert.match(css, /\.app:has\(\.editor\[data-picker="open"\]\)\s*\{[^}]*--app-editor-height:\s*clamp\(380px,\s*55vh,\s*560px\);/s);
+  assert.match(css, /\.app:has\(\.editor\[data-picker="chord"\]\),\s*\n\.app:has\(\.editor\[data-picker="groove"\]\)\s*\{[^}]*--app-editor-height:\s*clamp\(380px,\s*55vh,\s*560px\);/s);
   assert.match(css, /\.tpl-body\s*\{[^}]*overflow:\s*auto;/s);
   assert.match(css, /\.tpl-list\s*\{[^}]*height:\s*auto;/s);
   assert.match(css, /\.tpl-list\s*\{[^}]*min-height:\s*100%;/s);
   assert.doesNotMatch(css, /\.tpl-body\s*\{[^}]*overflow:\s*hidden;/s);
+});
+
+test('groove template picker mirrors the reference secondary menu layout', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.btn-template-groove\s*\{[^}]*display:\s*inline-flex;/s);
+  assert.match(css, /\.btn-template-groove-active\s*\{[^}]*display:\s*inline-flex;/s);
+  assert.match(css, /\.btn-template-groove-active\s*\{[^}]*align-items:\s*center;/s);
+  assert.match(css, /\.btn-template-groove-active\s*\{[^}]*justify-content:\s*center;/s);
+  assert.match(css, /\.gtpl-picker\s*\{[^}]*grid-template-rows:\s*48px 1fr 52px;/s);
+  assert.match(css, /\.gtpl-card\s*\{[^}]*display:\s*flex;/s);
+  assert.match(css, /\.gtpl-rhythm-grid\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*1fr\);/s);
+  assert.match(css, /\.gtpl-beat\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*1fr\);/s);
+  assert.match(css, /\.gtpl-step\.hit-block::after\s*\{/s);
+  assert.match(css, /\.gtpl-step\.hit-arp::after\s*\{[^}]*height:\s*calc\(28% \+ var\(--h,\s*1\) \* 18%\);/s);
+  assert.match(css, /\.gtpl-picker \.tpl-pager-btn:hover:not\(:disabled\)\s*\{[^}]*background:\s*var\(--ink\);/s);
 });
 
 test('active chord template button aligns icon and label on one baseline', async () => {

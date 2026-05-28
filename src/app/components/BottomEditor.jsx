@@ -1,6 +1,7 @@
 import { createElement } from 'react';
 import { ChordEditor } from './ChordEditor.jsx';
 import { DrumSequencer } from './DrumSequencer.jsx';
+import { MelodyEditor } from './MelodyEditor.jsx';
 import { TrackEditorPlaceholder } from './TrackEditorPlaceholder.jsx';
 
 function BottomEditor({
@@ -10,13 +11,21 @@ function BottomEditor({
   tutorialTargets,
   selectedClipName = '',
   matrix,
+  melodyScaleId,
   onChordCellSelect,
   onChordNoteSelect,
   onChordPick,
   onChordPreview,
+  onChordGrooveTemplatePreview,
+  onChordGrooveTemplateApply,
   onChordTemplatePreview,
   onChordTemplateApply,
   onCloseEditor,
+  onClearMelody,
+  onClearMelodyBar,
+  onMelodyPreview,
+  onMelodyScaleChange,
+  onMelodyStepToggle,
   onRenameClip,
   onClearCurrentDrumsBar,
   onClearChord,
@@ -60,6 +69,8 @@ function BottomEditor({
       onChordNoteSelect,
       onChordPick,
       onChordPreview,
+      onChordGrooveTemplatePreview,
+      onChordGrooveTemplateApply,
       onChordTemplatePreview,
       onChordTemplateApply,
       onClose: onCloseEditor,
@@ -67,6 +78,20 @@ function BottomEditor({
       onClearChordBar,
       onRenameClip,
       rootKey,
+      selectedBar,
+    });
+  } else if (activeTrackId === 'lead' && selectedClipId) {
+    editor = createElement(MelodyEditor, {
+      matrix,
+      clipName: selectedClipName,
+      melodyScaleId,
+      onClearMelody,
+      onClearMelodyBar,
+      onClose: onCloseEditor,
+      onMelodyPreview,
+      onMelodyScaleChange,
+      onMelodyStepToggle,
+      onRenameClip,
       selectedBar,
     });
   } else {
