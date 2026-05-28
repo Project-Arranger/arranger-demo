@@ -299,9 +299,9 @@ export default class AudioEngine {
     }
   }
 
-  async triggerLeadNote(note, duration = '16n', time = this.now()) {
+  async triggerLeadNote(note, duration = '16n', time) {
     await this.startAudio();
-    return this.triggerLeadSampler(note, duration, time);
+    return this.triggerLeadSampler(note, duration, time ?? this.now());
   }
 
   async previewLeadSequence(notes, options = {}) {

@@ -409,6 +409,8 @@ test('app exposes the melody editor and keeps lead as the internal track id', as
   assert.match(source, /handleMelodyScaleChange/);
   assert.match(source, /handleClearMelodyBar/);
   assert.match(source, /clearTrack\('lead'\)/);
+  assert.match(source, /activeTrackId === 'lead' && selectedClipId/);
+  assert.match(source, /audioEngine\.startAudio/);
 });
 
 test('app keeps the editor focused on the playback bar while transport is playing', async () => {

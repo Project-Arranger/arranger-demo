@@ -159,6 +159,7 @@ export default function App() {
   const selectedClipId = useMusicStore((state) => state.selectedClipId);
   const clips = useMusicStore((state) => state.clips);
   const volumes = useMusicStore((state) => state.volumes);
+  const melodyEditorIsOpen = activeTrackId === 'lead' && selectedClipId;
   const [currentTutorialStepIndex, setCurrentTutorialStepIndex] = useState(0);
   const [tutorialProgress, setTutorialProgress] = useState(() => createTutorialState());
   const [tutorialVisible, setTutorialVisible] = useState(true);
@@ -187,6 +188,11 @@ export default function App() {
   );
 
   useKeyboardCommands({ dispatch: dispatchAppCommand });
+
+  useEffect(() => {
+    if (!melodyEditorIsOpen) return;
+    void audioEngine.startAudio();
+  }, [melodyEditorIsOpen]);
 
   const advanceTutorialToStep = useCallback((stepId) => {
     const stepIndex = getTutorialStepIndex(stepId);

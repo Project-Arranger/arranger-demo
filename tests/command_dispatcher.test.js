@@ -163,6 +163,40 @@ test('domain commands dispatch to injected handlers with drums naming', async ()
   ]);
 });
 
+test('lead noteOn prioritizes audio before editor recording handlers', async () => {
+  const calls = [];
+  const handlers = {
+    lead: {
+      noteOn: (command) => calls.push(['handler.lead.noteOn', command.note]),
+    },
+  };
+  const audio = {
+    triggerLeadNote: (note, duration) => calls.push(['audio.triggerLeadNote', note, duration]),
+  };
+
+  await dispatchCommand({ type: 'lead.noteOn', note: 'C4' }, { handlers, audio });
+
+  assert.deepEqual(calls, [
+    ['audio.triggerLeadNote', 'C4', '16n'],
+    ['handler.lead.noteOn', 'C4'],
+  ]);
+});
+
+test('lead noteOn still records when audio preview is unavailable', async () => {
+  const calls = [];
+  const handlers = {
+    lead: {
+      noteOn: (command) => calls.push(['handler.lead.noteOn', command.note]),
+    },
+  };
+
+  await dispatchCommand({ type: 'lead.noteOn', note: 'C4' }, { handlers });
+
+  assert.deepEqual(calls, [
+    ['handler.lead.noteOn', 'C4'],
+  ]);
+});
+
 test('createCommandDispatcher binds dependencies', async () => {
   const store = createMockStore();
   const dispatch = createCommandDispatcher({ store });

@@ -262,6 +262,76 @@ test('AudioEngine starts audio and triggers lead sampler notes', async () => {
   ]);
 });
 
+test('AudioEngine schedules lead preview after audio startup completes', async () => {
+  let now = 7;
+  const tone = createFakeTone();
+  tone.now = () => now;
+  tone.start = async () => {
+    tone.calls.push(['tone.start']);
+    now = 8;
+  };
+  const engine = new AudioEngine({
+    tone,
+    playerFactory: createPlayerFactory(tone.calls),
+    samplerFactory: createSamplerFactory(tone.calls),
+  });
+
+  assert.equal(await engine.triggerLeadNote('C4', '16n'), true);
+
+  assert.deepEqual(tone.calls.filter(([name]) => name === 'sampler.triggerAttackRelease'), [
+    [
+      'sampler.triggerAttackRelease',
+      'C4',
+      '16n',
+      8,
+      {
+        C3: '/samples/lead/Lead C3.wav',
+        D3: '/samples/lead/Lead D3.wav',
+        E3: '/samples/lead/Lead E3.wav',
+        F3: '/samples/lead/Lead F3.wav',
+        G3: '/samples/lead/Lead G3.wav',
+        A3: '/samples/lead/Lead A3.wav',
+        B3: '/samples/lead/Lead B3.wav',
+      },
+    ],
+  ]);
+});
+
+test('AudioEngine respects explicit lead preview times', async () => {
+  let now = 7;
+  const tone = createFakeTone();
+  tone.now = () => now;
+  tone.start = async () => {
+    tone.calls.push(['tone.start']);
+    now = 8;
+  };
+  const engine = new AudioEngine({
+    tone,
+    playerFactory: createPlayerFactory(tone.calls),
+    samplerFactory: createSamplerFactory(tone.calls),
+  });
+
+  assert.equal(await engine.triggerLeadNote('C4', '16n', 12), true);
+
+  assert.deepEqual(tone.calls.filter(([name]) => name === 'sampler.triggerAttackRelease'), [
+    [
+      'sampler.triggerAttackRelease',
+      'C4',
+      '16n',
+      12,
+      {
+        C3: '/samples/lead/Lead C3.wav',
+        D3: '/samples/lead/Lead D3.wav',
+        E3: '/samples/lead/Lead E3.wav',
+        F3: '/samples/lead/Lead F3.wav',
+        G3: '/samples/lead/Lead G3.wav',
+        A3: '/samples/lead/Lead A3.wav',
+        B3: '/samples/lead/Lead B3.wav',
+      },
+    ],
+  ]);
+});
+
 test('AudioEngine uses synth fallback when drum samples cannot load', async () => {
   const tone = createFakeTone();
   const fallbackCalls = [];

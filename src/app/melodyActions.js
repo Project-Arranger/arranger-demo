@@ -1,4 +1,5 @@
 import { MELODY_NOTE_IDS } from '../data/melodyScales.js';
+import { STEPS_PER_BAR } from '../domain/musicConstants.js';
 
 function isValidMelodyNote(note) {
   return MELODY_NOTE_IDS.includes(note);
@@ -37,10 +38,43 @@ function clearMelodyBar(matrix, bar) {
   return nextMatrix;
 }
 
+function getOpenMelodyClip(state) {
+  const clip = state?.clips?.byId?.[state.selectedClipId];
+  if (state?.activeTrackId !== 'lead' || clip?.trackId !== 'lead') return null;
+  return clip;
+}
+
+function recordMelodyKeyInput(store, note) {
+  const state = store?.getState?.();
+  const clip = getOpenMelodyClip(state);
+  const step = state?.currentStep;
+  const nextCell = createMelodyCell(note);
+
+  if (
+    !clip
+    || !nextCell
+    || !Number.isInteger(step)
+    || step < 0
+    || step >= STEPS_PER_BAR
+    || typeof state.setCell !== 'function'
+  ) {
+    return false;
+  }
+
+  state.setCell('lead', clip.bar, step, nextCell);
+
+  if (!state.isPlaying && typeof store.getState().setTransportPosition === 'function') {
+    store.getState().setTransportPosition(clip.bar, Math.min(step + 1, STEPS_PER_BAR - 1));
+  }
+
+  return true;
+}
+
 export {
   clearMelodyBar,
   createMelodyCell,
   isMelodyCellActive,
   isValidMelodyNote,
+  recordMelodyKeyInput,
   toggleMelodyCell,
 };
