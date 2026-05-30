@@ -765,10 +765,77 @@ button {
   cursor: pointer;
 }
 
+.track-main-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
 .track-name {
+  overflow: hidden;
   color: var(--ink);
   font-size: 13.5px;
   font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fill-empty-clips {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 92px;
+  height: 28px;
+  gap: 6px;
+  padding: 0 8px;
+  color: var(--track-ink, var(--ink-3));
+  background: color-mix(in oklab, var(--track-color, var(--surface)) 58%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--track-ink, var(--border)) 16%, transparent);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease,
+    transform 0.12s ease;
+  white-space: nowrap;
+}
+
+.fill-empty-clips:hover:not(:disabled),
+.fill-empty-clips:focus-visible:not(:disabled) {
+  color: var(--track-ink, var(--ink));
+  background: color-mix(in oklab, var(--track-color, var(--surface)) 82%, white);
+  border-color: color-mix(in oklab, var(--track-ink, var(--border)) 28%, transparent);
+}
+
+.fill-empty-clips:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--track-ink, var(--brand)) 36%, transparent);
+  outline-offset: 2px;
+}
+
+.fill-empty-clips:disabled {
+  cursor: default;
+  opacity: 0.48;
+}
+
+.fill-empty-clips-icon {
+  display: grid;
+  grid-template-columns: repeat(2, 4px);
+  grid-template-rows: repeat(2, 4px);
+  gap: 2px;
+  flex: 0 0 auto;
+}
+
+.fill-empty-clips-icon span {
+  width: 4px;
+  height: 4px;
+  background: currentColor;
+  border-radius: 1px;
 }
 
 .vol {

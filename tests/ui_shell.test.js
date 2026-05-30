@@ -13,6 +13,10 @@ import {
 test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async () => {
   const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
   const timelineSource = await readFile(new URL('../src/app/components/Timeline.jsx', import.meta.url), 'utf8');
+  const tracksColumnSource = await readFile(
+    new URL('../src/app/components/TracksColumn.jsx', import.meta.url),
+    'utf8',
+  );
   const topBarSource = await readFile(new URL('../src/app/components/TopBar.jsx', import.meta.url), 'utf8');
   const uiDataSource = await readFile(new URL('../src/app/uiShellData.js', import.meta.url), 'utf8');
 
@@ -64,9 +68,17 @@ test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async
   assert.match(source, /clips/);
   assert.match(source, /getClipForTrackBar/);
   assert.match(source, /createClip\(trackId,\s*barIndex\)/);
+  assert.match(source, /handleFillEmptyTrackClips/);
+  assert.match(source, /createEmptyClipsForTrack\(trackId\)/);
+  assert.match(source, /onFillEmptyTrackClips:\s*handleFillEmptyTrackClips/);
   assert.match(source, /selectClip\(clipId\)/);
   assert.doesNotMatch(source, /track\.clipName/);
   assert.doesNotMatch(uiDataSource, /trackClips|clipName|selected:/);
+  assert.match(tracksColumnSource, /onFillEmptyTrackClips/);
+  assert.match(tracksColumnSource, /onFillEmptyTrackClips\(track\.id\)/);
+  assert.match(tracksColumnSource, /补齐空Clip/);
+  assert.match(tracksColumnSource, /aria-label="补齐这一轨缺失的空 clips"/);
+  assert.doesNotMatch(tracksColumnSource, /\+8|铺满/);
 
   assert.deepEqual(TRACK_UI.map((track) => track.id), TRACK_IDS);
   assert.equal(TRACK_UI.every((track) => !Object.hasOwn(track, 'clipName')), true);

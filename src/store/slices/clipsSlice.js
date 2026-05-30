@@ -116,6 +116,38 @@ export default function createClipsSlice(set, get) {
       return clip;
     },
 
+    createEmptyClipsForTrack: (trackId) => {
+      if (!TRACK_IDS.includes(trackId)) return [];
+
+      const state = get();
+      const createdClips = Array.from({ length: TOTAL_BARS }, (_, bar) => bar)
+        .filter((bar) => !findClipForTrackBar(state.clips, trackId, bar))
+        .map((bar) => createClipRecord(trackId, bar));
+      const selectedClip = findClipForTrackBar(state.clips, trackId, 0)
+        ?? createdClips.find((clip) => clip.bar === 0)
+        ?? null;
+
+      if (!createdClips.length) {
+        if (selectedClip) get().selectClip(selectedClip.id);
+        return createdClips;
+      }
+
+      set({
+        activeTrackId: trackId,
+        selectedBar: selectedClip?.bar ?? 0,
+        selectedClipId: selectedClip?.id ?? null,
+        clips: {
+          ids: [...state.clips.ids, ...createdClips.map((clip) => clip.id)],
+          byId: {
+            ...state.clips.byId,
+            ...Object.fromEntries(createdClips.map((clip) => [clip.id, clip])),
+          },
+        },
+      });
+
+      return createdClips;
+    },
+
     renameClip: (clipId, name) => {
       if (typeof name !== 'string') return null;
 

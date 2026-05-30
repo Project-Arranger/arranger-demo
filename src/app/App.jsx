@@ -373,6 +373,11 @@ export default function App() {
     useMusicStore.getState().createClip(trackId, barIndex);
   }, []);
 
+  const handleFillEmptyTrackClips = useCallback((trackId) => {
+    if (tutorialVisible && tutorialViewModel.locked) return;
+    useMusicStore.getState().createEmptyClipsForTrack(trackId);
+  }, [tutorialViewModel.locked, tutorialVisible]);
+
   const handleTrackVolumeChange = useCallback((trackId, volume) => {
     useMusicStore.getState().setTrackVolume(trackId, volume);
   }, []);
@@ -914,6 +919,8 @@ export default function App() {
       <main className="workspace">
         {createElement(TracksColumn, {
           activeTrackId,
+          fillEmptyClipsDisabled: tutorialVisible && tutorialViewModel.locked,
+          onFillEmptyTrackClips: handleFillEmptyTrackClips,
           onTrackSelect: handleTrackSelect,
           onVolumeChange: handleTrackVolumeChange,
           ref: tracksScrollRef,

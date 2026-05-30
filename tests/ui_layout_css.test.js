@@ -100,6 +100,19 @@ test('timeline clips and add controls inherit the left track color map', async (
   assert.match(css, /\.add-clip\s*\{[^}]*background:\s*color-mix\(in oklab,\s*var\(--track-color,\s*var\(--surface\)\)/s);
 });
 
+test('track fill-empty clip button is compact and inherits track color', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.track-main-row\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) auto;/s);
+  assert.match(css, /\.fill-empty-clips\s*\{[^}]*height:\s*28px;/s);
+  assert.match(css, /\.fill-empty-clips\s*\{[^}]*min-width:\s*92px;/s);
+  assert.match(css, /\.fill-empty-clips\s*\{[^}]*color:\s*var\(--track-ink,\s*var\(--ink-3\)\);/s);
+  assert.match(css, /\.fill-empty-clips\s*\{[^}]*background:\s*color-mix\(in oklab,\s*var\(--track-color,\s*var\(--surface\)\)/s);
+  assert.match(css, /\.fill-empty-clips:hover:not\(:disabled\),\s*\n\.fill-empty-clips:focus-visible:not\(:disabled\)\s*\{/s);
+  assert.match(css, /\.fill-empty-clips-icon\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*4px\);/s);
+  assert.match(css, /\.fill-empty-clips-icon span\s*\{[^}]*background:\s*currentColor;/s);
+});
+
 test('timeline drag and swap feedback is visually prominent', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 

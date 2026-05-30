@@ -16,6 +16,8 @@ import { TRACK_ICONS, renderIcon } from './icons.js';
 
 function TrackRow({
   active,
+  fillEmptyClipsDisabled = false,
+  onFillEmptyTrackClips = () => {},
   onSelect,
   onVolumeChange = () => {},
   track,
@@ -84,6 +86,14 @@ function TrackRow({
   const stopVolumeEventPropagation = (event) => {
     event.stopPropagation();
   };
+  const handleTrackSelect = (event) => {
+    event.stopPropagation();
+    onSelect(track.id);
+  };
+  const handleFillEmptyClips = (event) => {
+    event.stopPropagation();
+    onFillEmptyTrackClips(track.id);
+  };
 
   return (
     <div
@@ -91,17 +101,35 @@ function TrackRow({
       data-type={track.id}
       onClick={() => onSelect(track.id)}
     >
-      <button
-        className="track-select"
-        type="button"
-        aria-pressed={active}
-        onClick={() => onSelect(track.id)}
-      >
-        <span className="ic">
-          {renderIcon(Icon)}
-        </span>
-        <span className="track-name">{track.label}</span>
-      </button>
+      <div className="track-main-row">
+        <button
+          className="track-select"
+          type="button"
+          aria-pressed={active}
+          onClick={handleTrackSelect}
+        >
+          <span className="ic">
+            {renderIcon(Icon)}
+          </span>
+          <span className="track-name">{track.label}</span>
+        </button>
+        <button
+          className="fill-empty-clips"
+          type="button"
+          aria-label="补齐这一轨缺失的空 clips"
+          title="补齐这一轨缺失的空 clips"
+          disabled={fillEmptyClipsDisabled}
+          onClick={handleFillEmptyClips}
+        >
+          <span className="fill-empty-clips-icon" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+            <span />
+          </span>
+          <span className="fill-empty-clips-label">补齐空Clip</span>
+        </button>
+      </div>
       <label
         className="vol"
         onClick={stopVolumeEventPropagation}
@@ -139,6 +167,8 @@ function TrackRow({
 const TracksColumn = forwardRef(function TracksColumn(
   {
     activeTrackId,
+    fillEmptyClipsDisabled = false,
+    onFillEmptyTrackClips,
     onTrackSelect,
     onVolumeChange,
     tracks,
@@ -160,7 +190,9 @@ const TracksColumn = forwardRef(function TracksColumn(
       <div className="tracks-list" ref={scrollRef}>
         {tracks.map((track) => createElement(TrackRow, {
           active: track.id === activeTrackId,
+          fillEmptyClipsDisabled,
           key: track.id,
+          onFillEmptyTrackClips,
           onSelect: onTrackSelect,
           onVolumeChange,
           track,
