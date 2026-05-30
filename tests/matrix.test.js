@@ -45,8 +45,8 @@ test('music constants describe the v0.22 drums-based arrangement model', () => {
   assert.equal(BEATS_PER_BAR, 4);
   assert.equal(CHORD_SPAN, 4);
   assert.equal(EIGHTH_STEPS_PER_BAR, 8);
-  assert.deepEqual(TRACK_IDS, ['drums', 'bass', 'chord', 'lead', 'pad', 'vocal', 'sample']);
-  assert.deepEqual(CORE_TRACK_IDS, ['drums', 'bass', 'chord', 'lead']);
+  assert.deepEqual(TRACK_IDS, ['drums', 'chord', 'bass', 'lead', 'pad', 'vocal', 'sample']);
+  assert.deepEqual(CORE_TRACK_IDS, ['drums', 'chord', 'bass', 'lead']);
   assert.deepEqual(OPTIONAL_TRACK_IDS, ['pad', 'vocal', 'sample']);
   assert.deepEqual(DRUMS_INSTRUMENT_IDS, ['kick', 'snare', 'hihat']);
   assert.equal(DEFAULT_BPM, 120);
@@ -62,7 +62,7 @@ test('drums notes exports use drums naming and 16 columns', () => {
   );
 });
 
-test('createInitialMatrix creates seven tracks with eight bars and sixteen empty steps', () => {
+test('createInitialMatrix creates all core and optional tracks with eight bars and sixteen empty steps', () => {
   const matrix = createInitialMatrix();
 
   assert.deepEqual(Object.keys(matrix), TRACK_IDS);
@@ -102,11 +102,30 @@ test('store starts with transport, context, volumes, and matrix defaults', () =>
   assert.equal(state.seekBar, 0);
   assert.equal(state.seekStep, 0);
   assert.equal(state.activeTrackId, 'drums');
+  assert.deepEqual(state.visibleTrackIds, CORE_TRACK_IDS);
   assert.equal(state.selectedBar, 0);
   assert.equal(state.selectedClipId, null);
   assert.deepEqual(Object.keys(state.volumes), TRACK_IDS);
   assert.equal(Object.values(state.volumes).every((volume) => volume === 0), true);
   assert.equal(everyCell(state.matrix, (cell) => cell === null), true);
+});
+
+test('addVisibleTrack adds optional tracks once and selects the new row', () => {
+  const store = useMusicStore.getState();
+
+  assert.equal(store.addVisibleTrack('vocal'), 'vocal');
+
+  let state = useMusicStore.getState();
+  assert.deepEqual(state.visibleTrackIds, ['drums', 'chord', 'bass', 'lead', 'vocal']);
+  assert.equal(state.activeTrackId, 'vocal');
+  assert.equal(state.selectedClipId, null);
+
+  assert.equal(state.addVisibleTrack('vocal'), null);
+  state = useMusicStore.getState();
+  assert.deepEqual(state.visibleTrackIds, ['drums', 'chord', 'bass', 'lead', 'vocal']);
+
+  assert.equal(state.addVisibleTrack('unknown'), null);
+  assert.deepEqual(useMusicStore.getState().visibleTrackIds, ['drums', 'chord', 'bass', 'lead', 'vocal']);
 });
 
 test('setTrackVolume updates one track and clamps values to the supported range', () => {

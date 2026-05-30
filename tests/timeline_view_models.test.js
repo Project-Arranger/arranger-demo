@@ -136,9 +136,6 @@ test('createTimelineTracks uses live store volumes for the left track controls',
       bass: -3,
       chord: 0,
       lead: 0,
-      pad: 0,
-      vocal: 0,
-      sample: 0,
     },
   });
   const drums = tracks.find((track) => track.id === 'drums');

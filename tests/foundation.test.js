@@ -1,6 +1,9 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import {
+  CHORD_GRID_PITCHES,
+} from '../src/domain/chordCells.js';
 
 const requiredFiles = [
   'src/data/chords.js',
@@ -16,5 +19,23 @@ const requiredFiles = [
 test('foundation assets and music data are present', () => {
   for (const file of requiredFiles) {
     assert.equal(existsSync(file), true, `${file} should exist`);
+  }
+});
+
+test('generated bass samples cover the three-octave chord pitch rail', async () => {
+  const generator = await import('../scripts/generate-bass-samples.mjs');
+  const pitchLabels = CHORD_GRID_PITCHES.map((pitch) => pitch.label);
+
+  assert.deepEqual(generator.getGeneratedBassSampleNotes(), pitchLabels);
+  assert.equal(generator.getGeneratedBassSampleFileName('F#3'), 'Bass_FSharp3.wav');
+  assert.equal(generator.getGeneratedBassSampleFileName('A#4'), 'Bass_ASharp4.wav');
+
+  for (const note of pitchLabels) {
+    const file = `public/samples/bass/generated/${generator.getGeneratedBassSampleFileName(note)}`;
+    assert.equal(existsSync(file), true, `${file} should exist`);
+
+    const header = readFileSync(file).subarray(0, 12);
+    assert.equal(header.subarray(0, 4).toString('ascii'), 'RIFF');
+    assert.equal(header.subarray(8, 12).toString('ascii'), 'WAVE');
   }
 });

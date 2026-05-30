@@ -199,3 +199,57 @@ test('createClip ignores invalid bars', () => {
   assert.equal(useMusicStore.getState().createClip('bass', 1.5), null);
   assert.deepEqual(useMusicStore.getState().clips, before);
 });
+
+test('createEmptyClipsForTrack creates eight empty Melody clips and selects bar 1', () => {
+  const createdClips = useMusicStore.getState().createEmptyClipsForTrack('lead');
+  const state = useMusicStore.getState();
+
+  assert.equal(createdClips.length, 8);
+  assert.deepEqual(
+    createdClips.map((clip) => clip.id),
+    Array.from({ length: 8 }, (_, bar) => `lead-bar-${bar}`),
+  );
+  assert.deepEqual(
+    state.clips.ids.filter((id) => id.startsWith('lead-bar-')),
+    Array.from({ length: 8 }, (_, bar) => `lead-bar-${bar}`),
+  );
+  assert.equal(state.matrix.lead.every((bar) => bar.every((cell) => cell === null)), true);
+  assert.equal(state.selectedClipId, 'lead-bar-0');
+  assert.equal(state.activeTrackId, 'lead');
+  assert.equal(state.selectedBar, 0);
+});
+
+test('createEmptyClipsForTrack skips existing clips and preserves matrix content', () => {
+  const state = useMusicStore.getState();
+  state.createClip('lead', 3);
+  state.renameClip('lead-bar-3', 'Custom Melody');
+  state.setCell('lead', 3, 4, { type: 'melody', note: 'E4' });
+
+  const createdClips = useMusicStore.getState().createEmptyClipsForTrack('lead');
+  const nextState = useMusicStore.getState();
+
+  assert.equal(createdClips.length, 7);
+  assert.equal(nextState.clips.ids.filter((id) => id.startsWith('lead-bar-')).length, 8);
+  assert.deepEqual(nextState.getClipForTrackBar('lead', 3), {
+    id: 'lead-bar-3',
+    trackId: 'lead',
+    bar: 3,
+    name: 'Custom Melody',
+    customName: true,
+  });
+  assert.deepEqual(nextState.matrix.lead[3][4], { type: 'melody', note: 'E4' });
+  assert.equal(nextState.matrix.lead[0].every((cell) => cell === null), true);
+  assert.equal(nextState.selectedClipId, 'lead-bar-0');
+  assert.equal(nextState.selectedBar, 0);
+});
+
+test('createEmptyClipsForTrack ignores invalid track ids without changing state', () => {
+  const beforeClips = structuredClone(useMusicStore.getState().clips);
+  const beforeMatrix = structuredClone(useMusicStore.getState().matrix);
+
+  const createdClips = useMusicStore.getState().createEmptyClipsForTrack('unknown-track');
+
+  assert.deepEqual(createdClips, []);
+  assert.deepEqual(useMusicStore.getState().clips, beforeClips);
+  assert.deepEqual(useMusicStore.getState().matrix, beforeMatrix);
+});

@@ -6,15 +6,15 @@ const EIGHTH_STEPS_PER_BAR = 8;
 
 const TRACK_IDS = Object.freeze([
   'drums',
-  'bass',
   'chord',
+  'bass',
   'lead',
   'pad',
   'vocal',
   'sample',
 ]);
 
-const CORE_TRACK_IDS = Object.freeze(['drums', 'bass', 'chord', 'lead']);
+const CORE_TRACK_IDS = Object.freeze(['drums', 'chord', 'bass', 'lead']);
 const OPTIONAL_TRACK_IDS = Object.freeze(['pad', 'vocal', 'sample']);
 const DRUMS_INSTRUMENT_IDS = Object.freeze(['kick', 'snare', 'hihat']);
 

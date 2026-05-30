@@ -29,6 +29,12 @@ import { DRUMS_TUTORIAL_STEPS } from '../tutorial/drumsTutorialSteps.js';
 import { TUTORIAL_STEP_IDS } from '../tutorial/tutorialStepIds.js';
 import { createUiAudioDispatcher } from './audioUiBridge.js';
 import {
+  applyBassGrooveTemplateToBar,
+  clearBassBar,
+  createBassPreviewEvents,
+  toggleBassCell,
+} from './bassActions.js';
+import {
   applyChordTemplateToExistingClips,
   clearChordBar,
   clearChordCell,
@@ -70,7 +76,8 @@ import { syncTrackScrollContainers } from './syncTrackScroll.js';
 import { syncEditorToTutorialSuggestedBar } from './tutorialEditorSync.js';
 import {
   BAR_NUMBERS,
-  TRACK_UI,
+  getTrackUiByIds,
+  OPTIONAL_TRACK_UI,
 } from './uiShellData.js';
 
 const TUTORIAL_COMPLETION_STEP_BY_TASK = Object.freeze({
@@ -159,6 +166,7 @@ export default function App() {
   const selectedClipId = useMusicStore((state) => state.selectedClipId);
   const clips = useMusicStore((state) => state.clips);
   const volumes = useMusicStore((state) => state.volumes);
+  const visibleTrackIds = useMusicStore((state) => state.visibleTrackIds);
   const melodyEditorIsOpen = activeTrackId === 'lead' && selectedClipId;
   const [currentTutorialStepIndex, setCurrentTutorialStepIndex] = useState(0);
   const [tutorialProgress, setTutorialProgress] = useState(() => createTutorialState());
@@ -345,14 +353,18 @@ export default function App() {
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY });
   }, [dispatchAppCommand]);
 
+  const visibleTrackUi = useMemo(() => getTrackUiByIds(visibleTrackIds), [visibleTrackIds]);
+  const availableAddTrackOptions = useMemo(() => (
+    OPTIONAL_TRACK_UI.filter((track) => !visibleTrackIds.includes(track.id))
+  ), [visibleTrackIds]);
   const tracks = useMemo(() => createTimelineTracks({
     barNumbers: BAR_NUMBERS,
     clips,
     matrix,
     selectedBar,
-    trackUi: TRACK_UI,
+    trackUi: visibleTrackUi,
     volumes,
-  }), [clips, matrix, selectedBar, volumes]);
+  }), [clips, matrix, selectedBar, visibleTrackUi, volumes]);
   const selectedClip = selectedClipId ? clips.byId[selectedClipId] : null;
 
   const handleTrackSelect = useCallback((trackId, barIndex = selectedBar) => {
@@ -371,6 +383,15 @@ export default function App() {
 
   const handleAddClip = useCallback((trackId, barIndex) => {
     useMusicStore.getState().createClip(trackId, barIndex);
+  }, []);
+
+  const handleFillEmptyTrackClips = useCallback((trackId) => {
+    if (tutorialVisible && tutorialViewModel.locked) return;
+    useMusicStore.getState().createEmptyClipsForTrack(trackId);
+  }, [tutorialViewModel.locked, tutorialVisible]);
+
+  const handleAddTrack = useCallback((trackId) => {
+    useMusicStore.getState().addVisibleTrack(trackId);
   }, []);
 
   const handleTrackVolumeChange = useCallback((trackId, volume) => {
@@ -732,6 +753,47 @@ export default function App() {
     useMusicStore.getState().clearTrack('chord');
   }, []);
 
+  const handleBassStepToggle = useCallback((step, note) => {
+    const state = useMusicStore.getState();
+    const nextMatrix = toggleBassCell(state.matrix, selectedBar, step, note);
+    state.setCell('bass', selectedBar, step, nextMatrix.bass[selectedBar][step]);
+    void audioEngine.triggerBassNote(note, '16n');
+  }, [selectedBar]);
+
+  const handleBassPreview = useCallback((note) => {
+    void audioEngine.triggerBassNote(note, '16n');
+  }, []);
+
+  const handleBassGrooveTemplatePreview = useCallback((templateId) => {
+    const state = useMusicStore.getState();
+    const events = createBassPreviewEvents(state.matrix, selectedBar, templateId);
+    if (!events.length) return;
+
+    void audioEngine.previewBassPattern(events);
+  }, [selectedBar]);
+
+  const handleBassGrooveTemplateApply = useCallback((templateId) => {
+    const state = useMusicStore.getState();
+    const nextMatrix = applyBassGrooveTemplateToBar(state.matrix, selectedBar, templateId);
+
+    nextMatrix.bass[selectedBar].forEach((cell, step) => {
+      state.setCell('bass', selectedBar, step, cell);
+    });
+  }, [selectedBar]);
+
+  const handleClearBassBar = useCallback(() => {
+    const state = useMusicStore.getState();
+    const nextMatrix = clearBassBar(state.matrix, selectedBar);
+
+    nextMatrix.bass[selectedBar].forEach((cell, step) => {
+      state.setCell('bass', selectedBar, step, cell);
+    });
+  }, [selectedBar]);
+
+  const handleClearBass = useCallback(() => {
+    useMusicStore.getState().clearTrack('bass');
+  }, []);
+
   const handleMelodyStepToggle = useCallback((step, note) => {
     const state = useMusicStore.getState();
     const nextMatrix = toggleMelodyCell(state.matrix, selectedBar, step, note);
@@ -914,6 +976,10 @@ export default function App() {
       <main className="workspace">
         {createElement(TracksColumn, {
           activeTrackId,
+          addTrackOptions: availableAddTrackOptions,
+          fillEmptyClipsDisabled: tutorialVisible && tutorialViewModel.locked,
+          onAddTrack: handleAddTrack,
+          onFillEmptyTrackClips: handleFillEmptyTrackClips,
           onTrackSelect: handleTrackSelect,
           onVolumeChange: handleTrackVolumeChange,
           ref: tracksScrollRef,
@@ -967,7 +1033,13 @@ export default function App() {
         onChordGrooveTemplateApply: handleChordGrooveTemplateApply,
         onChordTemplatePreview: handleChordTemplatePreview,
         onChordTemplateApply: handleChordTemplateApply,
+        onBassPreview: handleBassPreview,
+        onBassStepToggle: handleBassStepToggle,
+        onBassGrooveTemplatePreview: handleBassGrooveTemplatePreview,
+        onBassGrooveTemplateApply: handleBassGrooveTemplateApply,
         onCloseEditor: handleCloseEditor,
+        onClearBass: handleClearBass,
+        onClearBassBar: handleClearBassBar,
         onClearMelody: handleClearMelody,
         onClearMelodyBar: handleClearMelodyBar,
         onMelodyPreview: handleMelodyPreview,

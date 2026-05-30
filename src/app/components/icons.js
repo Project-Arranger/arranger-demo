@@ -1,10 +1,10 @@
 import { createElement } from 'react';
 import {
   AudioLines,
-  Boxes,
+  Disc3,
   Drum,
-  Layers,
-  Mic,
+  KeyboardMusic,
+  MicVocal,
   Music,
   Piano,
 } from 'lucide-react';
@@ -14,9 +14,9 @@ const TRACK_ICONS = {
   bass: Music,
   chord: Piano,
   lead: AudioLines,
-  pad: Layers,
-  vocal: Mic,
-  sample: Boxes,
+  pad: KeyboardMusic,
+  sample: Disc3,
+  vocal: MicVocal,
 };
 
 function renderIcon(Icon, props = {}) {

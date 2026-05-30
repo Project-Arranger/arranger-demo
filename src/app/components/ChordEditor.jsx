@@ -13,7 +13,6 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react';
 import {
@@ -36,6 +35,7 @@ import {
   isChordCellActive,
 } from '../../domain/chordCells.js';
 import { CHORD_GROOVE_TEMPLATES } from '../chordGrooveActions.js';
+import { usePitchScrollSync } from '../usePitchScrollSync.js';
 import { ClipNameInput } from './ClipNameInput.jsx';
 import { renderIcon } from './icons.js';
 
@@ -44,15 +44,6 @@ const ADD_CHORD_PANEL_WIDTH = 760;
 const VIEWPORT_MARGIN = 16;
 const PANEL_GAP = 12;
 const GROOVE_STEPS_PER_BEAT = 4;
-
-function getMaxPitchScroll(viewport) {
-  return viewport ? Math.max(0, viewport.scrollHeight - viewport.clientHeight) : 0;
-}
-
-function getOctavePitchScrollStep(viewport) {
-  const maxScroll = getMaxPitchScroll(viewport);
-  return maxScroll > 0 ? maxScroll / 2 : 0;
-}
 
 function getNextChordCell(matrix, selectedBar, spanIndex) {
   const chordBars = matrix?.chord ?? [];
@@ -342,15 +333,6 @@ function ChordEditor({
   const [selectedGrooveTemplateId, setSelectedGrooveTemplateId] = useState('block-basic');
   const [addChordPanel, setAddChordPanel] = useState(null);
   const [activeChordTab, setActiveChordTab] = useState('diatonic');
-  const scalePitchViewportRef = useRef(null);
-  const beatCellsViewportRefs = useRef([]);
-  const pitchScrollTopRef = useRef(0);
-  const syncPitchScrollGuardRef = useRef(false);
-  const syncPitchScrollFrameRef = useRef(null);
-  const syncPitchScrollSourceRef = useRef(null);
-  const hasInitializedPitchScrollRef = useRef(false);
-  const [pitchScrollTop, setPitchScrollTop] = useState(0);
-  const [pitchMaxScroll, setPitchMaxScroll] = useState(0);
   const templates = useMemo(() => Object.values(CHORD_TEMPLATES), []);
   const pageCount = Math.ceil(templates.length / TEMPLATE_PAGE_SIZE);
   const chordPickerOpen = pickerMode === 'chord';
@@ -361,82 +343,16 @@ function ChordEditor({
   );
   const primaryChordLabel = getChordBarDisplayLabel(matrix, selectedBar);
   const beatDisplaySegments = getChordBeatDisplaySegments(matrix, selectedBar);
-
-  const setBeatCellsViewportRef = useCallback((spanIndex, viewport) => {
-    beatCellsViewportRefs.current[spanIndex] = viewport;
-    if (viewport) viewport.scrollTop = pitchScrollTopRef.current;
-  }, []);
-
-  const syncPitchScroll = useCallback((nextScrollTop, sourceViewport = null) => {
-    const scaleViewport = scalePitchViewportRef.current;
-    const fallbackViewport = beatCellsViewportRefs.current.find(Boolean);
-    const scrollViewport = scaleViewport ?? fallbackViewport;
-    const maxScroll = getMaxPitchScroll(scrollViewport);
-    const clampedScrollTop = Math.max(0, Math.min(maxScroll, nextScrollTop));
-    const viewports = [scaleViewport, ...beatCellsViewportRefs.current].filter(Boolean);
-
-    setPitchMaxScroll((currentMaxScroll) => (
-      Math.abs(currentMaxScroll - maxScroll) > 0.5 ? maxScroll : currentMaxScroll
-    ));
-    pitchScrollTopRef.current = clampedScrollTop;
-    syncPitchScrollGuardRef.current = true;
-    syncPitchScrollSourceRef.current = sourceViewport;
-    viewports.forEach((viewport) => {
-      if (Math.abs(viewport.scrollTop - clampedScrollTop) > 0.5) {
-        viewport.scrollTop = clampedScrollTop;
-      }
-    });
-
-    if (typeof window !== 'undefined' && window.requestAnimationFrame) {
-      if (syncPitchScrollFrameRef.current) {
-        window.cancelAnimationFrame(syncPitchScrollFrameRef.current);
-      }
-      syncPitchScrollFrameRef.current = window.requestAnimationFrame(() => {
-        syncPitchScrollGuardRef.current = false;
-        syncPitchScrollSourceRef.current = null;
-        syncPitchScrollFrameRef.current = null;
-      });
-    } else {
-      syncPitchScrollGuardRef.current = false;
-      syncPitchScrollSourceRef.current = null;
-    }
-
-    setPitchScrollTop((currentScrollTop) => (
-      Math.abs(currentScrollTop - clampedScrollTop) > 0.5 ? clampedScrollTop : currentScrollTop
-    ));
-  }, []);
-
-  const handlePitchViewportScroll = useCallback((event) => {
-    if (
-      syncPitchScrollGuardRef.current
-      && syncPitchScrollSourceRef.current !== event.currentTarget
-    ) {
-      return;
-    }
-    syncPitchScroll(event.currentTarget.scrollTop, event.currentTarget);
-    setAddChordPanel(null);
-  }, [syncPitchScroll]);
-
-  const handlePitchWheel = useCallback((event) => {
-    if (!event.deltaY) return;
-    if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
-
-    event.preventDefault();
-    setAddChordPanel(null);
-    syncPitchScroll(pitchScrollTopRef.current + event.deltaY);
-  }, [syncPitchScroll]);
-
-  const scrollPitchByOctave = useCallback((direction) => {
-    const scrollViewport = scalePitchViewportRef.current ?? beatCellsViewportRefs.current.find(Boolean);
-    const octaveStep = getOctavePitchScrollStep(scrollViewport);
-    if (!octaveStep) return;
-
-    setAddChordPanel(null);
-    syncPitchScroll(pitchScrollTopRef.current + direction * octaveStep);
-  }, [syncPitchScroll]);
-
-  const canScrollPitchUp = pitchScrollTop > 1;
-  const canScrollPitchDown = pitchMaxScroll - pitchScrollTop > 1;
+  const closeAddChordPanel = useCallback(() => setAddChordPanel(null), []);
+  const {
+    canScrollPitchDown,
+    canScrollPitchUp,
+    handlePitchViewportScroll,
+    handlePitchWheel,
+    scalePitchViewportRef,
+    scrollPitchByOctave,
+    setBeatCellsViewportRef,
+  } = usePitchScrollSync({ onPitchInteraction: closeAddChordPanel });
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -447,26 +363,6 @@ function ChordEditor({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  useEffect(() => {
-    if (hasInitializedPitchScrollRef.current) return;
-
-    const scaleViewport = scalePitchViewportRef.current;
-    if (!scaleViewport) return;
-
-    hasInitializedPitchScrollRef.current = true;
-    syncPitchScroll(getOctavePitchScrollStep(scaleViewport));
-  }, [syncPitchScroll]);
-
-  useEffect(() => () => {
-    if (
-      syncPitchScrollFrameRef.current
-      && typeof window !== 'undefined'
-      && window.cancelAnimationFrame
-    ) {
-      window.cancelAnimationFrame(syncPitchScrollFrameRef.current);
-    }
   }, []);
 
   useEffect(() => {

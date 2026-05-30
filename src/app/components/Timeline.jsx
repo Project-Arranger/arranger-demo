@@ -336,7 +336,7 @@ const Timeline = forwardRef(function Timeline(
       ].filter(Boolean).join(' ')}
       data-tutorial-target="track-area"
       ref={scrollRef}
-      style={{ '--bars': TOTAL_BARS }}
+      style={{ '--bars': TOTAL_BARS, '--track-count': tracks.length }}
     >
       <div className="ruler" aria-label="Timeline bars" ref={rulerRef}>
         {BAR_NUMBERS.map((barNumber) => (
@@ -465,6 +465,7 @@ const Timeline = forwardRef(function Timeline(
           />
         </div>
       </div>
+      <div className="timeline-footer-spacer" aria-hidden="true" />
     </section>
   );
 });

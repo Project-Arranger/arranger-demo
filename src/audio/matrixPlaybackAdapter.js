@@ -3,6 +3,7 @@ import {
   STEPS_PER_BAR,
   TOTAL_BARS,
 } from '../domain/musicConstants.js';
+import { BASS_NOTE_IDS } from '../data/bassNotes.js';
 import { getDrumsCellInstruments } from '../domain/drumsCells.js';
 import {
   createChordTonePitches,
@@ -163,6 +164,19 @@ function extractLeadEvent(cell, bar, step) {
   };
 }
 
+function extractBassEvent(cell, bar, step) {
+  if (!cell || !BASS_NOTE_IDS.includes(cell.note)) return null;
+
+  return {
+    type: 'bass',
+    trackId: 'bass',
+    bar,
+    step,
+    note: cell.note,
+    duration: cell.duration ?? '16n',
+  };
+}
+
 function createMatrixPlaybackAdapter(matrixSource, options = {}) {
   const readMatrix = normalizeMatrixSource(matrixSource);
   const totalBars = options.totalBars ?? TOTAL_BARS;
@@ -181,17 +195,20 @@ function createMatrixPlaybackAdapter(matrixSource, options = {}) {
   function getEventsForStep(bar, step) {
     const matrix = readMatrix();
     const drumsCell = matrix?.drums?.[bar]?.[step] ?? null;
+    const bassCell = matrix?.bass?.[bar]?.[step] ?? null;
     const chordCell = matrix?.chord?.[bar]?.[step] ?? null;
     const leadCell = matrix?.lead?.[bar]?.[step] ?? null;
 
     const drumEvents = extractDrumsInstruments(drumsCell).map((instrument) => (
       createDrumsEvent(bar, step, instrument)
     ));
+    const bassEvent = extractBassEvent(bassCell, bar, step);
     const chordEvent = extractChordEvent(chordCell, bar, step);
     const leadEvent = extractLeadEvent(leadCell, bar, step);
 
     return [
       ...drumEvents,
+      ...(bassEvent ? [bassEvent] : []),
       ...(chordEvent ? [chordEvent] : []),
       ...(leadEvent ? [leadEvent] : []),
     ];
@@ -214,6 +231,7 @@ function createMatrixPlaybackAdapter(matrixSource, options = {}) {
 export {
   createChordNotes,
   createMatrixPlaybackAdapter,
+  extractBassEvent,
   extractChordEvent,
   extractDrumsInstruments,
   extractLeadEvent,

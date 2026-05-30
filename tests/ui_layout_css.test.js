@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 
-const TRACK_IDS = ['drums', 'bass', 'chord', 'lead', 'pad', 'vocal', 'sample'];
+const TRACK_IDS = ['drums', 'chord', 'bass', 'lead', 'pad', 'vocal', 'sample'];
 
 test('ui shell keeps the editor usable and confines mobile overflow to panels', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
@@ -80,10 +80,21 @@ test('track list rows align with timeline hover rows', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
   assert.match(css, /--track-row-size:\s*minmax\(clamp\(48px,\s*7\.5vh,\s*74px\),\s*1fr\);/);
-  assert.match(css, /\.tracks-col\s*\{[^}]*grid-template-rows:\s*48px minmax\(0,\s*1fr\);/s);
-  assert.match(css, /\.tracks-list\s*\{[^}]*grid-template-rows:\s*repeat\(7,\s*var\(--track-row-size\)\);/s);
-  assert.match(css, /\.grid-rows,\s*\n\.hover-rows\s*\{[^}]*grid-template-rows:\s*repeat\(7,\s*var\(--track-row-size\)\);/s);
-  assert.match(css, /\.add-track\s*\{[^}]*position:\s*absolute;/s);
+  assert.match(css, /--track-footer-height:\s*48px;/);
+  assert.match(css, /\.tracks-col\s*\{[^}]*grid-template-rows:\s*48px minmax\(0,\s*1fr\) var\(--track-footer-height\);/s);
+  assert.match(css, /\.timeline-col\s*\{[^}]*grid-template-rows:\s*48px minmax\(0,\s*1fr\) var\(--track-footer-height\);/s);
+  assert.match(css, /\.timeline-footer-spacer\s*\{[^}]*min-height:\s*var\(--track-footer-height\);/s);
+  assert.match(css, /\.timeline-footer-spacer\s*\{[^}]*border-top:\s*1px solid var\(--border-soft\);/s);
+  assert.match(css, /\.tracks-list\s*\{[^}]*grid-template-rows:\s*repeat\(var\(--track-count,\s*4\),\s*var\(--track-row-size\)\);/s);
+  assert.match(css, /\.tracks-list\s*\{[^}]*overflow:\s*auto;/s);
+  assert.match(css, /\.grid-rows,\s*\n\.hover-rows\s*\{[^}]*grid-template-rows:\s*repeat\(var\(--track-count,\s*4\),\s*var\(--track-row-size\)\);/s);
+  assert.match(css, /\.add-track\s*\{[^}]*position:\s*static;/s);
+  assert.doesNotMatch(css, /\.add-track\s*\{[^}]*position:\s*absolute;/s);
+  assert.doesNotMatch(css, /\.add-track\s*\{[^}]*bottom:/s);
+  assert.match(css, /\.add-track-row\s*\{[^}]*position:\s*relative;/s);
+  assert.match(css, /\.add-track-menu\s*\{[^}]*position:\s*absolute;/s);
+  assert.match(css, /\.add-track-menu\s*\{[^}]*bottom:\s*calc\(100% - 4px\);/s);
+  assert.doesNotMatch(css, /min-height:\s*74px;/);
 });
 
 test('timeline clips and add controls inherit the left track color map', async () => {
@@ -98,6 +109,26 @@ test('timeline clips and add controls inherit the left track color map', async (
   assert.match(css, /\.clip\s*\{[^}]*--clip-ink:\s*var\(--track-ink,\s*var\(--c-drums-ink\)\);/s);
   assert.match(css, /\.add-clip\s*\{[^}]*color:\s*var\(--track-ink,\s*var\(--ink-3\)\);/s);
   assert.match(css, /\.add-clip\s*\{[^}]*background:\s*color-mix\(in oklab,\s*var\(--track-color,\s*var\(--surface\)\)/s);
+});
+
+test('track fill-empty clip button is compact and inherits track color', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.track-main-row\s*\{[^}]*grid-template-columns:\s*minmax\(76px,\s*1fr\) minmax\(0,\s*auto\);/s);
+  assert.match(css, /\.track-select\s*\{[^}]*grid-template-columns:\s*38px minmax\(0,\s*1fr\);/s);
+  assert.match(css, /\.track-select\s*\{[^}]*min-width:\s*76px;/s);
+  assert.match(css, /\.ic\s*\{[^}]*min-width:\s*32px;/s);
+  assert.match(css, /\.ic\s*\{[^}]*flex:\s*0 0 32px;/s);
+  assert.match(css, /\.fill-empty-clips\s*\{[^}]*height:\s*28px;/s);
+  assert.match(css, /\.fill-empty-clips\s*\{[^}]*min-width:\s*0;/s);
+  assert.match(css, /\.fill-empty-clips\s*\{[^}]*max-width:\s*96px;/s);
+  assert.match(css, /\.fill-empty-clips\s*\{[^}]*color:\s*var\(--track-ink,\s*var\(--ink-3\)\);/s);
+  assert.match(css, /\.fill-empty-clips\s*\{[^}]*background:\s*color-mix\(in oklab,\s*var\(--track-color,\s*var\(--surface\)\)/s);
+  assert.match(css, /\.fill-empty-clips-label\s*\{[^}]*overflow:\s*hidden;/s);
+  assert.match(css, /\.fill-empty-clips-label\s*\{[^}]*text-overflow:\s*ellipsis;/s);
+  assert.match(css, /\.fill-empty-clips:hover:not\(:disabled\),\s*\n\.fill-empty-clips:focus-visible:not\(:disabled\)\s*\{/s);
+  assert.match(css, /\.fill-empty-clips-icon\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*4px\);/s);
+  assert.match(css, /\.fill-empty-clips-icon span\s*\{[^}]*background:\s*currentColor;/s);
 });
 
 test('timeline drag and swap feedback is visually prominent', async () => {
@@ -174,6 +205,25 @@ test('melody editor mirrors the reference keyboard strip and scale picker layout
   assert.match(css, /\.melody-note-key\.playing\s*\{[^}]*background:\s*var\(--c-lead\)/s);
   assert.match(css, /\.scale-picker\s*\{[^}]*position:\s*absolute;/s);
   assert.match(css, /\.sctpl-card\.selected\s*\{[^}]*background:\s*color-mix\(in oklab,\s*var\(--c-lead\) 20%,\s*var\(--surface\)\);/s);
+});
+
+test('bass editor mirrors the reference piano-roll and groove picker layout', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.app:has\(\.editor\[data-screen-label="Bass Editor"\]:not\(\[data-picker="groove"\]\)\)\s*\{[^}]*--app-editor-height:\s*clamp\(360px,\s*46vh,\s*430px\);/s);
+  assert.match(css, /\.editor\[data-screen-label="Bass Editor"\] \.clip-chip\s*\{[^}]*background:\s*var\(--c-bass\);/s);
+  assert.match(css, /\.scale-notes\s*\{[^}]*grid-template-rows:\s*repeat\(36,\s*minmax\(0,\s*1fr\)\);/s);
+  assert.match(css, /\.beat-cells\s*\{[^}]*grid-template-rows:\s*repeat\(36,\s*minmax\(0,\s*1fr\)\);/s);
+  assert.doesNotMatch(css, /\.bass-scale-notes\s*\{[^}]*grid-template-rows:\s*repeat\(12,/s);
+  assert.doesNotMatch(css, /\.bass-beat-cells\s*\{[^}]*grid-template-rows:\s*repeat\(12,/s);
+  assert.match(css, /\.bass-note-key\.root\s*\{[^}]*color:\s*var\(--c-bass-ink\);/s);
+  assert.match(css, /\.bass-note-key:hover\s*\{[^}]*background:\s*var\(--c-bass\);/s);
+  assert.match(css, /\.bass-cell\.active\s*\{[^}]*background:\s*var\(--c-bass\);/s);
+  assert.match(css, /\.bass-cell:hover\s*\{[^}]*background:\s*color-mix\(in oklab,\s*var\(--c-bass\) 60%,\s*white\);/s);
+  assert.match(css, /\.gtpl-step\.hit-root\s*\{[^}]*overflow:\s*visible;/s);
+  assert.match(css, /\.gtpl-step\.hit-root::after\s*\{[^}]*bottom:\s*14%;/s);
+  assert.match(css, /\.gtpl-step\.hit-root::after\s*\{[^}]*height:\s*32%;/s);
+  assert.match(css, /\.gtpl-step\.hit-root\[data-len="8"\]::after\s*\{[^}]*width:\s*calc\(188% \+ 2px\);/s);
 });
 
 test('chord template picker has enough room and can scroll full card content', async () => {

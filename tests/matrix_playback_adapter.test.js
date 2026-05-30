@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import {
   createChordNotes,
   createMatrixPlaybackAdapter,
+  extractBassEvent,
   extractChordEvent,
   extractDrumsInstruments,
   extractLeadEvent,
@@ -20,18 +21,40 @@ test('matrix playback adapter returns drums events for a matrix step', () => {
   const matrix = createInitialMatrix();
   matrix.drums[0][0] = { instruments: ['kick', 'hihat'] };
   matrix.drums[1][4] = { instrument: 'snare' };
-  matrix.bass[0][0] = { note: 'C1' };
+  matrix.bass[0][0] = { type: 'bass', note: 'C4', duration: '8n' };
 
   const adapter = createMatrixPlaybackAdapter(() => matrix);
 
   assert.deepEqual(adapter.getEventsForStep(0, 0), [
     { type: 'drums', trackId: 'drums', bar: 0, step: 0, instrument: 'kick' },
     { type: 'drums', trackId: 'drums', bar: 0, step: 0, instrument: 'hihat' },
+    { type: 'bass', trackId: 'bass', bar: 0, step: 0, note: 'C4', duration: '8n' },
   ]);
   assert.deepEqual(adapter.getEventsForStep(1, 4), [
     { type: 'drums', trackId: 'drums', bar: 1, step: 4, instrument: 'snare' },
   ]);
   assert.deepEqual(adapter.getEventsForStep(0, 1), []);
+});
+
+test('extractBassEvent reads bass cells into playable bass events', () => {
+  assert.equal(extractBassEvent(null, 0, 0), null);
+  assert.deepEqual(extractBassEvent({ type: 'bass', note: 'A#4', duration: '8n' }, 3, 8), {
+    type: 'bass',
+    trackId: 'bass',
+    bar: 3,
+    step: 8,
+    note: 'A#4',
+    duration: '8n',
+  });
+  assert.deepEqual(extractBassEvent({ note: 'C4' }, 3, 8), {
+    type: 'bass',
+    trackId: 'bass',
+    bar: 3,
+    step: 8,
+    note: 'C4',
+    duration: '16n',
+  });
+  assert.equal(extractBassEvent({ type: 'bass', note: 'H4' }, 3, 8), null);
 });
 
 test('extractLeadEvent reads melody cells into playable lead events', () => {
@@ -205,12 +228,21 @@ test('matrix playback adapter plays groove-authored short chord hits on any sixt
 test('matrix playback adapter includes lead melody events for transport playback', () => {
   const matrix = createInitialMatrix();
   matrix.drums[0][0] = { instruments: ['kick'] };
+  matrix.bass[0][0] = { type: 'bass', note: 'G4', duration: '8n' };
   matrix.lead[0][0] = { type: 'melody', note: 'E4' };
 
   const adapter = createMatrixPlaybackAdapter(() => matrix);
 
   assert.deepEqual(adapter.getEventsForStep(0, 0), [
     { type: 'drums', trackId: 'drums', bar: 0, step: 0, instrument: 'kick' },
+    {
+      type: 'bass',
+      trackId: 'bass',
+      bar: 0,
+      step: 0,
+      note: 'G4',
+      duration: '8n',
+    },
     {
       type: 'lead',
       trackId: 'lead',
