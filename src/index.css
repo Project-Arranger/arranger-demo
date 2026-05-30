@@ -32,6 +32,7 @@
   --app-editor-height: clamp(260px, 39vh, 330px);
   --timeline-min-width: min(640px, 100%);
   --track-row-size: minmax(clamp(48px, 7.5vh, 74px), 1fr);
+  --track-footer-height: 48px;
   --radius-sm: 8px;
   --radius: 12px;
   --shadow-1:
@@ -629,7 +630,7 @@ button {
 .tracks-col {
   position: relative;
   display: grid;
-  grid-template-rows: 48px minmax(0, 1fr) 48px;
+  grid-template-rows: 48px minmax(0, 1fr) var(--track-footer-height);
   min-height: 0;
   background: color-mix(in oklab, var(--surface) 58%, var(--bg));
   border-right: 1px solid var(--border);
@@ -1001,7 +1002,7 @@ button {
 
 .timeline-col {
   display: grid;
-  grid-template-rows: 48px 1fr;
+  grid-template-rows: 48px minmax(0, 1fr) var(--track-footer-height);
   min-width: 0;
   overflow: auto;
 }
@@ -1037,6 +1038,13 @@ button {
       0 0 / calc(100% / var(--bars)) 100%,
     linear-gradient(to right, color-mix(in oklab, var(--border-soft) 35%, transparent) 1px, transparent 1px)
       0 0 / calc(100% / var(--bars) / 4) 100%;
+}
+
+.timeline-footer-spacer {
+  min-width: var(--timeline-min-width);
+  min-height: var(--track-footer-height);
+  background: color-mix(in oklab, var(--surface) 58%, var(--bg));
+  border-top: 1px solid var(--border-soft);
 }
 
 .grid-rows,
@@ -3466,7 +3474,7 @@ button {
 
   .track {
     grid-template-columns: 32px 1fr;
-    min-height: 74px;
+    min-height: 0;
     padding: 0 10px;
   }
 

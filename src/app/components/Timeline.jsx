@@ -465,6 +465,7 @@ const Timeline = forwardRef(function Timeline(
           />
         </div>
       </div>
+      <div className="timeline-footer-spacer" aria-hidden="true" />
     </section>
   );
 });

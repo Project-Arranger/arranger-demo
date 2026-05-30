@@ -70,6 +70,7 @@ test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async
   assert.match(timelineSource, /getTimelinePlayheadSeekPosition/);
   assert.match(timelineSource, /handlePlayheadMouseDown/);
   assert.match(timelineSource, /playhead-hit/);
+  assert.match(timelineSource, /className="timeline-footer-spacer"/);
   assert.match(source, /handleTransportSeek/);
   assert.match(source, /onTransportSeek:\s*handleTransportSeek/);
   assert.match(source, /clips/);

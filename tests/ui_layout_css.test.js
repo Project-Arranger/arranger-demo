@@ -80,7 +80,11 @@ test('track list rows align with timeline hover rows', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
   assert.match(css, /--track-row-size:\s*minmax\(clamp\(48px,\s*7\.5vh,\s*74px\),\s*1fr\);/);
-  assert.match(css, /\.tracks-col\s*\{[^}]*grid-template-rows:\s*48px minmax\(0,\s*1fr\) 48px;/s);
+  assert.match(css, /--track-footer-height:\s*48px;/);
+  assert.match(css, /\.tracks-col\s*\{[^}]*grid-template-rows:\s*48px minmax\(0,\s*1fr\) var\(--track-footer-height\);/s);
+  assert.match(css, /\.timeline-col\s*\{[^}]*grid-template-rows:\s*48px minmax\(0,\s*1fr\) var\(--track-footer-height\);/s);
+  assert.match(css, /\.timeline-footer-spacer\s*\{[^}]*min-height:\s*var\(--track-footer-height\);/s);
+  assert.match(css, /\.timeline-footer-spacer\s*\{[^}]*border-top:\s*1px solid var\(--border-soft\);/s);
   assert.match(css, /\.tracks-list\s*\{[^}]*grid-template-rows:\s*repeat\(var\(--track-count,\s*4\),\s*var\(--track-row-size\)\);/s);
   assert.match(css, /\.tracks-list\s*\{[^}]*overflow:\s*auto;/s);
   assert.match(css, /\.grid-rows,\s*\n\.hover-rows\s*\{[^}]*grid-template-rows:\s*repeat\(var\(--track-count,\s*4\),\s*var\(--track-row-size\)\);/s);
@@ -90,6 +94,7 @@ test('track list rows align with timeline hover rows', async () => {
   assert.match(css, /\.add-track-row\s*\{[^}]*position:\s*relative;/s);
   assert.match(css, /\.add-track-menu\s*\{[^}]*position:\s*absolute;/s);
   assert.match(css, /\.add-track-menu\s*\{[^}]*bottom:\s*calc\(100% - 4px\);/s);
+  assert.doesNotMatch(css, /min-height:\s*74px;/);
 });
 
 test('timeline clips and add controls inherit the left track color map', async () => {
