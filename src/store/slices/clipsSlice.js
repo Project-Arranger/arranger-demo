@@ -6,8 +6,8 @@ const TRACK_LABELS = Object.freeze({
   chord: 'Chord',
   lead: 'Melody',
   pad: 'Pad',
+  sample: 'Sampler',
   vocal: 'Vocal',
-  sample: 'Sample',
 });
 
 function createClipId(trackId, bar) {

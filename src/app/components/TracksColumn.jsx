@@ -5,6 +5,7 @@ import {
 import {
   createElement,
   forwardRef,
+  useState,
   useRef,
 } from 'react';
 import {
@@ -167,7 +168,9 @@ function TrackRow({
 const TracksColumn = forwardRef(function TracksColumn(
   {
     activeTrackId,
+    addTrackOptions = [],
     fillEmptyClipsDisabled = false,
+    onAddTrack = () => {},
     onFillEmptyTrackClips,
     onTrackSelect,
     onVolumeChange,
@@ -175,8 +178,15 @@ const TracksColumn = forwardRef(function TracksColumn(
   },
   scrollRef,
 ) {
+  const [addTrackMenuOpen, setAddTrackMenuOpen] = useState(false);
+  const canAddTrack = addTrackOptions.length > 0;
+  const handleAddTrackButtonClick = () => {
+    if (!canAddTrack) return;
+    setAddTrackMenuOpen((isOpen) => !isOpen);
+  };
+
   return (
-    <aside className="tracks-col">
+    <aside className="tracks-col" style={{ '--track-count': tracks.length }}>
       <div className="tracks-head">
         <div className="tracks-title">
           <span className="label">Tracks</span>
@@ -199,10 +209,45 @@ const TracksColumn = forwardRef(function TracksColumn(
         }))}
       </div>
 
-      <button className="add-track" type="button">
-        {renderIcon(Plus)}
-        Add Track
-      </button>
+      <div className="add-track-row">
+        <button
+          className="add-track"
+          type="button"
+          aria-expanded={canAddTrack ? addTrackMenuOpen : undefined}
+          aria-haspopup="menu"
+          disabled={!canAddTrack}
+          onClick={handleAddTrackButtonClick}
+        >
+          {renderIcon(Plus)}
+          Add Track
+        </button>
+        {addTrackMenuOpen ? (
+          <div className="add-track-menu" role="menu" aria-label="Add track">
+            {addTrackOptions.map((track) => {
+              const Icon = TRACK_ICONS[track.id];
+
+              return (
+                <button
+                  className="add-track-menu-item"
+                  data-type={track.id}
+                  key={track.id}
+                  onClick={() => {
+                    onAddTrack(track.id);
+                    setAddTrackMenuOpen(false);
+                  }}
+                  role="menuitem"
+                  type="button"
+                >
+                  <span className="add-track-menu-icon">
+                    {renderIcon(Icon)}
+                  </span>
+                  <span>{track.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
     </aside>
   );
 });

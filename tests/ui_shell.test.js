@@ -1,12 +1,19 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
-import { TOTAL_BARS, TRACK_IDS } from '../src/domain/musicConstants.js';
+import {
+  CORE_TRACK_IDS,
+  OPTIONAL_TRACK_IDS,
+  TOTAL_BARS,
+  TRACK_IDS,
+} from '../src/domain/musicConstants.js';
 import {
   BAR_NUMBERS,
   CHORD_GRID_PITCHES,
   BEAT_NUMBERS,
   CHORD_NOTES,
+  getTrackUiByIds,
+  OPTIONAL_TRACK_UI,
   TRACK_UI,
 } from '../src/app/uiShellData.js';
 
@@ -71,6 +78,11 @@ test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async
   assert.match(source, /handleFillEmptyTrackClips/);
   assert.match(source, /createEmptyClipsForTrack\(trackId\)/);
   assert.match(source, /onFillEmptyTrackClips:\s*handleFillEmptyTrackClips/);
+  assert.match(source, /visibleTrackIds/);
+  assert.match(source, /getTrackUiByIds\(visibleTrackIds\)/);
+  assert.match(source, /handleAddTrack/);
+  assert.match(source, /addVisibleTrack\(trackId\)/);
+  assert.match(source, /addTrackOptions:\s*availableAddTrackOptions/);
   assert.match(source, /selectClip\(clipId\)/);
   assert.doesNotMatch(source, /track\.clipName/);
   assert.doesNotMatch(uiDataSource, /trackClips|clipName|selected:/);
@@ -78,9 +90,16 @@ test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async
   assert.match(tracksColumnSource, /onFillEmptyTrackClips\(track\.id\)/);
   assert.match(tracksColumnSource, /补齐空Clip/);
   assert.match(tracksColumnSource, /aria-label="补齐这一轨缺失的空 clips"/);
+  assert.match(tracksColumnSource, /aria-haspopup="menu"/);
+  assert.match(tracksColumnSource, /add-track-menu/);
+  assert.match(tracksColumnSource, /role="menuitem"/);
+  assert.match(tracksColumnSource, /onAddTrack\(track\.id\)/);
   assert.doesNotMatch(tracksColumnSource, /\+8|铺满/);
 
   assert.deepEqual(TRACK_UI.map((track) => track.id), TRACK_IDS);
+  assert.deepEqual(getTrackUiByIds(CORE_TRACK_IDS).map((track) => track.label), ['Drums', 'Chord', 'Bass', 'Melody']);
+  assert.deepEqual(OPTIONAL_TRACK_UI.map((track) => track.id), OPTIONAL_TRACK_IDS);
+  assert.deepEqual(OPTIONAL_TRACK_UI.map((track) => track.label), ['Pad', 'Vocal', 'Sampler']);
   assert.equal(TRACK_UI.every((track) => !Object.hasOwn(track, 'clipName')), true);
   assert.equal(BAR_NUMBERS.length, TOTAL_BARS);
   assert.equal(BAR_NUMBERS.at(0), 1);
@@ -99,6 +118,10 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   );
   const chordGrooveActionsSource = await readFile(
     new URL('../src/app/chordGrooveActions.js', import.meta.url),
+    'utf8',
+  );
+  const pitchScrollSyncSource = await readFile(
+    new URL('../src/app/usePitchScrollSync.js', import.meta.url),
     'utf8',
   );
   const clipNameInputSource = await readFile(
@@ -175,15 +198,16 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(chordEditorSource, /cvPanelEnrich/);
   assert.match(chordEditorSource, /暂无可用丰富和弦/);
   assert.match(chordEditorSource, /CHORD_GRID_PITCHES\.flatMap/);
+  assert.match(chordEditorSource, /usePitchScrollSync/);
   assert.match(chordEditorSource, /scalePitchViewportRef/);
-  assert.match(chordEditorSource, /beatCellsViewportRefs/);
-  assert.match(chordEditorSource, /syncPitchScroll/);
+  assert.match(pitchScrollSyncSource, /beatCellsViewportRefs/);
+  assert.match(pitchScrollSyncSource, /syncPitchScroll/);
   assert.match(chordEditorSource, /handlePitchViewportScroll/);
   assert.match(chordEditorSource, /handlePitchWheel/);
   assert.doesNotMatch(chordEditorSource, /closest\('\.scale-notes-viewport, \.beat-cells-viewport'\)\) return/);
-  assert.match(chordEditorSource, /syncPitchScroll\(pitchScrollTopRef\.current \+ event\.deltaY/);
+  assert.match(pitchScrollSyncSource, /syncPitchScroll\(pitchScrollTopRef\.current \+ event\.deltaY/);
   assert.match(chordEditorSource, /scrollPitchByOctave/);
-  assert.match(chordEditorSource, /window\.requestAnimationFrame/);
+  assert.match(pitchScrollSyncSource, /window\.requestAnimationFrame/);
   assert.match(chordEditorSource, /className="scale-notes-viewport"/);
   assert.match(chordEditorSource, /className="beat-cells-viewport"/);
   assert.match(chordEditorSource, /disabled=\{!canScrollPitchUp\}/);
@@ -423,6 +447,73 @@ test('app exposes the melody editor and keeps lead as the internal track id', as
   assert.match(source, /clearTrack\('lead'\)/);
   assert.match(source, /activeTrackId === 'lead' && selectedClipId/);
   assert.match(source, /audioEngine\.startAudio/);
+});
+
+test('app exposes the bass editor and current-clip groove template workflow', async () => {
+  const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
+  const bottomEditorSource = await readFile(
+    new URL('../src/app/components/BottomEditor.jsx', import.meta.url),
+    'utf8',
+  );
+  const bassEditorSource = await readFile(
+    new URL('../src/app/components/BassEditor.jsx', import.meta.url),
+    'utf8',
+  );
+  const bassActionsSource = await readFile(new URL('../src/app/bassActions.js', import.meta.url), 'utf8');
+  const bassNotesSource = await readFile(new URL('../src/data/bassNotes.js', import.meta.url), 'utf8');
+
+  assert.match(bottomEditorSource, /BassEditor/);
+  assert.match(bottomEditorSource, /activeTrackId === 'bass' && selectedClipId/);
+  assert.match(bottomEditorSource, /onBassStepToggle/);
+  assert.match(bottomEditorSource, /onBassGrooveTemplatePreview/);
+  assert.match(bottomEditorSource, /onBassGrooveTemplateApply/);
+  assert.match(bottomEditorSource, /onClearBassBar/);
+  assert.match(bottomEditorSource, /onClearBass/);
+  assert.match(bassEditorSource, /data-screen-label="Bass Editor"/);
+  assert.match(bassEditorSource, /Bass · Phrase/);
+  assert.match(bassEditorSource, /BASS EDITOR - BAR/);
+  assert.match(bassEditorSource, /BASS_NOTES\.flatMap/);
+  assert.match(bassEditorSource, /usePitchScrollSync/);
+  assert.match(bassEditorSource, /scalePitchViewportRef/);
+  assert.match(bassEditorSource, /setBeatCellsViewportRef/);
+  assert.match(bassEditorSource, /handlePitchViewportScroll/);
+  assert.match(bassEditorSource, /handlePitchWheel/);
+  assert.match(bassEditorSource, /scrollPitchByOctave/);
+  assert.match(bassEditorSource, /className="scale-notes-viewport"/);
+  assert.match(bassEditorSource, /className="beat-cells-viewport"/);
+  assert.match(bassEditorSource, /disabled=\{!canScrollPitchUp\}/);
+  assert.match(bassEditorSource, /disabled=\{!canScrollPitchDown\}/);
+  assert.match(bassEditorSource, /className="chord-grid bass-grid"/);
+  assert.match(bassEditorSource, /'cell'/);
+  assert.match(bassEditorSource, /'bass-cell'/);
+  assert.match(bassEditorSource, /BASS_GROOVE_TEMPLATES/);
+  assert.match(bassEditorSource, /选择Bass弹奏律动模板/);
+  assert.match(bassEditorSource, /Bass Groove Template Picker/);
+  assert.match(bassEditorSource, /gtpl-step/);
+  assert.match(bassEditorSource, /hit-root/);
+  assert.match(bassEditorSource, /data-len/);
+  assert.match(bassEditorSource, /onBassStepToggle\(step,\s*note\.note\)/);
+  assert.match(bassEditorSource, /onBassPreview\(note\.note\)/);
+  assert.match(bassEditorSource, /onBassGrooveTemplatePreview\(template\.id\)/);
+  assert.match(bassEditorSource, /onBassGrooveTemplateApply\(templateId\)/);
+  assert.match(bassEditorSource, /closest\?\.\('\[data-action="bgpreview"\]'\)/);
+  assert.match(bassEditorSource, /清空本小节/);
+  assert.match(bassEditorSource, /清空 Bass/);
+  assert.match(bassActionsSource, /bass-8th-basic/);
+  assert.match(bassActionsSource, /bass-8th-swing/);
+  assert.match(bassActionsSource, /bass-16th-swing/);
+  assert.match(bassActionsSource, /applyBassGrooveTemplateToBar/);
+  assert.match(bassActionsSource, /createBassPreviewEvents/);
+  assert.match(bassNotesSource, /BASS_NOTE_IDS/);
+  assert.match(bassNotesSource, /CHORD_GRID_PITCHES/);
+  assert.match(bassNotesSource, /pitch\.label/);
+  assert.match(source, /handleBassStepToggle/);
+  assert.match(source, /handleBassGrooveTemplatePreview/);
+  assert.match(source, /handleBassGrooveTemplateApply/);
+  assert.match(source, /handleClearBassBar/);
+  assert.match(source, /clearTrack\('bass'\)/);
+  assert.match(source, /triggerBassNote/);
+  assert.match(source, /previewBassPattern/);
 });
 
 test('app keeps the editor focused on the playback bar while transport is playing', async () => {

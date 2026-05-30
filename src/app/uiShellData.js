@@ -1,4 +1,8 @@
-import { TOTAL_BARS, TRACK_IDS } from '../domain/musicConstants.js';
+import {
+  OPTIONAL_TRACK_IDS,
+  TOTAL_BARS,
+  TRACK_IDS,
+} from '../domain/musicConstants.js';
 import { CHORD_GRID_PITCHES } from '../domain/chordCells.js';
 import { createTrackVolumeView } from './trackVolumeViewModels.js';
 
@@ -8,8 +12,8 @@ const trackLabels = {
   chord: 'Chord',
   lead: 'Melody',
   pad: 'Pad',
+  sample: 'Sampler',
   vocal: 'Vocal',
-  sample: 'Sample',
 };
 
 const TRACK_UI = Object.freeze(
@@ -19,6 +23,13 @@ const TRACK_UI = Object.freeze(
     volume: createTrackVolumeView(),
   })),
 );
+
+function getTrackUiByIds(trackIds) {
+  const trackUiById = new Map(TRACK_UI.map((track) => [track.id, track]));
+  return trackIds.map((trackId) => trackUiById.get(trackId)).filter(Boolean);
+}
+
+const OPTIONAL_TRACK_UI = Object.freeze(getTrackUiByIds(OPTIONAL_TRACK_IDS));
 
 const BAR_NUMBERS = Object.freeze(
   Array.from({ length: TOTAL_BARS }, (_, index) => index + 1),
@@ -41,4 +52,12 @@ const CHORD_NOTES = Object.freeze([
 
 const BEAT_NUMBERS = Object.freeze([1, 2, 3, 4]);
 
-export { BAR_NUMBERS, BEAT_NUMBERS, CHORD_GRID_PITCHES, CHORD_NOTES, TRACK_UI };
+export {
+  BAR_NUMBERS,
+  BEAT_NUMBERS,
+  CHORD_GRID_PITCHES,
+  CHORD_NOTES,
+  getTrackUiByIds,
+  OPTIONAL_TRACK_UI,
+  TRACK_UI,
+};

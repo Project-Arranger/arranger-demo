@@ -283,6 +283,10 @@ button {
   --app-editor-height: clamp(360px, 46vh, 430px);
 }
 
+.app:has(.editor[data-screen-label="Bass Editor"]:not([data-picker="groove"])) {
+  --app-editor-height: clamp(360px, 46vh, 430px);
+}
+
 .app:has(.editor[data-picker="chord"]),
 .app:has(.editor[data-picker="groove"]) {
   --app-editor-height: clamp(380px, 55vh, 560px);
@@ -625,7 +629,7 @@ button {
 .tracks-col {
   position: relative;
   display: grid;
-  grid-template-rows: 48px minmax(0, 1fr);
+  grid-template-rows: 48px minmax(0, 1fr) 48px;
   min-height: 0;
   background: color-mix(in oklab, var(--surface) 58%, var(--bg));
   border-right: 1px solid var(--border);
@@ -666,7 +670,7 @@ button {
 
 .tracks-list {
   display: grid;
-  grid-template-rows: repeat(7, var(--track-row-size));
+  grid-template-rows: repeat(var(--track-count, 4), var(--track-row-size));
   min-height: 0;
   overflow: auto;
 }
@@ -741,7 +745,9 @@ button {
   display: grid;
   place-items: center;
   width: 32px;
+  min-width: 32px;
   height: 32px;
+  flex: 0 0 32px;
   color: var(--track-ink, var(--ink-3));
   background: var(--track-color, var(--surface-2));
   border-radius: 9px;
@@ -756,7 +762,7 @@ button {
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr);
   align-items: center;
-  min-width: 0;
+  min-width: 76px;
   padding: 0;
   color: inherit;
   background: transparent;
@@ -767,7 +773,7 @@ button {
 
 .track-main-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(76px, 1fr) minmax(0, auto);
   align-items: center;
   gap: 6px;
   min-width: 0;
@@ -786,10 +792,12 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 92px;
+  min-width: 0;
+  max-width: 96px;
   height: 28px;
   gap: 6px;
-  padding: 0 8px;
+  padding: 0 7px;
+  overflow: hidden;
   color: var(--track-ink, var(--ink-3));
   background: color-mix(in oklab, var(--track-color, var(--surface)) 58%, var(--surface));
   border: 1px solid color-mix(in oklab, var(--track-ink, var(--border)) 16%, transparent);
@@ -803,6 +811,13 @@ button {
     border-color 0.12s ease,
     color 0.12s ease,
     transform 0.12s ease;
+  white-space: nowrap;
+}
+
+.fill-empty-clips-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -843,6 +858,7 @@ button {
   grid-template-columns: 1fr 34px;
   align-items: center;
   gap: 10px;
+  min-width: 0;
   margin-left: 38px;
 }
 
@@ -896,12 +912,20 @@ button {
   font-weight: 700;
 }
 
+.add-track-row {
+  position: relative;
+  display: grid;
+  align-items: center;
+  min-width: 0;
+  padding: 0 14px;
+}
+
 .add-track {
-  position: absolute;
-  right: 14px;
-  bottom: 10px;
-  left: 14px;
+  position: static;
+  align-self: center;
+  justify-self: stretch;
   gap: 8px;
+  width: 100%;
   height: 34px;
   margin: 0;
   color: var(--ink-2);
@@ -915,6 +939,64 @@ button {
 .add-track:hover {
   color: var(--ink);
   border-style: solid;
+}
+
+.add-track:disabled {
+  cursor: default;
+  opacity: 0.48;
+}
+
+.add-track-menu {
+  position: absolute;
+  right: 14px;
+  bottom: calc(100% - 4px);
+  left: 14px;
+  z-index: 12;
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+  background: color-mix(in oklab, var(--surface) 94%, white);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  box-shadow: var(--shadow-2);
+}
+
+.add-track-menu-item {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 32px;
+  padding: 0 8px 0 6px;
+  color: var(--track-ink, var(--ink-2));
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: left;
+}
+
+.add-track-menu-item:hover,
+.add-track-menu-item:focus-visible {
+  background: color-mix(in oklab, var(--track-color, var(--surface)) 68%, white);
+  outline: none;
+}
+
+.add-track-menu-icon {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  background: var(--track-color, var(--surface-2));
+  border-radius: 7px;
+}
+
+.add-track-menu-icon svg {
+  width: 15px;
+  height: 15px;
 }
 
 .timeline-col {
@@ -962,7 +1044,7 @@ button {
   position: absolute;
   inset: 0;
   display: grid;
-  grid-template-rows: repeat(7, var(--track-row-size));
+  grid-template-rows: repeat(var(--track-count, 4), var(--track-row-size));
 }
 
 .row {
@@ -1505,6 +1587,11 @@ button {
   background: var(--c-lead);
 }
 
+.editor[data-screen-label="Bass Editor"] .clip-chip {
+  color: var(--c-bass-ink);
+  background: var(--c-bass);
+}
+
 .keyboard-strip {
   display: flex;
   align-items: center;
@@ -2018,6 +2105,43 @@ button {
   transform: translateY(-1px);
 }
 
+.bass-note-key {
+  padding: 0;
+  cursor: pointer;
+}
+
+.bass-note-key.root {
+  color: var(--c-bass-ink);
+  box-shadow: inset 2px 0 0 var(--c-bass-ink);
+}
+
+.bass-note-key:hover {
+  color: var(--c-bass-ink);
+  background: var(--c-bass);
+  border-color: var(--c-bass-ink);
+}
+
+.bass-note-key.sharp:hover {
+  color: white;
+  background: var(--c-bass-ink);
+}
+
+.bass-grid {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.bass-cell.active {
+  background: var(--c-bass);
+  border-color: color-mix(in oklab, var(--c-bass-ink) 42%, var(--border));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c-bass-ink) 24%, transparent);
+}
+
+.bass-cell:hover {
+  background: color-mix(in oklab, var(--c-bass) 60%, white);
+  border-color: color-mix(in oklab, var(--c-bass-ink) 30%, var(--border));
+  transform: translateY(-1px);
+}
+
 .editor {
   position: relative;
 }
@@ -2483,6 +2607,28 @@ button {
 
 .gtpl-step.hit-arp::after {
   height: calc(28% + var(--h, 1) * 18%);
+}
+
+.gtpl-step.hit-root {
+  z-index: 2;
+  overflow: visible;
+}
+
+.gtpl-step.hit-root::after {
+  position: absolute;
+  right: 6%;
+  bottom: 14%;
+  left: 6%;
+  z-index: 1;
+  height: 32%;
+  content: "";
+  background: var(--ink);
+  border-radius: 2px;
+}
+
+.gtpl-step.hit-root[data-len="8"]::after {
+  right: auto;
+  width: calc(188% + 2px);
 }
 
 .gtpl-beat-num {
@@ -3325,8 +3471,9 @@ button {
   }
 
   .ic {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
   }
 
   .track-name {
@@ -3336,6 +3483,10 @@ button {
   .vol {
     grid-template-columns: 1fr 30px;
     gap: 8px;
+  }
+
+  .add-track-row {
+    padding: 0 10px;
   }
 
   .ruler,

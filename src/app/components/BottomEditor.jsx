@@ -1,4 +1,5 @@
 import { createElement } from 'react';
+import { BassEditor } from './BassEditor.jsx';
 import { ChordEditor } from './ChordEditor.jsx';
 import { DrumSequencer } from './DrumSequencer.jsx';
 import { MelodyEditor } from './MelodyEditor.jsx';
@@ -20,7 +21,13 @@ function BottomEditor({
   onChordGrooveTemplateApply,
   onChordTemplatePreview,
   onChordTemplateApply,
+  onBassPreview,
+  onBassStepToggle,
+  onBassGrooveTemplatePreview,
+  onBassGrooveTemplateApply,
   onCloseEditor,
+  onClearBass,
+  onClearBassBar,
   onClearMelody,
   onClearMelodyBar,
   onMelodyPreview,
@@ -60,6 +67,20 @@ function BottomEditor({
       selectedBar,
       tutorialLocked,
       tutorialTargets,
+    });
+  } else if (activeTrackId === 'bass' && selectedClipId) {
+    editor = createElement(BassEditor, {
+      matrix,
+      clipName: selectedClipName,
+      onBassPreview,
+      onBassStepToggle,
+      onBassGrooveTemplatePreview,
+      onBassGrooveTemplateApply,
+      onClearBass,
+      onClearBassBar,
+      onClose: onCloseEditor,
+      onRenameClip,
+      selectedBar,
     });
   } else if (activeTrackId === 'chord' && selectedClipId) {
     editor = createElement(ChordEditor, {
