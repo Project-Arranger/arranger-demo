@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import * as bassActions from '../src/app/bassActions.js';
 import {
   applyBassGrooveTemplateToBar,
   BASS_GROOVE_TEMPLATES,
@@ -15,6 +16,13 @@ import {
   createChordCell,
 } from '../src/domain/chordCells.js';
 import createInitialMatrix from '../src/store/createInitialMatrix.js';
+
+function createClips(...records) {
+  return {
+    ids: records.map((clip) => clip.id),
+    byId: Object.fromEntries(records.map((clip) => [clip.id, clip])),
+  };
+}
 
 test('bass notes expose the chord three-octave pitch rail from B5 down to C3', () => {
   assert.equal(BASS_NOTES.length, 36);
@@ -127,6 +135,56 @@ test('applyBassGrooveTemplateToBar writes current bass clip from same-beat chord
   });
   assert.equal(nextMatrix.bass[2][15], null);
   assert.deepEqual(nextMatrix.bass[1][0], { type: 'bass', note: 'D4', duration: '16n' });
+});
+
+test('applyBassGrooveTemplateToExistingClips writes all existing bass clips from each bar chord roots', () => {
+  const { applyBassGrooveTemplateToExistingClips } = bassActions;
+  const matrix = createInitialMatrix();
+  const clips = createClips(
+    { id: 'bass-bar-0', trackId: 'bass', bar: 0 },
+    { id: 'drums-bar-1', trackId: 'drums', bar: 1 },
+    { id: 'bass-bar-2', trackId: 'bass', bar: 2 },
+  );
+  matrix.bass[0][15] = { type: 'bass', note: 'B4', duration: '16n' };
+  matrix.bass[2][7] = { type: 'bass', note: 'D4', duration: '16n' };
+  matrix.bass[4][0] = { type: 'bass', note: 'F#3', duration: '16n' };
+  matrix.drums[1][0] = { instruments: ['kick'] };
+  matrix.lead[2][2] = { type: 'melody', note: 'G4' };
+  matrix.chord[0][0] = createChordCell('C');
+  matrix.chord[0][4] = createChordCell('G');
+  matrix.chord[0][8] = createChordCell('Am');
+  matrix.chord[0][12] = createChordCell('F');
+  matrix.chord[2][0] = createChordCell('D');
+  matrix.chord[2][8] = createChordCell('A#');
+
+  assert.equal(typeof applyBassGrooveTemplateToExistingClips, 'function');
+  const nextMatrix = applyBassGrooveTemplateToExistingClips(matrix, clips, 'bass-8th-basic');
+
+  assert.deepEqual(
+    [0, 4, 8, 12].map((step) => nextMatrix.bass[0][step]?.note),
+    ['C4', 'G4', 'A4', 'F4'],
+  );
+  assert.deepEqual(
+    [0, 4, 8, 12].map((step) => nextMatrix.bass[2][step]?.note),
+    ['D4', 'D4', 'A#4', 'D4'],
+  );
+  assert.equal(nextMatrix.bass[0][15], null);
+  assert.equal(nextMatrix.bass[2][7], null);
+  assert.deepEqual(nextMatrix.bass[4][0], { type: 'bass', note: 'F#3', duration: '16n' });
+  assert.deepEqual(nextMatrix.drums[1][0], { instruments: ['kick'] });
+  assert.deepEqual(nextMatrix.lead[2][2], { type: 'melody', note: 'G4' });
+});
+
+test('applyBassGrooveTemplateToExistingClips is a no-op without bass clips or a valid template', () => {
+  const { applyBassGrooveTemplateToExistingClips } = bassActions;
+  const matrix = createInitialMatrix();
+  const noBassClips = createClips(
+    { id: 'drums-bar-0', trackId: 'drums', bar: 0 },
+    { id: 'chord-bar-1', trackId: 'chord', bar: 1 },
+  );
+
+  assert.equal(applyBassGrooveTemplateToExistingClips(matrix, noBassClips, 'bass-8th-basic'), matrix);
+  assert.equal(applyBassGrooveTemplateToExistingClips(matrix, noBassClips, 'missing'), matrix);
 });
 
 test('bass groove templates fall back to the first bar chord and then C4', () => {

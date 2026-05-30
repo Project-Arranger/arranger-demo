@@ -29,7 +29,7 @@ import { DRUMS_TUTORIAL_STEPS } from '../tutorial/drumsTutorialSteps.js';
 import { TUTORIAL_STEP_IDS } from '../tutorial/tutorialStepIds.js';
 import { createUiAudioDispatcher } from './audioUiBridge.js';
 import {
-  applyBassGrooveTemplateToBar,
+  applyBassGrooveTemplateToExistingClips,
   clearBassBar,
   createBassPreviewEvents,
   toggleBassCell,
@@ -774,12 +774,18 @@ export default function App() {
 
   const handleBassGrooveTemplateApply = useCallback((templateId) => {
     const state = useMusicStore.getState();
-    const nextMatrix = applyBassGrooveTemplateToBar(state.matrix, selectedBar, templateId);
+    const nextMatrix = applyBassGrooveTemplateToExistingClips(state.matrix, state.clips, templateId);
+    if (nextMatrix === state.matrix) return;
 
-    nextMatrix.bass[selectedBar].forEach((cell, step) => {
-      state.setCell('bass', selectedBar, step, cell);
-    });
-  }, [selectedBar]);
+    state.clips.ids
+      .map((id) => state.clips.byId[id])
+      .filter((clip) => clip?.trackId === 'bass')
+      .forEach((clip) => {
+        nextMatrix.bass[clip.bar].forEach((cell, step) => {
+          state.setCell('bass', clip.bar, step, cell);
+        });
+      });
+  }, []);
 
   const handleClearBassBar = useCallback(() => {
     const state = useMusicStore.getState();

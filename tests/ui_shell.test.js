@@ -450,7 +450,7 @@ test('app exposes the melody editor and keeps lead as the internal track id', as
   assert.match(source, /audioEngine\.startAudio/);
 });
 
-test('app exposes the bass editor and current-clip groove template workflow', async () => {
+test('app exposes the bass editor and existing-clip groove template workflow', async () => {
   const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
   const bottomEditorSource = await readFile(
     new URL('../src/app/components/BottomEditor.jsx', import.meta.url),
@@ -504,13 +504,17 @@ test('app exposes the bass editor and current-clip groove template workflow', as
   assert.match(bassActionsSource, /bass-8th-swing/);
   assert.match(bassActionsSource, /bass-16th-swing/);
   assert.match(bassActionsSource, /applyBassGrooveTemplateToBar/);
+  assert.match(bassActionsSource, /applyBassGrooveTemplateToExistingClips/);
   assert.match(bassActionsSource, /createBassPreviewEvents/);
   assert.match(bassNotesSource, /BASS_NOTE_IDS/);
   assert.match(bassNotesSource, /CHORD_GRID_PITCHES/);
   assert.match(bassNotesSource, /pitch\.label/);
   assert.match(source, /handleBassStepToggle/);
   assert.match(source, /handleBassGrooveTemplatePreview/);
+  assert.match(source, /createBassPreviewEvents\(state\.matrix,\s*selectedBar,\s*templateId\)/);
   assert.match(source, /handleBassGrooveTemplateApply/);
+  assert.match(source, /applyBassGrooveTemplateToExistingClips\(state\.matrix,\s*state\.clips,\s*templateId\)/);
+  assert.match(source, /filter\(\(clip\) => clip\?\.trackId === 'bass'\)/);
   assert.match(source, /handleClearBassBar/);
   assert.match(source, /clearTrack\('bass'\)/);
   assert.match(source, /triggerBassNote/);

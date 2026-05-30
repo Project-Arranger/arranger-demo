@@ -162,6 +162,23 @@ function applyBassGrooveTemplateToBar(matrix, bar, templateId) {
   return nextMatrix;
 }
 
+function getExistingBassClipBars(clips) {
+  return (clips?.ids ?? [])
+    .map((id) => clips.byId?.[id])
+    .filter((clip) => clip?.trackId === 'bass')
+    .map((clip) => clip.bar)
+    .sort((a, b) => a - b);
+}
+
+function applyBassGrooveTemplateToExistingClips(matrix, clips, templateId) {
+  const template = getBassGrooveTemplate(templateId);
+  if (!template) return matrix;
+
+  return getExistingBassClipBars(clips).reduce((nextMatrix, bar) => (
+    applyBassGrooveTemplateToBar(nextMatrix, bar, template.id)
+  ), matrix);
+}
+
 function createBassPreviewEvents(matrix, bar, templateId) {
   const template = getBassGrooveTemplate(templateId);
   if (!template) return [];
@@ -175,6 +192,7 @@ function createBassPreviewEvents(matrix, bar, templateId) {
 
 export {
   BASS_GROOVE_TEMPLATES,
+  applyBassGrooveTemplateToExistingClips,
   applyBassGrooveTemplateToBar,
   clearBassBar,
   createBassCell,
