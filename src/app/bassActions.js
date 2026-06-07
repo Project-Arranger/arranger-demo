@@ -170,12 +170,22 @@ function getExistingBassClipBars(clips) {
     .sort((a, b) => a - b);
 }
 
+function getExistingChordClipBarSet(clips) {
+  return new Set((clips?.ids ?? [])
+    .map((id) => clips.byId?.[id])
+    .filter((clip) => clip?.trackId === 'chord')
+    .map((clip) => clip.bar));
+}
+
 function applyBassGrooveTemplateToExistingClips(matrix, clips, templateId) {
   const template = getBassGrooveTemplate(templateId);
   if (!template) return matrix;
 
+  const chordClipBars = getExistingChordClipBarSet(clips);
   return getExistingBassClipBars(clips).reduce((nextMatrix, bar) => (
-    applyBassGrooveTemplateToBar(nextMatrix, bar, template.id)
+    chordClipBars.has(bar)
+      ? applyBassGrooveTemplateToBar(nextMatrix, bar, template.id)
+      : clearBassBar(nextMatrix, bar)
   ), matrix);
 }
 
