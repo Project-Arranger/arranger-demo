@@ -466,7 +466,7 @@ function ChordEditor({
             清空本小节
           </button>
           <button className="btn-template drum-clear-action" type="button" onClick={handleClearChord}>
-            清空 Chord
+            清空整轨
           </button>
           <button className="tool-icon" aria-label="More" title="More" type="button">
             {renderIcon(MoreHorizontal)}

@@ -1,4 +1,9 @@
-import { Drum, X } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Drum,
+  X,
+} from 'lucide-react';
 import {
   createElement,
   useEffect,
@@ -14,7 +19,27 @@ import { ClipNameInput } from './ClipNameInput.jsx';
 import { renderIcon } from './icons.js';
 
 const STEP_NUMBERS = Array.from({ length: STEPS_PER_BAR }, (_, index) => index + 1);
+const STEPS_PER_BEAT_GROUP = 4;
+const STEP_GROUPS = Array.from(
+  { length: Math.ceil(STEP_NUMBERS.length / STEPS_PER_BEAT_GROUP) },
+  (_, groupIndex) => STEP_NUMBERS.slice(
+    groupIndex * STEPS_PER_BEAT_GROUP,
+    (groupIndex + 1) * STEPS_PER_BEAT_GROUP,
+  ),
+);
 const DRAG_THRESHOLD_PX = 6;
+
+function renderStepGroups(renderStep) {
+  return (
+    <div className="drum-steps drum-step-groups">
+      {STEP_GROUPS.map((stepGroup, groupIndex) => (
+        <div className="drum-step-group" key={groupIndex}>
+          {stepGroup.map(renderStep)}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function didPointerDrag(event, dragSession) {
   return Math.abs(event.clientX - dragSession.startX) > DRAG_THRESHOLD_PX
@@ -47,12 +72,15 @@ function getTutorialCellRole(tutorialTargets, bar, instrument, step) {
 
 function DrumSequencer({
   matrix,
+  canPageBars = false,
   clipName,
   onClose = () => {},
   onClearCurrentBar,
   onClearDrums,
   onGenerateAllBars,
   onGenerateCurrentBar,
+  onNextBar = () => {},
+  onPreviousBar = () => {},
   onStepMove,
   onStepToggle,
   onRenameClip,
@@ -145,7 +173,7 @@ function DrumSequencer({
             清空本小节
           </button>
           <button className="btn-template drum-clear-action" type="button" onClick={onClearDrums}>
-            清空 Drums
+            清空整轨
           </button>
           <button
             className="editor-close"
@@ -160,11 +188,22 @@ function DrumSequencer({
       </header>
 
       <div className="drum-seq-body">
-        <div className="drum-seq-panel">
-          <div className="drum-step-numbers" aria-hidden="true">
-            <div />
-            <div className="drum-steps">
-              {STEP_NUMBERS.map((stepNumber) => (
+        <div className="drum-seq-pager-shell">
+          <button
+            className="drum-page-btn previous"
+            aria-label="上一小节"
+            title="上一小节"
+            type="button"
+            disabled={!canPageBars}
+            onClick={onPreviousBar}
+          >
+            {renderIcon(ChevronLeft)}
+          </button>
+
+          <div className="drum-seq-panel">
+            <div className="drum-step-numbers" aria-hidden="true">
+              <div />
+              {renderStepGroups((stepNumber) => (
                 <span
                   className={`drum-step-number${stepNumber % 4 === 0 ? ' beat-end' : ''} mono`}
                   key={stepNumber}
@@ -173,16 +212,14 @@ function DrumSequencer({
                 </span>
               ))}
             </div>
-          </div>
 
-          {DRUM_SEQUENCER_ROWS.map((row) => (
-            <div className="drum-row" key={row.id}>
-              <div className="drum-row-label">
-                <span className="drum-dot" data-instrument={row.id} />
-                <span>{row.label}</span>
-              </div>
-              <div className="drum-steps">
-                {STEP_NUMBERS.map((stepNumber) => {
+            {DRUM_SEQUENCER_ROWS.map((row) => (
+              <div className="drum-row" key={row.id}>
+                <div className="drum-row-label">
+                  <span className="drum-dot" data-instrument={row.id} />
+                  <span>{row.label}</span>
+                </div>
+                {renderStepGroups((stepNumber) => {
                   const stepIndex = stepNumber - 1;
                   const active = isDrumsStepActive(matrix, selectedBar, stepIndex, row.id);
                   const tutorialRole = getTutorialCellRole(
@@ -231,14 +268,25 @@ function DrumSequencer({
                   );
                 })}
               </div>
-            </div>
-          ))}
+            ))}
 
-          <div className="drum-bar-indicator mono">
-            {selectedBar + 1}
-            {' '}
-            / 8
+            <div className="drum-bar-indicator mono">
+              {selectedBar + 1}
+              {' '}
+              / 8
+            </div>
           </div>
+
+          <button
+            className="drum-page-btn next"
+            aria-label="下一小节"
+            title="下一小节"
+            type="button"
+            disabled={!canPageBars}
+            onClick={onNextBar}
+          >
+            {renderIcon(ChevronRight)}
+          </button>
         </div>
       </div>
     </section>

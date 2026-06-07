@@ -463,6 +463,7 @@ button {
 .edit-btn,
 .tool-icon,
 .editor-close,
+.drum-page-btn,
 .scale-arrow {
   display: grid;
   place-items: center;
@@ -486,6 +487,7 @@ button {
 .edit-btn:hover,
 .tool-icon:hover,
 .editor-close:hover,
+.drum-page-btn:hover,
 .scale-arrow:hover {
   color: var(--ink);
   background: var(--surface);
@@ -520,6 +522,7 @@ button {
 .edit-btn svg,
 .tool-icon svg,
 .editor-close svg,
+.drum-page-btn svg,
 .scale-arrow svg {
   width: 16px;
   height: 16px;
@@ -3223,13 +3226,44 @@ button {
   background: color-mix(in oklab, var(--bg) 45%, var(--surface));
 }
 
+.drum-seq-pager-shell {
+  display: grid;
+  grid-template-columns: 36px minmax(max-content, 980px) 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-width: max-content;
+  margin: 0 auto;
+}
+
 .drum-seq-panel {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  width: 100%;
   max-width: 980px;
   min-width: 0;
-  margin: 0 auto;
+}
+
+.drum-page-btn {
+  width: 36px;
+  height: 64px;
+  color: var(--c-drums-ink);
+  background: var(--surface);
+  border: 1px solid color-mix(in oklab, var(--c-drums-ink) 14%, var(--border-soft));
+  border-radius: 10px;
+  box-shadow: var(--shadow-1);
+}
+
+.drum-page-btn:hover:not(:disabled) {
+  color: white;
+  background: var(--c-drums-ink);
+}
+
+.drum-page-btn:disabled {
+  cursor: default;
+  opacity: 0.32;
+  box-shadow: none;
 }
 
 .drum-step-numbers,
@@ -3269,12 +3303,18 @@ button {
   background: color-mix(in oklab, var(--drum-hihat) 70%, white);
 }
 
-.drum-steps {
+.drum-step-groups {
   display: grid;
-  grid-template-columns: repeat(16, minmax(18px, 32px));
+  grid-template-columns: repeat(4, max-content);
   justify-content: center;
-  gap: 5px;
+  column-gap: clamp(12px, 2.4vw, 22px);
   min-width: 0;
+}
+
+.drum-step-group {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(18px, 32px));
+  gap: 5px;
 }
 
 .drum-step-number {
@@ -3314,6 +3354,10 @@ button {
   background: color-mix(in oklab, var(--border) 72%, transparent);
   border-radius: 999px;
   pointer-events: none;
+}
+
+.drum-step-group:last-child .beat-end::after {
+  display: none;
 }
 
 .drum-step {
@@ -3539,14 +3583,28 @@ button {
     padding: 16px 12px;
   }
 
+  .drum-seq-pager-shell {
+    grid-template-columns: 32px minmax(max-content, 1fr) 32px;
+    gap: 8px;
+  }
+
+  .drum-page-btn {
+    width: 32px;
+    height: 56px;
+  }
+
   .drum-step-numbers,
   .drum-row {
     grid-template-columns: 92px minmax(0, 1fr);
     gap: 10px;
   }
 
-  .drum-steps {
-    grid-template-columns: repeat(16, minmax(16px, 1fr));
+  .drum-step-groups {
+    column-gap: 12px;
+  }
+
+  .drum-step-group {
+    grid-template-columns: repeat(4, minmax(16px, 26px));
     gap: 4px;
   }
 }

@@ -126,7 +126,7 @@ function BassEditor({
             清空本小节
           </button>
           <button className="btn-template drum-clear-action" type="button" onClick={onClearBass}>
-            清空 Bass
+            清空整轨
           </button>
           <button className="tool-icon" aria-label="Clear phrase" title="Clear phrase" type="button" onClick={onClearBassBar}>
             {renderIcon(Trash2)}

@@ -146,7 +146,7 @@ function MelodyEditor({
             清空本小节
           </button>
           <button className="btn-template drum-clear-action" type="button" onClick={onClearMelody}>
-            清空 Melody
+            清空整轨
           </button>
           <button className="tool-icon" aria-label="Clear phrase" title="Clear phrase" type="button" onClick={onClearMelodyBar}>
             {renderIcon(Trash2)}

@@ -70,6 +70,10 @@ import {
   createBasicDrumsBarWithoutKick,
   getDrumsClipBarIndexes,
 } from './drumsPatternActions.js';
+import {
+  canPageDrumsClipBars,
+  getAdjacentDrumsClipBar,
+} from './drumsBarPaging.js';
 import { createTimelineTracks } from './timelineViewModels.js';
 import { syncEditorToPlaybackBar } from './playbackEditorSync.js';
 import { syncTrackScrollContainers } from './syncTrackScroll.js';
@@ -366,6 +370,7 @@ export default function App() {
     volumes,
   }), [clips, matrix, selectedBar, visibleTrackUi, volumes]);
   const selectedClip = selectedClipId ? clips.byId[selectedClipId] : null;
+  const canPageDrumsBars = useMemo(() => canPageDrumsClipBars(clips), [clips]);
 
   const handleTrackSelect = useCallback((trackId, barIndex = selectedBar) => {
     const state = useMusicStore.getState();
@@ -446,6 +451,23 @@ export default function App() {
   const handleClearDrums = useCallback(() => {
     useMusicStore.getState().clearTrack('drums');
   }, []);
+
+  const handlePageDrumsBar = useCallback((direction) => {
+    const state = useMusicStore.getState();
+    const nextBar = getAdjacentDrumsClipBar(state.clips, state.selectedBar, direction);
+    if (nextBar === null) return;
+
+    const clip = state.getClipForTrackBar('drums', nextBar);
+    if (clip) state.selectClip(clip.id);
+  }, []);
+
+  const handlePreviousDrumsBar = useCallback(() => {
+    handlePageDrumsBar('previous');
+  }, [handlePageDrumsBar]);
+
+  const handleNextDrumsBar = useCallback(() => {
+    handlePageDrumsBar('next');
+  }, [handlePageDrumsBar]);
 
   const applyTutorialStepSetup = useCallback((step) => {
     const setupType = step?.setup?.type;
@@ -1056,8 +1078,11 @@ export default function App() {
         onClearChordBar: handleClearChordBar,
         onClearChord: handleClearChord,
         onClearDrums: handleClearDrums,
+        canPageDrumsBars,
         onGenerateAllDrumsBars: handleGenerateAllDrumsBars,
         onGenerateCurrentDrumsBar: handleGenerateCurrentDrumsBar,
+        onNextDrumsBar: handleNextDrumsBar,
+        onPreviousDrumsBar: handlePreviousDrumsBar,
         onDrumsStepMove: handleDrumsStepMove,
         onDrumsStepToggle: handleDrumsStepToggle,
         rootKey,
