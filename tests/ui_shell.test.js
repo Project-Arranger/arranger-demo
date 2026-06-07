@@ -226,6 +226,10 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(chordEditorSource, /className="passing-anchor"/);
   assert.match(chordEditorSource, /<span className="beat-num mono" key=\{`beat-\$\{beatNumber\}`\}>\{beatNumber\}<\/span>/);
   assert.match(chordEditorSource, /getChordSpanDisplayLabel/);
+  assert.match(chordEditorSource, /getPassingChordDisplayLabel/);
+  assert.match(chordEditorSource, /const passingChordDisplayLabel = getPassingChordDisplayLabel\(matrix,\s*selectedBar,\s*PASSING_CHORD_STEP_INDEX\);/);
+  assert.match(chordEditorSource, /\{passingChordDisplayLabel \? null : renderIcon\(Plus\)\}/);
+  assert.match(chordEditorSource, /\{passingChordDisplayLabel \?\? '经过和弦'\}/);
   assert.doesNotMatch(chordEditorSource, /className="chord-label-row"/);
   assert.doesNotMatch(chordEditorSource, /className="beat-number-row"/);
   assert.doesNotMatch(chordEditorSource, /getChordBeatDisplaySegments/);

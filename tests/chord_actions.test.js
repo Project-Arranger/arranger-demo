@@ -7,6 +7,7 @@ import {
   getChordStepCell,
   getChordCell,
   getChordBeatDisplaySegments,
+  getPassingChordDisplayLabel,
   setChordCell,
   setChordNoteCell,
   getChordBarDisplayLabel,
@@ -106,6 +107,26 @@ test('chord display labels use groove source chord labels and merge arpeggio spa
     { startBeat: 2, span: 1, label: null, hasValue: false, hasChord: false, mergeKey: null },
     { startBeat: 3, span: 1, label: null, hasValue: false, hasChord: false, mergeKey: null },
   ]);
+});
+
+test('passing chord shortcut labels stay separate from beat header labels', () => {
+  let matrix = createInitialMatrix();
+  matrix = setChordStepChord(matrix, 2, 14, 'C/B');
+
+  assert.equal(getChordSpanDisplayLabel(matrix, 2, 3), null);
+  assert.equal(getPassingChordDisplayLabel(matrix, 2, 14), 'C/B');
+  assert.deepEqual(getChordBeatDisplaySegments(matrix, 2)[3], {
+    startBeat: 3,
+    span: 1,
+    label: null,
+    hasValue: false,
+    hasChord: false,
+    mergeKey: null,
+  });
+
+  matrix = setChordCell(matrix, 2, 3, 'G');
+  assert.equal(getChordSpanDisplayLabel(matrix, 2, 3), 'G');
+  assert.equal(getPassingChordDisplayLabel(matrix, 2, 14), 'C/B');
 });
 
 function nextChordLabel(matrix, barIndex, step) {

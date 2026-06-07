@@ -9,6 +9,7 @@ import {
   createPassingChordCell,
   getChordCellNotes,
   getChordSpanStep,
+  isPassingChordCell,
   toggleChordNoteCell,
 } from '../domain/chordCells.js';
 
@@ -184,6 +185,7 @@ function getChordSpanDisplayLabel(matrix, barIndex, spanIndex) {
   if (mainCell?.type !== 'chord') return null;
 
   const addedNotes = cells.reduce((notes, cell) => {
+    if (isPassingChordCell(cell)) return notes;
     getChordCellNotes(cell).forEach((note) => {
       if (!notes.includes(note)) notes.push(note);
     });
@@ -200,11 +202,14 @@ function getChordBeatCells(matrix, barIndex, spanIndex) {
 }
 
 function getChordBeatSourceLabel(cells) {
-  return cells.find((cell) => cell?.sourceChordLabel)?.sourceChordLabel ?? null;
+  return cells.find((cell) => (
+    cell?.sourceChordLabel && !isPassingChordCell(cell)
+  ))?.sourceChordLabel ?? null;
 }
 
 function getChordBeatFallbackNoteLabel(cells) {
   const noteLabels = cells.reduce((notes, cell) => {
+    if (isPassingChordCell(cell)) return notes;
     if (cell?.sourceChordLabel) return notes;
     getChordCellNotes(cell).forEach((note) => {
       if (!notes.includes(note)) notes.push(note);
@@ -219,9 +224,18 @@ function getChordBeatMergeKey(cells, label) {
   if (!label) return null;
 
   const arpeggioCell = cells.find((cell) => (
-    cell?.type === 'notes' && cell.sourceChordLabel && cell.grooveTemplateId
+    cell?.type === 'notes' && cell.sourceChordLabel && cell.grooveTemplateId && !isPassingChordCell(cell)
   ));
   return arpeggioCell ? `${arpeggioCell.grooveTemplateId}:${label}` : null;
+}
+
+function getPassingChordDisplayLabel(matrix, barIndex, stepIndex) {
+  if (!Number.isInteger(stepIndex) || stepIndex < 0 || stepIndex >= STEPS_PER_BAR) return null;
+
+  const cell = matrix?.chord?.[barIndex]?.[stepIndex];
+  if (!isPassingChordCell(cell)) return null;
+
+  return cell.sourceChordLabel ?? cell.label ?? null;
 }
 
 function getChordBeatDisplayInfo(matrix, barIndex, spanIndex) {
@@ -273,6 +287,7 @@ export {
   getChordCell,
   getChordBarDisplayLabel,
   getChordSpanDisplayLabel,
+  getPassingChordDisplayLabel,
   getExistingChordClipBars,
   setChordCell,
   setChordNoteCell,

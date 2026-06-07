@@ -22,6 +22,7 @@ import {
 import {
   getChordBarDisplayLabel,
   getChordCell,
+  getPassingChordDisplayLabel,
   getChordSpanDisplayLabel,
   getChordStepCell,
 } from '../chordActions.js';
@@ -361,9 +362,11 @@ function ChordEditor({
   const primaryChordLabel = getChordBarDisplayLabel(matrix, selectedBar);
   const passingSourceChord = getChordCell(matrix, selectedBar, 0)?.label ?? primaryChordLabel;
   const passingTargetChord = getDoowopPassingTargetChord(passingSourceChord);
+  const passingChordDisplayLabel = getPassingChordDisplayLabel(matrix, selectedBar, PASSING_CHORD_STEP_INDEX);
   const passingButtonClassName = [
     'add-chord-btn',
     'passing-btn',
+    passingChordDisplayLabel ? 'filled' : '',
     passingChordPanel?.bar === selectedBar ? 'variants-open' : '',
   ].filter(Boolean).join(' ');
   const closeChordPanels = useCallback(() => {
@@ -613,8 +616,8 @@ function ChordEditor({
                           openPassingChordPanel(event.currentTarget);
                         }}
                       >
-                        {renderIcon(Plus)}
-                        经过和弦
+                        {passingChordDisplayLabel ? null : renderIcon(Plus)}
+                        {passingChordDisplayLabel ?? '经过和弦'}
                       </button>
                     </div>
                   ) : null}

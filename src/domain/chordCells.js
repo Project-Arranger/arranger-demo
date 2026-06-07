@@ -305,6 +305,10 @@ function createPassingChordCell(chordName) {
   };
 }
 
+function isPassingChordCell(cell) {
+  return cell?.grooveTemplateId === PASSING_CHORD_GROOVE_ID;
+}
+
 function getPassingChordOptions(fromName, toName) {
   const fromRoot = getChordRootName(fromName);
   const toRoot = getChordRootName(toName);
@@ -455,6 +459,7 @@ export {
   isChordCellActive,
   isChordGridPitch,
   isChordName,
+  isPassingChordCell,
   isChordRoot,
   isChordSpan,
   toggleChordCell,
