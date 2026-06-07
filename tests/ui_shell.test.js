@@ -149,8 +149,9 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(clipNameInputSource, /onChange=\{\(event\) => onRenameClip\(event\.target\.value\)\}/);
   assert.match(chordEditorSource, /ClipNameInput/);
   assert.match(drumSequencerSource, /ClipNameInput/);
-  assert.doesNotMatch(drumSequencerSource, /className="drum-step-numbers"/);
-  assert.doesNotMatch(drumSequencerSource, /className=\{`drum-step-number/);
+  assert.match(drumSequencerSource, /className="drum-step-numbers"/);
+  assert.match(drumSequencerSource, /className=\{`drum-step-number\$\{stepNumber % 4 === 0 \? ' beat-end' : ''\} mono`\}/);
+  assert.match(drumSequencerSource, />\s*\{stepNumber\}\s*<\/span>/);
   assert.match(trackEditorPlaceholderSource, /ClipNameInput/);
   assert.match(trackEditorPlaceholderSource, /添加一个片段即可开始编辑/);
   assert.doesNotMatch(trackEditorPlaceholderSource, /clip去编辑/);

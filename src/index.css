@@ -3174,6 +3174,7 @@ button {
   box-shadow: none;
 }
 
+.drum-step-numbers,
 .drum-row {
   display: grid;
   grid-template-columns: 118px minmax(0, 1fr);
@@ -3226,8 +3227,32 @@ button {
   gap: 5px;
 }
 
+.drum-step-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 16px;
+  color: var(--ink-4);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.drum-step-number.beat-end,
 .drum-step.beat-end {
   position: relative;
+}
+
+.drum-step-number.beat-end::after {
+  position: absolute;
+  top: 2px;
+  right: calc(-1 * var(--drum-step-group-gap-half));
+  bottom: 2px;
+  width: 1px;
+  content: "";
+  background: color-mix(in oklab, var(--border) 72%, transparent);
+  border-radius: 999px;
+  pointer-events: none;
+  transform: translateX(50%);
 }
 
 .drum-step.beat-end::after {
@@ -3474,6 +3499,7 @@ button {
     height: 56px;
   }
 
+  .drum-step-numbers,
   .drum-row {
     grid-template-columns: 92px minmax(0, 1fr);
     gap: 10px;

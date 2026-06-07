@@ -201,6 +201,18 @@ function DrumSequencer({
           </button>
 
           <div className="drum-seq-panel">
+            <div className="drum-step-numbers" aria-hidden="true">
+              <div />
+              {renderStepGroups((stepNumber) => (
+                <span
+                  className={`drum-step-number${stepNumber % 4 === 0 ? ' beat-end' : ''} mono`}
+                  key={stepNumber}
+                >
+                  {stepNumber}
+                </span>
+              ))}
+            </div>
+
             {DRUM_SEQUENCER_ROWS.map((row) => (
               <div className="drum-row" key={row.id}>
                 <div className="drum-row-label">

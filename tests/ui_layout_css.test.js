@@ -147,17 +147,17 @@ test('drum sequencer uses three fixed rows and sixteen stable step columns', asy
 
   assert.match(css, /\.drum-seq-body\s*\{[^}]*overflow:\s*auto;/s);
   assert.match(css, /\.drum-seq-pager-shell\s*\{[^}]*grid-template-columns:\s*36px minmax\(max-content,\s*980px\) 36px;/s);
+  assert.match(css, /\.drum-step-numbers,\s*\n\.drum-row\s*\{[^}]*grid-template-columns:\s*118px minmax\(0,\s*1fr\);/s);
   assert.match(css, /\.drum-row\s*\{[^}]*grid-template-columns:\s*118px minmax\(0,\s*1fr\);/s);
   assert.match(css, /\.drum-step-groups\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*max-content\);/s);
   assert.match(css, /\.drum-step-groups\s*\{[^}]*--drum-step-group-gap:\s*clamp\(12px,\s*2\.4vw,\s*22px\);/s);
   assert.match(css, /\.drum-step-groups\s*\{[^}]*--drum-step-group-gap-half:\s*clamp\(6px,\s*1\.2vw,\s*11px\);/s);
   assert.match(css, /\.drum-step-groups\s*\{[^}]*column-gap:\s*var\(--drum-step-group-gap\);/s);
   assert.match(css, /\.drum-step-group\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(18px,\s*32px\)\);/s);
-  assert.doesNotMatch(css, /\.drum-step-numbers\s*\{/);
-  assert.doesNotMatch(css, /\.drum-step-number\s*\{/);
-  assert.doesNotMatch(css, /\.drum-step-number\.beat-end/);
   assert.doesNotMatch(css, /\.drum-step(?:-number)?\.beat-end\s*\{[^}]*margin-right:/s);
   assert.match(css, /\.drum-page-btn\s*\{[^}]*width:\s*36px;/s);
+  assert.match(css, /\.drum-step-number\s*\{[^}]*justify-content:\s*center;[^}]*height:\s*16px;/s);
+  assert.match(css, /\.drum-step-number\.beat-end::after\s*\{[^}]*position:\s*absolute;[^}]*right:\s*calc\(-1 \* var\(--drum-step-group-gap-half\)\);[^}]*transform:\s*translateX\(50%\);/s);
   assert.match(css, /\.drum-step\.beat-end::after\s*\{[^}]*position:\s*absolute;[^}]*right:\s*calc\(-1 \* var\(--drum-step-group-gap-half\)\);[^}]*transform:\s*translateX\(50%\);/s);
   assert.match(css, /\.drum-step\.active\[data-instrument="kick"\]/);
   assert.match(css, /\.drum-step\.active\[data-instrument="snare"\]/);
