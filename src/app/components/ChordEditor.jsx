@@ -20,9 +20,9 @@ import {
   CHORD_GRID_PITCHES,
 } from '../uiShellData.js';
 import {
-  getChordBeatDisplaySegments,
   getChordBarDisplayLabel,
   getChordCell,
+  getChordSpanDisplayLabel,
   getChordStepCell,
 } from '../chordActions.js';
 import {
@@ -359,10 +359,10 @@ function ChordEditor({
     templatePage * TEMPLATE_PAGE_SIZE + TEMPLATE_PAGE_SIZE,
   );
   const primaryChordLabel = getChordBarDisplayLabel(matrix, selectedBar);
-  const beatDisplaySegments = getChordBeatDisplaySegments(matrix, selectedBar);
   const passingSourceChord = getChordCell(matrix, selectedBar, 0)?.label ?? primaryChordLabel;
   const passingTargetChord = getDoowopPassingTargetChord(passingSourceChord);
   const passingButtonClassName = [
+    'add-chord-btn',
     'passing-btn',
     passingChordPanel?.bar === selectedBar ? 'variants-open' : '',
   ].filter(Boolean).join(' ');
@@ -565,38 +565,18 @@ function ChordEditor({
         </aside>
 
         <div className="chord-grid">
-          <div className="chord-label-row">
-            {beatDisplaySegments.map((segment) => (
-              <button
-                className={[
-                  'add-chord-btn',
-                  'chord-label-segment',
-                  segment.hasValue ? 'filled' : '',
-                  segment.span > 1 ? 'merged' : '',
-                  addChordPanel?.bar === selectedBar && addChordPanel?.spanIndex === segment.startBeat ? 'variants-open' : '',
-                ].filter(Boolean).join(' ')}
-                aria-label={`添加和弦 beat ${segment.startBeat + 1}`}
-                data-chord-root={segment.label}
-                key={`segment-${segment.startBeat}`}
-                style={{ gridColumn: `${segment.startBeat + 1} / span ${segment.span}` }}
-                type="button"
-                onClick={(event) => {
-                  openAddChordPanel(segment.startBeat, event.currentTarget, segment.hasChord);
-                }}
-              >
-                {segment.hasValue ? null : renderIcon(Plus)}
-                {segment.label ?? '添加和弦'}
-              </button>
-            ))}
-          </div>
-          <div className="beat-number-row">
-            {BEAT_NUMBERS.map((beatNumber) => (
-              <span className="beat-num mono" key={beatNumber}>{beatNumber}</span>
-            ))}
-          </div>
           {BEAT_NUMBERS.map((beatNumber) => {
             const spanIndex = beatNumber - 1;
             const hasPassingShortcut = spanIndex === PASSING_CHORD_SPAN_INDEX;
+            const label = getChordSpanDisplayLabel(matrix, selectedBar, spanIndex);
+            const hasValue = Boolean(label);
+            const hasChord = getChordCell(matrix, selectedBar, spanIndex)?.type === 'chord';
+            const beatHeadAddButtonClassName = [
+              'add-chord-btn',
+              'chord-label-segment',
+              hasValue ? 'filled' : '',
+              addChordPanel?.bar === selectedBar && addChordPanel?.spanIndex === spanIndex ? 'variants-open' : '',
+            ].filter(Boolean).join(' ');
 
             return (
               <div
@@ -607,24 +587,39 @@ function ChordEditor({
                 key={beatNumber}
                 style={{ gridColumn: spanIndex + 1 }}
               >
-                {hasPassingShortcut ? (
-                  <div className="passing-anchor">
-                    <button
-                      className={passingButtonClassName}
-                      type="button"
-                      aria-label="添加经过和弦"
-                      title="添加经过和弦"
-                      aria-expanded={passingChordPanel?.bar === selectedBar}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        openPassingChordPanel(event.currentTarget);
-                      }}
-                    >
-                      {renderIcon(Plus)}
-                      经过和弦
-                    </button>
-                  </div>
-                ) : null}
+                <div className="beat-head">
+                  <button
+                    className={beatHeadAddButtonClassName}
+                    aria-label={`添加和弦 beat ${beatNumber}`}
+                    data-chord-root={label}
+                    type="button"
+                    onClick={(event) => {
+                      openAddChordPanel(spanIndex, event.currentTarget, hasChord);
+                    }}
+                  >
+                    {hasValue ? null : renderIcon(Plus)}
+                    {label ?? '添加和弦'}
+                  </button>
+                  {hasPassingShortcut ? (
+                    <div className="passing-anchor">
+                      <button
+                        className={passingButtonClassName}
+                        type="button"
+                        aria-label="添加经过和弦"
+                        title="添加经过和弦"
+                        aria-expanded={passingChordPanel?.bar === selectedBar}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openPassingChordPanel(event.currentTarget);
+                        }}
+                      >
+                        {renderIcon(Plus)}
+                        经过和弦
+                      </button>
+                    </div>
+                  ) : null}
+                  <span className="beat-num mono" key={`beat-${beatNumber}`}>{beatNumber}</span>
+                </div>
                 <div
                   className="beat-cells-viewport"
                   ref={(viewport) => setBeatCellsViewportRef(spanIndex, viewport)}

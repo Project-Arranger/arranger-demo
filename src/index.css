@@ -1877,8 +1877,8 @@ button {
 .chord-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(128px, 1fr));
-  grid-template-rows: auto auto minmax(0, 1fr);
-  gap: 6px 14px;
+  grid-template-rows: minmax(0, 1fr);
+  gap: 14px;
   min-width: 0;
   min-height: 0;
   padding: 14px 22px 16px 14px;
@@ -1886,93 +1886,37 @@ button {
   overflow-y: hidden;
 }
 
-.chord-label-row {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: repeat(4, minmax(128px, 1fr));
-  gap: 14px;
-  min-width: 0;
-}
-
-.beat-number-row {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: repeat(4, minmax(128px, 1fr));
-  gap: 14px;
-  min-width: 0;
-}
-
 .beat-group {
   display: flex;
   flex-direction: column;
+  gap: var(--chord-beat-gap);
   min-width: 0;
   min-height: 0;
 }
 
-.beat-group.has-passing {
+.beat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  min-height: var(--chord-beat-head-height);
+}
+
+.beat-group.has-passing .beat-head {
   position: relative;
 }
 
 .passing-anchor {
   position: absolute;
-  top: calc(-1 * (var(--chord-beat-head-height) + 26px));
+  top: 50%;
   left: 62.5%;
   z-index: 6;
   transform: translate(-50%, -50%);
 }
 
-.passing-anchor::after {
-  position: absolute;
-  top: calc(100% + 2px);
-  left: 50%;
-  width: 1px;
-  height: 6px;
-  background: var(--ink);
-  content: "";
-  opacity: 0.35;
-  transform: translateX(-50%);
-}
-
 .passing-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 26px;
-  padding: 0 11px 0 8px;
-  color: white;
-  background: var(--ink);
-  border: 0;
-  border-radius: 999px;
-  box-shadow:
-    0 1px 0 oklch(100% 0 0 / 0.08) inset,
-    0 4px 10px oklch(20% 0.02 270 / 0.18);
-  cursor: pointer;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-  white-space: nowrap;
-  transition:
-    background 0.12s ease,
-    box-shadow 0.12s ease,
-    transform 0.12s ease;
-}
-
-.passing-btn:hover {
-  background: oklch(28% 0.02 270);
-  transform: translateY(-1px);
-}
-
-.passing-btn svg {
-  width: 10px;
-  height: 10px;
-}
-
-.passing-btn.variants-open {
-  background: var(--variant);
-  box-shadow:
-    0 1px 0 oklch(100% 0 0 / 0.08) inset,
-    0 0 0 3px oklch(70% 0.16 355 / 0.2),
-    0 4px 14px oklch(70% 0.16 355 / 0.35);
+  flex: 0 0 auto;
 }
 
 .add-chord-btn {
@@ -1988,12 +1932,15 @@ button {
 }
 
 .chord-label-segment {
-  width: 100%;
   min-width: 0;
+  max-width: calc(100% - 34px);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.chord-label-segment.merged {
-  justify-content: center;
+.beat-group.has-passing .beat-head .add-chord-btn {
+  width: auto;
+  flex: 0 0 auto;
 }
 
 .add-chord-btn:hover {
@@ -2048,20 +1995,6 @@ button {
   gap: var(--chord-cell-gap);
   min-height: calc(var(--chord-cell-grid-height) * 3);
   padding: var(--chord-cell-padding);
-}
-
-.beat-group.has-passing .beat-cells::before {
-  position: absolute;
-  top: var(--chord-cell-padding);
-  bottom: var(--chord-cell-padding);
-  left: calc(var(--chord-cell-padding) + (((100% - (var(--chord-cell-padding) * 2) - (var(--chord-cell-gap) * 3)) / 4 + var(--chord-cell-gap)) * 2));
-  z-index: 1;
-  width: calc((100% - (var(--chord-cell-padding) * 2) - (var(--chord-cell-gap) * 3)) / 4);
-  background: oklch(70% 0.16 355 / 0.06);
-  border-radius: 5px;
-  box-shadow: inset 0 0 0 1.5px oklch(70% 0.16 355 / 0.32);
-  content: "";
-  pointer-events: none;
 }
 
 .cell {
@@ -2224,6 +2157,14 @@ button {
   grid-template-rows: auto minmax(0, 1fr);
 }
 
+.bass-beat-number-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(4, minmax(128px, 1fr));
+  gap: 14px;
+  min-width: 0;
+}
+
 .bass-cell.active {
   background: var(--c-bass);
   border-color: color-mix(in oklab, var(--c-bass-ink) 42%, var(--border));
@@ -2246,7 +2187,8 @@ button {
   border-color: color-mix(in oklab, var(--c-chord-ink) 28%, transparent);
 }
 
-.add-chord-btn.variants-open {
+.add-chord-btn.variants-open,
+.passing-btn.variants-open {
   box-shadow:
     0 0 0 2px oklch(70% 0.16 355),
     0 4px 12px oklch(56% 0.16 355 / 0.22);
@@ -3611,8 +3553,7 @@ button {
     padding: 12px;
   }
 
-  .chord-label-row,
-  .beat-number-row {
+  .bass-beat-number-row {
     grid-template-columns: repeat(4, minmax(116px, 1fr));
     gap: 10px;
   }

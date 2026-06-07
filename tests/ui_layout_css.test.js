@@ -185,8 +185,11 @@ test('chord pitch rail rows align with chord grid rows', async () => {
   assert.match(css, /\.beat-cells\s*\{[^}]*padding:\s*var\(--chord-cell-padding\);/s);
   assert.doesNotMatch(css, /\.cell\.sustain/);
   assert.match(css, /\.chord-grid\s*\{[^}]*overflow-x:\s*auto;[^}]*overflow-y:\s*hidden;/s);
-  assert.match(css, /\.chord-label-row\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(128px,\s*1fr\)\);/s);
-  assert.match(css, /\.beat-number-row\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(128px,\s*1fr\)\);/s);
+  assert.match(css, /\.chord-grid\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(128px,\s*1fr\)\);/s);
+  assert.match(css, /\.beat-head\s*\{[^}]*display:\s*flex;[^}]*justify-content:\s*space-between;/s);
+  assert.match(css, /\.beat-head\s*\{[^}]*min-height:\s*var\(--chord-beat-head-height\);/s);
+  assert.doesNotMatch(css, /\.chord-label-row\s*\{/);
+  assert.doesNotMatch(css, /\.beat-number-row\s*\{/);
   assert.match(css, /\.cell\.added,\s*\.cell\.active\.added\s*\{[^}]*background:\s*color-mix\(in oklab,\s*var\(--c-chord\) 35%,\s*white\);/s);
   assert.doesNotMatch(css, /\.cell\.active\.added\s*\{[^}]*linear-gradient/s);
   assert.doesNotMatch(css, /--chord-extension:/);
@@ -218,6 +221,8 @@ test('bass editor mirrors the reference piano-roll and groove picker layout', as
   assert.match(css, /\.editor\[data-screen-label="Bass Editor"\] \.clip-chip\s*\{[^}]*background:\s*var\(--c-bass\);/s);
   assert.match(css, /\.scale-notes\s*\{[^}]*grid-template-rows:\s*repeat\(36,\s*minmax\(0,\s*1fr\)\);/s);
   assert.match(css, /\.beat-cells\s*\{[^}]*grid-template-rows:\s*repeat\(36,\s*minmax\(0,\s*1fr\)\);/s);
+  assert.match(css, /\.bass-beat-number-row\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(128px,\s*1fr\)\);/s);
+  assert.match(css, /@media \(max-width: 980px\)[\s\S]*\.bass-beat-number-row\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(116px,\s*1fr\)\);/s);
   assert.doesNotMatch(css, /\.bass-scale-notes\s*\{[^}]*grid-template-rows:\s*repeat\(12,/s);
   assert.doesNotMatch(css, /\.bass-beat-cells\s*\{[^}]*grid-template-rows:\s*repeat\(12,/s);
   assert.match(css, /\.bass-note-key\.root\s*\{[^}]*color:\s*var\(--c-bass-ink\);/s);
@@ -375,12 +380,20 @@ test('add chord panels keep enrich and passing picker layout without diatonic UI
 test('passing chord shortcut anchors over column fifteen without shifting the grid', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
-  assert.match(css, /\.beat-group\.has-passing\s*\{[^}]*position:\s*relative;/s);
-  assert.match(css, /\.passing-anchor\s*\{[^}]*position:\s*absolute;[^}]*left:\s*62\.5%;/s);
-  assert.match(css, /\.passing-anchor::after\s*\{[^}]*height:\s*6px;/s);
-  assert.match(css, /\.passing-btn\s*\{[^}]*display:\s*inline-flex;[^}]*border-radius:\s*999px;/s);
-  assert.match(css, /\.passing-btn\.variants-open\s*\{/);
-  assert.match(css, /\.beat-group\.has-passing \.beat-cells::before\s*\{[^}]*pointer-events:\s*none;/s);
+  assert.match(css, /\.beat-group\.has-passing \.beat-head\s*\{[^}]*position:\s*relative;/s);
+  assert.match(css, /\.beat-group\.has-passing \.beat-head \.add-chord-btn\s*\{[^}]*width:\s*auto;/s);
+  assert.match(css, /\.passing-anchor\s*\{[^}]*position:\s*absolute;[^}]*top:\s*50%;[^}]*left:\s*62\.5%;/s);
+  assert.match(css, /\.add-chord-btn\s*\{[^}]*background:\s*var\(--bg-deep\);[^}]*border:\s*1px solid var\(--border-soft\);[^}]*border-radius:\s*999px;/s);
+  assert.match(css, /\.add-chord-btn\.variants-open,\s*\.passing-btn\.variants-open\s*\{/);
+  assert.doesNotMatch(css, /\.passing-anchor\s*\{[^}]*top:\s*calc\(-1 \*/s);
+  assert.doesNotMatch(css, /\.passing-anchor::after\s*\{/);
+  assert.doesNotMatch(css, /\.beat-group\.has-passing \.beat-cells::before\s*\{/);
+  assert.doesNotMatch(css, /oklch\(70% 0\.16 355 \/ 0\.06\)/);
+  assert.doesNotMatch(css, /\.passing-btn\s*\{[^}]*background:\s*var\(--ink\);/s);
+  assert.doesNotMatch(css, /\.passing-btn\s*\{[^}]*color:\s*white;/s);
+  assert.doesNotMatch(css, /\.passing-btn\s*\{[^}]*border:\s*0;/s);
+  assert.doesNotMatch(css, /\.passing-btn\s*\{[^}]*box-shadow:/s);
+  assert.doesNotMatch(css, /\.passing-btn svg\s*\{/);
   assert.doesNotMatch(css, /\.passing-anchor\s*\{[^}]*margin/s);
   assert.doesNotMatch(css, /\.passing-btn\s*\{[^}]*margin/s);
 });
