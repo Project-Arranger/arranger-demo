@@ -19,6 +19,7 @@ const CHORD_GRID_PITCHES = Object.freeze(
   )),
 );
 const MAJOR_TRIAD_INTERVALS = Object.freeze([0, 4, 7]);
+const PASSING_CHORD_GROOVE_ID = 'passing-shortcut';
 const DIATONIC_CHORD_OPTIONS = Object.freeze([
   Object.freeze({ name: 'C', roman: 'I', desc: '调式中心，最稳定、最有归属感的主和弦。' }),
   Object.freeze({ name: 'Dm', roman: 'ii', desc: '柔和的下属功能，常推向 V 形成自然过渡。' }),
@@ -283,6 +284,27 @@ function getChordRootName(chordName) {
   return getChordDefinition(chordName)?.chordRoot ?? null;
 }
 
+function getDoowopPassingTargetChord(chordName) {
+  const chordRoot = getChordRootName(chordName);
+  const doowopChords = CHORD_TEMPLATES.doowop.chords;
+  const chordIndex = doowopChords.indexOf(chordRoot);
+  if (chordIndex === -1) return null;
+
+  return doowopChords[(chordIndex + 1) % doowopChords.length];
+}
+
+function createPassingChordCell(chordName) {
+  const cell = createChordCell(chordName);
+  if (!cell) return null;
+
+  return {
+    ...cell,
+    duration: '16n',
+    grooveTemplateId: PASSING_CHORD_GROOVE_ID,
+    sourceChordLabel: cell.label,
+  };
+}
+
 function getPassingChordOptions(fromName, toName) {
   const fromRoot = getChordRootName(fromName);
   const toRoot = getChordRootName(toName);
@@ -417,9 +439,11 @@ export {
   createChordCell,
   createChordNoteCell,
   createChordNotesCell,
+  createPassingChordCell,
   createChordTonePitches,
   getChordDefinition,
   getChordCellNotes,
+  getDoowopPassingTargetChord,
   getChordNoteOctave,
   getChordNotePitch,
   getChordRootName,

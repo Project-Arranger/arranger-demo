@@ -12,6 +12,7 @@ import {
   getChordBarDisplayLabel,
   getChordSpanDisplayLabel,
   toggleChordNoteStep,
+  setChordStepChord,
 } from '../src/app/chordActions.js';
 import createInitialMatrix from '../src/store/createInitialMatrix.js';
 
@@ -168,6 +169,40 @@ test('toggleChordNoteStep toggles notes without clearing sibling columns', () =>
 
   matrix = toggleChordNoteStep(matrix, 2, 3, 1, 'G');
   assert.deepEqual(getChordStepCell(matrix, 2, 3, 1), { type: 'notes', notes: ['A'], label: 'A' });
+});
+
+test('setChordStepChord writes a passing chord to one exact step only', () => {
+  let matrix = createInitialMatrix();
+  matrix = setChordCell(matrix, 2, 3, 'G');
+  matrix = setChordNoteCell(matrix, 2, 3, 1, 'D');
+
+  const nextMatrix = setChordStepChord(matrix, 2, 14, 'C/B');
+
+  assert.notEqual(nextMatrix, matrix);
+  assert.notEqual(nextMatrix.chord[2], matrix.chord[2]);
+  assert.deepEqual(nextMatrix.chord[2][14], {
+    type: 'chord',
+    root: 'C',
+    chordRoot: 'C',
+    quality: 'slash',
+    label: 'C/B',
+    toneRoots: ['C', 'E', 'G'],
+    duration: '16n',
+    grooveTemplateId: 'passing-shortcut',
+    sourceChordLabel: 'C/B',
+  });
+  assert.deepEqual(nextMatrix.chord[2][12], matrix.chord[2][12]);
+  assert.deepEqual(nextMatrix.chord[2][13], matrix.chord[2][13]);
+  assert.deepEqual(nextMatrix.chord[2][15], matrix.chord[2][15]);
+  assert.equal(matrix.chord[2][14], null);
+});
+
+test('setChordStepChord ignores invalid steps and chord names', () => {
+  const matrix = createInitialMatrix();
+
+  assert.equal(setChordStepChord(matrix, 2, -1, 'C'), matrix);
+  assert.equal(setChordStepChord(matrix, 2, 16, 'C'), matrix);
+  assert.equal(setChordStepChord(matrix, 2, 14, 'Hmaj7'), matrix);
 });
 
 test('applyChordTemplateToExistingClips only writes existing chord clips', () => {

@@ -356,19 +356,31 @@ test('clip name edit icon sits beside the shared clip name input', async () => {
   assert.match(css, /\.clip-name-edit-icon\s*\{[^}]*pointer-events:\s*none;/s);
 });
 
-test('add chord secondary panel matches the two-tab reference picker layout', async () => {
+test('add chord panels keep enrich and passing picker layout without diatonic UI', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
   assert.match(css, /\.chord-variants\s*\{[^}]*position:\s*fixed;/s);
   assert.match(css, /\.chord-variants\s*\{[^}]*width:\s*min\(760px,\s*calc\(100vw - 32px\)\);/s);
   assert.match(css, /\.cv-tabs\s*\{[^}]*display:\s*flex;/s);
+  assert.match(css, /\.cv-title\s*\{[^}]*font-size:\s*15\.5px;[^}]*font-weight:\s*800;/s);
   assert.match(css, /\.cv-tab\[aria-selected="true"\]::after\s*\{/);
   assert.match(css, /\.cv-panel\[hidden\]\s*\{[^}]*display:\s*none !important;/s);
-  assert.match(css, /\.cv-grid\.diatonic\s*\{[^}]*grid-template-columns:\s*repeat\(7,\s*minmax\(0,\s*1fr\)\);/s);
+  assert.doesNotMatch(css, /\.cv-grid\.diatonic/);
   assert.match(css, /\.cv-grid\.enrich\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\);/s);
-  assert.match(css, /\.cv-grid\.diatonic \.cv-card\s*\{[^}]*min-height:\s*150px;/s);
-  assert.match(css, /\.cv-grid\.diatonic \.cv-foot\s*\{[^}]*margin-top:\s*auto;/s);
   assert.match(css, /\.cv-context\s*\{[^}]*display:\s*flex;/s);
   assert.match(css, /\.cv-empty\s*\{[^}]*border:\s*1px dashed var\(--border\);/s);
-  assert.match(css, /\.cv-roman\s*\{/);
+  assert.doesNotMatch(css, /\.cv-roman\s*\{/);
+});
+
+test('passing chord shortcut anchors over column fifteen without shifting the grid', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.beat-group\.has-passing\s*\{[^}]*position:\s*relative;/s);
+  assert.match(css, /\.passing-anchor\s*\{[^}]*position:\s*absolute;[^}]*left:\s*62\.5%;/s);
+  assert.match(css, /\.passing-anchor::after\s*\{[^}]*height:\s*6px;/s);
+  assert.match(css, /\.passing-btn\s*\{[^}]*display:\s*inline-flex;[^}]*border-radius:\s*999px;/s);
+  assert.match(css, /\.passing-btn\.variants-open\s*\{/);
+  assert.match(css, /\.beat-group\.has-passing \.beat-cells::before\s*\{[^}]*pointer-events:\s*none;/s);
+  assert.doesNotMatch(css, /\.passing-anchor\s*\{[^}]*margin/s);
+  assert.doesNotMatch(css, /\.passing-btn\s*\{[^}]*margin/s);
 });

@@ -8,6 +8,7 @@ import {
   extractDrumsInstruments,
   extractLeadEvent,
 } from '../src/audio/matrixPlaybackAdapter.js';
+import { createPassingChordCell } from '../src/domain/chordCells.js';
 import { STEPS_PER_BAR, TOTAL_BARS } from '../src/domain/musicConstants.js';
 import createInitialMatrix from '../src/store/createInitialMatrix.js';
 
@@ -220,6 +221,27 @@ test('matrix playback adapter plays groove-authored short chord hits on any sixt
       quality: '7',
       label: 'G7',
       notes: ['G4', 'B4', 'D5', 'F5'],
+      duration: '16n',
+    },
+  ]);
+});
+
+test('matrix playback adapter plays passing shortcut chords at step fifteen', () => {
+  const matrix = createInitialMatrix();
+  matrix.chord[0][14] = createPassingChordCell('E7');
+
+  const adapter = createMatrixPlaybackAdapter(() => matrix);
+
+  assert.deepEqual(adapter.getEventsForStep(0, 14), [
+    {
+      type: 'chord',
+      trackId: 'chord',
+      bar: 0,
+      step: 14,
+      root: 'E',
+      quality: '7',
+      label: 'E7',
+      notes: ['E4', 'G#4', 'B4', 'D5'],
       duration: '16n',
     },
   ]);

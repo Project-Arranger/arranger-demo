@@ -22,6 +22,7 @@ function BottomEditor({
   onChordGrooveTemplateApply,
   onChordTemplatePreview,
   onChordTemplateApply,
+  onPassingChordPick,
   onBassPreview,
   onBassStepToggle,
   onBassGrooveTemplatePreview,
@@ -45,7 +46,6 @@ function BottomEditor({
   onPreviousDrumsBar,
   onDrumsStepMove,
   onDrumsStepToggle,
-  rootKey,
   selectedBar,
   selectedClipId,
 }) {
@@ -100,11 +100,11 @@ function BottomEditor({
       onChordGrooveTemplateApply,
       onChordTemplatePreview,
       onChordTemplateApply,
+      onPassingChordPick,
       onClose: onCloseEditor,
       onClearChord,
       onClearChordBar,
       onRenameClip,
-      rootKey,
       selectedBar,
     });
   } else if (activeTrackId === 'lead' && selectedClipId) {

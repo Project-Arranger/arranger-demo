@@ -10,10 +10,12 @@ import {
   CHORD_GRID_PITCHES,
   CHORD_ROOTS,
   DEFAULT_CHORD_GRID_OCTAVE,
+  createPassingChordCell,
   createChordCell,
   createChordNoteCell,
   createChordNotesCell,
   getChordCellNotes,
+  getDoowopPassingTargetChord,
   getPassingChordOptions,
   getChordVariantOptions,
   getChordToneRoots,
@@ -109,7 +111,7 @@ test('chord definitions include template and variant chord colors', () => {
   assert.equal(Object.keys(CHORD_TEMPLATES).length, 6);
 });
 
-test('add chord panel exposes diatonic and context-aware passing options', () => {
+test('chord helpers expose diatonic and context-aware passing option data', () => {
   assert.deepEqual(
     DIATONIC_CHORD_OPTIONS.map((option) => [option.name, option.roman]),
     [['C', 'I'], ['Dm', 'ii'], ['Em', 'iii'], ['F', 'IV'], ['G', 'V'], ['Am', 'vi'], ['Bdim', 'vii°']],
@@ -126,6 +128,31 @@ test('add chord panel exposes diatonic and context-aware passing options', () =>
     getPassingChordOptions(null, null).map((option) => option.name),
     PASSING_CHORD_DEFAULT_OPTIONS.map((option) => option.name),
   );
+});
+
+test('doowop passing target logic cycles through the demo progression', () => {
+  assert.equal(getDoowopPassingTargetChord('C'), 'Am');
+  assert.equal(getDoowopPassingTargetChord('Am'), 'F');
+  assert.equal(getDoowopPassingTargetChord('F'), 'G');
+  assert.equal(getDoowopPassingTargetChord('G'), 'C');
+  assert.equal(getDoowopPassingTargetChord('Cmaj7'), 'Am');
+  assert.equal(getDoowopPassingTargetChord('Bdim'), null);
+  assert.equal(getDoowopPassingTargetChord(null), null);
+});
+
+test('createPassingChordCell creates a short playable chord hit', () => {
+  assert.deepEqual(createPassingChordCell('E7'), {
+    type: 'chord',
+    root: 'E',
+    chordRoot: 'E',
+    quality: '7',
+    label: 'E7',
+    toneRoots: ['E', 'G#', 'B', 'D'],
+    duration: '16n',
+    grooveTemplateId: 'passing-shortcut',
+    sourceChordLabel: 'E7',
+  });
+  assert.equal(createPassingChordCell('Hmaj7'), null);
 });
 
 test('add chord panel exposes rich variants for supported chord roots', () => {

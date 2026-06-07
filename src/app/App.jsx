@@ -40,6 +40,7 @@ import {
   clearChordCell,
   getChordCell,
   setChordCell,
+  setChordStepChord,
   toggleChordNoteStep,
 } from './chordActions.js';
 import {
@@ -700,6 +701,14 @@ export default function App() {
     });
   }, [dispatchAppCommand, selectedBar]);
 
+  const handlePassingChordPick = useCallback((stepIndex, chordName) => {
+    const state = useMusicStore.getState();
+    const nextMatrix = setChordStepChord(state.matrix, selectedBar, stepIndex, chordName);
+    if (nextMatrix === state.matrix) return;
+
+    state.setCell('chord', selectedBar, stepIndex, nextMatrix.chord[selectedBar][stepIndex]);
+  }, [selectedBar]);
+
   const previewChordNames = useCallback((chordNames) => {
     const noteGroups = chordNames
       .map((chordName) => createChordNotes(chordName))
@@ -1061,6 +1070,7 @@ export default function App() {
         onChordGrooveTemplateApply: handleChordGrooveTemplateApply,
         onChordTemplatePreview: handleChordTemplatePreview,
         onChordTemplateApply: handleChordTemplateApply,
+        onPassingChordPick: handlePassingChordPick,
         onBassPreview: handleBassPreview,
         onBassStepToggle: handleBassStepToggle,
         onBassGrooveTemplatePreview: handleBassGrooveTemplatePreview,
@@ -1085,7 +1095,6 @@ export default function App() {
         onPreviousDrumsBar: handlePreviousDrumsBar,
         onDrumsStepMove: handleDrumsStepMove,
         onDrumsStepToggle: handleDrumsStepToggle,
-        rootKey,
         selectedBar,
         selectedClipId,
       })}

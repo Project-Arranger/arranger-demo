@@ -6,6 +6,7 @@ import {
   CHORD_TEMPLATES,
   createChordCell,
   createChordNoteCell,
+  createPassingChordCell,
   getChordCellNotes,
   getChordSpanStep,
   toggleChordNoteCell,
@@ -112,6 +113,23 @@ function toggleChordNoteStep(matrix, barIndex, spanIndex, columnIndex, note) {
 
   return setChordStepCells(matrix, barIndex, {
     [step + columnIndex]: nextCell,
+  });
+}
+
+function setChordStepChord(matrix, barIndex, stepIndex, chordName) {
+  const cell = createPassingChordCell(chordName);
+  if (
+    !cell
+    || !matrix?.chord?.[barIndex]
+    || !Number.isInteger(stepIndex)
+    || stepIndex < 0
+    || stepIndex >= STEPS_PER_BAR
+  ) {
+    return matrix;
+  }
+
+  return setChordStepCells(matrix, barIndex, {
+    [stepIndex]: cell,
   });
 }
 
@@ -258,5 +276,6 @@ export {
   getExistingChordClipBars,
   setChordCell,
   setChordNoteCell,
+  setChordStepChord,
   toggleChordNoteStep,
 };
