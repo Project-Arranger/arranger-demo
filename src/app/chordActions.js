@@ -6,6 +6,8 @@ import {
   CHORD_TEMPLATES,
   createChordCell,
   createChordNoteCell,
+  createChordNotesCell,
+  createChordTonePitches,
   createPassingChordCell,
   getChordCellNotes,
   getChordSpanStep,
@@ -134,6 +136,84 @@ function setChordStepChord(matrix, barIndex, stepIndex, chordName) {
   });
 }
 
+function getChordTonePitches(chordName) {
+  const cell = createChordCell(chordName);
+  return cell ? createChordTonePitches(cell.root, cell.toneRoots) : [];
+}
+
+function octaveUp(note) {
+  const match = /^([A-G]#?)([0-9])$/.exec(note);
+  if (!match) return note;
+
+  return `${match[1]}${Number(match[2]) + 1}`;
+}
+
+function getGrooveNoteAt(notes, index) {
+  if (!notes.length) return null;
+  return notes[index] ?? octaveUp(notes[index % notes.length]);
+}
+
+function getGrooveHitIndex(bar, step, grooveTemplateId) {
+  return bar
+    .map((cell, cellStep) => ({ cell, step: cellStep }))
+    .filter(({ cell }) => (
+      cell?.grooveTemplateId === grooveTemplateId
+      && cell?.sourceChordLabel
+      && !isPassingChordCell(cell)
+    ))
+    .findIndex((hit) => hit.step === step);
+}
+
+function createEnrichedGrooveCell(previousCell, chordName, hitIndex) {
+  const chordCell = createChordCell(chordName);
+  if (!chordCell || !previousCell?.grooveTemplateId) return null;
+
+  if (previousCell.type === 'chord') {
+    return {
+      ...chordCell,
+      ...(previousCell.duration ? { duration: previousCell.duration } : {}),
+      grooveTemplateId: previousCell.grooveTemplateId,
+      sourceChordLabel: chordCell.label,
+    };
+  }
+
+  if (previousCell.type === 'notes') {
+    const note = getGrooveNoteAt(getChordTonePitches(chordName), hitIndex);
+    const noteCell = note ? createChordNotesCell([note]) : null;
+    return noteCell ? {
+      ...noteCell,
+      grooveTemplateId: previousCell.grooveTemplateId,
+      sourceChordLabel: chordCell.label,
+    } : null;
+  }
+
+  return null;
+}
+
+function setChordEnrichTarget(matrix, barIndex, spanIndex, chordName) {
+  const step = getChordSpanStep(spanIndex);
+  if (step === null || !matrix?.chord?.[barIndex]) return matrix;
+
+  const bar = matrix.chord[barIndex];
+  const grooveCellsByStep = {};
+  for (let columnIndex = 0; columnIndex < 4; columnIndex += 1) {
+    const currentStep = step + columnIndex;
+    const cell = bar[currentStep];
+    if (!cell?.sourceChordLabel || isPassingChordCell(cell)) continue;
+
+    const hitIndex = getGrooveHitIndex(bar, currentStep, cell.grooveTemplateId);
+    const nextCell = createEnrichedGrooveCell(cell, chordName, Math.max(0, hitIndex));
+    if (!nextCell) return matrix;
+    grooveCellsByStep[currentStep] = nextCell;
+  }
+
+  if (Object.keys(grooveCellsByStep).length) {
+    return setChordStepCells(matrix, barIndex, grooveCellsByStep);
+  }
+
+  return setChordCell(matrix, barIndex, spanIndex, chordName);
+}
+
 function clearChordCell(matrix, barIndex, spanIndex) {
   const step = getChordSpanStep(spanIndex);
   if (step === null) return matrix;
@@ -193,6 +273,15 @@ function getChordSpanDisplayLabel(matrix, barIndex, spanIndex) {
   }, []);
 
   return addedNotes.length ? `${mainCell.label} + ${addedNotes.join('/')}` : mainCell.label;
+}
+
+function getChordEnrichTargetLabel(matrix, barIndex, spanIndex) {
+  const cells = getChordBeatCells(matrix, barIndex, spanIndex);
+  const sourceLabel = getChordBeatSourceLabel(cells);
+  if (sourceLabel) return sourceLabel;
+
+  const mainCell = getChordCell(matrix, barIndex, spanIndex);
+  return mainCell?.type === 'chord' ? mainCell.label : null;
 }
 
 function getChordBeatCells(matrix, barIndex, spanIndex) {
@@ -286,10 +375,12 @@ export {
   getChordStepCell,
   getChordCell,
   getChordBarDisplayLabel,
+  getChordEnrichTargetLabel,
   getChordSpanDisplayLabel,
   getPassingChordDisplayLabel,
   getExistingChordClipBars,
   setChordCell,
+  setChordEnrichTarget,
   setChordNoteCell,
   setChordStepChord,
   toggleChordNoteStep,

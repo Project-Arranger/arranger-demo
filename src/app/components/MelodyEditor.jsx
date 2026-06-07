@@ -235,11 +235,6 @@ function MelodyEditor({
         </aside>
 
         <div className="melody-grid">
-          <div className="melody-beat-number-row">
-            {BEAT_NUMBERS.map((beatNumber) => (
-              <span className="beat-num mono" key={beatNumber}>Beat {beatNumber}</span>
-            ))}
-          </div>
           {BEAT_NUMBERS.map((beatNumber) => {
             const beatIndex = beatNumber - 1;
 

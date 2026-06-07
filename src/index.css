@@ -1897,7 +1897,7 @@ button {
 .beat-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 8px;
   min-width: 0;
   min-height: var(--chord-beat-head-height);
@@ -1933,7 +1933,7 @@ button {
 
 .chord-label-segment {
   min-width: 0;
-  max-width: calc(100% - 34px);
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -1941,6 +1941,10 @@ button {
 .beat-group.has-passing .beat-head .add-chord-btn {
   width: auto;
   flex: 0 0 auto;
+}
+
+.beat-group.has-passing .beat-head .chord-label-segment {
+  max-width: calc(62.5% - 12px);
 }
 
 .add-chord-btn:hover {
@@ -1958,18 +1962,6 @@ button {
   color: var(--ink-2);
   background: var(--bg-deep);
   border-color: var(--border-soft);
-}
-
-.beat-num {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  min-width: 0;
-  padding-right: 4px;
-  color: var(--ink-4);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
 }
 
 .beat-cells-viewport {
@@ -2081,14 +2073,6 @@ button {
   overflow-y: hidden;
 }
 
-.melody-beat-number-row {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: repeat(4, minmax(128px, 1fr));
-  gap: 14px;
-  min-width: 0;
-}
-
 .melody-beat-group {
   min-width: 0;
   min-height: 0;
@@ -2151,18 +2135,6 @@ button {
 .bass-note-key.sharp:hover {
   color: white;
   background: var(--c-bass-ink);
-}
-
-.bass-grid {
-  grid-template-rows: auto minmax(0, 1fr);
-}
-
-.bass-beat-number-row {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: repeat(4, minmax(128px, 1fr));
-  gap: 14px;
-  min-width: 0;
 }
 
 .bass-cell.active {
@@ -2999,13 +2971,6 @@ button {
   border-bottom: 1px solid var(--border-soft);
 }
 
-.cv-tabs {
-  display: flex;
-  align-items: flex-end;
-  gap: 24px;
-  min-width: 0;
-}
-
 .cv-title {
   margin: 0 0 -1px;
   padding: 4px 2px 10px;
@@ -3013,51 +2978,6 @@ button {
   font-size: 15.5px;
   font-weight: 800;
   line-height: 1.1;
-}
-
-.cv-tab {
-  position: relative;
-  padding: 4px 2px 10px;
-  margin-bottom: -1px;
-  color: var(--ink-4);
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  font-size: 15.5px;
-  font-weight: 800;
-  line-height: 1.1;
-  white-space: nowrap;
-}
-
-.cv-tab:hover,
-.cv-tab[aria-selected="true"] {
-  color: var(--ink);
-}
-
-.cv-tab[aria-selected="true"]::after {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: 2.5px;
-  background: var(--variant);
-  border-radius: 2px;
-  content: "";
-}
-
-.cv-tab-key {
-  margin-left: 7px;
-  padding: 2px 7px;
-  color: var(--ink-4);
-  background: var(--bg-deep);
-  border-radius: 999px;
-  font-size: 11.5px;
-  font-weight: 700;
-}
-
-.cv-tab[aria-selected="true"] .cv-tab-key {
-  color: var(--variant-deep);
-  background: var(--variant-soft);
 }
 
 .cv-panel[hidden] {
@@ -3254,7 +3174,6 @@ button {
   box-shadow: none;
 }
 
-.drum-step-numbers,
 .drum-row {
   display: grid;
   grid-template-columns: 118px minmax(0, 1fr);
@@ -3292,10 +3211,12 @@ button {
 }
 
 .drum-step-groups {
+  --drum-step-group-gap: clamp(12px, 2.4vw, 22px);
+  --drum-step-group-gap-half: clamp(6px, 1.2vw, 11px);
   display: grid;
   grid-template-columns: repeat(4, max-content);
   justify-content: center;
-  column-gap: clamp(12px, 2.4vw, 22px);
+  column-gap: var(--drum-step-group-gap);
   min-width: 0;
 }
 
@@ -3305,43 +3226,21 @@ button {
   gap: 5px;
 }
 
-.drum-step-number {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 16px;
-  color: var(--ink-4);
-  font-size: 9px;
-  font-weight: 800;
-}
-
-.drum-step-number.beat-end,
 .drum-step.beat-end {
   position: relative;
-}
-
-.drum-step-number.beat-end::after {
-  position: absolute;
-  top: 2px;
-  right: -3px;
-  bottom: 2px;
-  width: 1px;
-  content: "";
-  background: color-mix(in oklab, var(--border) 72%, transparent);
-  border-radius: 999px;
-  pointer-events: none;
 }
 
 .drum-step.beat-end::after {
   position: absolute;
   top: 4px;
-  right: -3px;
+  right: calc(-1 * var(--drum-step-group-gap-half));
   bottom: 4px;
   width: 1px;
   content: "";
   background: color-mix(in oklab, var(--border) 72%, transparent);
   border-radius: 999px;
   pointer-events: none;
+  transform: translateX(50%);
 }
 
 .drum-step-group:last-child .beat-end::after {
@@ -3553,11 +3452,6 @@ button {
     padding: 12px;
   }
 
-  .bass-beat-number-row {
-    grid-template-columns: repeat(4, minmax(116px, 1fr));
-    gap: 10px;
-  }
-
   .seq-body {
     --chord-cell-grid-height: 214px;
   }
@@ -3580,7 +3474,6 @@ button {
     height: 56px;
   }
 
-  .drum-step-numbers,
   .drum-row {
     grid-template-columns: 92px minmax(0, 1fr);
     gap: 10px;

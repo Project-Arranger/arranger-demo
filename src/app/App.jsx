@@ -40,6 +40,7 @@ import {
   clearChordCell,
   getChordCell,
   setChordCell,
+  setChordEnrichTarget,
   setChordStepChord,
   toggleChordNoteStep,
 } from './chordActions.js';
@@ -689,9 +690,12 @@ export default function App() {
     const step = getChordSpanStep(spanIndex);
     if (step === null) return;
 
-    const nextMatrix = setChordCell(state.matrix, selectedBar, spanIndex, root);
-    for (let offset = 0; offset < 2; offset += 1) {
-      state.setCell('chord', selectedBar, step + offset, nextMatrix.chord[selectedBar][step + offset]);
+    const nextMatrix = setChordEnrichTarget(state.matrix, selectedBar, spanIndex, root);
+    for (let offset = 0; offset < 4; offset += 1) {
+      const nextCell = nextMatrix.chord[selectedBar][step + offset];
+      if (nextCell !== state.matrix.chord[selectedBar][step + offset]) {
+        state.setCell('chord', selectedBar, step + offset, nextCell);
+      }
     }
     void dispatchAppCommand({
       type: APP_COMMAND_TYPES.CHORD_SET_CELL,

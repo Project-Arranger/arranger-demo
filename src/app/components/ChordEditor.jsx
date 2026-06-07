@@ -22,6 +22,7 @@ import {
 import {
   getChordBarDisplayLabel,
   getChordCell,
+  getChordEnrichTargetLabel,
   getPassingChordDisplayLabel,
   getChordSpanDisplayLabel,
   getChordStepCell,
@@ -29,6 +30,7 @@ import {
 import {
   CHORD_TEMPLATES,
   getDoowopPassingTargetChord,
+  getChordRootName,
   getPassingChordOptions,
   getChordVariantOptions,
   getChordToneRoots,
@@ -83,17 +85,14 @@ function getPopoverPosition(anchorRect) {
 
 function AddChordPopover({
   anchorRect,
-  matrix,
+  currentChord,
   onClose,
   onPick,
   onChordPreview,
-  selectedBar,
   spanIndex,
 }) {
   const [playingChord, setPlayingChord] = useState(null);
-  const currentCell = getChordCell(matrix, selectedBar, spanIndex);
-  const currentChord = currentCell?.type === 'chord' ? currentCell.label : null;
-  const currentChordRoot = currentCell?.type === 'chord' ? currentCell.chordRoot : null;
+  const currentChordRoot = getChordRootName(currentChord);
   const variantOptions = getChordVariantOptions(currentChord);
   const position = getPopoverPosition(anchorRect);
 
@@ -165,21 +164,7 @@ function AddChordPopover({
     >
       <span className="cv-arrow" />
       <header className="cv-head">
-        <div className="cv-tabs" role="tablist" aria-label="添加和弦方式">
-          <button
-            className="cv-tab"
-            role="tab"
-            type="button"
-            aria-selected="true"
-            aria-controls="cvPanelEnrich"
-          >
-            丰富和弦
-          </button>
-        </div>
-        <button className="cv-custom" type="button" aria-label="自定义和弦">
-          <MoreHorizontal size={12} />
-          自定义
-        </button>
+        <h2 className="cv-title">丰富和弦</h2>
       </header>
 
       <section className="cv-panel" id="cvPanelEnrich" role="tabpanel">
@@ -437,14 +422,15 @@ function ChordEditor({
     onClose();
   };
 
-  const openAddChordPanel = (spanIndex, buttonElement, hasChord) => {
-    if (!hasChord) return;
+  const openAddChordPanel = (spanIndex, buttonElement, chordLabel) => {
+    if (!chordLabel) return;
 
     setPickerMode(null);
     setPassingChordPanel(null);
     setAddChordPanel({
       anchorRect: rectToAnchor(buttonElement.getBoundingClientRect()),
       bar: selectedBar,
+      chordLabel,
       spanIndex,
     });
   };
@@ -572,8 +558,8 @@ function ChordEditor({
             const spanIndex = beatNumber - 1;
             const hasPassingShortcut = spanIndex === PASSING_CHORD_SPAN_INDEX;
             const label = getChordSpanDisplayLabel(matrix, selectedBar, spanIndex);
+            const enrichTargetLabel = getChordEnrichTargetLabel(matrix, selectedBar, spanIndex);
             const hasValue = Boolean(label);
-            const hasChord = getChordCell(matrix, selectedBar, spanIndex)?.type === 'chord';
             const beatHeadAddButtonClassName = [
               'add-chord-btn',
               'chord-label-segment',
@@ -591,18 +577,19 @@ function ChordEditor({
                 style={{ gridColumn: spanIndex + 1 }}
               >
                 <div className="beat-head">
-                  <button
-                    className={beatHeadAddButtonClassName}
-                    aria-label={`添加和弦 beat ${beatNumber}`}
-                    data-chord-root={label}
-                    type="button"
-                    onClick={(event) => {
-                      openAddChordPanel(spanIndex, event.currentTarget, hasChord);
-                    }}
-                  >
-                    {hasValue ? null : renderIcon(Plus)}
-                    {label ?? '添加和弦'}
-                  </button>
+                  {label ? (
+                    <button
+                      className={beatHeadAddButtonClassName}
+                      aria-label={`添加和弦 beat ${beatNumber}`}
+                      data-chord-root={enrichTargetLabel ?? label}
+                      type="button"
+                      onClick={(event) => {
+                        openAddChordPanel(spanIndex, event.currentTarget, enrichTargetLabel);
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ) : null}
                   {hasPassingShortcut ? (
                     <div className="passing-anchor">
                       <button
@@ -621,7 +608,6 @@ function ChordEditor({
                       </button>
                     </div>
                   ) : null}
-                  <span className="beat-num mono" key={`beat-${beatNumber}`}>{beatNumber}</span>
                 </div>
                 <div
                   className="beat-cells-viewport"
@@ -669,11 +655,10 @@ function ChordEditor({
 
       {addChordPanel?.bar === selectedBar ? createElement(AddChordPopover, {
         anchorRect: addChordPanel.anchorRect,
-        matrix,
+        currentChord: addChordPanel.chordLabel,
         onChordPreview,
         onClose: closeChordPanels,
         onPick: onChordPick,
-        selectedBar,
         spanIndex: addChordPanel.spanIndex,
       }) : null}
 

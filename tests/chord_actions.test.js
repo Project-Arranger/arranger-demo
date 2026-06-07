@@ -4,10 +4,12 @@ import {
   applyChordTemplateToExistingClips,
   clearChordBar,
   clearChordCell,
+  getChordEnrichTargetLabel,
   getChordStepCell,
   getChordCell,
   getChordBeatDisplaySegments,
   getPassingChordDisplayLabel,
+  setChordEnrichTarget,
   setChordCell,
   setChordNoteCell,
   getChordBarDisplayLabel,
@@ -127,6 +129,97 @@ test('passing chord shortcut labels stay separate from beat header labels', () =
   matrix = setChordCell(matrix, 2, 3, 'G');
   assert.equal(getChordSpanDisplayLabel(matrix, 2, 3), 'G');
   assert.equal(getPassingChordDisplayLabel(matrix, 2, 14), 'C/B');
+});
+
+test('chord enrich target labels cover manual and groove sourced chords', () => {
+  let matrix = createInitialMatrix();
+
+  assert.equal(getChordEnrichTargetLabel(matrix, 0, 0), null);
+
+  matrix = setChordCell(matrix, 0, 0, 'C');
+  assert.equal(getChordEnrichTargetLabel(matrix, 0, 0), 'C');
+
+  matrix.chord[0][12] = {
+    type: 'chord',
+    root: 'G',
+    chordRoot: 'G',
+    quality: 'maj',
+    label: 'G',
+    toneRoots: ['G', 'B', 'D'],
+    duration: '16n',
+    grooveTemplateId: 'block-syncopated',
+    sourceChordLabel: 'G',
+  };
+  assert.equal(getChordEnrichTargetLabel(matrix, 0, 3), 'G');
+
+  matrix.chord[0][4] = {
+    type: 'notes',
+    notes: ['A4'],
+    label: 'A4',
+    grooveTemplateId: 'arp-basic',
+    sourceChordLabel: 'Am',
+  };
+  assert.equal(getChordEnrichTargetLabel(matrix, 0, 1), 'Am');
+});
+
+test('setChordEnrichTarget replaces block groove chords while preserving hit shape', () => {
+  let matrix = createInitialMatrix();
+  matrix.chord[2][12] = {
+    type: 'chord',
+    root: 'G',
+    chordRoot: 'G',
+    quality: 'maj',
+    label: 'G',
+    toneRoots: ['G', 'B', 'D'],
+    duration: '16n',
+    grooveTemplateId: 'block-syncopated',
+    sourceChordLabel: 'G',
+  };
+  matrix = setChordStepChord(matrix, 2, 14, 'C/B');
+
+  const nextMatrix = setChordEnrichTarget(matrix, 2, 3, 'G7');
+
+  assert.deepEqual(nextMatrix.chord[2][12], {
+    type: 'chord',
+    root: 'G',
+    chordRoot: 'G',
+    quality: '7',
+    label: 'G7',
+    toneRoots: ['G', 'B', 'D', 'F'],
+    duration: '16n',
+    grooveTemplateId: 'block-syncopated',
+    sourceChordLabel: 'G7',
+  });
+  assert.equal(nextMatrix.chord[2][13], null);
+  assert.deepEqual(nextMatrix.chord[2][14], matrix.chord[2][14]);
+  assert.equal(nextMatrix.chord[2][15], null);
+});
+
+test('setChordEnrichTarget replaces arpeggio source labels while preserving hit steps', () => {
+  const matrix = createInitialMatrix();
+  matrix.chord[1][0] = { type: 'notes', notes: ['C4'], label: 'C4', grooveTemplateId: 'arp-basic', sourceChordLabel: 'C' };
+  matrix.chord[1][2] = { type: 'notes', notes: ['E4'], label: 'E4', grooveTemplateId: 'arp-basic', sourceChordLabel: 'C' };
+  matrix.chord[1][4] = { type: 'notes', notes: ['G4'], label: 'G4', grooveTemplateId: 'arp-basic', sourceChordLabel: 'C' };
+  matrix.chord[1][6] = { type: 'notes', notes: ['C5'], label: 'C5', grooveTemplateId: 'arp-basic', sourceChordLabel: 'C' };
+
+  const nextMatrix = setChordEnrichTarget(matrix, 1, 1, 'Fmaj7');
+
+  assert.deepEqual(nextMatrix.chord[1][0], matrix.chord[1][0]);
+  assert.deepEqual(nextMatrix.chord[1][2], matrix.chord[1][2]);
+  assert.deepEqual(nextMatrix.chord[1][4], {
+    type: 'notes',
+    notes: ['C5'],
+    label: 'C5',
+    grooveTemplateId: 'arp-basic',
+    sourceChordLabel: 'Fmaj7',
+  });
+  assert.deepEqual(nextMatrix.chord[1][6], {
+    type: 'notes',
+    notes: ['E5'],
+    label: 'E5',
+    grooveTemplateId: 'arp-basic',
+    sourceChordLabel: 'Fmaj7',
+  });
 });
 
 function nextChordLabel(matrix, barIndex, step) {

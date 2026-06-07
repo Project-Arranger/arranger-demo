@@ -149,6 +149,8 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(clipNameInputSource, /onChange=\{\(event\) => onRenameClip\(event\.target\.value\)\}/);
   assert.match(chordEditorSource, /ClipNameInput/);
   assert.match(drumSequencerSource, /ClipNameInput/);
+  assert.doesNotMatch(drumSequencerSource, /className="drum-step-numbers"/);
+  assert.doesNotMatch(drumSequencerSource, /className=\{`drum-step-number/);
   assert.match(trackEditorPlaceholderSource, /ClipNameInput/);
   assert.match(trackEditorPlaceholderSource, /添加一个片段即可开始编辑/);
   assert.doesNotMatch(trackEditorPlaceholderSource, /clip去编辑/);
@@ -200,12 +202,18 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(chordEditorSource, /getDoowopPassingTargetChord/);
   assert.match(chordEditorSource, /getChordVariantOptions/);
   assert.match(chordEditorSource, /getPassingChordOptions/);
-  assert.match(chordEditorSource, /if \(!hasChord\) return;/);
+  assert.match(chordEditorSource, /getChordEnrichTargetLabel/);
+  assert.doesNotMatch(chordEditorSource, /if \(!hasChord\) return;/);
   assert.doesNotMatch(chordEditorSource, /activeChordTab/);
   assert.doesNotMatch(chordEditorSource, /setActiveChordTab/);
   assert.doesNotMatch(chordEditorSource, /mode === 'empty'/);
   assert.match(chordEditorSource, /cvPanelEnrich/);
   assert.match(chordEditorSource, /暂无可用丰富和弦/);
+  const addChordPopoverSource = chordEditorSource.match(/function AddChordPopover[\s\S]*?function PassingChordPopover/)?.[0] ?? '';
+  assert.match(addChordPopoverSource, /className="cv-title"[\s\S]*丰富和弦/);
+  assert.doesNotMatch(addChordPopoverSource, /className="cv-tab"/);
+  assert.doesNotMatch(addChordPopoverSource, /className="cv-custom"/);
+  assert.match(addChordPopoverSource, /data-action="preview"/);
   assert.match(chordEditorSource, /CHORD_GRID_PITCHES\.flatMap/);
   assert.match(chordEditorSource, /usePitchScrollSync/);
   assert.match(chordEditorSource, /scalePitchViewportRef/);
@@ -224,7 +232,7 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(chordEditorSource, /className="beat-head"/);
   assert.match(chordEditorSource, /className=\{beatHeadAddButtonClassName\}/);
   assert.match(chordEditorSource, /className="passing-anchor"/);
-  assert.match(chordEditorSource, /<span className="beat-num mono" key=\{`beat-\$\{beatNumber\}`\}>\{beatNumber\}<\/span>/);
+  assert.doesNotMatch(chordEditorSource, /className="beat-num mono"/);
   assert.match(chordEditorSource, /getChordSpanDisplayLabel/);
   assert.match(chordEditorSource, /getPassingChordDisplayLabel/);
   assert.match(chordEditorSource, /const passingChordDisplayLabel = getPassingChordDisplayLabel\(matrix,\s*selectedBar,\s*PASSING_CHORD_STEP_INDEX\);/);
@@ -238,7 +246,8 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(chordEditorSource, /onPassingChordPick/);
   assert.match(chordEditorSource, /addChordPanel/);
   assert.match(chordEditorSource, /aria-label=\{`添加和弦 beat \$\{beatNumber\}`\}/);
-  assert.match(chordEditorSource, /openAddChordPanel\(spanIndex,\s*event\.currentTarget,\s*hasChord\)/);
+  assert.match(chordEditorSource, /openAddChordPanel\(spanIndex,\s*event\.currentTarget,\s*enrichTargetLabel\)/);
+  assert.doesNotMatch(chordEditorSource, /\{label \?\? '添加和弦'\}/);
   assert.doesNotMatch(chordEditorSource, /colIndex < 2 \? 'downbeat' : ''/);
   assert.doesNotMatch(chordEditorSource, /colIndex >= 2 \? 'extension' : ''/);
   assert.doesNotMatch(chordEditorSource, /Beat \$\{beatNumber\} 单音/);
@@ -479,6 +488,8 @@ test('app exposes the melody editor and keeps lead as the internal track id', as
   assert.match(melodyEditorSource, /QWERTY ↔ 音阶 对应关系/);
   assert.match(melodyEditorSource, /选择音阶/);
   assert.match(melodyEditorSource, /Scale Picker/);
+  assert.doesNotMatch(melodyEditorSource, /className="melody-beat-number-row"/);
+  assert.doesNotMatch(melodyEditorSource, /className="beat-num mono"/);
   assert.match(melodyDataSource, /自然大调音阶/);
   assert.match(melodyDataSource, /五声音阶/);
   assert.match(melodyEditorSource, /清空本小节/);
@@ -532,6 +543,8 @@ test('app exposes the bass editor and existing-clip groove template workflow', a
   assert.match(bassEditorSource, /disabled=\{!canScrollPitchUp\}/);
   assert.match(bassEditorSource, /disabled=\{!canScrollPitchDown\}/);
   assert.match(bassEditorSource, /className="chord-grid bass-grid"/);
+  assert.doesNotMatch(bassEditorSource, /className="beat-number-row bass-beat-number-row"/);
+  assert.doesNotMatch(bassEditorSource, /className="beat-num mono"/);
   assert.match(bassEditorSource, /'cell'/);
   assert.match(bassEditorSource, /'bass-cell'/);
   assert.match(bassEditorSource, /BASS_GROOVE_TEMPLATES/);

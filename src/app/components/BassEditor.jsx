@@ -194,11 +194,6 @@ function BassEditor({
         </aside>
 
         <div className="chord-grid bass-grid">
-          <div className="beat-number-row bass-beat-number-row">
-            {BEAT_NUMBERS.map((beatNumber) => (
-              <span className="beat-num mono" key={beatNumber}>{beatNumber}</span>
-            ))}
-          </div>
           {BEAT_NUMBERS.map((beatNumber) => {
             const beatIndex = beatNumber - 1;
 

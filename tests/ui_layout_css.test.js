@@ -149,11 +149,16 @@ test('drum sequencer uses three fixed rows and sixteen stable step columns', asy
   assert.match(css, /\.drum-seq-pager-shell\s*\{[^}]*grid-template-columns:\s*36px minmax\(max-content,\s*980px\) 36px;/s);
   assert.match(css, /\.drum-row\s*\{[^}]*grid-template-columns:\s*118px minmax\(0,\s*1fr\);/s);
   assert.match(css, /\.drum-step-groups\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*max-content\);/s);
-  assert.match(css, /\.drum-step-groups\s*\{[^}]*column-gap:\s*clamp\(12px,\s*2\.4vw,\s*22px\);/s);
+  assert.match(css, /\.drum-step-groups\s*\{[^}]*--drum-step-group-gap:\s*clamp\(12px,\s*2\.4vw,\s*22px\);/s);
+  assert.match(css, /\.drum-step-groups\s*\{[^}]*--drum-step-group-gap-half:\s*clamp\(6px,\s*1\.2vw,\s*11px\);/s);
+  assert.match(css, /\.drum-step-groups\s*\{[^}]*column-gap:\s*var\(--drum-step-group-gap\);/s);
   assert.match(css, /\.drum-step-group\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(18px,\s*32px\)\);/s);
+  assert.doesNotMatch(css, /\.drum-step-numbers\s*\{/);
+  assert.doesNotMatch(css, /\.drum-step-number\s*\{/);
+  assert.doesNotMatch(css, /\.drum-step-number\.beat-end/);
   assert.doesNotMatch(css, /\.drum-step(?:-number)?\.beat-end\s*\{[^}]*margin-right:/s);
   assert.match(css, /\.drum-page-btn\s*\{[^}]*width:\s*36px;/s);
-  assert.match(css, /\.drum-step\.beat-end::after\s*\{[^}]*position:\s*absolute;/s);
+  assert.match(css, /\.drum-step\.beat-end::after\s*\{[^}]*position:\s*absolute;[^}]*right:\s*calc\(-1 \* var\(--drum-step-group-gap-half\)\);[^}]*transform:\s*translateX\(50%\);/s);
   assert.match(css, /\.drum-step\.active\[data-instrument="kick"\]/);
   assert.match(css, /\.drum-step\.active\[data-instrument="snare"\]/);
   assert.match(css, /\.drum-step\.active\[data-instrument="hihat"\]/);
@@ -186,10 +191,11 @@ test('chord pitch rail rows align with chord grid rows', async () => {
   assert.doesNotMatch(css, /\.cell\.sustain/);
   assert.match(css, /\.chord-grid\s*\{[^}]*overflow-x:\s*auto;[^}]*overflow-y:\s*hidden;/s);
   assert.match(css, /\.chord-grid\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(128px,\s*1fr\)\);/s);
-  assert.match(css, /\.beat-head\s*\{[^}]*display:\s*flex;[^}]*justify-content:\s*space-between;/s);
+  assert.match(css, /\.beat-head\s*\{[^}]*display:\s*flex;[^}]*justify-content:\s*flex-start;/s);
   assert.match(css, /\.beat-head\s*\{[^}]*min-height:\s*var\(--chord-beat-head-height\);/s);
   assert.doesNotMatch(css, /\.chord-label-row\s*\{/);
   assert.doesNotMatch(css, /\.beat-number-row\s*\{/);
+  assert.doesNotMatch(css, /\.beat-num\s*\{/);
   assert.match(css, /\.cell\.added,\s*\.cell\.active\.added\s*\{[^}]*background:\s*color-mix\(in oklab,\s*var\(--c-chord\) 35%,\s*white\);/s);
   assert.doesNotMatch(css, /\.cell\.active\.added\s*\{[^}]*linear-gradient/s);
   assert.doesNotMatch(css, /--chord-extension:/);
@@ -208,6 +214,7 @@ test('melody editor mirrors the reference keyboard strip and scale picker layout
   assert.match(css, /\.ks-keys\s*\{[^}]*grid-template-columns:\s*repeat\(13,\s*minmax\(0,\s*1fr\)\);/s);
   assert.match(css, /\.ks-key\.playing\s*\{[^}]*background:\s*var\(--c-lead\);/s);
   assert.match(css, /\.melody-grid\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(128px,\s*1fr\)\);/s);
+  assert.doesNotMatch(css, /\.melody-beat-number-row\s*\{/);
   assert.match(css, /\.melody-cell\.active\s*\{[^}]*background:\s*var\(--c-lead\);/s);
   assert.match(css, /\.melody-note-key\.playing\s*\{[^}]*background:\s*var\(--c-lead\)/s);
   assert.match(css, /\.scale-picker\s*\{[^}]*position:\s*absolute;/s);
@@ -221,8 +228,7 @@ test('bass editor mirrors the reference piano-roll and groove picker layout', as
   assert.match(css, /\.editor\[data-screen-label="Bass Editor"\] \.clip-chip\s*\{[^}]*background:\s*var\(--c-bass\);/s);
   assert.match(css, /\.scale-notes\s*\{[^}]*grid-template-rows:\s*repeat\(36,\s*minmax\(0,\s*1fr\)\);/s);
   assert.match(css, /\.beat-cells\s*\{[^}]*grid-template-rows:\s*repeat\(36,\s*minmax\(0,\s*1fr\)\);/s);
-  assert.match(css, /\.bass-beat-number-row\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(128px,\s*1fr\)\);/s);
-  assert.match(css, /@media \(max-width: 980px\)[\s\S]*\.bass-beat-number-row\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(116px,\s*1fr\)\);/s);
+  assert.doesNotMatch(css, /\.bass-beat-number-row\s*\{/);
   assert.doesNotMatch(css, /\.bass-scale-notes\s*\{[^}]*grid-template-rows:\s*repeat\(12,/s);
   assert.doesNotMatch(css, /\.bass-beat-cells\s*\{[^}]*grid-template-rows:\s*repeat\(12,/s);
   assert.match(css, /\.bass-note-key\.root\s*\{[^}]*color:\s*var\(--c-bass-ink\);/s);
@@ -366,9 +372,9 @@ test('add chord panels keep enrich and passing picker layout without diatonic UI
 
   assert.match(css, /\.chord-variants\s*\{[^}]*position:\s*fixed;/s);
   assert.match(css, /\.chord-variants\s*\{[^}]*width:\s*min\(760px,\s*calc\(100vw - 32px\)\);/s);
-  assert.match(css, /\.cv-tabs\s*\{[^}]*display:\s*flex;/s);
   assert.match(css, /\.cv-title\s*\{[^}]*font-size:\s*15\.5px;[^}]*font-weight:\s*800;/s);
-  assert.match(css, /\.cv-tab\[aria-selected="true"\]::after\s*\{/);
+  assert.doesNotMatch(css, /\.cv-tabs\s*\{/);
+  assert.doesNotMatch(css, /\.cv-tab/);
   assert.match(css, /\.cv-panel\[hidden\]\s*\{[^}]*display:\s*none !important;/s);
   assert.doesNotMatch(css, /\.cv-grid\.diatonic/);
   assert.match(css, /\.cv-grid\.enrich\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\);/s);
@@ -384,6 +390,7 @@ test('passing chord shortcut anchors over column fifteen without shifting the gr
   assert.match(css, /\.beat-group\.has-passing \.beat-head \.add-chord-btn\s*\{[^}]*width:\s*auto;/s);
   assert.match(css, /\.passing-anchor\s*\{[^}]*position:\s*absolute;[^}]*top:\s*50%;[^}]*left:\s*62\.5%;/s);
   assert.match(css, /\.add-chord-btn\s*\{[^}]*background:\s*var\(--bg-deep\);[^}]*border:\s*1px solid var\(--border-soft\);[^}]*border-radius:\s*999px;/s);
+  assert.match(css, /\.chord-label-segment\s*\{/);
   assert.match(css, /\.add-chord-btn\.variants-open,\s*\.passing-btn\.variants-open\s*\{/);
   assert.doesNotMatch(css, /\.passing-anchor\s*\{[^}]*top:\s*calc\(-1 \*/s);
   assert.doesNotMatch(css, /\.passing-anchor::after\s*\{/);

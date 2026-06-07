@@ -57,6 +57,7 @@ test('applyChordGrooveTemplateToExistingClips writes a short block hit to existi
   assert.equal(nextMatrix.chord[5][0].label, 'C');
   assert.equal(nextMatrix.chord[5][0].sourceChordLabel, 'C');
   assert.equal(nextMatrix.chord[4][0].label, 'F');
+  assert.equal(getChordBeatDisplaySegments(nextMatrix, 0)[3].label, null);
   assert.deepEqual(nextMatrix.drums[3][0], { instruments: ['kick'] });
 });
 
@@ -72,6 +73,14 @@ test('applyChordGrooveTemplateToExistingClips writes syncopated block hits and c
     nextMatrix.chord[2].map((cell, step) => (cell ? `${step}:${cell.label}:${cell.duration}` : null)).filter(Boolean),
     ['0:G7:16n', '6:G7:16n', '12:G7:16n'],
   );
+  assert.deepEqual(getChordBeatDisplaySegments(nextMatrix, 2)[3], {
+    startBeat: 3,
+    span: 1,
+    label: 'G7',
+    hasValue: true,
+    hasChord: true,
+    mergeKey: null,
+  });
 });
 
 test('applyChordGrooveTemplateToExistingClips writes arpeggio notes with source chord metadata', () => {
