@@ -93,9 +93,9 @@ test('removed arpeggio groove template no-ops when applied by legacy id', () => 
 
 test('createChordGroovePreviewEvents returns timed playable notes for the requested chord', () => {
   assert.deepEqual(createChordGroovePreviewEvents('block-syncopated', 'F'), [
-    { step: 0, notes: ['F4', 'A4', 'C5'], duration: '16n' },
-    { step: 6, notes: ['F4', 'A4', 'C5'], duration: '16n' },
-    { step: 12, notes: ['F4', 'A4', 'C5'], duration: '16n' },
+    { step: 0, notes: ['F4', 'A4', 'C4'], duration: '16n' },
+    { step: 6, notes: ['F4', 'A4', 'C4'], duration: '16n' },
+    { step: 12, notes: ['F4', 'A4', 'C4'], duration: '16n' },
   ]);
   assert.deepEqual(createChordGroovePreviewEvents('arp-basic', 'C'), []);
   assert.deepEqual(createChordGroovePreviewEvents('missing', 'C'), []);

@@ -220,29 +220,16 @@ function doChordNotesMatch(currentNote, candidateNote) {
 }
 
 function createChordTonePitches(root, toneRoots) {
+  if (root && !isChordRoot(root)) return [];
   if (!toneRoots.length) return [];
-
-  const rootIndex = CHORD_ROOTS.indexOf(root);
-  if (rootIndex === -1) return [];
-
-  let octave = DEFAULT_CHORD_GRID_OCTAVE;
-  let previousToneIndex = rootIndex;
-
-  return toneRoots.map((toneRoot) => {
-    const toneIndex = CHORD_ROOTS.indexOf(toneRoot);
-    if (toneIndex === -1) return null;
-    if (toneIndex < previousToneIndex) octave += 1;
-    previousToneIndex = toneIndex;
-    return `${toneRoot}${octave}`;
-  }).filter(Boolean);
-}
-
-function createPassingChordTonePitches(toneRoots) {
-  if (!Array.isArray(toneRoots)) return [];
 
   return toneRoots
     .map((toneRoot) => (isChordRoot(toneRoot) ? `${toneRoot}${DEFAULT_CHORD_GRID_OCTAVE}` : null))
     .filter(Boolean);
+}
+
+function createPassingChordTonePitches(toneRoots) {
+  return createChordTonePitches(null, toneRoots);
 }
 
 function createMajorDefinition(root) {
@@ -408,11 +395,6 @@ function isChordCellActive(cell, root, columnIndex = 0) {
   if (cell?.type !== 'chord') return false;
 
   const toneRoots = cell.toneRoots ?? getChordToneRoots(cell.label);
-  if (isPassingChordCell(cell)) {
-    if (isChordGridPitch(root)) return createPassingChordTonePitches(toneRoots).includes(root);
-    return toneRoots.includes(root);
-  }
-
   if (isChordGridPitch(root)) return createChordTonePitches(cell.root, toneRoots).includes(root);
   return toneRoots.includes(root);
 }

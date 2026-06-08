@@ -219,15 +219,15 @@ test('setChordEnrichTarget replaces arpeggio source labels while preserving hit 
   assert.deepEqual(nextMatrix.chord[1][2], matrix.chord[1][2]);
   assert.deepEqual(nextMatrix.chord[1][4], {
     type: 'notes',
-    notes: ['C5'],
-    label: 'C5',
+    notes: ['C4'],
+    label: 'C4',
     grooveTemplateId: 'arp-basic',
     sourceChordLabel: 'Fmaj7',
   });
   assert.deepEqual(nextMatrix.chord[1][6], {
     type: 'notes',
-    notes: ['E5'],
-    label: 'E5',
+    notes: ['E4'],
+    label: 'E4',
     grooveTemplateId: 'arp-basic',
     sourceChordLabel: 'Fmaj7',
   });

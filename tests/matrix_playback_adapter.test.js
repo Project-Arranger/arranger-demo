@@ -73,10 +73,10 @@ test('extractMelodyEvent reads melody cells into playable melody events', () => 
 
 test('createChordNotes maps major chord roots to playable triads', () => {
   assert.deepEqual(createChordNotes('C'), ['C4', 'E4', 'G4']);
-  assert.deepEqual(createChordNotes('F#'), ['F#4', 'A#4', 'C#5']);
-  assert.deepEqual(createChordNotes('A#'), ['A#4', 'D5', 'F5']);
+  assert.deepEqual(createChordNotes('F#'), ['F#4', 'A#4', 'C#4']);
+  assert.deepEqual(createChordNotes('A#'), ['A#4', 'D4', 'F4']);
   assert.deepEqual(createChordNotes('Cmaj7'), ['C4', 'E4', 'G4', 'B4']);
-  assert.deepEqual(createChordNotes('Am9'), ['A4', 'C5', 'E5', 'G5', 'B5']);
+  assert.deepEqual(createChordNotes('Am9'), ['A4', 'C4', 'E4', 'G4', 'B4']);
   assert.deepEqual(createChordNotes('H'), []);
 });
 
@@ -136,7 +136,7 @@ test('extractChordEvent reads chord cells into playable chord events', () => {
       root: 'C',
       quality: 'maj7',
       label: 'Cmaj7',
-      notes: ['C4', 'E4', 'G4', 'B4', 'D5'],
+      notes: ['C4', 'E4', 'G4', 'B4', 'D4'],
       duration: '4n',
     },
   );
@@ -175,7 +175,7 @@ test('matrix playback adapter treats Beat 1 column 2 as sustain and plays multi-
       root: 'G',
       quality: '7',
       label: 'G7',
-      notes: ['G4', 'B4', 'D5', 'F5'],
+      notes: ['G4', 'B4', 'D4', 'F4'],
       duration: '4n',
     },
   ]);
@@ -220,7 +220,7 @@ test('matrix playback adapter plays groove-authored short chord hits on any sixt
       root: 'G',
       quality: '7',
       label: 'G7',
-      notes: ['G4', 'B4', 'D5', 'F5'],
+      notes: ['G4', 'B4', 'D4', 'F4'],
       duration: '16n',
     },
   ]);

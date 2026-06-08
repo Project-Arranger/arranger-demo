@@ -14,6 +14,7 @@ import {
   createChordCell,
   createChordNoteCell,
   createChordNotesCell,
+  createChordTonePitches,
   getChordCellNotes,
   getDoowopPassingTargetChord,
   getPassingChordOptions,
@@ -254,6 +255,8 @@ test('add chord panel exposes rich variants for supported chord roots', () => {
 
 test('chord active tones light wherever the chord cell is placed', () => {
   const cCell = createChordCell('C');
+  const g7Cell = createChordCell('G7');
+  const fSharpCell = createChordCell('F#');
   const shortGrooveCell = {
     ...cCell,
     duration: '16n',
@@ -263,6 +266,13 @@ test('chord active tones light wherever the chord cell is placed', () => {
   assert.deepEqual(getChordToneRoots('C'), ['C', 'E', 'G']);
   assert.deepEqual(getChordToneRoots('F#'), ['F#', 'A#', 'C#']);
   assert.deepEqual(getChordToneRoots('H'), []);
+  assert.deepEqual(createChordTonePitches('F#', getChordToneRoots('F#')), ['F#4', 'A#4', 'C#4']);
+  assert.deepEqual(getActiveChordGridLabels(g7Cell), ['B4', 'G4', 'F4', 'D4']);
+  assert.deepEqual(getActiveChordGridLabels(fSharpCell), ['A#4', 'F#4', 'C#4']);
+  assert.equal(isChordCellActive(g7Cell, 'D5'), false);
+  assert.equal(isChordCellActive(g7Cell, 'F5'), false);
+  assert.equal(isChordCellActive(g7Cell, 'D4'), true);
+  assert.equal(isChordCellActive(g7Cell, 'F4'), true);
   assert.equal(isChordCellActive(cCell, 'C', 0), true);
   assert.equal(isChordCellActive(cCell, 'E', 0), true);
   assert.equal(isChordCellActive(cCell, 'G', 0), true);

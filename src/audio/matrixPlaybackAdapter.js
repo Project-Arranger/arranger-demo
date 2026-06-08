@@ -7,13 +7,11 @@ import { BASS_NOTE_IDS } from '../data/bassNotes.js';
 import { getDrumsCellInstruments } from '../domain/drumsCells.js';
 import {
   createChordTonePitches,
-  createPassingChordTonePitches,
   getChordCellNotes,
   getChordDefinition,
   getChordNoteOctave,
   getChordNotePitch,
   getChordToneRoots,
-  isPassingChordCell,
 } from '../domain/chordCells.js';
 import { isValidMelodyNote } from '../app/melodyActions.js';
 
@@ -103,9 +101,7 @@ function extractChordEvent(cell, bar, step) {
   const addedNotes = getChordCellNotes(cell);
   if (isGrooveChordHit(cell)) {
     const toneRoots = cell.toneRoots ?? getChordToneRoots(cell.label ?? cell.root);
-    const notes = isPassingChordCell(cell)
-      ? createPassingChordTonePitches(toneRoots)
-      : createChordNotesWithAddedNotes(cell.root, toneRoots, addedNotes);
+    const notes = createChordNotesWithAddedNotes(cell.root, toneRoots, addedNotes);
     if (!notes.length) return null;
 
     return {
