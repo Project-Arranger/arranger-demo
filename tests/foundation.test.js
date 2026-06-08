@@ -29,3 +29,17 @@ test('new v0.22 sample assets are playable wav files', () => {
     assert.equal(header.subarray(8, 12).toString('ascii'), 'WAVE');
   }
 });
+
+test('runtime sample sources avoid old backup folders', () => {
+  const source = readFileSync('src/audio/AudioEngine.js', 'utf8');
+
+  assert.doesNotMatch(source, /samples\/(?:808|bass|chords|lead)-old\//);
+});
+
+test('local sample backups and generated metadata are ignored', () => {
+  const gitignore = readFileSync('.gitignore', 'utf8');
+
+  assert.match(gitignore, /\/public\/samples\/\*-old\//);
+  assert.match(gitignore, /\/public\/samples\/\.DS_Store/);
+  assert.match(gitignore, /\/public\/samples\/\*\/\.DS_Store/);
+});

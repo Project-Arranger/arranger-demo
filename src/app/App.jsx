@@ -738,6 +738,10 @@ export default function App() {
     previewChordNames([chordName]);
   }, [previewChordNames]);
 
+  const handlePassingChordPreview = useCallback((chordNames) => {
+    previewChordNames(chordNames);
+  }, [previewChordNames]);
+
   const handleChordTemplatePreview = useCallback((chords) => {
     previewChordNames(chords);
   }, [previewChordNames]);
@@ -1088,6 +1092,7 @@ export default function App() {
         onChordTemplateApply: handleChordTemplateApply,
         shouldConfirmChordTemplateApply,
         onPassingChordPick: handlePassingChordPick,
+        onPassingChordPreview: handlePassingChordPreview,
         onBassPreview: handleBassPreview,
         onBassStepToggle: handleBassStepToggle,
         onBassGrooveTemplatePreview: handleBassGrooveTemplatePreview,

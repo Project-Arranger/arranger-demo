@@ -192,8 +192,8 @@ function PassingChordPopover({
   currentChord,
   targetChord,
   onClose,
+  onPassingChordPreview,
   onPassingChordPick,
-  onChordPreview,
 }) {
   const [playingChord, setPlayingChord] = useState(null);
   const passingOptions = getPassingChordOptions(currentChord, targetChord);
@@ -201,10 +201,20 @@ function PassingChordPopover({
 
   const handlePreview = (event, chordName) => {
     event.stopPropagation();
+    const chordNames = getPassingPreviewChordNames(chordName);
     setPlayingChord(chordName);
-    onChordPreview(chordName);
+    onPassingChordPreview(chordNames);
     window.setTimeout(() => setPlayingChord(null), 600);
   };
+
+  const getPassingPreviewChordNames = (chordName) => {
+    if (!currentChord) return [chordName];
+    return [currentChord, chordName, targetChord].filter(Boolean);
+  };
+
+  const getPassingPreviewLabel = (chordName) => (
+    `试听 ${getPassingPreviewChordNames(chordName).join(' 到 ')} 的完整经过`
+  );
 
   const handlePick = (option) => {
     onPassingChordPick(PASSING_CHORD_STEP_INDEX, option.name);
@@ -277,13 +287,18 @@ function PassingChordPopover({
                   ))}
                 </div>
                 <button
-                  className={['cv-preview', playingChord === option.name ? 'playing' : ''].filter(Boolean).join(' ')}
+                  className={[
+                    'cv-preview',
+                    'full-context',
+                    playingChord === option.name ? 'playing' : '',
+                  ].filter(Boolean).join(' ')}
                   type="button"
-                  aria-label={`试听 ${option.name}`}
+                  aria-label={getPassingPreviewLabel(option.name)}
                   data-action="preview"
                   onClick={(event) => handlePreview(event, option.name)}
                 >
                   <span className="play-glyph" aria-hidden="true" />
+                  试听走向
                 </button>
               </div>
             </article>
@@ -326,6 +341,7 @@ function ChordEditor({
   onChordTemplatePreview,
   onChordTemplateApply,
   onPassingChordPick = () => {},
+  onPassingChordPreview = () => {},
   onClose = () => {},
   onClearChord = () => {},
   onClearChordBar,
@@ -712,8 +728,8 @@ function ChordEditor({
         anchorRect: passingChordPanel.anchorRect,
         currentChord: passingSourceChord,
         targetChord: passingTargetChord,
-        onChordPreview,
         onClose: closeChordPanels,
+        onPassingChordPreview,
         onPassingChordPick,
       }) : null}
 

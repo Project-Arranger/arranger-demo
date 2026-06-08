@@ -419,6 +419,18 @@ test('add chord panels keep enrich and passing picker layout without diatonic UI
   assert.match(css, /\.cv-grid\.enrich\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\);/s);
   assert.match(css, /\.cv-context\s*\{[^}]*display:\s*flex;/s);
   assert.match(css, /\.cv-empty\s*\{[^}]*border:\s*1px dashed var\(--border\);/s);
+  assert.match(css, /\.cv-preview\s*\{[^}]*width:\s*28px;[^}]*height:\s*28px;/s);
+  assert.match(css, /\.cv-grid\.passing\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\);/s);
+  assert.match(css, /\.passing-variants \.cv-card\s*\{[^}]*height:\s*100%;/s);
+  assert.doesNotMatch(css, /\.passing-variants \.cv-card\s*\{[^}]*min-height:\s*168px;/s);
+  assert.doesNotMatch(css, /\.passing-variants \.cv-card\s*\{[^}]*padding:\s*18px;/s);
+  assert.match(css, /\.passing-variants \.cv-foot\s*\{[^}]*flex-direction:\s*row;[^}]*align-items:\s*center;/s);
+  assert.match(css, /\.passing-variants \.cv-foot\s*\{[^}]*margin-top:\s*auto;/s);
+  assert.doesNotMatch(css, /\.passing-variants \.cv-foot\s*\{[^}]*flex-direction:\s*column;/s);
+  assert.match(css, /\.passing-variants \.cv-preview\.full-context\s*\{[^}]*display:\s*inline-flex;/s);
+  assert.match(css, /\.passing-variants \.cv-preview\.full-context\s*\{[^}]*width:\s*auto;/s);
+  assert.match(css, /\.passing-variants \.cv-preview\.full-context\s*\{[^}]*height:\s*28px;/s);
+  assert.match(css, /\.passing-variants \.cv-preview\.full-context\s*\{[^}]*border-radius:\s*999px;/s);
   assert.doesNotMatch(css, /\.cv-roman\s*\{/);
 });
 

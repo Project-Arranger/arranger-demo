@@ -4,3 +4,6 @@ dist/
 .DS_Store
 *.local
 .worktrees/
+/public/samples/*-old/
+/public/samples/.DS_Store
+/public/samples/*/.DS_Store

@@ -225,6 +225,16 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(chordEditorSource, /const passingButtonClassName = \[\s*'add-chord-btn',\s*'passing-btn',/);
   assert.match(chordEditorSource, /PASSING_CHORD_STEP_INDEX/);
   assert.match(chordEditorSource, /onPassingChordPick\(PASSING_CHORD_STEP_INDEX,\s*option\.name\)/);
+  const passingChordPopoverSource = chordEditorSource.match(/function PassingChordPopover[\s\S]*?function getGrooveStepClass/)?.[0] ?? '';
+  assert.match(passingChordPopoverSource, /onPassingChordPreview/);
+  assert.match(passingChordPopoverSource, /if \(!currentChord\) return \[chordName\];/);
+  assert.match(passingChordPopoverSource, /\[currentChord,\s*chordName,\s*targetChord\]\.filter\(Boolean\)/);
+  assert.match(passingChordPopoverSource, /onPassingChordPreview\(chordNames\);/);
+  assert.match(passingChordPopoverSource, /getPassingPreviewLabel\(option\.name\)/);
+  assert.match(passingChordPopoverSource, /full-context/);
+  assert.match(passingChordPopoverSource, /event\.stopPropagation\(\);/);
+  assert.match(passingChordPopoverSource, /试听走向/);
+  assert.doesNotMatch(passingChordPopoverSource, /试听完整经过/);
   assert.doesNotMatch(chordEditorSource, /className="cv-tab"[\s\S]{0,260}添加经过和弦/);
   assert.doesNotMatch(chordEditorSource, /添加调内和弦/);
   assert.match(chordEditorSource, /丰富和弦/);
@@ -296,6 +306,7 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(chordEditorSource, /isChordAddedNoteActive/);
   assert.match(chordEditorSource, /onChordNoteSelect/);
   assert.match(chordEditorSource, /onChordPreview/);
+  assert.match(chordEditorSource, /onPassingChordPreview/);
   assert.match(chordEditorSource, /onChordTemplatePreview/);
   assert.match(chordEditorSource, /onChordTemplateApply/);
   assert.match(chordEditorSource, /onClearChordBar/);
@@ -320,6 +331,8 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(source, /createChordNotes/);
   assert.match(source, /previewChordSequence/);
   assert.match(source, /handleChordPreview/);
+  assert.match(source, /handlePassingChordPreview/);
+  assert.match(source, /previewChordNames\(chordNames\)/);
   assert.match(source, /handleChordTemplatePreview/);
   assert.match(source, /handleChordGrooveTemplatePreview/);
   assert.doesNotMatch(source, /seedDefaultDrumsPattern/);
@@ -338,6 +351,7 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(source, /handleChordCellSelect/);
   assert.match(source, /handleChordPick/);
   assert.match(source, /handlePassingChordPick/);
+  assert.match(source, /onPassingChordPreview:\s*handlePassingChordPreview/);
   assert.match(source, /setChordStepChord\(state\.matrix,\s*selectedBar,\s*stepIndex,\s*chordName\)/);
   assert.match(source, /const step = getChordSpanStep\(spanIndex\)/);
   assert.match(source, /setChordCell\(state\.matrix,\s*selectedBar,\s*spanIndex,\s*root\)/);
@@ -523,6 +537,7 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(bottomEditorSource, /activeTrackId === 'chord'/);
   assert.match(bottomEditorSource, /onChordPick/);
   assert.match(bottomEditorSource, /onPassingChordPick/);
+  assert.match(bottomEditorSource, /onPassingChordPreview/);
   assert.match(bottomEditorSource, /onChordNoteSelect/);
   assert.match(bottomEditorSource, /onChordPreview/);
   assert.match(bottomEditorSource, /onChordTemplatePreview/);

@@ -13,6 +13,7 @@ const DRUMS_SAMPLE_FILES = Object.freeze({
   snare: 'samples/Drums/Snare_v0.22.wav',
   hihat: 'samples/Drums/Hihat_v0.22.wav',
 });
+const SAMPLE_ASSET_VERSION = 'sample-refresh-20260608';
 const CHORD_SAMPLE_DURATION = '2s';
 const MELODY_SAMPLE_DURATION = '2s';
 
@@ -61,13 +62,22 @@ function trimTrailingSlash(value) {
   return value.endsWith('/') ? value.slice(0, -1) : value;
 }
 
+function appendSampleAssetVersion(url) {
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}v=${SAMPLE_ASSET_VERSION}`;
+}
+
+function createSampleUrl(normalizedBaseUrl, file) {
+  return appendSampleAssetVersion(`${normalizedBaseUrl}/${file}`);
+}
+
 function createDrumsSampleUrls(baseUrl = '/') {
   const normalizedBaseUrl = baseUrl === '/' ? '' : trimTrailingSlash(baseUrl);
 
   return Object.fromEntries(
     DRUMS_INSTRUMENT_IDS.map((instrument) => [
       instrument,
-      `${normalizedBaseUrl}/${DRUMS_SAMPLE_FILES[instrument]}`,
+      createSampleUrl(normalizedBaseUrl, DRUMS_SAMPLE_FILES[instrument]),
     ]),
   );
 }
@@ -78,7 +88,7 @@ function createMelodySampleUrls(baseUrl = '/') {
   return Object.fromEntries(
     Object.entries(MELODY_SAMPLE_FILES).map(([note, file]) => [
       note,
-      `${normalizedBaseUrl}/${file}`,
+      createSampleUrl(normalizedBaseUrl, file),
     ]),
   );
 }
@@ -89,7 +99,7 @@ function createBassSampleUrls(baseUrl = '/') {
   return Object.fromEntries(
     Object.entries(BASS_SAMPLE_FILES).map(([note, file]) => [
       note,
-      `${normalizedBaseUrl}/${file}`,
+      createSampleUrl(normalizedBaseUrl, file),
     ]),
   );
 }
@@ -100,7 +110,7 @@ function createChordSampleUrls(baseUrl = '/') {
   return Object.fromEntries(
     Object.entries(CHORD_SAMPLE_FILES).map(([note, file]) => [
       note,
-      `${normalizedBaseUrl}/${file}`,
+      createSampleUrl(normalizedBaseUrl, file),
     ]),
   );
 }

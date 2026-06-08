@@ -13,6 +13,13 @@ import createAudioEngine from '../src/audio/createAudioEngine.js';
 import { STEPS_PER_BAR } from '../src/domain/musicConstants.js';
 import createInitialMatrix from '../src/store/createInitialMatrix.js';
 
+const SAMPLE_ASSET_VERSION = 'sample-refresh-20260608';
+const SAMPLE_VERSION_QUERY = `?v=${SAMPLE_ASSET_VERSION}`;
+
+function versioned(url) {
+  return `${url}${SAMPLE_VERSION_QUERY}`;
+}
+
 function createFakeTone() {
   const calls = [];
   const transport = {
@@ -206,27 +213,27 @@ test('audio statuses expose the phase 4 lifecycle states', () => {
 
 test('createDrumsSampleUrls maps drums instruments to v0.22 samples', () => {
   assert.deepEqual(createDrumsSampleUrls('/arranger/'), {
-    kick: '/arranger/samples/Drums/Kick_v0.22.wav',
-    snare: '/arranger/samples/Drums/Snare_v0.22.wav',
-    hihat: '/arranger/samples/Drums/Hihat_v0.22.wav',
+    kick: versioned('/arranger/samples/Drums/Kick_v0.22.wav'),
+    snare: versioned('/arranger/samples/Drums/Snare_v0.22.wav'),
+    hihat: versioned('/arranger/samples/Drums/Hihat_v0.22.wav'),
   });
 });
 
 test('createMelodySampleUrls maps melody anchor samples for sampler playback', () => {
   const urls = createMelodySampleUrls('/arranger/');
 
-  assert.equal(urls.C3, '/arranger/samples/Melody/Melody_C3_v0.22.wav');
-  assert.equal(urls.C4, '/arranger/samples/Melody/Melody_C4_v0.22.wav');
-  assert.equal(urls.G4, '/arranger/samples/Melody/Melody_G4_v0.22.wav');
+  assert.equal(urls.C3, versioned('/arranger/samples/Melody/Melody_C3_v0.22.wav'));
+  assert.equal(urls.C4, versioned('/arranger/samples/Melody/Melody_C4_v0.22.wav'));
+  assert.equal(urls.G4, versioned('/arranger/samples/Melody/Melody_G4_v0.22.wav'));
   assert.equal(urls['C#4'], undefined);
 });
 
 test('createBassSampleUrls maps v0.22 bass anchor samples for sampler playback', () => {
   const urls = createBassSampleUrls('/arranger/');
 
-  assert.equal(urls.F0, '/arranger/samples/Bass/Bass_F0_v0.22.wav');
-  assert.equal(urls.G0, '/arranger/samples/Bass/Bass_G0_v0.22.wav');
-  assert.equal(urls.C1, '/arranger/samples/Bass/Bass_C1_v0.22.wav');
+  assert.equal(urls.F0, versioned('/arranger/samples/Bass/Bass_F0_v0.22.wav'));
+  assert.equal(urls.G0, versioned('/arranger/samples/Bass/Bass_G0_v0.22.wav'));
+  assert.equal(urls.C1, versioned('/arranger/samples/Bass/Bass_C1_v0.22.wav'));
   assert.equal(urls.C4, undefined);
   assert.equal(urls['F#3'], undefined);
 });
@@ -234,10 +241,22 @@ test('createBassSampleUrls maps v0.22 bass anchor samples for sampler playback',
 test('createChordSampleUrls maps v0.22 chord note anchor samples', () => {
   const urls = createChordSampleUrls('/arranger/');
 
-  assert.equal(urls.C4, '/arranger/samples/Chords/Chord_C4_v0.22.wav');
-  assert.equal(urls.E4, '/arranger/samples/Chords/Chord_E4_v0.22.wav');
-  assert.equal(urls.G4, '/arranger/samples/Chords/Chord_G4_v0.22.wav');
+  assert.equal(urls.C4, versioned('/arranger/samples/Chords/Chord_C4_v0.22.wav'));
+  assert.equal(urls.E4, versioned('/arranger/samples/Chords/Chord_E4_v0.22.wav'));
+  assert.equal(urls.G4, versioned('/arranger/samples/Chords/Chord_G4_v0.22.wav'));
   assert.equal(urls['F#4'], undefined);
+});
+
+test('sample URLs are cache-busted and never point at old backup folders', () => {
+  const urls = [
+    ...Object.values(createDrumsSampleUrls('/arranger/')),
+    ...Object.values(createMelodySampleUrls('/arranger/')),
+    ...Object.values(createBassSampleUrls('/arranger/')),
+    ...Object.values(createChordSampleUrls('/arranger/')),
+  ];
+
+  assert.ok(urls.every((url) => url.endsWith(SAMPLE_VERSION_QUERY)));
+  assert.ok(urls.every((url) => !/\/(808|bass|chords|lead)-old\//.test(url)));
 });
 
 test('formatToneTransportPosition converts matrix bar and step to Tone position', () => {
@@ -264,8 +283,8 @@ test('AudioEngine starts audio and triggers drums samples', async () => {
     ['player.toDestination', 'kick'],
     ['player.toDestination', 'snare'],
     ['player.toDestination', 'hihat'],
-    ['player.start', 'kick', '/samples/Drums/Kick_v0.22.wav', 12.5],
-    ['player.start', 'snare', '/samples/Drums/Snare_v0.22.wav', 12.5],
+    ['player.start', 'kick', versioned('/samples/Drums/Kick_v0.22.wav'), 12.5],
+    ['player.start', 'snare', versioned('/samples/Drums/Snare_v0.22.wav'), 12.5],
   ]);
 });
 
@@ -575,7 +594,7 @@ test('AudioEngine matrix playback triggers drums bass chord and melody events', 
     || name === 'chordSampler.triggerAttackRelease'
     || name === 'sampler.triggerAttackRelease'
   )), [
-    ['player.start', 'kick', '/samples/Drums/Kick_v0.22.wav', 24],
+    ['player.start', 'kick', versioned('/samples/Drums/Kick_v0.22.wav'), 24],
     [
       'sampler.triggerAttackRelease',
       'C1',
@@ -641,7 +660,7 @@ test('AudioEngine applies current track volumes to matrix playback events', asyn
     || name === 'chordSampler.triggerAttackRelease'
     || name === 'sampler.triggerAttackRelease'
   )), [
-    ['player.start', 'kick', '/samples/Drums/Kick_v0.22.wav', 24, -18],
+    ['player.start', 'kick', versioned('/samples/Drums/Kick_v0.22.wav'), 24, -18],
     [
       'sampler.triggerAttackRelease',
       'G0',
@@ -676,8 +695,8 @@ test('AudioEngine applies live track volume source to drums previews', async () 
   await engine.triggerDrumsStep('snare');
 
   assert.deepEqual(tone.calls.filter(([name]) => name === 'player.start'), [
-    ['player.start', 'snare', '/samples/Drums/Snare_v0.22.wav', 12.5, -12],
-    ['player.start', 'snare', '/samples/Drums/Snare_v0.22.wav', 12.5, -6],
+    ['player.start', 'snare', versioned('/samples/Drums/Snare_v0.22.wav'), 12.5, -12],
+    ['player.start', 'snare', versioned('/samples/Drums/Snare_v0.22.wav'), 12.5, -6],
   ]);
 });
 
@@ -752,9 +771,9 @@ test('AudioEngine previews bass groove patterns with sixteenth-step timing', asy
     ['sampler.triggerAttackRelease', 'G0', '8n', 13, -10],
     ['sampler.triggerAttackRelease', 'A#0', '16n', 13.75, -10],
   ]);
-  assert.equal(samplerCalls[0].at(-1).C1, '/samples/Bass/Bass_C1_v0.22.wav');
-  assert.equal(samplerCalls[1].at(-1).G0, '/samples/Bass/Bass_G0_v0.22.wav');
-  assert.equal(samplerCalls[2].at(-1).A0, '/samples/Bass/Bass_A0_v0.22.wav');
+  assert.equal(samplerCalls[0].at(-1).C1, versioned('/samples/Bass/Bass_C1_v0.22.wav'));
+  assert.equal(samplerCalls[1].at(-1).G0, versioned('/samples/Bass/Bass_G0_v0.22.wav'));
+  assert.equal(samplerCalls[2].at(-1).A0, versioned('/samples/Bass/Bass_A0_v0.22.wav'));
 });
 
 test('createAudioEngine defers the default Tone dependency until audio starts', async () => {
