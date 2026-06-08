@@ -107,7 +107,7 @@ function BottomEditor({
       onRenameClip,
       selectedBar,
     });
-  } else if (activeTrackId === 'lead' && selectedClipId) {
+  } else if (activeTrackId === 'melody' && selectedClipId) {
     editor = createElement(MelodyEditor, {
       matrix,
       clipName: selectedClipName,

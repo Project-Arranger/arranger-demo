@@ -113,13 +113,13 @@ async function dispatchHandlerCommand(command, deps) {
       await maybeCall(handlers.chord?.clearCell, command);
       return { ok: true };
 
-    case APP_COMMAND_TYPES.LEAD_NOTE_ON:
-      await maybeCallMethod(deps.audio, 'triggerLeadNote', command.note, '16n');
-      await maybeCall(handlers.lead?.noteOn, command);
+    case APP_COMMAND_TYPES.MELODY_NOTE_ON:
+      await maybeCallMethod(deps.audio, 'triggerMelodyNote', command.note, '16n');
+      await maybeCall(handlers.melody?.noteOn, command);
       return { ok: true };
 
-    case APP_COMMAND_TYPES.LEAD_NOTE_OFF:
-      await maybeCall(handlers.lead?.noteOff, command);
+    case APP_COMMAND_TYPES.MELODY_NOTE_OFF:
+      await maybeCall(handlers.melody?.noteOff, command);
       return { ok: true };
 
     default:

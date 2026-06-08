@@ -11,8 +11,6 @@ import {
 } from '../src/app/bassActions.js';
 import { BASS_NOTES } from '../src/data/bassNotes.js';
 import {
-  CHORD_GRID_PITCHES,
-  DEFAULT_CHORD_GRID_OCTAVE,
   createChordCell,
 } from '../src/domain/chordCells.js';
 import createInitialMatrix from '../src/store/createInitialMatrix.js';
@@ -24,59 +22,55 @@ function createClips(...records) {
   };
 }
 
-test('bass notes expose the chord three-octave pitch rail from B5 down to C3', () => {
+test('bass notes expose a low three-octave pitch rail from B2 down to C0', () => {
   assert.equal(BASS_NOTES.length, 36);
-  assert.deepEqual(
-    BASS_NOTES.map((note) => note.note),
-    CHORD_GRID_PITCHES.map((pitch) => pitch.label),
-  );
   assert.deepEqual(BASS_NOTES.map((note) => note.label).slice(0, 12), [
-    'B5',
-    'A#5',
-    'A5',
-    'G#5',
-    'G5',
-    'F#5',
-    'F5',
-    'E5',
-    'D#5',
-    'D5',
-    'C#5',
-    'C5',
+    'B2',
+    'A#2',
+    'A2',
+    'G#2',
+    'G2',
+    'F#2',
+    'F2',
+    'E2',
+    'D#2',
+    'D2',
+    'C#2',
+    'C2',
   ]);
-  assert.equal(BASS_NOTES.at(12).note, 'B4');
-  assert.equal(BASS_NOTES.at(23).note, 'C4');
-  assert.equal(BASS_NOTES.at(-1).note, 'C3');
+  assert.equal(BASS_NOTES.at(12).note, 'B1');
+  assert.equal(BASS_NOTES.at(23).note, 'C1');
+  assert.equal(BASS_NOTES.at(-1).note, 'C0');
   assert.equal(BASS_NOTES.filter((note) => note.root).length, 3);
 });
 
 test('toggleBassCell writes replaces and clears one bass note per sixteenth step', () => {
   const matrix = createInitialMatrix();
 
-  const withC = toggleBassCell(matrix, 2, 5, 'C4');
-  assert.deepEqual(withC.bass[2][5], { type: 'bass', note: 'C4', duration: '16n' });
-  assert.equal(isBassCellActive(withC, 2, 5, 'C4'), true);
+  const withC = toggleBassCell(matrix, 2, 5, 'C1');
+  assert.deepEqual(withC.bass[2][5], { type: 'bass', note: 'C1', duration: '16n' });
+  assert.equal(isBassCellActive(withC, 2, 5, 'C1'), true);
 
-  const withD = toggleBassCell(withC, 2, 5, 'F#3');
-  assert.deepEqual(withD.bass[2][5], { type: 'bass', note: 'F#3', duration: '16n' });
-  assert.equal(isBassCellActive(withD, 2, 5, 'C4'), false);
-  assert.equal(isBassCellActive(withD, 2, 5, 'F#3'), true);
+  const withD = toggleBassCell(withC, 2, 5, 'F#0');
+  assert.deepEqual(withD.bass[2][5], { type: 'bass', note: 'F#0', duration: '16n' });
+  assert.equal(isBassCellActive(withD, 2, 5, 'C1'), false);
+  assert.equal(isBassCellActive(withD, 2, 5, 'F#0'), true);
 
-  const cleared = toggleBassCell(withD, 2, 5, 'F#3');
+  const cleared = toggleBassCell(withD, 2, 5, 'F#0');
   assert.equal(cleared.bass[2][5], null);
 });
 
 test('clearBassBar clears only the selected bass bar', () => {
   const matrix = createInitialMatrix();
-  matrix.bass[1][0] = { type: 'bass', note: 'C4', duration: '16n' };
-  matrix.bass[1][4] = { type: 'bass', note: 'G4', duration: '16n' };
-  matrix.bass[2][0] = { type: 'bass', note: 'F#3', duration: '16n' };
+  matrix.bass[1][0] = { type: 'bass', note: 'C1', duration: '16n' };
+  matrix.bass[1][4] = { type: 'bass', note: 'G0', duration: '16n' };
+  matrix.bass[2][0] = { type: 'bass', note: 'F#0', duration: '16n' };
   matrix.drums[1][0] = { instruments: ['kick'] };
 
   const nextMatrix = clearBassBar(matrix, 1);
 
   assert.equal(nextMatrix.bass[1].every((cell) => cell === null), true);
-  assert.deepEqual(nextMatrix.bass[2][0], { type: 'bass', note: 'F#3', duration: '16n' });
+  assert.deepEqual(nextMatrix.bass[2][0], { type: 'bass', note: 'F#0', duration: '16n' });
   assert.deepEqual(nextMatrix.drums[1][0], { instruments: ['kick'] });
 });
 
@@ -100,8 +94,8 @@ test('bass groove templates match the three reference picker options', () => {
 
 test('applyBassGrooveTemplateToBar writes current bass clip from same-beat chord roots only', () => {
   const matrix = createInitialMatrix();
-  matrix.bass[1][0] = { type: 'bass', note: 'D4', duration: '16n' };
-  matrix.bass[2][15] = { type: 'bass', note: 'B4', duration: '16n' };
+  matrix.bass[1][0] = { type: 'bass', note: 'D1', duration: '16n' };
+  matrix.bass[2][15] = { type: 'bass', note: 'B0', duration: '16n' };
   matrix.chord[2][0] = createChordCell('C');
   matrix.chord[2][4] = createChordCell('G');
   matrix.chord[2][8] = createChordCell('Am');
@@ -111,30 +105,30 @@ test('applyBassGrooveTemplateToBar writes current bass clip from same-beat chord
 
   assert.deepEqual(nextMatrix.bass[2][0], {
     type: 'bass',
-    note: 'C4',
+    note: 'C1',
     duration: '8n',
     grooveTemplateId: 'bass-8th-basic',
   });
   assert.deepEqual(nextMatrix.bass[2][4], {
     type: 'bass',
-    note: 'G4',
+    note: 'G0',
     duration: '8n',
     grooveTemplateId: 'bass-8th-basic',
   });
   assert.deepEqual(nextMatrix.bass[2][8], {
     type: 'bass',
-    note: 'A4',
+    note: 'A0',
     duration: '8n',
     grooveTemplateId: 'bass-8th-basic',
   });
   assert.deepEqual(nextMatrix.bass[2][12], {
     type: 'bass',
-    note: 'F4',
+    note: 'F0',
     duration: '8n',
     grooveTemplateId: 'bass-8th-basic',
   });
   assert.equal(nextMatrix.bass[2][15], null);
-  assert.deepEqual(nextMatrix.bass[1][0], { type: 'bass', note: 'D4', duration: '16n' });
+  assert.deepEqual(nextMatrix.bass[1][0], { type: 'bass', note: 'D1', duration: '16n' });
 });
 
 test('applyBassGrooveTemplateToExistingClips writes all existing bass clips from each bar chord roots', () => {
@@ -147,11 +141,11 @@ test('applyBassGrooveTemplateToExistingClips writes all existing bass clips from
     { id: 'bass-bar-2', trackId: 'bass', bar: 2 },
     { id: 'chord-bar-2', trackId: 'chord', bar: 2 },
   );
-  matrix.bass[0][15] = { type: 'bass', note: 'B4', duration: '16n' };
-  matrix.bass[2][7] = { type: 'bass', note: 'D4', duration: '16n' };
-  matrix.bass[4][0] = { type: 'bass', note: 'F#3', duration: '16n' };
+  matrix.bass[0][15] = { type: 'bass', note: 'B0', duration: '16n' };
+  matrix.bass[2][7] = { type: 'bass', note: 'D1', duration: '16n' };
+  matrix.bass[4][0] = { type: 'bass', note: 'F#0', duration: '16n' };
   matrix.drums[1][0] = { instruments: ['kick'] };
-  matrix.lead[2][2] = { type: 'melody', note: 'G4' };
+  matrix.melody[2][2] = { type: 'melody', note: 'G4' };
   matrix.chord[0][0] = createChordCell('C');
   matrix.chord[0][4] = createChordCell('G');
   matrix.chord[0][8] = createChordCell('Am');
@@ -164,17 +158,17 @@ test('applyBassGrooveTemplateToExistingClips writes all existing bass clips from
 
   assert.deepEqual(
     [0, 4, 8, 12].map((step) => nextMatrix.bass[0][step]?.note),
-    ['C4', 'G4', 'A4', 'F4'],
+    ['C1', 'G0', 'A0', 'F0'],
   );
   assert.deepEqual(
     [0, 4, 8, 12].map((step) => nextMatrix.bass[2][step]?.note),
-    ['D4', 'D4', 'A#4', 'D4'],
+    ['D1', 'D1', 'A#0', 'D1'],
   );
   assert.equal(nextMatrix.bass[0][15], null);
   assert.equal(nextMatrix.bass[2][7], null);
-  assert.deepEqual(nextMatrix.bass[4][0], { type: 'bass', note: 'F#3', duration: '16n' });
+  assert.deepEqual(nextMatrix.bass[4][0], { type: 'bass', note: 'F#0', duration: '16n' });
   assert.deepEqual(nextMatrix.drums[1][0], { instruments: ['kick'] });
-  assert.deepEqual(nextMatrix.lead[2][2], { type: 'melody', note: 'G4' });
+  assert.deepEqual(nextMatrix.melody[2][2], { type: 'melody', note: 'G4' });
 });
 
 test('applyBassGrooveTemplateToExistingClips keeps bass bars empty without a matching chord clip', () => {
@@ -185,7 +179,7 @@ test('applyBassGrooveTemplateToExistingClips keeps bass bars empty without a mat
     { id: 'bass-bar-2', trackId: 'bass', bar: 2 },
     { id: 'chord-bar-2', trackId: 'chord', bar: 2 },
   );
-  matrix.bass[0][0] = { type: 'bass', note: 'B4', duration: '16n' };
+  matrix.bass[0][0] = { type: 'bass', note: 'B0', duration: '16n' };
   matrix.chord[2][0] = createChordCell('D');
 
   const nextMatrix = applyBassGrooveTemplateToExistingClips(matrix, clips, 'bass-8th-basic');
@@ -193,7 +187,7 @@ test('applyBassGrooveTemplateToExistingClips keeps bass bars empty without a mat
   assert.equal(nextMatrix.bass[0].every((cell) => cell === null), true);
   assert.deepEqual(
     [0, 4, 8, 12].map((step) => nextMatrix.bass[2][step]?.note),
-    ['D4', 'D4', 'D4', 'D4'],
+    ['D1', 'D1', 'D1', 'D1'],
   );
 });
 
@@ -209,24 +203,24 @@ test('applyBassGrooveTemplateToExistingClips is a no-op without bass clips or a 
   assert.equal(applyBassGrooveTemplateToExistingClips(matrix, noBassClips, 'missing'), matrix);
 });
 
-test('bass groove templates fall back to the first bar chord and then C4', () => {
+test('bass groove templates fall back to the first bar chord and then C1', () => {
   const matrix = createInitialMatrix();
   matrix.chord[3][0] = createChordCell('D');
   matrix.chord[3][8] = createChordCell('A#');
 
   const withChords = applyBassGrooveTemplateToBar(matrix, 3, 'bass-16th-swing');
-  assert.equal(withChords.bass[3][0].note, `D${DEFAULT_CHORD_GRID_OCTAVE}`);
-  assert.equal(withChords.bass[3][3].note, `D${DEFAULT_CHORD_GRID_OCTAVE}`);
-  assert.equal(withChords.bass[3][6].note, `D${DEFAULT_CHORD_GRID_OCTAVE}`);
-  assert.equal(withChords.bass[3][8].note, `A#${DEFAULT_CHORD_GRID_OCTAVE}`);
-  assert.equal(withChords.bass[3][12].note, `D${DEFAULT_CHORD_GRID_OCTAVE}`);
+  assert.equal(withChords.bass[3][0].note, 'D1');
+  assert.equal(withChords.bass[3][3].note, 'D1');
+  assert.equal(withChords.bass[3][6].note, 'D1');
+  assert.equal(withChords.bass[3][8].note, 'A#0');
+  assert.equal(withChords.bass[3][12].note, 'D1');
 
   const withoutChords = applyBassGrooveTemplateToBar(createInitialMatrix(), 4, 'bass-8th-swing');
   assert.deepEqual(withoutChords.bass[4].filter(Boolean).map((cell) => cell.note), [
-    'C4',
-    'C4',
-    'C4',
-    'C4',
+    'C1',
+    'C1',
+    'C1',
+    'C1',
   ]);
 });
 
@@ -238,9 +232,9 @@ test('createBassPreviewEvents returns timed playable root-note events', () => {
   matrix.chord[2][12] = createChordCell('Am');
 
   assert.deepEqual(createBassPreviewEvents(matrix, 2, 'bass-8th-swing'), [
-    { step: 0, note: 'C4', duration: '8n' },
-    { step: 4, note: 'F#4', duration: '8n' },
-    { step: 10, note: 'G4', duration: '8n' },
-    { step: 14, note: 'A4', duration: '8n' },
+    { step: 0, note: 'C1', duration: '8n' },
+    { step: 4, note: 'F#0', duration: '8n' },
+    { step: 10, note: 'G0', duration: '8n' },
+    { step: 14, note: 'A0', duration: '8n' },
   ]);
 });

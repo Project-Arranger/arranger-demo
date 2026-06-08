@@ -101,12 +101,12 @@ test('getDrumsClipBarIndexes returns sorted drums clip bars only', () => {
 
 test('clearDrumsBar only clears the requested drums bar', () => {
   const matrix = applyBasicDrumsAllBars(createInitialMatrix());
-  matrix.lead[3][4] = { note: 'E4' };
+  matrix.melody[3][4] = { note: 'E4' };
 
   const nextMatrix = clearDrumsBar(matrix, 3);
 
   assert.equal(nextMatrix.drums[3].every((cell) => cell === null), true);
   assert.deepEqual(nextMatrix.drums[2][0], { instruments: ['kick', 'hihat'] });
   assert.deepEqual(nextMatrix.drums[4][8], { instruments: ['snare', 'hihat'] });
-  assert.deepEqual(nextMatrix.lead[3][4], { note: 'E4' });
+  assert.deepEqual(nextMatrix.melody[3][4], { note: 'E4' });
 });

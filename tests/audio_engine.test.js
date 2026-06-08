@@ -4,8 +4,9 @@ import { test } from 'node:test';
 import { AUDIO_STATUSES } from '../src/audio/audioStatus.js';
 import AudioEngine, {
   createBassSampleUrls,
+  createChordSampleUrls,
   createDrumsSampleUrls,
-  createLeadSampleUrls,
+  createMelodySampleUrls,
   formatToneTransportPosition,
 } from '../src/audio/AudioEngine.js';
 import createAudioEngine from '../src/audio/createAudioEngine.js';
@@ -85,6 +86,19 @@ function createChordSynthFactory(calls) {
   });
 }
 
+function createChordSamplerFactory(calls) {
+  return (urls) => ({
+    triggerAttackRelease: (notes, duration, time) => calls.push([
+      'chordSampler.triggerAttackRelease',
+      notes,
+      duration,
+      time,
+      urls,
+    ]),
+    toDestination: () => calls.push(['chordSampler.toDestination']),
+  });
+}
+
 function createSamplerFactory(calls) {
   return (urls) => ({
     triggerAttackRelease: (note, duration, time) => calls.push([
@@ -156,6 +170,30 @@ function createVolumeAwareChordSynthFactory(calls) {
   };
 }
 
+function createVolumeAwareChordSamplerFactory(calls) {
+  return (urls) => {
+    const sampler = {
+      volume: { value: 0 },
+      triggerAttackRelease(notes, duration, time) {
+        calls.push([
+          'chordSampler.triggerAttackRelease',
+          notes,
+          duration,
+          time,
+          sampler.volume.value,
+          urls,
+        ]);
+      },
+      toDestination() {
+        calls.push(['chordSampler.toDestination']);
+        return sampler;
+      },
+    };
+
+    return sampler;
+  };
+}
+
 test('audio statuses expose the phase 4 lifecycle states', () => {
   assert.deepEqual(AUDIO_STATUSES, {
     IDLE: 'idle',
@@ -166,36 +204,40 @@ test('audio statuses expose the phase 4 lifecycle states', () => {
   });
 });
 
-test('createDrumsSampleUrls maps drums instruments to migrated 808 samples', () => {
+test('createDrumsSampleUrls maps drums instruments to v0.22 samples', () => {
   assert.deepEqual(createDrumsSampleUrls('/arranger/'), {
-    kick: '/arranger/samples/808/kick.wav',
-    snare: '/arranger/samples/808/snare.wav',
-    hihat: '/arranger/samples/808/hihat.wav',
+    kick: '/arranger/samples/Drums/Kick_v0.22.wav',
+    snare: '/arranger/samples/Drums/Snare_v0.22.wav',
+    hihat: '/arranger/samples/Drums/Hihat_v0.22.wav',
   });
 });
 
-test('createLeadSampleUrls maps existing lead samples for sampler playback', () => {
-  assert.deepEqual(createLeadSampleUrls('/arranger/'), {
-    C3: '/arranger/samples/lead/Lead C3.wav',
-    D3: '/arranger/samples/lead/Lead D3.wav',
-    E3: '/arranger/samples/lead/Lead E3.wav',
-    F3: '/arranger/samples/lead/Lead F3.wav',
-    G3: '/arranger/samples/lead/Lead G3.wav',
-    A3: '/arranger/samples/lead/Lead A3.wav',
-    B3: '/arranger/samples/lead/Lead B3.wav',
-  });
+test('createMelodySampleUrls maps melody anchor samples for sampler playback', () => {
+  const urls = createMelodySampleUrls('/arranger/');
+
+  assert.equal(urls.C3, '/arranger/samples/Melody/Melody_C3_v0.22.wav');
+  assert.equal(urls.C4, '/arranger/samples/Melody/Melody_C4_v0.22.wav');
+  assert.equal(urls.G4, '/arranger/samples/Melody/Melody_G4_v0.22.wav');
+  assert.equal(urls['C#4'], undefined);
 });
 
-test('createBassSampleUrls maps legacy and generated bass samples for chromatic sampler playback', () => {
+test('createBassSampleUrls maps v0.22 bass anchor samples for sampler playback', () => {
   const urls = createBassSampleUrls('/arranger/');
 
-  assert.equal(urls.C1, '/arranger/samples/bass/Bass_C1.wav');
-  assert.equal(urls.G1, '/arranger/samples/bass/Bass_G1.wav');
-  assert.equal(urls.C3, '/arranger/samples/bass/generated/Bass_C3.wav');
-  assert.equal(urls['F#3'], '/arranger/samples/bass/generated/Bass_FSharp3.wav');
-  assert.equal(urls.C4, '/arranger/samples/bass/generated/Bass_C4.wav');
-  assert.equal(urls.C5, '/arranger/samples/bass/generated/Bass_C5.wav');
-  assert.equal(urls.B5, '/arranger/samples/bass/generated/Bass_B5.wav');
+  assert.equal(urls.F0, '/arranger/samples/Bass/Bass_F0_v0.22.wav');
+  assert.equal(urls.G0, '/arranger/samples/Bass/Bass_G0_v0.22.wav');
+  assert.equal(urls.C1, '/arranger/samples/Bass/Bass_C1_v0.22.wav');
+  assert.equal(urls.C4, undefined);
+  assert.equal(urls['F#3'], undefined);
+});
+
+test('createChordSampleUrls maps v0.22 chord note anchor samples', () => {
+  const urls = createChordSampleUrls('/arranger/');
+
+  assert.equal(urls.C4, '/arranger/samples/Chords/Chord_C4_v0.22.wav');
+  assert.equal(urls.E4, '/arranger/samples/Chords/Chord_E4_v0.22.wav');
+  assert.equal(urls.G4, '/arranger/samples/Chords/Chord_G4_v0.22.wav');
+  assert.equal(urls['F#4'], undefined);
 });
 
 test('formatToneTransportPosition converts matrix bar and step to Tone position', () => {
@@ -222,12 +264,33 @@ test('AudioEngine starts audio and triggers drums samples', async () => {
     ['player.toDestination', 'kick'],
     ['player.toDestination', 'snare'],
     ['player.toDestination', 'hihat'],
-    ['player.start', 'kick', '/samples/808/kick.wav', 12.5],
-    ['player.start', 'snare', '/samples/808/snare.wav', 12.5],
+    ['player.start', 'kick', '/samples/Drums/Kick_v0.22.wav', 12.5],
+    ['player.start', 'snare', '/samples/Drums/Snare_v0.22.wav', 12.5],
   ]);
 });
 
-test('AudioEngine starts audio and triggers chord synth notes', async () => {
+test('AudioEngine starts audio and triggers chord sampler notes', async () => {
+  const tone = createFakeTone();
+  const engine = new AudioEngine({
+    tone,
+    playerFactory: createPlayerFactory(tone.calls),
+    chordSamplerFactory: createChordSamplerFactory(tone.calls),
+    chordSynthFactory: createChordSynthFactory(tone.calls),
+  });
+
+  assert.equal(await engine.startAudio(), AUDIO_STATUSES.READY);
+  assert.equal(await engine.triggerChord(['C4', 'E4', 'G4'], '4n'), true);
+
+  assert.deepEqual(tone.calls.filter(([name]) => name.startsWith('chordSampler.')), [
+    ['chordSampler.toDestination'],
+    ['chordSampler.triggerAttackRelease', ['C4', 'E4', 'G4'], '4n', 12.5, createChordSampleUrls()],
+  ]);
+  assert.deepEqual(tone.calls.filter(([name]) => name.startsWith('chord.')), [
+    ['chord.toDestination'],
+  ]);
+});
+
+test('AudioEngine falls back to chord synth when chord sampler is unavailable', async () => {
   const tone = createFakeTone();
   const engine = new AudioEngine({
     tone,
@@ -244,7 +307,7 @@ test('AudioEngine starts audio and triggers chord synth notes', async () => {
   ]);
 });
 
-test('AudioEngine starts audio and triggers lead sampler notes', async () => {
+test('AudioEngine starts audio and triggers melody sampler notes', async () => {
   const tone = createFakeTone();
   const engine = new AudioEngine({
     tone,
@@ -253,7 +316,7 @@ test('AudioEngine starts audio and triggers lead sampler notes', async () => {
   });
 
   assert.equal(await engine.startAudio(), AUDIO_STATUSES.READY);
-  assert.equal(await engine.triggerLeadNote('E5', '16n'), true);
+  assert.equal(await engine.triggerMelodyNote('E5', '16n'), true);
 
   assert.deepEqual(tone.calls.filter(([name]) => name.startsWith('sampler.')), [
     ['sampler.toDestination'],
@@ -262,15 +325,7 @@ test('AudioEngine starts audio and triggers lead sampler notes', async () => {
       'E5',
       '16n',
       12.5,
-      {
-        C3: '/samples/lead/Lead C3.wav',
-        D3: '/samples/lead/Lead D3.wav',
-        E3: '/samples/lead/Lead E3.wav',
-        F3: '/samples/lead/Lead F3.wav',
-        G3: '/samples/lead/Lead G3.wav',
-        A3: '/samples/lead/Lead A3.wav',
-        B3: '/samples/lead/Lead B3.wav',
-      },
+      createMelodySampleUrls(),
     ],
   ]);
 });
@@ -294,7 +349,7 @@ test('AudioEngine starts audio and triggers bass sampler notes', async () => {
   ]);
 });
 
-test('AudioEngine starts audio and triggers generated bass sampler notes', async () => {
+test('AudioEngine starts audio and triggers transposed bass sampler notes from anchors', async () => {
   const tone = createFakeTone();
   const engine = new AudioEngine({
     tone,
@@ -311,14 +366,11 @@ test('AudioEngine starts audio and triggers generated bass sampler notes', async
     '16n',
     12.5,
     -8,
-    {
-      ...createBassSampleUrls(),
-      'F#3': '/samples/bass/generated/Bass_FSharp3.wav',
-    },
+    createBassSampleUrls(),
   ]);
 });
 
-test('AudioEngine schedules lead preview after audio startup completes', async () => {
+test('AudioEngine schedules melody preview after audio startup completes', async () => {
   let now = 7;
   const tone = createFakeTone();
   tone.now = () => now;
@@ -332,7 +384,7 @@ test('AudioEngine schedules lead preview after audio startup completes', async (
     samplerFactory: createSamplerFactory(tone.calls),
   });
 
-  assert.equal(await engine.triggerLeadNote('C4', '16n'), true);
+  assert.equal(await engine.triggerMelodyNote('C4', '16n'), true);
 
   assert.deepEqual(tone.calls.filter(([name]) => name === 'sampler.triggerAttackRelease'), [
     [
@@ -340,20 +392,12 @@ test('AudioEngine schedules lead preview after audio startup completes', async (
       'C4',
       '16n',
       8,
-      {
-        C3: '/samples/lead/Lead C3.wav',
-        D3: '/samples/lead/Lead D3.wav',
-        E3: '/samples/lead/Lead E3.wav',
-        F3: '/samples/lead/Lead F3.wav',
-        G3: '/samples/lead/Lead G3.wav',
-        A3: '/samples/lead/Lead A3.wav',
-        B3: '/samples/lead/Lead B3.wav',
-      },
+      createMelodySampleUrls(),
     ],
   ]);
 });
 
-test('AudioEngine respects explicit lead preview times', async () => {
+test('AudioEngine respects explicit melody preview times', async () => {
   let now = 7;
   const tone = createFakeTone();
   tone.now = () => now;
@@ -367,7 +411,7 @@ test('AudioEngine respects explicit lead preview times', async () => {
     samplerFactory: createSamplerFactory(tone.calls),
   });
 
-  assert.equal(await engine.triggerLeadNote('C4', '16n', 12), true);
+  assert.equal(await engine.triggerMelodyNote('C4', '16n', 12), true);
 
   assert.deepEqual(tone.calls.filter(([name]) => name === 'sampler.triggerAttackRelease'), [
     [
@@ -375,15 +419,7 @@ test('AudioEngine respects explicit lead preview times', async () => {
       'C4',
       '16n',
       12,
-      {
-        C3: '/samples/lead/Lead C3.wav',
-        D3: '/samples/lead/Lead D3.wav',
-        E3: '/samples/lead/Lead E3.wav',
-        F3: '/samples/lead/Lead F3.wav',
-        G3: '/samples/lead/Lead G3.wav',
-        A3: '/samples/lead/Lead A3.wav',
-        B3: '/samples/lead/Lead B3.wav',
-      },
+      createMelodySampleUrls(),
     ],
   ]);
 });
@@ -487,17 +523,18 @@ test('AudioEngine avoids touching Tone transport before audio starts', async () 
   assert.equal(engine.transportFlatStep, 40);
 });
 
-test('AudioEngine matrix playback triggers drums bass chord and lead events', async () => {
+test('AudioEngine matrix playback triggers drums bass chord and melody events', async () => {
   const tone = createFakeTone();
   const matrix = createInitialMatrix();
   matrix.drums[0][0] = { instruments: ['kick'] };
-  matrix.bass[0][0] = { type: 'bass', note: 'C4', duration: '8n' };
+  matrix.bass[0][0] = { type: 'bass', note: 'C1', duration: '8n' };
   matrix.chord[0][0] = { root: 'C', quality: 'maj', label: 'C' };
-  matrix.lead[0][0] = { type: 'melody', note: 'G4' };
+  matrix.melody[0][0] = { type: 'melody', note: 'G4' };
   const engine = new AudioEngine({
     tone,
     matrixSource: matrix,
     playerFactory: createPlayerFactory(tone.calls),
+    chordSamplerFactory: createChordSamplerFactory(tone.calls),
     chordSynthFactory: createChordSynthFactory(tone.calls),
     samplerFactory: createSamplerFactory(tone.calls),
   });
@@ -506,31 +543,25 @@ test('AudioEngine matrix playback triggers drums bass chord and lead events', as
   tone.Transport.scheduledCallback(24);
 
   assert.deepEqual(tone.calls.filter(([name]) => (
-    name === 'player.start' || name === 'chord.triggerAttackRelease' || name === 'sampler.triggerAttackRelease'
+    name === 'player.start'
+    || name === 'chordSampler.triggerAttackRelease'
+    || name === 'sampler.triggerAttackRelease'
   )), [
-    ['player.start', 'kick', '/samples/808/kick.wav', 24],
+    ['player.start', 'kick', '/samples/Drums/Kick_v0.22.wav', 24],
     [
       'sampler.triggerAttackRelease',
-      'C4',
+      'C1',
       '8n',
       24,
       createBassSampleUrls(),
     ],
-    ['chord.triggerAttackRelease', ['C4', 'E4', 'G4'], '4n', 24],
+    ['chordSampler.triggerAttackRelease', ['C4', 'E4', 'G4'], '4n', 24, createChordSampleUrls()],
     [
       'sampler.triggerAttackRelease',
       'G4',
       '16n',
       24,
-      {
-        C3: '/samples/lead/Lead C3.wav',
-        D3: '/samples/lead/Lead D3.wav',
-        E3: '/samples/lead/Lead E3.wav',
-        F3: '/samples/lead/Lead F3.wav',
-        G3: '/samples/lead/Lead G3.wav',
-        A3: '/samples/lead/Lead A3.wav',
-        B3: '/samples/lead/Lead B3.wav',
-      },
+      createMelodySampleUrls(),
     ],
   ]);
 });
@@ -559,16 +590,17 @@ test('AudioEngine clears existing matrix playback even when Tone returns event i
 test('AudioEngine applies current track volumes to matrix playback events', async () => {
   const tone = createFakeTone();
   const matrix = createInitialMatrix();
-  const volumes = { drums: -18, bass: -12, chord: -9, lead: -4 };
+  const volumes = { drums: -18, bass: -12, chord: -9, melody: -4 };
   matrix.drums[0][0] = { instruments: ['kick'] };
-  matrix.bass[0][0] = { type: 'bass', note: 'G4', duration: '8n' };
+  matrix.bass[0][0] = { type: 'bass', note: 'G0', duration: '8n' };
   matrix.chord[0][0] = { root: 'C', quality: 'maj', label: 'C' };
-  matrix.lead[0][0] = { type: 'melody', note: 'A4' };
+  matrix.melody[0][0] = { type: 'melody', note: 'A4' };
   const engine = new AudioEngine({
     tone,
     matrixSource: matrix,
     volumeSource: () => volumes,
     playerFactory: createVolumeAwarePlayerFactory(tone.calls),
+    chordSamplerFactory: createVolumeAwareChordSamplerFactory(tone.calls),
     chordSynthFactory: createVolumeAwareChordSynthFactory(tone.calls),
     samplerFactory: createVolumeAwareSamplerFactory(tone.calls),
   });
@@ -577,33 +609,27 @@ test('AudioEngine applies current track volumes to matrix playback events', asyn
   tone.Transport.scheduledCallback(24);
 
   assert.deepEqual(tone.calls.filter(([name]) => (
-    name === 'player.start' || name === 'chord.triggerAttackRelease' || name === 'sampler.triggerAttackRelease'
+    name === 'player.start'
+    || name === 'chordSampler.triggerAttackRelease'
+    || name === 'sampler.triggerAttackRelease'
   )), [
-    ['player.start', 'kick', '/samples/808/kick.wav', 24, -18],
+    ['player.start', 'kick', '/samples/Drums/Kick_v0.22.wav', 24, -18],
     [
       'sampler.triggerAttackRelease',
-      'G4',
+      'G0',
       '8n',
       24,
       -12,
       createBassSampleUrls(),
     ],
-    ['chord.triggerAttackRelease', ['C4', 'E4', 'G4'], '4n', 24, -9],
+    ['chordSampler.triggerAttackRelease', ['C4', 'E4', 'G4'], '4n', 24, -9, createChordSampleUrls()],
     [
       'sampler.triggerAttackRelease',
       'A4',
       '16n',
       24,
       -4,
-      {
-        C3: '/samples/lead/Lead C3.wav',
-        D3: '/samples/lead/Lead D3.wav',
-        E3: '/samples/lead/Lead E3.wav',
-        F3: '/samples/lead/Lead F3.wav',
-        G3: '/samples/lead/Lead G3.wav',
-        A3: '/samples/lead/Lead A3.wav',
-        B3: '/samples/lead/Lead B3.wav',
-      },
+      createMelodySampleUrls(),
     ],
   ]);
 });
@@ -622,8 +648,8 @@ test('AudioEngine applies live track volume source to drums previews', async () 
   await engine.triggerDrumsStep('snare');
 
   assert.deepEqual(tone.calls.filter(([name]) => name === 'player.start'), [
-    ['player.start', 'snare', '/samples/808/snare.wav', 12.5, -12],
-    ['player.start', 'snare', '/samples/808/snare.wav', 12.5, -6],
+    ['player.start', 'snare', '/samples/Drums/Snare_v0.22.wav', 12.5, -12],
+    ['player.start', 'snare', '/samples/Drums/Snare_v0.22.wav', 12.5, -6],
   ]);
 });
 
@@ -634,6 +660,7 @@ test('AudioEngine previews chord sequences with one audio start and timed chord 
     tone,
     volumeSource: () => volumes,
     playerFactory: createPlayerFactory(tone.calls),
+    chordSamplerFactory: createVolumeAwareChordSamplerFactory(tone.calls),
     chordSynthFactory: createVolumeAwareChordSynthFactory(tone.calls),
   });
 
@@ -643,9 +670,9 @@ test('AudioEngine previews chord sequences with one audio start and timed chord 
   ]);
 
   assert.equal(tone.calls.filter(([name]) => name === 'tone.start').length, 1);
-  assert.deepEqual(tone.calls.filter(([name]) => name === 'chord.triggerAttackRelease'), [
-    ['chord.triggerAttackRelease', ['C4', 'E4', 'G4'], '8n', 12.5, -7],
-    ['chord.triggerAttackRelease', ['F4', 'A4', 'C5'], '8n', 13.05, -7],
+  assert.deepEqual(tone.calls.filter(([name]) => name === 'chordSampler.triggerAttackRelease'), [
+    ['chordSampler.triggerAttackRelease', ['C4', 'E4', 'G4'], '8n', 12.5, -7, createChordSampleUrls()],
+    ['chordSampler.triggerAttackRelease', ['F4', 'A4', 'C5'], '8n', 13.05, -7, createChordSampleUrls()],
   ]);
 });
 
@@ -656,6 +683,7 @@ test('AudioEngine previews chord groove patterns with sixteenth-step timing', as
     tone,
     volumeSource: () => volumes,
     playerFactory: createPlayerFactory(tone.calls),
+    chordSamplerFactory: createVolumeAwareChordSamplerFactory(tone.calls),
     chordSynthFactory: createVolumeAwareChordSynthFactory(tone.calls),
   });
 
@@ -666,10 +694,10 @@ test('AudioEngine previews chord groove patterns with sixteenth-step timing', as
   ], { bpm: 120 });
 
   assert.equal(tone.calls.filter(([name]) => name === 'tone.start').length, 1);
-  assert.deepEqual(tone.calls.filter(([name]) => name === 'chord.triggerAttackRelease'), [
-    ['chord.triggerAttackRelease', ['C4', 'E4', 'G4'], '16n', 12.5, -5],
-    ['chord.triggerAttackRelease', ['C4', 'E4', 'G4'], '16n', 13.25, -5],
-    ['chord.triggerAttackRelease', ['C4', 'E4', 'G4'], '16n', 14, -5],
+  assert.deepEqual(tone.calls.filter(([name]) => name === 'chordSampler.triggerAttackRelease'), [
+    ['chordSampler.triggerAttackRelease', ['C4', 'E4', 'G4'], '16n', 12.5, -5, createChordSampleUrls()],
+    ['chordSampler.triggerAttackRelease', ['C4', 'E4', 'G4'], '16n', 13.25, -5, createChordSampleUrls()],
+    ['chordSampler.triggerAttackRelease', ['C4', 'E4', 'G4'], '16n', 14, -5, createChordSampleUrls()],
   ]);
 });
 
@@ -684,21 +712,21 @@ test('AudioEngine previews bass groove patterns with sixteenth-step timing', asy
   });
 
   await engine.previewBassPattern([
-    { step: 0, note: 'C4', duration: '8n' },
-    { step: 4, note: 'G4', duration: '8n' },
-    { step: 10, note: 'A#4', duration: '16n' },
+    { step: 0, note: 'C1', duration: '8n' },
+    { step: 4, note: 'G0', duration: '8n' },
+    { step: 10, note: 'A#0', duration: '16n' },
   ], { bpm: 120 });
 
   assert.equal(tone.calls.filter(([name]) => name === 'tone.start').length, 1);
   const samplerCalls = tone.calls.filter(([name]) => name === 'sampler.triggerAttackRelease');
   assert.deepEqual(samplerCalls.map((call) => call.slice(0, 5)), [
-    ['sampler.triggerAttackRelease', 'C4', '8n', 12.5, -10],
-    ['sampler.triggerAttackRelease', 'G4', '8n', 13, -10],
-    ['sampler.triggerAttackRelease', 'A#4', '16n', 13.75, -10],
+    ['sampler.triggerAttackRelease', 'C1', '8n', 12.5, -10],
+    ['sampler.triggerAttackRelease', 'G0', '8n', 13, -10],
+    ['sampler.triggerAttackRelease', 'A#0', '16n', 13.75, -10],
   ]);
-  assert.equal(samplerCalls[0].at(-1).C4, '/samples/bass/generated/Bass_C4.wav');
-  assert.equal(samplerCalls[1].at(-1).G4, '/samples/bass/generated/Bass_G4.wav');
-  assert.equal(samplerCalls[2].at(-1)['A#4'], '/samples/bass/generated/Bass_ASharp4.wav');
+  assert.equal(samplerCalls[0].at(-1).C1, '/samples/Bass/Bass_C1_v0.22.wav');
+  assert.equal(samplerCalls[1].at(-1).G0, '/samples/Bass/Bass_G0_v0.22.wav');
+  assert.equal(samplerCalls[2].at(-1).A0, '/samples/Bass/Bass_A0_v0.22.wav');
 });
 
 test('createAudioEngine defers the default Tone dependency until audio starts', async () => {

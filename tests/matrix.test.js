@@ -45,8 +45,8 @@ test('music constants describe the v0.22 drums-based arrangement model', () => {
   assert.equal(BEATS_PER_BAR, 4);
   assert.equal(CHORD_SPAN, 4);
   assert.equal(EIGHTH_STEPS_PER_BAR, 8);
-  assert.deepEqual(TRACK_IDS, ['drums', 'chord', 'bass', 'lead', 'pad', 'vocal', 'sample']);
-  assert.deepEqual(CORE_TRACK_IDS, ['drums', 'chord', 'bass', 'lead']);
+  assert.deepEqual(TRACK_IDS, ['drums', 'chord', 'bass', 'melody', 'pad', 'vocal', 'sample']);
+  assert.deepEqual(CORE_TRACK_IDS, ['drums', 'chord', 'bass', 'melody']);
   assert.deepEqual(OPTIONAL_TRACK_IDS, ['pad', 'vocal', 'sample']);
   assert.deepEqual(DRUMS_INSTRUMENT_IDS, ['kick', 'snare', 'hihat']);
   assert.equal(DEFAULT_BPM, 120);
@@ -116,16 +116,16 @@ test('addVisibleTrack adds optional tracks once and selects the new row', () => 
   assert.equal(store.addVisibleTrack('vocal'), 'vocal');
 
   let state = useMusicStore.getState();
-  assert.deepEqual(state.visibleTrackIds, ['drums', 'chord', 'bass', 'lead', 'vocal']);
+  assert.deepEqual(state.visibleTrackIds, ['drums', 'chord', 'bass', 'melody', 'vocal']);
   assert.equal(state.activeTrackId, 'vocal');
   assert.equal(state.selectedClipId, null);
 
   assert.equal(state.addVisibleTrack('vocal'), null);
   state = useMusicStore.getState();
-  assert.deepEqual(state.visibleTrackIds, ['drums', 'chord', 'bass', 'lead', 'vocal']);
+  assert.deepEqual(state.visibleTrackIds, ['drums', 'chord', 'bass', 'melody', 'vocal']);
 
   assert.equal(state.addVisibleTrack('unknown'), null);
-  assert.deepEqual(useMusicStore.getState().visibleTrackIds, ['drums', 'chord', 'bass', 'lead', 'vocal']);
+  assert.deepEqual(useMusicStore.getState().visibleTrackIds, ['drums', 'chord', 'bass', 'melody', 'vocal']);
 });
 
 test('setTrackVolume updates one track and clamps values to the supported range', () => {

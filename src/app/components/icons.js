@@ -13,7 +13,7 @@ const TRACK_ICONS = {
   drums: Drum,
   bass: Music,
   chord: Piano,
-  lead: AudioLines,
+  melody: AudioLines,
   pad: KeyboardMusic,
   sample: Disc3,
   vocal: MicVocal,

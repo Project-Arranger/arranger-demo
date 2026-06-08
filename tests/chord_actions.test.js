@@ -245,13 +245,13 @@ test('clearChordBar clears the selected chord bar without touching other tracks'
   matrix = setChordCell(matrix, 4, 0, 'C');
   matrix = setChordCell(matrix, 4, 1, 'D');
   matrix = setChordCell(matrix, 5, 0, 'E');
-  matrix.lead[4][0] = { note: 'C4' };
+  matrix.melody[4][0] = { note: 'C4' };
 
   const nextMatrix = clearChordBar(matrix, 4);
 
   assert.equal(nextMatrix.chord[4].every((cell) => cell === null), true);
   assert.deepEqual(nextMatrix.chord[5][0], { type: 'chord', root: 'E', chordRoot: 'E', quality: 'maj', label: 'E', toneRoots: ['E', 'G#', 'B'] });
-  assert.deepEqual(nextMatrix.lead[4][0], { note: 'C4' });
+  assert.deepEqual(nextMatrix.melody[4][0], { note: 'C4' });
 });
 
 test('setChordNoteCell stores multi-note cells inside one step and preserves other steps', () => {

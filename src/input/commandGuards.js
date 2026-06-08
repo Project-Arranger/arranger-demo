@@ -1,6 +1,6 @@
 import { DRUMS_INSTRUMENT_IDS, STEPS_PER_BAR, TOTAL_BARS } from '../domain/musicConstants.js';
 import { isChordName, isChordSpan } from '../domain/chordCells.js';
-import { APP_COMMAND_TYPES, CHORD_OPTION_COUNT, LEAD_NOTE_IDS } from './appCommands.js';
+import { APP_COMMAND_TYPES, CHORD_OPTION_COUNT, MELODY_NOTE_IDS } from './appCommands.js';
 
 function isPlainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -63,10 +63,10 @@ function hasValidChordClearCellPayload(command) {
   );
 }
 
-function hasValidLeadPayload(command) {
+function hasValidMelodyPayload(command) {
   return (
     hasOnlyKeys(command, ['type', 'note']) &&
-    LEAD_NOTE_IDS.includes(command.note)
+    MELODY_NOTE_IDS.includes(command.note)
   );
 }
 
@@ -97,9 +97,9 @@ function isValidAppCommand(command) {
     case APP_COMMAND_TYPES.CHORD_CLEAR_CELL:
       return hasValidChordClearCellPayload(command);
 
-    case APP_COMMAND_TYPES.LEAD_NOTE_ON:
-    case APP_COMMAND_TYPES.LEAD_NOTE_OFF:
-      return hasValidLeadPayload(command);
+    case APP_COMMAND_TYPES.MELODY_NOTE_ON:
+    case APP_COMMAND_TYPES.MELODY_NOTE_OFF:
+      return hasValidMelodyPayload(command);
 
     default:
       return false;

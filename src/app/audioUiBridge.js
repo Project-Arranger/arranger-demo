@@ -31,7 +31,7 @@ function createUiAudioDispatcher({ store, audio, dispatch = dispatchCommand }) {
   return (command) => dispatch(command, {
     audio,
     handlers: {
-      lead: {
+      melody: {
         noteOn: ({ note }) => recordMelodyKeyInput(store, note),
       },
     },

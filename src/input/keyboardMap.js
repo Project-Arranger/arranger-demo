@@ -30,11 +30,11 @@ function mapArrowKeyToCommand(key, state) {
 function mapNumberKeyToCommand(eventType, key, state) {
   const number = Number.parseInt(key, 10);
 
-  if (state.activeTrackId === 'lead') {
+  if (state.activeTrackId === 'melody') {
     const note = getMelodyKeyNote(state.melodyScaleId, key);
     if (!note || eventType === 'keypress') return null;
     return {
-      type: eventType === 'keyup' ? APP_COMMAND_TYPES.LEAD_NOTE_OFF : APP_COMMAND_TYPES.LEAD_NOTE_ON,
+      type: eventType === 'keyup' ? APP_COMMAND_TYPES.MELODY_NOTE_OFF : APP_COMMAND_TYPES.MELODY_NOTE_ON,
       note,
     };
   }

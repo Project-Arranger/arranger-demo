@@ -6,11 +6,11 @@ import {
   STEPS_PER_BAR,
 } from '../domain/musicConstants.js';
 import {
-  DEFAULT_CHORD_GRID_OCTAVE,
   getChordDefinition,
 } from '../domain/chordCells.js';
 
-const DEFAULT_BASS_NOTE = `C${DEFAULT_CHORD_GRID_OCTAVE}`;
+const DEFAULT_BASS_NOTE = 'C1';
+const LOW_BASS_OCTAVE_ROOTS = new Set(['F', 'F#', 'G', 'G#', 'A', 'A#', 'B']);
 
 const BASS_GROOVE_TEMPLATES = Object.freeze([
   Object.freeze({
@@ -130,7 +130,8 @@ function getBeatChordRoot(matrix, bar, step) {
 }
 
 function chordRootToBassNote(root) {
-  const note = `${root}${DEFAULT_CHORD_GRID_OCTAVE}`;
+  const octave = LOW_BASS_OCTAVE_ROOTS.has(root) ? 0 : 1;
+  const note = `${root}${octave}`;
   return isValidBassNote(note) ? note : DEFAULT_BASS_NOTE;
 }
 

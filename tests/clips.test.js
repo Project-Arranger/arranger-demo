@@ -48,8 +48,8 @@ test('createClip adds a new track clip and selects it', () => {
 test('createClip names clips from bar 1 through bar 8', () => {
   const state = useMusicStore.getState();
 
-  assert.equal(state.createClip('lead', 0).name, 'Melody 01');
-  assert.equal(useMusicStore.getState().createClip('lead', 7).name, 'Melody 08');
+  assert.equal(state.createClip('melody', 0).name, 'Melody 01');
+  assert.equal(useMusicStore.getState().createClip('melody', 7).name, 'Melody 08');
 });
 
 test('createClip re-selects an existing clip without duplicating it', () => {
@@ -201,45 +201,45 @@ test('createClip ignores invalid bars', () => {
 });
 
 test('createEmptyClipsForTrack creates eight empty Melody clips and selects bar 1', () => {
-  const createdClips = useMusicStore.getState().createEmptyClipsForTrack('lead');
+  const createdClips = useMusicStore.getState().createEmptyClipsForTrack('melody');
   const state = useMusicStore.getState();
 
   assert.equal(createdClips.length, 8);
   assert.deepEqual(
     createdClips.map((clip) => clip.id),
-    Array.from({ length: 8 }, (_, bar) => `lead-bar-${bar}`),
+    Array.from({ length: 8 }, (_, bar) => `melody-bar-${bar}`),
   );
   assert.deepEqual(
-    state.clips.ids.filter((id) => id.startsWith('lead-bar-')),
-    Array.from({ length: 8 }, (_, bar) => `lead-bar-${bar}`),
+    state.clips.ids.filter((id) => id.startsWith('melody-bar-')),
+    Array.from({ length: 8 }, (_, bar) => `melody-bar-${bar}`),
   );
-  assert.equal(state.matrix.lead.every((bar) => bar.every((cell) => cell === null)), true);
-  assert.equal(state.selectedClipId, 'lead-bar-0');
-  assert.equal(state.activeTrackId, 'lead');
+  assert.equal(state.matrix.melody.every((bar) => bar.every((cell) => cell === null)), true);
+  assert.equal(state.selectedClipId, 'melody-bar-0');
+  assert.equal(state.activeTrackId, 'melody');
   assert.equal(state.selectedBar, 0);
 });
 
 test('createEmptyClipsForTrack skips existing clips and preserves matrix content', () => {
   const state = useMusicStore.getState();
-  state.createClip('lead', 3);
-  state.renameClip('lead-bar-3', 'Custom Melody');
-  state.setCell('lead', 3, 4, { type: 'melody', note: 'E4' });
+  state.createClip('melody', 3);
+  state.renameClip('melody-bar-3', 'Custom Melody');
+  state.setCell('melody', 3, 4, { type: 'melody', note: 'E4' });
 
-  const createdClips = useMusicStore.getState().createEmptyClipsForTrack('lead');
+  const createdClips = useMusicStore.getState().createEmptyClipsForTrack('melody');
   const nextState = useMusicStore.getState();
 
   assert.equal(createdClips.length, 7);
-  assert.equal(nextState.clips.ids.filter((id) => id.startsWith('lead-bar-')).length, 8);
-  assert.deepEqual(nextState.getClipForTrackBar('lead', 3), {
-    id: 'lead-bar-3',
-    trackId: 'lead',
+  assert.equal(nextState.clips.ids.filter((id) => id.startsWith('melody-bar-')).length, 8);
+  assert.deepEqual(nextState.getClipForTrackBar('melody', 3), {
+    id: 'melody-bar-3',
+    trackId: 'melody',
     bar: 3,
     name: 'Custom Melody',
     customName: true,
   });
-  assert.deepEqual(nextState.matrix.lead[3][4], { type: 'melody', note: 'E4' });
-  assert.equal(nextState.matrix.lead[0].every((cell) => cell === null), true);
-  assert.equal(nextState.selectedClipId, 'lead-bar-0');
+  assert.deepEqual(nextState.matrix.melody[3][4], { type: 'melody', note: 'E4' });
+  assert.equal(nextState.matrix.melody[0].every((cell) => cell === null), true);
+  assert.equal(nextState.selectedClipId, 'melody-bar-0');
   assert.equal(nextState.selectedBar, 0);
 });
 

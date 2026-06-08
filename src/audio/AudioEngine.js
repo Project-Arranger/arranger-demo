@@ -4,51 +4,49 @@ import {
   STEPS_PER_BAR,
   TOTAL_BARS,
 } from '../domain/musicConstants.js';
-import {
-  CHORD_GRID_PITCHES,
-} from '../domain/chordCells.js';
 import { clampTrackVolume } from '../domain/trackVolume.js';
 import { AUDIO_STATUSES } from './audioStatus.js';
 import { createMatrixPlaybackAdapter } from './matrixPlaybackAdapter.js';
 
 const DRUMS_SAMPLE_FILES = Object.freeze({
-  kick: 'samples/808/kick.wav',
-  snare: 'samples/808/snare.wav',
-  hihat: 'samples/808/hihat.wav',
+  kick: 'samples/Drums/Kick_v0.22.wav',
+  snare: 'samples/Drums/Snare_v0.22.wav',
+  hihat: 'samples/Drums/Hihat_v0.22.wav',
 });
 
-const LEAD_SAMPLE_FILES = Object.freeze({
-  C3: 'samples/lead/Lead C3.wav',
-  D3: 'samples/lead/Lead D3.wav',
-  E3: 'samples/lead/Lead E3.wav',
-  F3: 'samples/lead/Lead F3.wav',
-  G3: 'samples/lead/Lead G3.wav',
-  A3: 'samples/lead/Lead A3.wav',
-  B3: 'samples/lead/Lead B3.wav',
-});
-
-function getGeneratedBassSampleFileName(note) {
-  return `Bass_${note.replace('#', 'Sharp')}.wav`;
+function createRootOctaveSampleFiles({ directory, prefix, roots, octaves }) {
+  return Object.freeze(Object.fromEntries(
+    octaves.flatMap((octave) => roots.map((root) => {
+      const note = `${root}${octave}`;
+      return [note, `samples/${directory}/${prefix}_${note}_v0.22.wav`];
+    })),
+  ));
 }
 
-const GENERATED_BASS_SAMPLE_FILES = Object.freeze(
-  Object.fromEntries(
-    CHORD_GRID_PITCHES.map((pitch) => [
-      pitch.label,
-      `samples/bass/generated/${getGeneratedBassSampleFileName(pitch.label)}`,
-    ]),
-  ),
-);
+const NATURAL_SAMPLE_ROOTS = Object.freeze(['A', 'B', 'C', 'D', 'E', 'F', 'G']);
+
+const MELODY_SAMPLE_FILES = createRootOctaveSampleFiles({
+  directory: 'Melody',
+  prefix: 'Melody',
+  roots: NATURAL_SAMPLE_ROOTS,
+  octaves: [2, 3, 4],
+});
+
+const CHORD_SAMPLE_FILES = createRootOctaveSampleFiles({
+  directory: 'Chords',
+  prefix: 'Chord',
+  roots: NATURAL_SAMPLE_ROOTS,
+  octaves: [2, 3, 4],
+});
 
 const BASS_SAMPLE_FILES = Object.freeze({
-  A0: 'samples/bass/Bass_A0.wav',
-  B0: 'samples/bass/Bass_B0.wav',
-  C1: 'samples/bass/Bass_C1.wav',
-  D1: 'samples/bass/Bass_D1.wav',
-  E1: 'samples/bass/Bass_E1.wav',
-  F1: 'samples/bass/Bass_F1.wav',
-  G1: 'samples/bass/Bass_G1.wav',
-  ...GENERATED_BASS_SAMPLE_FILES,
+  A0: 'samples/Bass/Bass_A0_v0.22.wav',
+  B0: 'samples/Bass/Bass_B0_v0.22.wav',
+  C1: 'samples/Bass/Bass_C1_v0.22.wav',
+  D1: 'samples/Bass/Bass_D1_v0.22.wav',
+  E1: 'samples/Bass/Bass_E1_v0.22.wav',
+  F0: 'samples/Bass/Bass_F0_v0.22.wav',
+  G0: 'samples/Bass/Bass_G0_v0.22.wav',
 });
 
 const DRUM_FALLBACK_NOTES = Object.freeze({
@@ -72,11 +70,11 @@ function createDrumsSampleUrls(baseUrl = '/') {
   );
 }
 
-function createLeadSampleUrls(baseUrl = '/') {
+function createMelodySampleUrls(baseUrl = '/') {
   const normalizedBaseUrl = baseUrl === '/' ? '' : trimTrailingSlash(baseUrl);
 
   return Object.fromEntries(
-    Object.entries(LEAD_SAMPLE_FILES).map(([note, file]) => [
+    Object.entries(MELODY_SAMPLE_FILES).map(([note, file]) => [
       note,
       `${normalizedBaseUrl}/${file}`,
     ]),
@@ -88,6 +86,17 @@ function createBassSampleUrls(baseUrl = '/') {
 
   return Object.fromEntries(
     Object.entries(BASS_SAMPLE_FILES).map(([note, file]) => [
+      note,
+      `${normalizedBaseUrl}/${file}`,
+    ]),
+  );
+}
+
+function createChordSampleUrls(baseUrl = '/') {
+  const normalizedBaseUrl = baseUrl === '/' ? '' : trimTrailingSlash(baseUrl);
+
+  return Object.fromEntries(
+    Object.entries(CHORD_SAMPLE_FILES).map(([note, file]) => [
       note,
       `${normalizedBaseUrl}/${file}`,
     ]),
@@ -144,14 +153,16 @@ export default class AudioEngine {
     this.onPositionChange = options.onPositionChange ?? null;
     this.playerFactory = options.playerFactory ?? null;
     this.samplerFactory = options.samplerFactory ?? null;
+    this.chordSamplerFactory = options.chordSamplerFactory ?? null;
     this.fallbackSynthFactory = options.fallbackSynthFactory ?? null;
     this.chordSynthFactory = options.chordSynthFactory ?? null;
     this.now = options.now ?? (() => this.tone?.now?.() ?? 0);
     this.status = AUDIO_STATUSES.IDLE;
     this.drumPlayers = new Map();
     this.fallbackSynth = null;
+    this.chordSampler = null;
     this.chordSynth = null;
-    this.leadSampler = null;
+    this.melodySampler = null;
     this.bassSampler = null;
     this.matrixAdapter = null;
     this.transportEventId = null;
@@ -187,12 +198,16 @@ export default class AudioEngine {
     return createDrumsSampleUrls(this.baseUrl);
   }
 
-  getLeadSampleUrls() {
-    return createLeadSampleUrls(this.baseUrl);
+  getMelodySampleUrls() {
+    return createMelodySampleUrls(this.baseUrl);
   }
 
   getBassSampleUrls() {
     return createBassSampleUrls(this.baseUrl);
+  }
+
+  getChordSampleUrls() {
+    return createChordSampleUrls(this.baseUrl);
   }
 
   getTrackVolume(trackId) {
@@ -226,9 +241,17 @@ export default class AudioEngine {
     return callToDestination(synth);
   }
 
-  createLeadSampler() {
-    const urls = this.getLeadSampleUrls();
+  createMelodySampler() {
+    const urls = this.getMelodySampleUrls();
     if (this.samplerFactory) return callToDestination(this.samplerFactory(urls));
+    if (!this.tone?.Sampler) return null;
+
+    return callToDestination(new this.tone.Sampler({ urls }));
+  }
+
+  createChordSampler() {
+    const urls = this.getChordSampleUrls();
+    if (this.chordSamplerFactory) return callToDestination(this.chordSamplerFactory(urls));
     if (!this.tone?.Sampler) return null;
 
     return callToDestination(new this.tone.Sampler({ urls }));
@@ -256,15 +279,17 @@ export default class AudioEngine {
       await this.ensureTone();
       await this.tone?.start?.();
       this.fallbackSynth = this.fallbackSynth ?? this.createFallbackSynth();
+      this.chordSampler = this.chordSampler ?? this.createChordSampler();
       this.chordSynth = this.chordSynth ?? this.createChordSynth();
-      this.leadSampler = this.leadSampler ?? this.createLeadSampler();
+      this.melodySampler = this.melodySampler ?? this.createMelodySampler();
       this.loadDrumsPlayers();
       this.status = AUDIO_STATUSES.READY;
     } catch {
       this.drumPlayers.clear();
       this.fallbackSynth = this.createFallbackSynth();
+      this.chordSampler = this.chordSampler ?? this.createChordSampler();
       this.chordSynth = this.chordSynth ?? this.createChordSynth();
-      this.leadSampler = this.leadSampler ?? this.createLeadSampler();
+      this.melodySampler = this.melodySampler ?? this.createMelodySampler();
       this.status = this.fallbackSynth
         ? AUDIO_STATUSES.SAMPLE_FALLBACK
         : AUDIO_STATUSES.ERROR;
@@ -322,8 +347,18 @@ export default class AudioEngine {
 
   triggerChordNotes(notes, duration = '4n', time = this.now(), volume = this.getTrackVolume('chord')) {
     if (!Array.isArray(notes) || !notes.length) return false;
-    if (!this.chordSynth?.triggerAttackRelease) return false;
 
+    if (this.chordSampler?.triggerAttackRelease) {
+      try {
+        applyVolume(this.chordSampler, volume);
+        this.chordSampler.triggerAttackRelease(notes, duration, time);
+        return true;
+      } catch {
+        // Fall through to synth so a missing or not-yet-loaded chord sample stays audible.
+      }
+    }
+
+    if (!this.chordSynth?.triggerAttackRelease) return false;
     try {
       applyVolume(this.chordSynth, volume);
       this.chordSynth.triggerAttackRelease(notes, duration, time);
@@ -338,21 +373,21 @@ export default class AudioEngine {
     return this.triggerChordNotes(notes, duration, time);
   }
 
-  triggerLeadSampler(note, duration = '16n', time = this.now(), volume = this.getTrackVolume('lead')) {
-    if (!this.leadSampler?.triggerAttackRelease) return false;
+  triggerMelodySampler(note, duration = '16n', time = this.now(), volume = this.getTrackVolume('melody')) {
+    if (!this.melodySampler?.triggerAttackRelease) return false;
 
     try {
-      applyVolume(this.leadSampler, volume);
-      this.leadSampler.triggerAttackRelease(note, duration, time);
+      applyVolume(this.melodySampler, volume);
+      this.melodySampler.triggerAttackRelease(note, duration, time);
       return true;
     } catch {
       return false;
     }
   }
 
-  async triggerLeadNote(note, duration = '16n', time) {
+  async triggerMelodyNote(note, duration = '16n', time) {
     await this.startAudio();
-    return this.triggerLeadSampler(note, duration, time ?? this.now());
+    return this.triggerMelodySampler(note, duration, time ?? this.now());
   }
 
   triggerBassSampler(note, duration = '16n', time = this.now(), volume = this.getTrackVolume('bass')) {
@@ -373,7 +408,7 @@ export default class AudioEngine {
     return this.triggerBassSampler(note, duration, time ?? this.now());
   }
 
-  async previewLeadSequence(notes, options = {}) {
+  async previewMelodySequence(notes, options = {}) {
     const {
       duration = '16n',
       intervalSeconds = 0.16,
@@ -382,8 +417,8 @@ export default class AudioEngine {
     await this.startAudio();
 
     const startTime = this.now();
-    const volume = this.getTrackVolume('lead');
-    return notes.map((note, index) => this.triggerLeadSampler(
+    const volume = this.getTrackVolume('melody');
+    return notes.map((note, index) => this.triggerMelodySampler(
       note,
       duration,
       startTime + index * intervalSeconds,
@@ -524,12 +559,12 @@ export default class AudioEngine {
         if (event.type === 'chord') {
           this.triggerChordEvent(event, time);
         }
-        if (event.type === 'lead') {
-          this.triggerLeadSampler(
+        if (event.type === 'melody') {
+          this.triggerMelodySampler(
             event.note,
             event.duration,
             time,
-            this.getTrackVolume(event.trackId ?? 'lead'),
+            this.getTrackVolume(event.trackId ?? 'melody'),
           );
         }
       }
@@ -590,7 +625,8 @@ export default class AudioEngine {
 
 export {
   createBassSampleUrls,
+  createChordSampleUrls,
   createDrumsSampleUrls,
-  createLeadSampleUrls,
+  createMelodySampleUrls,
   formatToneTransportPosition,
 };

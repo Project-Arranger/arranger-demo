@@ -457,7 +457,7 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(bottomEditorSource, /onChordGrooveTemplateApply/);
 });
 
-test('app exposes the melody editor and keeps lead as the internal track id', async () => {
+test('app exposes the melody editor and keeps melody as the internal track id', async () => {
   const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
   const bottomEditorSource = await readFile(
     new URL('../src/app/components/BottomEditor.jsx', import.meta.url),
@@ -474,11 +474,11 @@ test('app exposes the melody editor and keeps lead as the internal track id', as
     'utf8',
   );
 
-  assert.match(uiDataSource, /lead:\s*'Melody'/);
+  assert.match(uiDataSource, /melody:\s*'Melody'/);
   assert.match(contextSliceSource, /melodyScaleId:\s*'major'/);
   assert.match(contextSliceSource, /setMelodyScaleId/);
   assert.match(bottomEditorSource, /MelodyEditor/);
-  assert.match(bottomEditorSource, /activeTrackId === 'lead' && selectedClipId/);
+  assert.match(bottomEditorSource, /activeTrackId === 'melody' && selectedClipId/);
   assert.match(bottomEditorSource, /onMelodyStepToggle/);
   assert.match(bottomEditorSource, /onMelodyPreview/);
   assert.match(bottomEditorSource, /onMelodyScaleChange/);
@@ -504,8 +504,8 @@ test('app exposes the melody editor and keeps lead as the internal track id', as
   assert.match(source, /handleMelodyPreview/);
   assert.match(source, /handleMelodyScaleChange/);
   assert.match(source, /handleClearMelodyBar/);
-  assert.match(source, /clearTrack\('lead'\)/);
-  assert.match(source, /activeTrackId === 'lead' && selectedClipId/);
+  assert.match(source, /clearTrack\('melody'\)/);
+  assert.match(source, /activeTrackId === 'melody' && selectedClipId/);
   assert.match(source, /audioEngine\.startAudio/);
 });
 
@@ -569,8 +569,9 @@ test('app exposes the bass editor and existing-clip groove template workflow', a
   assert.match(bassActionsSource, /applyBassGrooveTemplateToExistingClips/);
   assert.match(bassActionsSource, /createBassPreviewEvents/);
   assert.match(bassNotesSource, /BASS_NOTE_IDS/);
-  assert.match(bassNotesSource, /CHORD_GRID_PITCHES/);
-  assert.match(bassNotesSource, /pitch\.label/);
+  assert.match(bassNotesSource, /BASS_GRID_ROOTS/);
+  assert.match(bassNotesSource, /BASS_GRID_OCTAVES/);
+  assert.doesNotMatch(bassNotesSource, /CHORD_GRID_PITCHES/);
   assert.match(source, /handleBassStepToggle/);
   assert.match(source, /handleBassGrooveTemplatePreview/);
   assert.match(source, /createBassPreviewEvents\(state\.matrix,\s*selectedBar,\s*templateId\)/);

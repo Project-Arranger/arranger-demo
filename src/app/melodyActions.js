@@ -13,13 +13,13 @@ function createMelodyCell(note) {
 function cloneMelodyMatrix(matrix) {
   return {
     ...matrix,
-    lead: matrix.lead.map((bar) => [...bar]),
+    melody: matrix.melody.map((bar) => [...bar]),
   };
 }
 
 function isMelodyCellActive(matrix, bar, step, note) {
-  return matrix?.lead?.[bar]?.[step]?.type === 'melody'
-    && matrix.lead[bar][step].note === note;
+  return matrix?.melody?.[bar]?.[step]?.type === 'melody'
+    && matrix.melody[bar][step].note === note;
 }
 
 function toggleMelodyCell(matrix, bar, step, note) {
@@ -28,19 +28,19 @@ function toggleMelodyCell(matrix, bar, step, note) {
     : createMelodyCell(note);
 
   const nextMatrix = cloneMelodyMatrix(matrix);
-  nextMatrix.lead[bar][step] = nextCell;
+  nextMatrix.melody[bar][step] = nextCell;
   return nextMatrix;
 }
 
 function clearMelodyBar(matrix, bar) {
   const nextMatrix = cloneMelodyMatrix(matrix);
-  nextMatrix.lead[bar] = nextMatrix.lead[bar].map(() => null);
+  nextMatrix.melody[bar] = nextMatrix.melody[bar].map(() => null);
   return nextMatrix;
 }
 
 function getOpenMelodyClip(state) {
   const clip = state?.clips?.byId?.[state.selectedClipId];
-  if (state?.activeTrackId !== 'lead' || clip?.trackId !== 'lead') return null;
+  if (state?.activeTrackId !== 'melody' || clip?.trackId !== 'melody') return null;
   return clip;
 }
 
@@ -61,7 +61,7 @@ function recordMelodyKeyInput(store, note) {
     return false;
   }
 
-  state.setCell('lead', clip.bar, step, nextCell);
+  state.setCell('melody', clip.bar, step, nextCell);
 
   if (!state.isPlaying && typeof store.getState().setTransportPosition === 'function') {
     store.getState().setTransportPosition(clip.bar, Math.min(step + 1, STEPS_PER_BAR - 1));

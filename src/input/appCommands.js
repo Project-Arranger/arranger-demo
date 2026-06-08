@@ -1,4 +1,4 @@
-import { MELODY_NOTE_IDS } from '../data/melodyScales.js';
+import { MELODY_NOTE_IDS as CONFIGURED_MELODY_NOTE_IDS } from '../data/melodyScales.js';
 
 const APP_COMMAND_TYPES = Object.freeze({
   TRANSPORT_TOGGLE_PLAY: 'transport.togglePlay',
@@ -12,12 +12,12 @@ const APP_COMMAND_TYPES = Object.freeze({
   CHORD_CONFIRM: 'chord.confirm',
   CHORD_SET_CELL: 'chord.setCell',
   CHORD_CLEAR_CELL: 'chord.clearCell',
-  LEAD_NOTE_ON: 'lead.noteOn',
-  LEAD_NOTE_OFF: 'lead.noteOff',
+  MELODY_NOTE_ON: 'melody.noteOn',
+  MELODY_NOTE_OFF: 'melody.noteOff',
 });
 
 const CHORD_OPTION_COUNT = 8;
-const LEAD_NOTE_IDS = MELODY_NOTE_IDS;
+const MELODY_NOTE_IDS = CONFIGURED_MELODY_NOTE_IDS;
 
 const COMMAND_GROUPS = Object.freeze({
   transport: Object.freeze([
@@ -41,9 +41,9 @@ const COMMAND_GROUPS = Object.freeze({
     APP_COMMAND_TYPES.CHORD_SET_CELL,
     APP_COMMAND_TYPES.CHORD_CLEAR_CELL,
   ]),
-  lead: Object.freeze([
-    APP_COMMAND_TYPES.LEAD_NOTE_ON,
-    APP_COMMAND_TYPES.LEAD_NOTE_OFF,
+  melody: Object.freeze([
+    APP_COMMAND_TYPES.MELODY_NOTE_ON,
+    APP_COMMAND_TYPES.MELODY_NOTE_OFF,
   ]),
 });
 
@@ -53,13 +53,13 @@ const COMMAND_GROUPS = Object.freeze({
  * @typedef {{ type: 'tutorial.next' } | { type: 'tutorial.completeTask' }} TutorialCommand
  * @typedef {{ type: 'drums.toggle', bar: number, step: number, instrument: 'kick' | 'snare' | 'hihat', previewInstruments?: Array<'kick' | 'snare' | 'hihat'> }} DrumsCommand
  * @typedef {{ type: 'chord.selectOption', optionIndex: number } | { type: 'chord.confirm' } | { type: 'chord.setCell', bar: number, span: number, root: string } | { type: 'chord.clearCell', bar: number, span: number }} ChordCommand
- * @typedef {{ type: 'lead.noteOn', note: string } | { type: 'lead.noteOff', note: string }} LeadCommand
- * @typedef {TransportCommand | ClipCommand | TutorialCommand | DrumsCommand | ChordCommand | LeadCommand} AppCommand
+ * @typedef {{ type: 'melody.noteOn', note: string } | { type: 'melody.noteOff', note: string }} MelodyCommand
+ * @typedef {TransportCommand | ClipCommand | TutorialCommand | DrumsCommand | ChordCommand | MelodyCommand} AppCommand
  */
 
 export {
   APP_COMMAND_TYPES,
   CHORD_OPTION_COUNT,
   COMMAND_GROUPS,
-  LEAD_NOTE_IDS,
+  MELODY_NOTE_IDS,
 };

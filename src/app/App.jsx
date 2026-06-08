@@ -173,7 +173,7 @@ export default function App() {
   const clips = useMusicStore((state) => state.clips);
   const volumes = useMusicStore((state) => state.volumes);
   const visibleTrackIds = useMusicStore((state) => state.visibleTrackIds);
-  const melodyEditorIsOpen = activeTrackId === 'lead' && selectedClipId;
+  const melodyEditorIsOpen = activeTrackId === 'melody' && selectedClipId;
   const [currentTutorialStepIndex, setCurrentTutorialStepIndex] = useState(0);
   const [tutorialProgress, setTutorialProgress] = useState(() => createTutorialState());
   const [tutorialVisible, setTutorialVisible] = useState(true);
@@ -838,17 +838,17 @@ export default function App() {
   const handleMelodyStepToggle = useCallback((step, note) => {
     const state = useMusicStore.getState();
     const nextMatrix = toggleMelodyCell(state.matrix, selectedBar, step, note);
-    state.setCell('lead', selectedBar, step, nextMatrix.lead[selectedBar][step]);
-    void audioEngine.triggerLeadNote(note, '16n');
+    state.setCell('melody', selectedBar, step, nextMatrix.melody[selectedBar][step]);
+    void audioEngine.triggerMelodyNote(note, '16n');
   }, [selectedBar]);
 
   const handleMelodyPreview = useCallback((noteOrNotes) => {
     if (Array.isArray(noteOrNotes)) {
-      void audioEngine.previewLeadSequence(noteOrNotes);
+      void audioEngine.previewMelodySequence(noteOrNotes);
       return;
     }
 
-    void audioEngine.triggerLeadNote(noteOrNotes, '16n');
+    void audioEngine.triggerMelodyNote(noteOrNotes, '16n');
   }, []);
 
   const handleMelodyScaleChange = useCallback((scaleId) => {
@@ -859,13 +859,13 @@ export default function App() {
     const state = useMusicStore.getState();
     const nextMatrix = clearMelodyBar(state.matrix, selectedBar);
 
-    nextMatrix.lead[selectedBar].forEach((cell, step) => {
-      state.setCell('lead', selectedBar, step, cell);
+    nextMatrix.melody[selectedBar].forEach((cell, step) => {
+      state.setCell('melody', selectedBar, step, cell);
     });
   }, [selectedBar]);
 
   const handleClearMelody = useCallback(() => {
-    useMusicStore.getState().clearTrack('lead');
+    useMusicStore.getState().clearTrack('melody');
   }, []);
 
   const stopTutorialPreviewPlayback = useCallback(() => {

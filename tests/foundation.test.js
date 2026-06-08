@@ -1,19 +1,16 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  CHORD_GRID_PITCHES,
-} from '../src/domain/chordCells.js';
 
 const requiredFiles = [
   'src/data/chords.js',
   'src/data/bassNotes.js',
-  'src/data/leadNotes.js',
+  'src/data/melodyScales.js',
   'src/data/drumsNotes.js',
-  'public/samples/chords/C4.wav',
-  'public/samples/bass/Bass_C1.wav',
-  'public/samples/lead/Lead C3.wav',
-  'public/samples/808/kick.wav',
+  'public/samples/Chords/Chord_C4_v0.22.wav',
+  'public/samples/Bass/Bass_C1_v0.22.wav',
+  'public/samples/Melody/Melody_C4_v0.22.wav',
+  'public/samples/Drums/Kick_v0.22.wav',
 ];
 
 test('foundation assets and music data are present', () => {
@@ -22,18 +19,8 @@ test('foundation assets and music data are present', () => {
   }
 });
 
-test('generated bass samples cover the three-octave chord pitch rail', async () => {
-  const generator = await import('../scripts/generate-bass-samples.mjs');
-  const pitchLabels = CHORD_GRID_PITCHES.map((pitch) => pitch.label);
-
-  assert.deepEqual(generator.getGeneratedBassSampleNotes(), pitchLabels);
-  assert.equal(generator.getGeneratedBassSampleFileName('F#3'), 'Bass_FSharp3.wav');
-  assert.equal(generator.getGeneratedBassSampleFileName('A#4'), 'Bass_ASharp4.wav');
-
-  for (const note of pitchLabels) {
-    const file = `public/samples/bass/generated/${generator.getGeneratedBassSampleFileName(note)}`;
-    assert.equal(existsSync(file), true, `${file} should exist`);
-
+test('new v0.22 sample assets are playable wav files', () => {
+  for (const file of requiredFiles.slice(4)) {
     const header = readFileSync(file).subarray(0, 12);
     assert.equal(header.subarray(0, 4).toString('ascii'), 'RIFF');
     assert.equal(header.subarray(8, 12).toString('ascii'), 'WAVE');

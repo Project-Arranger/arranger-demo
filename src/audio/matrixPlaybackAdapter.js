@@ -151,12 +151,12 @@ function extractChordEvent(cell, bar, step) {
   };
 }
 
-function extractLeadEvent(cell, bar, step) {
+function extractMelodyEvent(cell, bar, step) {
   if (cell?.type !== 'melody' || !isValidMelodyNote(cell.note)) return null;
 
   return {
-    type: 'lead',
-    trackId: 'lead',
+    type: 'melody',
+    trackId: 'melody',
     bar,
     step,
     note: cell.note,
@@ -197,20 +197,20 @@ function createMatrixPlaybackAdapter(matrixSource, options = {}) {
     const drumsCell = matrix?.drums?.[bar]?.[step] ?? null;
     const bassCell = matrix?.bass?.[bar]?.[step] ?? null;
     const chordCell = matrix?.chord?.[bar]?.[step] ?? null;
-    const leadCell = matrix?.lead?.[bar]?.[step] ?? null;
+    const melodyCell = matrix?.melody?.[bar]?.[step] ?? null;
 
     const drumEvents = extractDrumsInstruments(drumsCell).map((instrument) => (
       createDrumsEvent(bar, step, instrument)
     ));
     const bassEvent = extractBassEvent(bassCell, bar, step);
     const chordEvent = extractChordEvent(chordCell, bar, step);
-    const leadEvent = extractLeadEvent(leadCell, bar, step);
+    const melodyEvent = extractMelodyEvent(melodyCell, bar, step);
 
     return [
       ...drumEvents,
       ...(bassEvent ? [bassEvent] : []),
       ...(chordEvent ? [chordEvent] : []),
-      ...(leadEvent ? [leadEvent] : []),
+      ...(melodyEvent ? [melodyEvent] : []),
     ];
   }
 
@@ -234,5 +234,5 @@ export {
   extractBassEvent,
   extractChordEvent,
   extractDrumsInstruments,
-  extractLeadEvent,
+  extractMelodyEvent,
 };

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 
-const TRACK_IDS = ['drums', 'chord', 'bass', 'lead', 'pad', 'vocal', 'sample'];
+const TRACK_IDS = ['drums', 'chord', 'bass', 'melody', 'pad', 'vocal', 'sample'];
 
 test('ui shell keeps the editor usable and confines mobile overflow to panels', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
@@ -209,16 +209,16 @@ test('melody editor mirrors the reference keyboard strip and scale picker layout
   assert.match(css, /\.app:has\(\.editor\[data-screen-label="Melody Editor"\]:not\(\[data-picker="scale"\]\)\)\s*\{[^}]*--app-editor-height:\s*clamp\(360px,\s*46vh,\s*430px\);/s);
   assert.match(css, /\.app:has\(\.editor\[data-picker="scale"\]\)\s*\{[^}]*--app-editor-height:\s*clamp\(380px,\s*55vh,\s*560px\);/s);
   assert.match(css, /\.editor\[data-screen-label="Melody Editor"\]\s*\{[^}]*grid-template-rows:\s*auto auto minmax\(0,\s*1fr\);/s);
-  assert.match(css, /\.editor\[data-screen-label="Melody Editor"\] \.clip-chip\s*\{[^}]*background:\s*var\(--c-lead\);/s);
+  assert.match(css, /\.editor\[data-screen-label="Melody Editor"\] \.clip-chip\s*\{[^}]*background:\s*var\(--c-melody\);/s);
   assert.match(css, /\.keyboard-strip\s*\{[^}]*display:\s*flex;/s);
   assert.match(css, /\.ks-keys\s*\{[^}]*grid-template-columns:\s*repeat\(13,\s*minmax\(0,\s*1fr\)\);/s);
-  assert.match(css, /\.ks-key\.playing\s*\{[^}]*background:\s*var\(--c-lead\);/s);
+  assert.match(css, /\.ks-key\.playing\s*\{[^}]*background:\s*var\(--c-melody\);/s);
   assert.match(css, /\.melody-grid\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(128px,\s*1fr\)\);/s);
   assert.doesNotMatch(css, /\.melody-beat-number-row\s*\{/);
-  assert.match(css, /\.melody-cell\.active\s*\{[^}]*background:\s*var\(--c-lead\);/s);
-  assert.match(css, /\.melody-note-key\.playing\s*\{[^}]*background:\s*var\(--c-lead\)/s);
+  assert.match(css, /\.melody-cell\.active\s*\{[^}]*background:\s*var\(--c-melody\);/s);
+  assert.match(css, /\.melody-note-key\.playing\s*\{[^}]*background:\s*var\(--c-melody\)/s);
   assert.match(css, /\.scale-picker\s*\{[^}]*position:\s*absolute;/s);
-  assert.match(css, /\.sctpl-card\.selected\s*\{[^}]*background:\s*color-mix\(in oklab,\s*var\(--c-lead\) 20%,\s*var\(--surface\)\);/s);
+  assert.match(css, /\.sctpl-card\.selected\s*\{[^}]*background:\s*color-mix\(in oklab,\s*var\(--c-melody\) 20%,\s*var\(--surface\)\);/s);
 });
 
 test('bass editor mirrors the reference piano-roll and groove picker layout', async () => {

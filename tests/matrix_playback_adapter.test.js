@@ -6,7 +6,7 @@ import {
   extractBassEvent,
   extractChordEvent,
   extractDrumsInstruments,
-  extractLeadEvent,
+  extractMelodyEvent,
 } from '../src/audio/matrixPlaybackAdapter.js';
 import { createPassingChordCell } from '../src/domain/chordCells.js';
 import { STEPS_PER_BAR, TOTAL_BARS } from '../src/domain/musicConstants.js';
@@ -22,14 +22,14 @@ test('matrix playback adapter returns drums events for a matrix step', () => {
   const matrix = createInitialMatrix();
   matrix.drums[0][0] = { instruments: ['kick', 'hihat'] };
   matrix.drums[1][4] = { instrument: 'snare' };
-  matrix.bass[0][0] = { type: 'bass', note: 'C4', duration: '8n' };
+  matrix.bass[0][0] = { type: 'bass', note: 'C1', duration: '8n' };
 
   const adapter = createMatrixPlaybackAdapter(() => matrix);
 
   assert.deepEqual(adapter.getEventsForStep(0, 0), [
     { type: 'drums', trackId: 'drums', bar: 0, step: 0, instrument: 'kick' },
     { type: 'drums', trackId: 'drums', bar: 0, step: 0, instrument: 'hihat' },
-    { type: 'bass', trackId: 'bass', bar: 0, step: 0, note: 'C4', duration: '8n' },
+    { type: 'bass', trackId: 'bass', bar: 0, step: 0, note: 'C1', duration: '8n' },
   ]);
   assert.deepEqual(adapter.getEventsForStep(1, 4), [
     { type: 'drums', trackId: 'drums', bar: 1, step: 4, instrument: 'snare' },
@@ -39,36 +39,36 @@ test('matrix playback adapter returns drums events for a matrix step', () => {
 
 test('extractBassEvent reads bass cells into playable bass events', () => {
   assert.equal(extractBassEvent(null, 0, 0), null);
-  assert.deepEqual(extractBassEvent({ type: 'bass', note: 'A#4', duration: '8n' }, 3, 8), {
+  assert.deepEqual(extractBassEvent({ type: 'bass', note: 'A#0', duration: '8n' }, 3, 8), {
     type: 'bass',
     trackId: 'bass',
     bar: 3,
     step: 8,
-    note: 'A#4',
+    note: 'A#0',
     duration: '8n',
   });
-  assert.deepEqual(extractBassEvent({ note: 'C4' }, 3, 8), {
+  assert.deepEqual(extractBassEvent({ note: 'C1' }, 3, 8), {
     type: 'bass',
     trackId: 'bass',
     bar: 3,
     step: 8,
-    note: 'C4',
+    note: 'C1',
     duration: '16n',
   });
-  assert.equal(extractBassEvent({ type: 'bass', note: 'H4' }, 3, 8), null);
+  assert.equal(extractBassEvent({ type: 'bass', note: 'H0' }, 3, 8), null);
 });
 
-test('extractLeadEvent reads melody cells into playable lead events', () => {
-  assert.equal(extractLeadEvent(null, 0, 0), null);
-  assert.deepEqual(extractLeadEvent({ type: 'melody', note: 'C4' }, 3, 8), {
-    type: 'lead',
-    trackId: 'lead',
+test('extractMelodyEvent reads melody cells into playable melody events', () => {
+  assert.equal(extractMelodyEvent(null, 0, 0), null);
+  assert.deepEqual(extractMelodyEvent({ type: 'melody', note: 'C4' }, 3, 8), {
+    type: 'melody',
+    trackId: 'melody',
     bar: 3,
     step: 8,
     note: 'C4',
     duration: '16n',
   });
-  assert.equal(extractLeadEvent({ type: 'melody', note: 'H4' }, 3, 8), null);
+  assert.equal(extractMelodyEvent({ type: 'melody', note: 'H4' }, 3, 8), null);
 });
 
 test('createChordNotes maps major chord roots to playable triads', () => {
@@ -247,11 +247,11 @@ test('matrix playback adapter plays passing shortcut chords at step fifteen', ()
   ]);
 });
 
-test('matrix playback adapter includes lead melody events for transport playback', () => {
+test('matrix playback adapter includes melody melody events for transport playback', () => {
   const matrix = createInitialMatrix();
   matrix.drums[0][0] = { instruments: ['kick'] };
-  matrix.bass[0][0] = { type: 'bass', note: 'G4', duration: '8n' };
-  matrix.lead[0][0] = { type: 'melody', note: 'E4' };
+  matrix.bass[0][0] = { type: 'bass', note: 'G0', duration: '8n' };
+  matrix.melody[0][0] = { type: 'melody', note: 'E4' };
 
   const adapter = createMatrixPlaybackAdapter(() => matrix);
 
@@ -262,12 +262,12 @@ test('matrix playback adapter includes lead melody events for transport playback
       trackId: 'bass',
       bar: 0,
       step: 0,
-      note: 'G4',
+      note: 'G0',
       duration: '8n',
     },
     {
-      type: 'lead',
-      trackId: 'lead',
+      type: 'melody',
+      trackId: 'melody',
       bar: 0,
       step: 0,
       note: 'E4',
