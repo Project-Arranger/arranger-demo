@@ -14,6 +14,7 @@ const DRUMS_SAMPLE_FILES = Object.freeze({
   hihat: 'samples/Drums/Hihat_v0.22.wav',
 });
 const CHORD_SAMPLE_DURATION = '2s';
+const MELODY_SAMPLE_DURATION = '2s';
 
 function createRootOctaveSampleFiles({ directory, prefix, roots, octaves }) {
   return Object.freeze(Object.fromEntries(
@@ -375,11 +376,12 @@ export default class AudioEngine {
   }
 
   triggerMelodySampler(note, duration = '16n', time = this.now(), volume = this.getTrackVolume('melody')) {
+    void duration;
     if (!this.melodySampler?.triggerAttackRelease) return false;
 
     try {
       applyVolume(this.melodySampler, volume);
-      this.melodySampler.triggerAttackRelease(note, duration, time);
+      this.melodySampler.triggerAttackRelease(note, MELODY_SAMPLE_DURATION, time);
       return true;
     } catch {
       return false;

@@ -323,7 +323,7 @@ test('AudioEngine starts audio and triggers melody sampler notes', async () => {
     [
       'sampler.triggerAttackRelease',
       'E5',
-      '16n',
+      '2s',
       12.5,
       createMelodySampleUrls(),
     ],
@@ -390,7 +390,7 @@ test('AudioEngine schedules melody preview after audio startup completes', async
     [
       'sampler.triggerAttackRelease',
       'C4',
-      '16n',
+      '2s',
       8,
       createMelodySampleUrls(),
     ],
@@ -417,7 +417,7 @@ test('AudioEngine respects explicit melody preview times', async () => {
     [
       'sampler.triggerAttackRelease',
       'C4',
-      '16n',
+      '2s',
       12,
       createMelodySampleUrls(),
     ],
@@ -587,7 +587,7 @@ test('AudioEngine matrix playback triggers drums bass chord and melody events', 
     [
       'sampler.triggerAttackRelease',
       'G4',
-      '16n',
+      '2s',
       24,
       createMelodySampleUrls(),
     ],
@@ -654,7 +654,7 @@ test('AudioEngine applies current track volumes to matrix playback events', asyn
     [
       'sampler.triggerAttackRelease',
       'A4',
-      '16n',
+      '2s',
       24,
       -4,
       createMelodySampleUrls(),
