@@ -274,6 +274,12 @@ test('chord template picker has enough room and can scroll full card content', a
   assert.match(css, /\.tpl-body\s*\{[^}]*overflow:\s*auto;/s);
   assert.match(css, /\.tpl-list\s*\{[^}]*height:\s*auto;/s);
   assert.match(css, /\.tpl-list\s*\{[^}]*min-height:\s*100%;/s);
+  assert.match(css, /\.tpl-confirm-overlay\s*\{[^}]*position:\s*absolute;/s);
+  assert.match(css, /\.tpl-confirm-overlay\s*\{[^}]*inset:\s*0;/s);
+  assert.match(css, /\.tpl-confirm-dialog\s*\{[^}]*display:\s*grid;/s);
+  assert.match(css, /\.tpl-confirm-actions\s*\{[^}]*display:\s*flex;/s);
+  assert.match(css, /\.tpl-confirm-cancel\s*\{[^}]*background:\s*var\(--surface\);/s);
+  assert.match(css, /\.tpl-confirm-apply\s*\{[^}]*background:\s*var\(--ink\);/s);
   assert.doesNotMatch(css, /\.tpl-body\s*\{[^}]*overflow:\s*hidden;/s);
 });
 

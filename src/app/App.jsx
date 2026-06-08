@@ -39,6 +39,7 @@ import {
   clearChordBar,
   clearChordCell,
   getChordCell,
+  hasExistingChordClipContent,
   setChordCell,
   setChordEnrichTarget,
   setChordStepChord,
@@ -195,6 +196,9 @@ export default function App() {
     step: currentTutorialStep,
   }), [clips, currentTutorialStep, matrix, selectedBar, tutorialProgress]);
   const activeTutorialTarget = currentTutorialStep?.target?.name ?? null;
+  const shouldConfirmChordTemplateApply = useMemo(() => (
+    hasExistingChordClipContent(matrix, clips)
+  ), [clips, matrix]);
 
   const dispatchAppCommand = useMemo(
     () => createUiAudioDispatcher({ store: useMusicStore, audio: audioEngine }),
@@ -1082,6 +1086,7 @@ export default function App() {
         onChordGrooveTemplateApply: handleChordGrooveTemplateApply,
         onChordTemplatePreview: handleChordTemplatePreview,
         onChordTemplateApply: handleChordTemplateApply,
+        shouldConfirmChordTemplateApply,
         onPassingChordPick: handlePassingChordPick,
         onBassPreview: handleBassPreview,
         onBassStepToggle: handleBassStepToggle,

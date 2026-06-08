@@ -333,11 +333,13 @@ function ChordEditor({
   onPreviousBar = () => {},
   onRenameClip,
   selectedBar,
+  shouldConfirmChordTemplateApply = false,
   trackId = 'chord',
 }) {
   const [pickerMode, setPickerMode] = useState(null);
   const [templatePage, setTemplatePage] = useState(0);
   const [selectedTemplateId, setSelectedTemplateId] = useState(null);
+  const [pendingTemplateId, setPendingTemplateId] = useState(null);
   const [selectedGrooveTemplateId, setSelectedGrooveTemplateId] = useState('block-basic');
   const [addChordPanel, setAddChordPanel] = useState(null);
   const [passingChordPanel, setPassingChordPanel] = useState(null);
@@ -350,6 +352,7 @@ function ChordEditor({
     templatePage * TEMPLATE_PAGE_SIZE,
     templatePage * TEMPLATE_PAGE_SIZE + TEMPLATE_PAGE_SIZE,
   );
+  const pendingTemplate = pendingTemplateId ? CHORD_TEMPLATES[pendingTemplateId] : null;
   const primaryChordLabel = getChordBarDisplayLabel(matrix, selectedBar);
   const passingSourceChord = getChordCell(matrix, selectedBar, 0)?.label ?? primaryChordLabel;
   const passingTargetChord = getDoowopPassingTargetChord(passingSourceChord);
@@ -378,6 +381,7 @@ function ChordEditor({
     const handleKeyDown = (event) => {
       if (event.key !== 'Escape') return;
       setPickerMode(null);
+      setPendingTemplateId(null);
       closeChordPanels();
     };
 
@@ -398,11 +402,30 @@ function ChordEditor({
     return () => document.removeEventListener('mousedown', handlePointerDown);
   }, [addChordPanel, closeChordPanels, passingChordPanel]);
 
-  const handleTemplateApply = (templateId) => {
-    setSelectedTemplateId(templateId);
-    onChordTemplateApply(templateId);
+  const handleTemplateRequest = (templateId) => {
+    if (!shouldConfirmChordTemplateApply) {
+      setSelectedTemplateId(templateId);
+      onChordTemplateApply(templateId);
+      setPickerMode(null);
+      closeChordPanels();
+      return;
+    }
+
+    setPendingTemplateId(templateId);
+  };
+
+  const handleTemplateConfirm = () => {
+    if (!pendingTemplateId) return;
+
+    setSelectedTemplateId(pendingTemplateId);
+    onChordTemplateApply(pendingTemplateId);
+    setPendingTemplateId(null);
     setPickerMode(null);
     closeChordPanels();
+  };
+
+  const handleTemplateCancel = () => {
+    setPendingTemplateId(null);
   };
 
   const handleGrooveTemplateApply = (templateId) => {
@@ -414,16 +437,19 @@ function ChordEditor({
 
   const handleClear = () => {
     onClearChordBar();
+    setPendingTemplateId(null);
     closeChordPanels();
   };
 
   const handleClearChord = () => {
     onClearChord();
+    setPendingTemplateId(null);
     closeChordPanels();
   };
 
   const handleClose = () => {
     setPickerMode(null);
+    setPendingTemplateId(null);
     closeChordPanels();
     onClose();
   };
@@ -726,7 +752,7 @@ function ChordEditor({
                 ].filter(Boolean).join(' ')}
                 data-tpl={template.id}
                 key={template.id}
-                onClick={() => handleTemplateApply(template.id)}
+                onClick={() => handleTemplateRequest(template.id)}
               >
                 <div className="tpl-name-row">
                   <h3 className="tpl-name">{template.name}</h3>
@@ -793,6 +819,37 @@ function ChordEditor({
             ›
           </button>
         </footer>
+
+        {pendingTemplate ? (
+          <div className="tpl-confirm-overlay" role="presentation">
+            <div
+              className="tpl-confirm-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-label="确认覆盖和弦模板"
+            >
+              <span className="tpl-confirm-kicker">确认覆盖</span>
+              <h3 className="tpl-confirm-title">确认覆盖和弦模板？</h3>
+              <p className="tpl-confirm-copy">
+                将覆盖所有已有 Chord clips 的当前模板和弦。
+              </p>
+              <div className="tpl-confirm-template">
+                <span className="tpl-confirm-template-name">{pendingTemplate.name}</span>
+                <span className="tpl-confirm-template-chords">
+                  {pendingTemplate.chords.join(' - ')}
+                </span>
+              </div>
+              <div className="tpl-confirm-actions">
+                <button className="tpl-confirm-cancel" type="button" onClick={handleTemplateCancel}>
+                  取消
+                </button>
+                <button className="tpl-confirm-apply" type="button" onClick={handleTemplateConfirm}>
+                  确认覆盖
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <div className="gtpl-picker" role="dialog" aria-label="选择和弦弹奏律动模板" data-screen-label="Groove Template Picker" hidden={!groovePickerOpen}>

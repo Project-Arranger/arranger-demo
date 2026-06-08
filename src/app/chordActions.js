@@ -47,6 +47,23 @@ function setChordCell(matrix, barIndex, spanIndex, root) {
   return setChordStepCells(matrix, barIndex, nextCells);
 }
 
+function setChordTemplateCell(matrix, barIndex, spanIndex, root) {
+  const step = getChordSpanStep(spanIndex);
+  if (step === null) return matrix;
+  const firstCell = createChordCell(root);
+  if (!firstCell) return matrix;
+
+  const nextCells = {
+    [step]: firstCell,
+  };
+  const staleSecondCell = getMatrixChordStep(matrix, barIndex, step + 1);
+  if (staleSecondCell?.type === 'chord' && !staleSecondCell.grooveTemplateId) {
+    nextCells[step + 1] = null;
+  }
+
+  return setChordStepCells(matrix, barIndex, nextCells);
+}
+
 function replaceChordBeat(matrix, barIndex, spanIndex, cells) {
   const step = getChordSpanStep(spanIndex);
   if (step === null || !matrix?.chord?.[barIndex]) return matrix;
@@ -259,12 +276,18 @@ function getExistingChordClipBars(clips) {
     .sort((a, b) => a - b);
 }
 
+function hasExistingChordClipContent(matrix, clips) {
+  return getExistingChordClipBars(clips).some((barIndex) => (
+    matrix?.chord?.[barIndex]?.some((cell) => Boolean(cell))
+  ));
+}
+
 function applyChordTemplateToExistingClips(matrix, clips, templateId) {
   const template = CHORD_TEMPLATES[templateId];
   if (!template) return matrix;
 
   return getExistingChordClipBars(clips).reduce((nextMatrix, barIndex, index) => (
-    setChordCell(nextMatrix, barIndex, 0, template.chords[index % template.chords.length])
+    setChordTemplateCell(nextMatrix, barIndex, 0, template.chords[index % template.chords.length])
   ), matrix);
 }
 
@@ -388,6 +411,7 @@ export {
   getChordEnrichTargetLabel,
   getChordSpanDisplayLabel,
   getPassingChordDisplayLabel,
+  hasExistingChordClipContent,
   getExistingChordClipBars,
   setChordCell,
   setChordEnrichTarget,

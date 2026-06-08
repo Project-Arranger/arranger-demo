@@ -2254,6 +2254,99 @@ button {
   display: none;
 }
 
+.tpl-confirm-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: color-mix(in oklab, var(--surface) 66%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.tpl-confirm-dialog {
+  display: grid;
+  gap: 12px;
+  width: min(420px, 100%);
+  padding: 20px;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-2);
+}
+
+.tpl-confirm-kicker {
+  color: var(--c-chord-ink);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.tpl-confirm-title {
+  margin: 0;
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.tpl-confirm-copy {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.tpl-confirm-template {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  background: color-mix(in oklab, var(--c-chord) 14%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--c-chord-ink) 14%, transparent);
+  border-radius: 8px;
+}
+
+.tpl-confirm-template-name {
+  color: var(--ink);
+  font-weight: 850;
+}
+
+.tpl-confirm-template-chords {
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.tpl-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.tpl-confirm-cancel,
+.tpl-confirm-apply {
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.tpl-confirm-cancel {
+  color: var(--ink-2);
+  background: var(--surface);
+}
+
+.tpl-confirm-apply {
+  color: white;
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
 .scale-picker {
   position: absolute;
   inset: 0;

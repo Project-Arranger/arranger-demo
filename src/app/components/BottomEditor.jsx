@@ -48,6 +48,7 @@ function BottomEditor({
   onDrumsStepToggle,
   selectedBar,
   selectedClipId,
+  shouldConfirmChordTemplateApply = false,
 }) {
   const editorTargetClass = [
     'track-editor-target',
@@ -107,6 +108,7 @@ function BottomEditor({
       onChordTemplateApply,
       onPassingChordPick,
       canPageBars,
+      shouldConfirmChordTemplateApply,
       onClose: onCloseEditor,
       onClearChord,
       onClearChordBar,

@@ -9,6 +9,7 @@ import {
   getChordCell,
   getChordBeatDisplaySegments,
   getPassingChordDisplayLabel,
+  hasExistingChordClipContent,
   setChordEnrichTarget,
   setChordCell,
   setChordNoteCell,
@@ -384,8 +385,11 @@ test('setChordStepChord ignores invalid steps and chord names', () => {
   assert.equal(setChordStepChord(matrix, 2, 14, 'Hmaj7'), matrix);
 });
 
-test('applyChordTemplateToExistingClips only writes existing chord clips', () => {
+test('applyChordTemplateToExistingClips overwrites existing chord clips with fresh template chords', () => {
   let matrix = createInitialMatrix();
+  matrix = setChordCell(matrix, 0, 0, 'Cmaj7');
+  matrix = toggleChordNoteStep(matrix, 0, 0, 0, 'C4');
+  matrix = toggleChordNoteStep(matrix, 0, 0, 0, 'C5');
   matrix = setChordNoteCell(matrix, 0, 1, 2, 'E');
   matrix = setChordCell(matrix, 4, 0, 'F');
   matrix.bass[2][0] = { note: 'C2' };
@@ -401,7 +405,14 @@ test('applyChordTemplateToExistingClips only writes existing chord clips', () =>
 
   const nextMatrix = applyChordTemplateToExistingClips(matrix, clips, 'doowop');
 
-  assert.deepEqual(nextMatrix.chord[0][0].label, 'C');
+  assert.deepEqual(nextMatrix.chord[0][0], {
+    type: 'chord',
+    root: 'C',
+    chordRoot: 'C',
+    quality: 'maj',
+    label: 'C',
+    toneRoots: ['C', 'E', 'G'],
+  });
   assert.equal(nextMatrix.chord[0][1], null);
   assert.deepEqual(nextMatrix.chord[3][0].label, 'Am');
   assert.equal(nextMatrix.chord[3][1], null);
@@ -410,4 +421,25 @@ test('applyChordTemplateToExistingClips only writes existing chord clips', () =>
   assert.deepEqual(nextMatrix.chord[0][6], { type: 'notes', notes: ['E'], label: 'E' });
   assert.deepEqual(nextMatrix.chord[4][0].label, 'F');
   assert.deepEqual(nextMatrix.bass[2][0], { note: 'C2' });
+});
+
+test('hasExistingChordClipContent only reports content in existing chord clips', () => {
+  const matrix = createInitialMatrix();
+  const clips = {
+    ids: ['chord-bar-0', 'drums-bar-1', 'chord-bar-3'],
+    byId: {
+      'chord-bar-0': { id: 'chord-bar-0', trackId: 'chord', bar: 0 },
+      'drums-bar-1': { id: 'drums-bar-1', trackId: 'drums', bar: 1 },
+      'chord-bar-3': { id: 'chord-bar-3', trackId: 'chord', bar: 3 },
+    },
+  };
+
+  assert.equal(hasExistingChordClipContent(matrix, clips), false);
+
+  matrix.chord[2][0] = { type: 'chord', label: 'F' };
+  matrix.drums[1][0] = { instruments: ['kick'] };
+  assert.equal(hasExistingChordClipContent(matrix, clips), false);
+
+  matrix.chord[3][14] = { type: 'chord', label: 'C/B', grooveTemplateId: 'passing-shortcut' };
+  assert.equal(hasExistingChordClipContent(matrix, clips), true);
 });
