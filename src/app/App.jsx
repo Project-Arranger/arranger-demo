@@ -73,9 +73,9 @@ import {
   getDrumsClipBarIndexes,
 } from './drumsPatternActions.js';
 import {
-  canPageDrumsClipBars,
-  getAdjacentDrumsClipBar,
-} from './drumsBarPaging.js';
+  canPageTrackClipBars,
+  getAdjacentTrackClipBar,
+} from './trackBarPaging.js';
 import { createTimelineTracks } from './timelineViewModels.js';
 import { syncEditorToPlaybackBar } from './playbackEditorSync.js';
 import { syncTrackScrollContainers } from './syncTrackScroll.js';
@@ -372,7 +372,10 @@ export default function App() {
     volumes,
   }), [clips, matrix, selectedBar, visibleTrackUi, volumes]);
   const selectedClip = selectedClipId ? clips.byId[selectedClipId] : null;
-  const canPageDrumsBars = useMemo(() => canPageDrumsClipBars(clips), [clips]);
+  const canPageBars = useMemo(() => (
+    canPageTrackClipBars(clips, activeTrackId)
+    && getAdjacentTrackClipBar(clips, activeTrackId, selectedBar, 'next') !== null
+  ), [activeTrackId, clips, selectedBar]);
 
   const handleTrackSelect = useCallback((trackId, barIndex = selectedBar) => {
     const state = useMusicStore.getState();
@@ -454,22 +457,27 @@ export default function App() {
     useMusicStore.getState().clearTrack('drums');
   }, []);
 
-  const handlePageDrumsBar = useCallback((direction) => {
+  const handlePageTrackBar = useCallback((direction) => {
     const state = useMusicStore.getState();
-    const nextBar = getAdjacentDrumsClipBar(state.clips, state.selectedBar, direction);
+    const nextBar = getAdjacentTrackClipBar(
+      state.clips,
+      state.activeTrackId,
+      state.selectedBar,
+      direction,
+    );
     if (nextBar === null) return;
 
-    const clip = state.getClipForTrackBar('drums', nextBar);
+    const clip = state.getClipForTrackBar(state.activeTrackId, nextBar);
     if (clip) state.selectClip(clip.id);
   }, []);
 
-  const handlePreviousDrumsBar = useCallback(() => {
-    handlePageDrumsBar('previous');
-  }, [handlePageDrumsBar]);
+  const handlePreviousBar = useCallback(() => {
+    handlePageTrackBar('previous');
+  }, [handlePageTrackBar]);
 
-  const handleNextDrumsBar = useCallback(() => {
-    handlePageDrumsBar('next');
-  }, [handlePageDrumsBar]);
+  const handleNextBar = useCallback(() => {
+    handlePageTrackBar('next');
+  }, [handlePageTrackBar]);
 
   const applyTutorialStepSetup = useCallback((step) => {
     const setupType = step?.setup?.type;
@@ -1092,11 +1100,11 @@ export default function App() {
         onClearChordBar: handleClearChordBar,
         onClearChord: handleClearChord,
         onClearDrums: handleClearDrums,
-        canPageDrumsBars,
+        canPageBars,
         onGenerateAllDrumsBars: handleGenerateAllDrumsBars,
         onGenerateCurrentDrumsBar: handleGenerateCurrentDrumsBar,
-        onNextDrumsBar: handleNextDrumsBar,
-        onPreviousDrumsBar: handlePreviousDrumsBar,
+        onNextBar: handleNextBar,
+        onPreviousBar: handlePreviousBar,
         onDrumsStepMove: handleDrumsStepMove,
         onDrumsStepToggle: handleDrumsStepToggle,
         selectedBar,

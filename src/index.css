@@ -463,7 +463,7 @@ button {
 .edit-btn,
 .tool-icon,
 .editor-close,
-.drum-page-btn,
+.track-page-btn,
 .scale-arrow {
   display: grid;
   place-items: center;
@@ -487,7 +487,7 @@ button {
 .edit-btn:hover,
 .tool-icon:hover,
 .editor-close:hover,
-.drum-page-btn:hover,
+.track-page-btn:hover,
 .scale-arrow:hover {
   color: var(--ink);
   background: var(--surface);
@@ -522,7 +522,7 @@ button {
 .edit-btn svg,
 .tool-icon svg,
 .editor-close svg,
-.drum-page-btn svg,
+.track-page-btn svg,
 .scale-arrow svg {
   width: 16px;
   height: 16px;
@@ -3232,12 +3232,26 @@ button {
   background: color-mix(in oklab, var(--bg) 45%, var(--surface));
 }
 
-.drum-seq-pager-shell {
+.track-editor-pager-shell {
   display: grid;
-  grid-template-columns: 36px minmax(max-content, 980px) 36px;
+  grid-template-columns: 36px minmax(0, 1fr) 36px;
   align-items: center;
-  justify-content: center;
   gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.track-editor-pager-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.drum-seq-body .track-editor-pager-shell {
+  grid-template-columns: 36px minmax(max-content, 980px) 36px;
+  justify-content: center;
   min-width: max-content;
   margin: 0 auto;
 }
@@ -3251,22 +3265,22 @@ button {
   min-width: 0;
 }
 
-.drum-page-btn {
+.track-page-btn {
   width: 36px;
   height: 64px;
-  color: var(--c-drums-ink);
+  color: var(--track-ink, var(--c-drums-ink));
   background: var(--surface);
-  border: 1px solid color-mix(in oklab, var(--c-drums-ink) 14%, var(--border-soft));
+  border: 1px solid color-mix(in oklab, var(--track-ink, var(--c-drums-ink)) 14%, var(--border-soft));
   border-radius: 10px;
   box-shadow: var(--shadow-1);
 }
 
-.drum-page-btn:hover:not(:disabled) {
+.track-page-btn:hover:not(:disabled) {
   color: white;
-  background: var(--c-drums-ink);
+  background: var(--track-ink, var(--c-drums-ink));
 }
 
-.drum-page-btn:disabled {
+.track-page-btn:disabled {
   cursor: default;
   opacity: 0.32;
   box-shadow: none;
@@ -3587,12 +3601,16 @@ button {
     padding: 16px 12px;
   }
 
-  .drum-seq-pager-shell {
-    grid-template-columns: 32px minmax(max-content, 1fr) 32px;
+  .track-editor-pager-shell {
+    grid-template-columns: 32px minmax(0, 1fr) 32px;
     gap: 8px;
   }
 
-  .drum-page-btn {
+  .drum-seq-body .track-editor-pager-shell {
+    grid-template-columns: 32px minmax(max-content, 1fr) 32px;
+  }
+
+  .track-page-btn {
     width: 32px;
     height: 56px;
   }

@@ -41,6 +41,7 @@ import { CHORD_GROOVE_TEMPLATES } from '../chordGrooveActions.js';
 import { usePitchScrollSync } from '../usePitchScrollSync.js';
 import { ClipNameInput } from './ClipNameInput.jsx';
 import { renderIcon } from './icons.js';
+import { TrackBarPager } from './TrackBarPager.jsx';
 
 const TEMPLATE_PAGE_SIZE = 3;
 const ADD_CHORD_PANEL_WIDTH = 760;
@@ -314,6 +315,7 @@ function getGrooveStepStyle(template, step) {
 }
 
 function ChordEditor({
+  canPageBars = false,
   clipName,
   matrix,
   onChordNoteSelect,
@@ -327,8 +329,11 @@ function ChordEditor({
   onClose = () => {},
   onClearChord = () => {},
   onClearChordBar,
+  onNextBar = () => {},
+  onPreviousBar = () => {},
   onRenameClip,
   selectedBar,
+  trackId = 'chord',
 }) {
   const [pickerMode, setPickerMode] = useState(null);
   const [templatePage, setTemplatePage] = useState(0);
@@ -510,7 +515,13 @@ function ChordEditor({
         </div>
       </header>
 
-      <div className="seq-body" onWheel={handlePitchWheel}>
+      {createElement(TrackBarPager, {
+        canPageBars,
+        onNextBar,
+        onPreviousBar,
+        trackId,
+      }, (
+        <div className="seq-body" onWheel={handlePitchWheel}>
         <aside className="scale-rail" aria-label="Scale ruler">
           <button
             className="scale-arrow"
@@ -659,7 +670,8 @@ function ChordEditor({
             );
           })}
         </div>
-      </div>
+        </div>
+      ))}
 
       {addChordPanel?.bar === selectedBar ? createElement(AddChordPopover, {
         anchorRect: addChordPanel.anchorRect,

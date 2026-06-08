@@ -2,10 +2,14 @@ import { Music } from 'lucide-react';
 import { createElement } from 'react';
 import { ClipNameInput } from './ClipNameInput.jsx';
 import { TRACK_ICONS, renderIcon } from './icons.js';
+import { TrackBarPager } from './TrackBarPager.jsx';
 
 function TrackEditorPlaceholder({
   activeTrackId,
+  canPageBars = false,
   clipName,
+  onNextBar = () => {},
+  onPreviousBar = () => {},
   onRenameClip,
 }) {
   return (
@@ -21,9 +25,16 @@ function TrackEditorPlaceholder({
           </div>
         </div>
       </header>
-      <div className="empty-editor">
-        添加一个片段即可开始编辑
-      </div>
+      {createElement(TrackBarPager, {
+        canPageBars,
+        onNextBar,
+        onPreviousBar,
+        trackId: activeTrackId,
+      }, (
+        <div className="empty-editor">
+          添加一个片段即可开始编辑
+        </div>
+      ))}
     </section>
   );
 }

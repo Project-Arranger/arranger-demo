@@ -1,6 +1,4 @@
 import {
-  ChevronLeft,
-  ChevronRight,
   Drum,
   X,
 } from 'lucide-react';
@@ -17,6 +15,7 @@ import {
 } from '../drumSequencerData.js';
 import { ClipNameInput } from './ClipNameInput.jsx';
 import { renderIcon } from './icons.js';
+import { TrackBarPager } from './TrackBarPager.jsx';
 
 const STEP_NUMBERS = Array.from({ length: STEPS_PER_BAR }, (_, index) => index + 1);
 const STEPS_PER_BEAT_GROUP = 4;
@@ -188,19 +187,14 @@ function DrumSequencer({
       </header>
 
       <div className="drum-seq-body">
-        <div className="drum-seq-pager-shell">
-          <button
-            className="drum-page-btn previous"
-            aria-label="上一小节"
-            title="上一小节"
-            type="button"
-            disabled={!canPageBars}
-            onClick={onPreviousBar}
-          >
-            {renderIcon(ChevronLeft)}
-          </button>
-
-          <div className="drum-seq-panel">
+        {createElement(TrackBarPager, {
+          canPageBars,
+          contentClassName: 'drum-seq-panel',
+          onNextBar,
+          onPreviousBar,
+          trackId: 'drums',
+        }, (
+          <>
             <div className="drum-step-numbers" aria-hidden="true">
               <div />
               {renderStepGroups((stepNumber) => (
@@ -275,19 +269,8 @@ function DrumSequencer({
               {' '}
               / 8
             </div>
-          </div>
-
-          <button
-            className="drum-page-btn next"
-            aria-label="下一小节"
-            title="下一小节"
-            type="button"
-            disabled={!canPageBars}
-            onClick={onNextBar}
-          >
-            {renderIcon(ChevronRight)}
-          </button>
-        </div>
+          </>
+        ))}
       </div>
     </section>
   );

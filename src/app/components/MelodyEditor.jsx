@@ -26,6 +26,7 @@ import { BEAT_NUMBERS } from '../uiShellData.js';
 import { isMelodyCellActive } from '../melodyActions.js';
 import { ClipNameInput } from './ClipNameInput.jsx';
 import { renderIcon } from './icons.js';
+import { TrackBarPager } from './TrackBarPager.jsx';
 
 function addSetValue(set, value) {
   if (!value || set.has(value)) return set;
@@ -58,17 +59,21 @@ function renderPlayGlyph() {
 }
 
 function MelodyEditor({
+  canPageBars = false,
   clipName,
   matrix,
   melodyScaleId = 'major',
   onClearMelody,
   onClearMelodyBar,
   onClose = () => {},
+  onNextBar = () => {},
+  onPreviousBar = () => {},
   onMelodyPreview = () => {},
   onMelodyScaleChange = () => {},
   onMelodyStepToggle = () => {},
   onRenameClip,
   selectedBar,
+  trackId = 'melody',
 }) {
   const [pickerMode, setPickerMode] = useState(null);
   const [playingKeys, setPlayingKeys] = useState(() => new Set());
@@ -168,120 +173,129 @@ function MelodyEditor({
         </div>
       </header>
 
-      <div className="keyboard-strip" role="group" aria-label="QWERTY ↔ 音阶 对应关系">
-        <div className="ks-intro">
-          <div className="ks-glyph">
-            {renderIcon(Keyboard)}
+      {createElement(TrackBarPager, {
+        canPageBars,
+        onNextBar,
+        onPreviousBar,
+        trackId,
+      }, (
+        <>
+        <div className="keyboard-strip" role="group" aria-label="QWERTY ↔ 音阶 对应关系">
+          <div className="ks-intro">
+            <div className="ks-glyph">
+              {renderIcon(Keyboard)}
+            </div>
+            <div className="ks-copy">
+              <span className="ks-eyebrow">Play · 试奏</span>
+              <span className="ks-title">键盘奏响音符</span>
+              <span className="ks-scale">{activeScale.label}</span>
+            </div>
           </div>
-          <div className="ks-copy">
-            <span className="ks-eyebrow">Play · 试奏</span>
-            <span className="ks-title">键盘奏响音符</span>
-            <span className="ks-scale">{activeScale.label}</span>
+
+          <div className="ks-keys" data-scale={activeScale.id} aria-label="按键 ↔ 音符 对应表">
+            {MELODY_KEY_SEQUENCE.map((key) => {
+              const note = getMelodyKeyNote(activeScale.id, key);
+              const { name, octave } = formatMelodyNoteParts(note);
+              const playing = playingKeys.has(key);
+
+              return (
+                <button
+                  className={['ks-key', playing ? 'playing' : ''].filter(Boolean).join(' ')}
+                  type="button"
+                  data-key={key}
+                  data-note={name}
+                  data-oct={octave}
+                  key={key}
+                  aria-label={`${note} - 按 ${key}`}
+                  onPointerDown={() => handlePreviewStart(key, note)}
+                  onPointerLeave={() => handlePreviewEnd(key)}
+                  onPointerUp={() => handlePreviewEnd(key)}
+                >
+                  <span className="ks-letter">{key}</span>
+                  <span className="ks-note">
+                    {name}
+                    <span className="oct">{octave}</span>
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        <div className="ks-keys" data-scale={activeScale.id} aria-label="按键 ↔ 音符 对应表">
-          {MELODY_KEY_SEQUENCE.map((key) => {
-            const note = getMelodyKeyNote(activeScale.id, key);
-            const { name, octave } = formatMelodyNoteParts(note);
-            const playing = playingKeys.has(key);
-
-            return (
-              <button
-                className={['ks-key', playing ? 'playing' : ''].filter(Boolean).join(' ')}
-                type="button"
-                data-key={key}
-                data-note={name}
-                data-oct={octave}
-                key={key}
-                aria-label={`${note} - 按 ${key}`}
-                onPointerDown={() => handlePreviewStart(key, note)}
-                onPointerLeave={() => handlePreviewEnd(key)}
-                onPointerUp={() => handlePreviewEnd(key)}
-              >
-                <span className="ks-letter">{key}</span>
-                <span className="ks-note">
-                  {name}
-                  <span className="oct">{octave}</span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="seq-body melody-seq-body">
-        <aside className="scale-rail melody-scale-rail" aria-label="Scale ruler">
-          <button className="scale-arrow" aria-label="Scroll up an octave" title="Scroll up an octave" type="button" disabled>
-            {renderIcon(ChevronUp)}
-          </button>
-          <div className="scale-notes melody-scale-notes">
-            {MELODY_RAIL_NOTES.map((note, rowIndex) => (
-              <div
-                className={[
-                  'note-key',
-                  'melody-note-key',
-                  note.sharp ? 'sharp' : '',
-                  note.root ? 'root' : '',
-                  activeNoteNames.has(note.label) ? 'playing' : '',
-                  hoveredPitchRow === rowIndex ? 'row-hovered' : '',
-                ].filter(Boolean).join(' ')}
-                data-row={rowIndex}
-                key={note.label}
-                onPointerEnter={() => setHoveredPitchRow(rowIndex)}
-                onPointerLeave={() => setHoveredPitchRow(null)}
-              >
-                {note.label}
-              </div>
-            ))}
-          </div>
-          <button className="scale-arrow" aria-label="Scroll down an octave" title="Scroll down an octave" type="button" disabled>
-            {renderIcon(ChevronDown)}
-          </button>
-        </aside>
-
-        <div className="melody-grid">
-          {BEAT_NUMBERS.map((beatNumber) => {
-            const beatIndex = beatNumber - 1;
-
-            return (
-              <div className="melody-beat-group" key={beatNumber}>
-                <div className="pitch-grid-head-spacer" aria-hidden="true" />
-                <div className="beat-cells melody-beat-cells">
-                  {MELODY_RAIL_NOTES.flatMap((note, rowIndex) => (
-                    BEAT_NUMBERS.map((stepNumber, colIndex) => {
-                      const step = beatIndex * 4 + colIndex;
-                      const active = isMelodyCellActive(matrix, selectedBar, step, note.note);
-
-                      return (
-                        <button
-                          className={[
-                            'melody-cell',
-                            note.sharp ? 'sharp' : '',
-                            colIndex === 0 ? 'downbeat' : '',
-                            active ? 'active' : '',
-                            hoveredPitchRow === rowIndex ? 'row-hovered' : '',
-                          ].filter(Boolean).join(' ')}
-                          data-row={rowIndex}
-                          data-col={colIndex}
-                          data-note={note.note}
-                          key={`${note.note}-${stepNumber}`}
-                          type="button"
-                          aria-label={`${note.note} beat ${beatNumber}.${stepNumber}`}
-                          aria-pressed={active}
-                          onPointerEnter={() => setHoveredPitchRow(rowIndex)}
-                          onPointerLeave={() => setHoveredPitchRow(null)}
-                          onClick={() => onMelodyStepToggle(step, note.note)}
-                        />
-                      );
-                    })
-                  ))}
+        <div className="seq-body melody-seq-body">
+          <aside className="scale-rail melody-scale-rail" aria-label="Scale ruler">
+            <button className="scale-arrow" aria-label="Scroll up an octave" title="Scroll up an octave" type="button" disabled>
+              {renderIcon(ChevronUp)}
+            </button>
+            <div className="scale-notes melody-scale-notes">
+              {MELODY_RAIL_NOTES.map((note, rowIndex) => (
+                <div
+                  className={[
+                    'note-key',
+                    'melody-note-key',
+                    note.sharp ? 'sharp' : '',
+                    note.root ? 'root' : '',
+                    activeNoteNames.has(note.label) ? 'playing' : '',
+                    hoveredPitchRow === rowIndex ? 'row-hovered' : '',
+                  ].filter(Boolean).join(' ')}
+                  data-row={rowIndex}
+                  key={note.label}
+                  onPointerEnter={() => setHoveredPitchRow(rowIndex)}
+                  onPointerLeave={() => setHoveredPitchRow(null)}
+                >
+                  {note.label}
                 </div>
-              </div>
-            );
-          })}
+              ))}
+            </div>
+            <button className="scale-arrow" aria-label="Scroll down an octave" title="Scroll down an octave" type="button" disabled>
+              {renderIcon(ChevronDown)}
+            </button>
+          </aside>
+
+          <div className="melody-grid">
+            {BEAT_NUMBERS.map((beatNumber) => {
+              const beatIndex = beatNumber - 1;
+
+              return (
+                <div className="melody-beat-group" key={beatNumber}>
+                  <div className="pitch-grid-head-spacer" aria-hidden="true" />
+                  <div className="beat-cells melody-beat-cells">
+                    {MELODY_RAIL_NOTES.flatMap((note, rowIndex) => (
+                      BEAT_NUMBERS.map((stepNumber, colIndex) => {
+                        const step = beatIndex * 4 + colIndex;
+                        const active = isMelodyCellActive(matrix, selectedBar, step, note.note);
+
+                        return (
+                          <button
+                            className={[
+                              'melody-cell',
+                              note.sharp ? 'sharp' : '',
+                              colIndex === 0 ? 'downbeat' : '',
+                              active ? 'active' : '',
+                              hoveredPitchRow === rowIndex ? 'row-hovered' : '',
+                            ].filter(Boolean).join(' ')}
+                            data-row={rowIndex}
+                            data-col={colIndex}
+                            data-note={note.note}
+                            key={`${note.note}-${stepNumber}`}
+                            type="button"
+                            aria-label={`${note.note} beat ${beatNumber}.${stepNumber}`}
+                            aria-pressed={active}
+                            onPointerEnter={() => setHoveredPitchRow(rowIndex)}
+                            onPointerLeave={() => setHoveredPitchRow(null)}
+                            onClick={() => onMelodyStepToggle(step, note.note)}
+                          />
+                        );
+                      })
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+        </>
+      ))}
 
       <div className="scale-picker" role="dialog" aria-label="选择音阶" data-screen-label="Scale Picker" hidden={pickerMode !== 'scale'}>
         <header className="tpl-head">

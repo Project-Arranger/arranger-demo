@@ -357,6 +357,26 @@ test('timeline add clip controls switch the persistent editor by track row', asy
     new URL('../src/app/components/DrumSequencer.jsx', import.meta.url),
     'utf8',
   );
+  const chordEditorSource = await readFile(
+    new URL('../src/app/components/ChordEditor.jsx', import.meta.url),
+    'utf8',
+  );
+  const bassEditorSource = await readFile(
+    new URL('../src/app/components/BassEditor.jsx', import.meta.url),
+    'utf8',
+  );
+  const melodyEditorSource = await readFile(
+    new URL('../src/app/components/MelodyEditor.jsx', import.meta.url),
+    'utf8',
+  );
+  const trackEditorPlaceholderSource = await readFile(
+    new URL('../src/app/components/TrackEditorPlaceholder.jsx', import.meta.url),
+    'utf8',
+  );
+  const trackBarPagerSource = await readFile(
+    new URL('../src/app/components/TrackBarPager.jsx', import.meta.url),
+    'utf8',
+  );
   const timelineSource = await readFile(
     new URL('../src/app/components/Timeline.jsx', import.meta.url),
     'utf8',
@@ -413,15 +433,25 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(timelineSource, /data-track-index=\{trackIndex\}/);
   assert.match(timelineSource, /data-bar-index=\{bar\.bar\}/);
   assert.match(drumSequencerSource, /data-screen-label="Drum Sequencer"/);
-  assert.match(drumSequencerSource, /ChevronLeft/);
-  assert.match(drumSequencerSource, /ChevronRight/);
-  assert.match(drumSequencerSource, /onPreviousBar/);
-  assert.match(drumSequencerSource, /onNextBar/);
-  assert.match(drumSequencerSource, /canPageBars/);
-  assert.match(drumSequencerSource, /aria-label="上一小节"/);
-  assert.match(drumSequencerSource, /aria-label="下一小节"/);
-  assert.match(drumSequencerSource, /disabled=\{!canPageBars\}/);
-  assert.match(drumSequencerSource, /drum-seq-pager-shell/);
+  assert.match(trackBarPagerSource, /ChevronLeft/);
+  assert.match(trackBarPagerSource, /ChevronRight/);
+  assert.match(trackBarPagerSource, /aria-label="上一小节"/);
+  assert.match(trackBarPagerSource, /aria-label="下一小节"/);
+  assert.match(trackBarPagerSource, /disabled=\{!canPageBars\}/);
+  assert.match(trackBarPagerSource, /track-editor-pager-shell/);
+  assert.match(trackBarPagerSource, /track-page-btn previous/);
+  assert.match(trackBarPagerSource, /track-page-btn next/);
+  assert.match(trackBarPagerSource, /data-type=\{trackId\}/);
+  assert.match(drumSequencerSource, /TrackBarPager/);
+  assert.match(drumSequencerSource, /trackId:\s*'drums'/);
+  assert.match(chordEditorSource, /TrackBarPager/);
+  assert.match(chordEditorSource, /trackId = 'chord'/);
+  assert.match(bassEditorSource, /TrackBarPager/);
+  assert.match(bassEditorSource, /trackId = 'bass'/);
+  assert.match(melodyEditorSource, /TrackBarPager/);
+  assert.match(melodyEditorSource, /trackId = 'melody'/);
+  assert.match(trackEditorPlaceholderSource, /TrackBarPager/);
+  assert.match(trackEditorPlaceholderSource, /trackId:\s*activeTrackId/);
   assert.match(drumSequencerSource, /drum-step-groups/);
   assert.match(drumSequencerSource, /drum-step-group/);
   assert.match(drumSequencerSource, /DRUM SEQUENCER - BAR/);
@@ -439,19 +469,26 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(source, /createBasicDrumsBarWithoutKick/);
   assert.match(source, /createBasicDrumsBarWithoutKick\(\)\.forEach\(\(cell,\s*step\) => \{/);
   assert.match(source, /clearDrumsBar/);
-  assert.match(source, /getAdjacentDrumsClipBar/);
-  assert.match(source, /canPageDrumsClipBars/);
-  assert.match(source, /handlePreviousDrumsBar/);
-  assert.match(source, /handleNextDrumsBar/);
-  assert.match(source, /handlePageDrumsBar\('previous'\)/);
-  assert.match(source, /handlePageDrumsBar\('next'\)/);
+  assert.match(source, /getAdjacentTrackClipBar/);
+  assert.match(source, /canPageTrackClipBars/);
+  assert.doesNotMatch(source, /getAdjacentDrumsClipBar/);
+  assert.doesNotMatch(source, /canPageDrumsClipBars/);
+  assert.match(source, /handlePreviousBar/);
+  assert.match(source, /handleNextBar/);
+  assert.match(source, /handlePageTrackBar\('previous'\)/);
+  assert.match(source, /handlePageTrackBar\('next'\)/);
+  assert.match(source, /getAdjacentTrackClipBar\(\s*state\.clips,\s*state\.activeTrackId,\s*state\.selectedBar,\s*direction,\s*\)/);
   assert.match(bottomEditorSource, /activeTrackId === 'drums' && selectedClipId/);
-  assert.match(bottomEditorSource, /onPreviousDrumsBar/);
-  assert.match(bottomEditorSource, /onNextDrumsBar/);
-  assert.match(bottomEditorSource, /canPageDrumsBars/);
-  assert.match(bottomEditorSource, /onPreviousBar:\s*onPreviousDrumsBar/);
-  assert.match(bottomEditorSource, /onNextBar:\s*onNextDrumsBar/);
-  assert.match(bottomEditorSource, /canPageBars:\s*canPageDrumsBars/);
+  assert.match(bottomEditorSource, /canPageBars/);
+  assert.match(bottomEditorSource, /onPreviousBar/);
+  assert.match(bottomEditorSource, /onNextBar/);
+  assert.match(bottomEditorSource, /trackId:\s*activeTrackId/);
+  assert.doesNotMatch(bottomEditorSource, /onPreviousDrumsBar/);
+  assert.doesNotMatch(bottomEditorSource, /onNextDrumsBar/);
+  assert.doesNotMatch(bottomEditorSource, /canPageDrumsBars/);
+  assert.match(bottomEditorSource, /canPageBars/);
+  assert.match(bottomEditorSource, /onNextBar/);
+  assert.match(bottomEditorSource, /onPreviousBar/);
   assert.match(bottomEditorSource, /onClose:\s*onCloseEditor/);
   assert.match(bottomEditorSource, /activeTrackId === 'chord'/);
   assert.match(bottomEditorSource, /onChordPick/);
