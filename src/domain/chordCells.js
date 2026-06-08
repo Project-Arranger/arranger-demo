@@ -36,44 +36,21 @@ const PASSING_CHORD_DEFAULT_OPTIONS = Object.freeze([
 ]);
 const PASSING_CHORD_OPTIONS = Object.freeze({
   'C→Am': Object.freeze([
-    Object.freeze({ name: 'C/B', desc: '在 C 和 Am 之间创造流畅自然的过渡效果。' }),
-    Object.freeze({ name: 'E7', desc: '副属和弦手法，衔接 C 和 Am 时有较强的戏剧感。' }),
-    Object.freeze({ name: 'Bø', desc: '借助 B 音创造过渡效果，半减七色彩更特别。' }),
-  ]),
-  'C→F': Object.freeze([
-    Object.freeze({ name: 'C7', desc: 'V/IV 副属和弦，强力地把 C 解决到 F。' }),
-    Object.freeze({ name: 'F/C', desc: '保留 C 在低音，让 C → F 的过渡平滑无痕。' }),
-    Object.freeze({ name: 'Em', desc: '三级铺垫，柔和地引向下属和弦 F。' }),
-  ]),
-  'C→G': Object.freeze([
-    Object.freeze({ name: 'G/B', desc: '低音 B 顺势下行到 G，让过渡更流畅。' }),
-    Object.freeze({ name: 'D7', desc: 'V/V 副属和弦，强烈推动 V 级 G。' }),
-    Object.freeze({ name: 'Em', desc: '三级和弦色彩柔和，自然过渡到属和弦。' }),
+    Object.freeze({ name: 'C/B', desc: '下行低音 B 衔接到 Am，保留 C 和弦主体。', toneRoots: Object.freeze(['B', 'C', 'E', 'G']) }),
+    Object.freeze({ name: 'E7', desc: '用 E7 作为 Am 的副属和弦，带来明确解决感。', toneRoots: Object.freeze(['E', 'B', 'D', 'G#']) }),
+    Object.freeze({ name: 'Bø', desc: '半减七经过色彩，强化 C 到 Am 的张力。', toneRoots: Object.freeze(['B', 'D', 'F', 'A']) }),
   ]),
   'Am→F': Object.freeze([
-    Object.freeze({ name: 'Am/G', desc: '下行低音线，让 Am 到 F 的过渡更平稳。' }),
-    Object.freeze({ name: 'C7', desc: '借助 C7 的属功能，转折更明显有方向感。' }),
-    Object.freeze({ name: 'Em', desc: '小调三级铺垫，气氛更内敛、连贯。' }),
+    Object.freeze({ name: 'Am/G', desc: '下行低音 G 连接 Am 与 F，过渡更顺。', toneRoots: Object.freeze(['G', 'A', 'C', 'E']) }),
+    Object.freeze({ name: 'C7', desc: 'C7 带出下属方向，为 F 做准备。', toneRoots: Object.freeze(['C', 'E', 'G', 'A#']) }),
   ]),
   'F→G': Object.freeze([
-    Object.freeze({ name: 'F/A', desc: '转位让低音从 A 顺势走到 G，过渡自然。' }),
-    Object.freeze({ name: 'D7', desc: 'V/V 副属和弦，强烈引向 V 级 G。' }),
-    Object.freeze({ name: 'Em', desc: '三级和弦色彩柔和，铺垫属和弦的到来。' }),
+    Object.freeze({ name: 'D7', desc: 'D7 作为 G 的副属和弦，推动感更强。', toneRoots: Object.freeze(['D', 'A', 'C', 'F#']) }),
+    Object.freeze({ name: 'F#ø', desc: '半减经过和弦，以 F# 引向 G。', toneRoots: Object.freeze(['F#', 'A', 'C', 'E']) }),
   ]),
   'G→C': Object.freeze([
-    Object.freeze({ name: 'G7', desc: '加入七度色彩，形成最强的 V → I 解决倾向。' }),
-    Object.freeze({ name: 'G/B', desc: '低音 B 半音解决到 C，旋律线极为流畅。' }),
-    Object.freeze({ name: 'Em', desc: '三级铺垫，从 V 到 I 的过渡更柔和。' }),
-  ]),
-  'G→Em': Object.freeze([
-    Object.freeze({ name: 'B7', desc: 'V/vi 副属和弦，强烈推动小三级 Em。' }),
-    Object.freeze({ name: 'G/B', desc: '下行低音衔接 Em 的根音，过渡平滑。' }),
-    Object.freeze({ name: 'D7', desc: '属七色彩，制造短暂的方向性张力。' }),
-  ]),
-  'Dm→F': Object.freeze([
-    Object.freeze({ name: 'Dm/F', desc: '直接转位让低音平滑过渡到 F。' }),
-    Object.freeze({ name: 'A7', desc: 'V/ii 推动 Dm 后，再自然引向下属功能。' }),
-    Object.freeze({ name: 'C/E', desc: '上行低音线，柔和地引向 F 的稳定感。' }),
+    Object.freeze({ name: 'G#', desc: '半音上行色彩，制造回到 C 前的亮点。', toneRoots: Object.freeze(['G#', 'C', 'D#']) }),
+    Object.freeze({ name: 'Bm7(no5)', desc: '省略五音的小七色彩，让 B 到 C 的解决更清晰。', toneRoots: Object.freeze(['B', 'D', 'A']) }),
   ]),
 });
 const CHORD_TEMPLATES = Object.freeze({
@@ -153,18 +130,18 @@ const CHORD_VARIANTS = Object.freeze({
   ]),
 });
 const EXTRA_CHORD_DEFINITIONS = Object.freeze({
-  'C/B': Object.freeze({ root: 'C', chordRoot: 'C', quality: 'slash', toneRoots: Object.freeze(['C', 'E', 'G']) }),
+  'C/B': Object.freeze({ root: 'B', chordRoot: 'C', quality: 'slash', toneRoots: Object.freeze(['B', 'C', 'E', 'G']) }),
   'C/E': Object.freeze({ root: 'C', chordRoot: 'C', quality: 'slash', toneRoots: Object.freeze(['C', 'E', 'G']) }),
   C7: Object.freeze({ root: 'C', chordRoot: 'C', quality: '7', toneRoots: Object.freeze(['C', 'E', 'G', 'A#']) }),
   Cmaj7: Object.freeze({ root: 'C', chordRoot: 'C', quality: 'maj7', toneRoots: Object.freeze(['C', 'E', 'G', 'B']) }),
   Csus2: Object.freeze({ root: 'C', chordRoot: 'C', quality: 'sus2', toneRoots: Object.freeze(['C', 'D', 'G']) }),
   Csus4: Object.freeze({ root: 'C', chordRoot: 'C', quality: 'sus4', toneRoots: Object.freeze(['C', 'F', 'G']) }),
   Cadd9: Object.freeze({ root: 'C', chordRoot: 'C', quality: 'add9', toneRoots: Object.freeze(['C', 'E', 'G', 'D']) }),
-  D7: Object.freeze({ root: 'D', chordRoot: 'D', quality: '7', toneRoots: Object.freeze(['D', 'F#', 'A', 'C']) }),
+  D7: Object.freeze({ root: 'D', chordRoot: 'D', quality: '7', toneRoots: Object.freeze(['D', 'A', 'C', 'F#']) }),
   Dm: Object.freeze({ root: 'D', chordRoot: 'Dm', quality: 'min', toneRoots: Object.freeze(['D', 'F', 'A']) }),
   'Dm/F': Object.freeze({ root: 'D', chordRoot: 'Dm', quality: 'slash', toneRoots: Object.freeze(['D', 'F', 'A']) }),
   Dm7: Object.freeze({ root: 'D', chordRoot: 'Dm', quality: 'm7', toneRoots: Object.freeze(['D', 'F', 'A', 'C']) }),
-  E7: Object.freeze({ root: 'E', chordRoot: 'E', quality: '7', toneRoots: Object.freeze(['E', 'G#', 'B', 'D']) }),
+  E7: Object.freeze({ root: 'E', chordRoot: 'E', quality: '7', toneRoots: Object.freeze(['E', 'B', 'D', 'G#']) }),
   Em: Object.freeze({ root: 'E', chordRoot: 'Em', quality: 'min', toneRoots: Object.freeze(['E', 'G', 'B']) }),
   F6: Object.freeze({ root: 'F', chordRoot: 'F', quality: '6', toneRoots: Object.freeze(['F', 'A', 'C', 'D']) }),
   'F/A': Object.freeze({ root: 'F', chordRoot: 'F', quality: 'slash', toneRoots: Object.freeze(['F', 'A', 'C']) }),
@@ -180,7 +157,7 @@ const EXTRA_CHORD_DEFINITIONS = Object.freeze({
   Gadd9: Object.freeze({ root: 'G', chordRoot: 'G', quality: 'add9', toneRoots: Object.freeze(['G', 'B', 'D', 'A']) }),
   A7: Object.freeze({ root: 'A', chordRoot: 'A', quality: '7', toneRoots: Object.freeze(['A', 'C#', 'E', 'G']) }),
   Am: Object.freeze({ root: 'A', chordRoot: 'Am', quality: 'min', toneRoots: Object.freeze(['A', 'C', 'E']) }),
-  'Am/G': Object.freeze({ root: 'A', chordRoot: 'Am', quality: 'slash', toneRoots: Object.freeze(['A', 'C', 'E']) }),
+  'Am/G': Object.freeze({ root: 'G', chordRoot: 'Am', quality: 'slash', toneRoots: Object.freeze(['G', 'A', 'C', 'E']) }),
   Am6: Object.freeze({ root: 'A', chordRoot: 'Am', quality: 'm6', toneRoots: Object.freeze(['A', 'C', 'E', 'F#']) }),
   Am7: Object.freeze({ root: 'A', chordRoot: 'Am', quality: 'm7', toneRoots: Object.freeze(['A', 'C', 'E', 'G']) }),
   Am9: Object.freeze({ root: 'A', chordRoot: 'Am', quality: 'm9', toneRoots: Object.freeze(['A', 'C', 'E', 'G', 'B']) }),
@@ -188,6 +165,8 @@ const EXTRA_CHORD_DEFINITIONS = Object.freeze({
   B7: Object.freeze({ root: 'B', chordRoot: 'B', quality: '7', toneRoots: Object.freeze(['B', 'D#', 'F#', 'A']) }),
   Bdim: Object.freeze({ root: 'B', chordRoot: 'Bdim', quality: 'dim', toneRoots: Object.freeze(['B', 'D', 'F']) }),
   'Bø': Object.freeze({ root: 'B', chordRoot: 'Bdim', quality: 'half-dim7', toneRoots: Object.freeze(['B', 'D', 'F', 'A']) }),
+  'Bm7(no5)': Object.freeze({ root: 'B', chordRoot: 'Bm', quality: 'm7-no5', toneRoots: Object.freeze(['B', 'D', 'A']) }),
+  'F#ø': Object.freeze({ root: 'F#', chordRoot: 'F#dim', quality: 'half-dim7', toneRoots: Object.freeze(['F#', 'A', 'C', 'E']) }),
 });
 
 function isChordRoot(root) {
@@ -256,6 +235,14 @@ function createChordTonePitches(root, toneRoots) {
     previousToneIndex = toneIndex;
     return `${toneRoot}${octave}`;
   }).filter(Boolean);
+}
+
+function createPassingChordTonePitches(toneRoots) {
+  if (!Array.isArray(toneRoots)) return [];
+
+  return toneRoots
+    .map((toneRoot) => (isChordRoot(toneRoot) ? `${toneRoot}${DEFAULT_CHORD_GRID_OCTAVE}` : null))
+    .filter(Boolean);
 }
 
 function createMajorDefinition(root) {
@@ -421,6 +408,11 @@ function isChordCellActive(cell, root, columnIndex = 0) {
   if (cell?.type !== 'chord') return false;
 
   const toneRoots = cell.toneRoots ?? getChordToneRoots(cell.label);
+  if (isPassingChordCell(cell)) {
+    if (isChordGridPitch(root)) return createPassingChordTonePitches(toneRoots).includes(root);
+    return toneRoots.includes(root);
+  }
+
   if (isChordGridPitch(root)) return createChordTonePitches(cell.root, toneRoots).includes(root);
   return toneRoots.includes(root);
 }
@@ -444,6 +436,7 @@ export {
   createChordNoteCell,
   createChordNotesCell,
   createPassingChordCell,
+  createPassingChordTonePitches,
   createChordTonePitches,
   getChordDefinition,
   getChordCellNotes,

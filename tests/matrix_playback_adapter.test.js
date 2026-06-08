@@ -226,9 +226,12 @@ test('matrix playback adapter plays groove-authored short chord hits on any sixt
   ]);
 });
 
-test('matrix playback adapter plays passing shortcut chords at step fifteen', () => {
+test('matrix playback adapter plays passing shortcut chord table tones at step fifteen', () => {
   const matrix = createInitialMatrix();
-  matrix.chord[0][14] = createPassingChordCell('E7');
+  matrix.chord[0][14] = createPassingChordCell('C/B');
+  matrix.chord[1][14] = createPassingChordCell('E7');
+  matrix.chord[2][14] = createPassingChordCell('F#ø');
+  matrix.chord[3][14] = createPassingChordCell('Bm7(no5)');
 
   const adapter = createMatrixPlaybackAdapter(() => matrix);
 
@@ -238,10 +241,49 @@ test('matrix playback adapter plays passing shortcut chords at step fifteen', ()
       trackId: 'chord',
       bar: 0,
       step: 14,
+      root: 'B',
+      quality: 'slash',
+      label: 'C/B',
+      notes: ['B4', 'C4', 'E4', 'G4'],
+      duration: '16n',
+    },
+  ]);
+  assert.deepEqual(adapter.getEventsForStep(1, 14), [
+    {
+      type: 'chord',
+      trackId: 'chord',
+      bar: 1,
+      step: 14,
       root: 'E',
       quality: '7',
       label: 'E7',
-      notes: ['E4', 'G#4', 'B4', 'D5'],
+      notes: ['E4', 'B4', 'D4', 'G#4'],
+      duration: '16n',
+    },
+  ]);
+  assert.deepEqual(adapter.getEventsForStep(2, 14), [
+    {
+      type: 'chord',
+      trackId: 'chord',
+      bar: 2,
+      step: 14,
+      root: 'F#',
+      quality: 'half-dim7',
+      label: 'F#ø',
+      notes: ['F#4', 'A4', 'C4', 'E4'],
+      duration: '16n',
+    },
+  ]);
+  assert.deepEqual(adapter.getEventsForStep(3, 14), [
+    {
+      type: 'chord',
+      trackId: 'chord',
+      bar: 3,
+      step: 14,
+      root: 'B',
+      quality: 'm7-no5',
+      label: 'Bm7(no5)',
+      notes: ['B4', 'D4', 'A4'],
       duration: '16n',
     },
   ]);

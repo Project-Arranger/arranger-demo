@@ -115,6 +115,17 @@ test('passing chord shortcut labels stay separate from beat header labels', () =
   let matrix = createInitialMatrix();
   matrix = setChordStepChord(matrix, 2, 14, 'C/B');
 
+  assert.deepEqual(matrix.chord[2][14], {
+    type: 'chord',
+    root: 'B',
+    chordRoot: 'C',
+    quality: 'slash',
+    label: 'C/B',
+    toneRoots: ['B', 'C', 'E', 'G'],
+    duration: '16n',
+    grooveTemplateId: 'passing-shortcut',
+    sourceChordLabel: 'C/B',
+  });
   assert.equal(getChordSpanDisplayLabel(matrix, 2, 3), null);
   assert.equal(getPassingChordDisplayLabel(matrix, 2, 14), 'C/B');
   assert.deepEqual(getChordBeatDisplaySegments(matrix, 2)[3], {
@@ -296,11 +307,11 @@ test('setChordStepChord writes a passing chord to one exact step only', () => {
   assert.notEqual(nextMatrix.chord[2], matrix.chord[2]);
   assert.deepEqual(nextMatrix.chord[2][14], {
     type: 'chord',
-    root: 'C',
+    root: 'B',
     chordRoot: 'C',
     quality: 'slash',
     label: 'C/B',
-    toneRoots: ['C', 'E', 'G'],
+    toneRoots: ['B', 'C', 'E', 'G'],
     duration: '16n',
     grooveTemplateId: 'passing-shortcut',
     sourceChordLabel: 'C/B',
