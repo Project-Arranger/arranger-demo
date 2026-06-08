@@ -9,6 +9,7 @@ import {
   createChordTonePitches,
   getChordCellNotes,
   getChordDefinition,
+  getChordRemovedTonePitches,
   getChordNoteOctave,
   getChordNotePitch,
   getChordToneRoots,
@@ -53,15 +54,17 @@ function createSingleNotes(noteRoots) {
   return noteRoots.map((noteRoot) => getChordNotePitch(noteRoot)).filter(Boolean);
 }
 
-function createChordNotesWithAddedNotes(root, toneRoots, addedNotes) {
+function createChordNotesWithAddedNotes(root, toneRoots, addedNotes, removedTonePitches = []) {
   const legacyAddedNotes = addedNotes.filter((note) => getChordNoteOctave(note) === null);
   const exactAddedNotes = addedNotes
     .filter((note) => getChordNoteOctave(note) !== null)
     .map((note) => getChordNotePitch(note))
     .filter(Boolean);
+  const removedPitches = new Set(removedTonePitches);
 
   return [
-    ...createNotesFromToneRoots(root, [...toneRoots, ...legacyAddedNotes]),
+    ...createNotesFromToneRoots(root, toneRoots).filter((note) => !removedPitches.has(note)),
+    ...createNotesFromToneRoots(root, legacyAddedNotes),
     ...exactAddedNotes,
   ];
 }
@@ -101,7 +104,12 @@ function extractChordEvent(cell, bar, step) {
   const addedNotes = getChordCellNotes(cell);
   if (isGrooveChordHit(cell)) {
     const toneRoots = cell.toneRoots ?? getChordToneRoots(cell.label ?? cell.root);
-    const notes = createChordNotesWithAddedNotes(cell.root, toneRoots, addedNotes);
+    const notes = createChordNotesWithAddedNotes(
+      cell.root,
+      toneRoots,
+      addedNotes,
+      getChordRemovedTonePitches(cell),
+    );
     if (!notes.length) return null;
 
     return {
@@ -135,7 +143,12 @@ function extractChordEvent(cell, bar, step) {
   }
 
   const toneRoots = cell.toneRoots ?? getChordToneRoots(cell.label ?? cell.root);
-  const notes = createChordNotesWithAddedNotes(cell.root, toneRoots, addedNotes);
+  const notes = createChordNotesWithAddedNotes(
+    cell.root,
+    toneRoots,
+    addedNotes,
+    getChordRemovedTonePitches(cell),
+  );
   if (!notes.length) return null;
 
   return {

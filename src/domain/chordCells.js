@@ -232,6 +232,38 @@ function createPassingChordTonePitches(toneRoots) {
   return createChordTonePitches(null, toneRoots);
 }
 
+function normalizeRemovedTonePitches(notes, allowedTonePitches = null) {
+  if (!Array.isArray(notes)) return [];
+
+  return notes.reduce((uniquePitches, note) => {
+    const pitch = getChordNotePitch(note);
+    if (!pitch || !isChordGridPitch(pitch)) return uniquePitches;
+    if (allowedTonePitches && !allowedTonePitches.includes(pitch)) return uniquePitches;
+    if (!uniquePitches.includes(pitch)) uniquePitches.push(pitch);
+    return uniquePitches;
+  }, []);
+}
+
+function getChordBaseTonePitches(cell) {
+  if (cell?.type !== 'chord') return [];
+
+  const toneRoots = cell.toneRoots ?? getChordToneRoots(cell.label);
+  return createChordTonePitches(cell.root, toneRoots);
+}
+
+function getChordRemovedTonePitches(cell) {
+  if (cell?.type !== 'chord') return [];
+
+  return normalizeRemovedTonePitches(cell.removedTonePitches, getChordBaseTonePitches(cell));
+}
+
+function getChordEffectiveTonePitches(cell) {
+  if (cell?.type !== 'chord') return [];
+
+  const removedTonePitches = getChordRemovedTonePitches(cell);
+  return getChordBaseTonePitches(cell).filter((pitch) => !removedTonePitches.includes(pitch));
+}
+
 function createMajorDefinition(root) {
   const rootIndex = CHORD_ROOTS.indexOf(root);
   if (rootIndex === -1) return null;
@@ -362,23 +394,48 @@ function getChordCellNotes(cell) {
   return [];
 }
 
-function withChordAddedNotes(cell, notes) {
+function withChordManualNotes(cell, notes, removedTonePitches) {
   const normalizedNotes = normalizeChordNotes(notes);
+  const normalizedRemovedTonePitches = normalizeRemovedTonePitches(
+    removedTonePitches,
+    getChordBaseTonePitches(cell),
+  );
   const baseCell = { ...cell };
   delete baseCell.addedNotes;
+  delete baseCell.removedTonePitches;
 
-  return normalizedNotes.length ? { ...baseCell, addedNotes: normalizedNotes } : baseCell;
+  return {
+    ...baseCell,
+    ...(normalizedNotes.length ? { addedNotes: normalizedNotes } : {}),
+    ...(normalizedRemovedTonePitches.length ? { removedTonePitches: normalizedRemovedTonePitches } : {}),
+  };
 }
 
 function toggleChordNoteCell(cell, note) {
   if (!isChordNoteLabel(note)) return null;
+
+  if (cell?.type === 'chord') {
+    const notePitch = getChordNotePitch(note);
+    const baseTonePitches = getChordBaseTonePitches(cell);
+    if (notePitch && baseTonePitches.includes(notePitch)) {
+      const removedTonePitches = getChordRemovedTonePitches(cell);
+      const nextRemovedTonePitches = removedTonePitches.includes(notePitch)
+        ? removedTonePitches.filter((pitch) => pitch !== notePitch)
+        : [...removedTonePitches, notePitch];
+      const nextNotes = getChordCellNotes(cell).filter((currentNote) => (
+        !doChordNotesMatch(currentNote, notePitch)
+      ));
+
+      return withChordManualNotes(cell, nextNotes, nextRemovedTonePitches);
+    }
+  }
 
   const currentNotes = getChordCellNotes(cell);
   const nextNotes = currentNotes.some((currentNote) => doChordNotesMatch(currentNote, note))
     ? currentNotes.filter((currentNote) => !doChordNotesMatch(currentNote, note))
     : [...currentNotes, note];
 
-  if (cell?.type === 'chord') return withChordAddedNotes(cell, nextNotes);
+  if (cell?.type === 'chord') return withChordManualNotes(cell, nextNotes, getChordRemovedTonePitches(cell));
   return createChordNotesCell(nextNotes);
 }
 
@@ -394,8 +451,10 @@ function isChordCellActive(cell, root, columnIndex = 0) {
   }
   if (cell?.type !== 'chord') return false;
 
-  const toneRoots = cell.toneRoots ?? getChordToneRoots(cell.label);
-  if (isChordGridPitch(root)) return createChordTonePitches(cell.root, toneRoots).includes(root);
+  if (isChordGridPitch(root)) return getChordEffectiveTonePitches(cell).includes(root);
+  const toneRoots = getChordEffectiveTonePitches(cell)
+    .map((pitch) => getChordNoteRoot(pitch))
+    .filter(Boolean);
   return toneRoots.includes(root);
 }
 
@@ -422,6 +481,8 @@ export {
   createChordTonePitches,
   getChordDefinition,
   getChordCellNotes,
+  getChordEffectiveTonePitches,
+  getChordRemovedTonePitches,
   getDoowopPassingTargetChord,
   getChordNoteOctave,
   getChordNotePitch,

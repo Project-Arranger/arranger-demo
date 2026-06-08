@@ -82,16 +82,70 @@ test('getChordCell reads span start cells only', () => {
   assert.equal(getChordCell(matrix, 8, 0), null);
 });
 
-test('chord display labels keep added notes scoped to each beat', () => {
+test('chord display labels keep chord headers fixed while preserving added notes', () => {
   let matrix = createInitialMatrix();
   matrix = setChordCell(matrix, 0, 0, 'C');
   matrix = setChordCell(matrix, 0, 1, 'F');
   matrix = setChordNoteCell(matrix, 0, 0, 2, 'D');
   matrix = setChordNoteCell(matrix, 0, 1, 2, 'E');
 
-  assert.equal(getChordSpanDisplayLabel(matrix, 0, 0), 'C + D');
-  assert.equal(getChordSpanDisplayLabel(matrix, 0, 1), 'F + E');
-  assert.equal(getChordBarDisplayLabel(matrix, 0), 'C + D');
+  assert.equal(getChordSpanDisplayLabel(matrix, 0, 0), 'C');
+  assert.equal(getChordSpanDisplayLabel(matrix, 0, 1), 'F');
+  assert.equal(getChordBarDisplayLabel(matrix, 0), 'C');
+  assert.deepEqual(matrix.chord[0][2], { type: 'notes', notes: ['D'], label: 'D' });
+  assert.deepEqual(matrix.chord[0][6], { type: 'notes', notes: ['E'], label: 'E' });
+});
+
+test('chord display labels ignore removed tones and keep explicit replacements', () => {
+  let matrix = createInitialMatrix();
+  matrix = setChordCell(matrix, 0, 0, 'C');
+  matrix = toggleChordNoteStep(matrix, 0, 0, 0, 'C4');
+  matrix = toggleChordNoteStep(matrix, 0, 0, 0, 'C5');
+
+  assert.deepEqual(matrix.chord[0][0], {
+    type: 'chord',
+    root: 'C',
+    chordRoot: 'C',
+    quality: 'maj',
+    label: 'C',
+    toneRoots: ['C', 'E', 'G'],
+    removedTonePitches: ['C4'],
+    addedNotes: ['C5'],
+  });
+  assert.equal(getChordSpanDisplayLabel(matrix, 0, 0), 'C');
+  assert.equal(getChordBarDisplayLabel(matrix, 0), 'C');
+});
+
+test('rich chord replacement preserves valid removed tones and drops invalid removed tones', () => {
+  let matrix = createInitialMatrix();
+  matrix = setChordCell(matrix, 0, 0, 'C');
+  matrix = toggleChordNoteStep(matrix, 0, 0, 0, 'C4');
+  matrix = toggleChordNoteStep(matrix, 0, 0, 0, 'C5');
+
+  const richMatrix = setChordEnrichTarget(matrix, 0, 0, 'Cmaj7');
+
+  assert.deepEqual(richMatrix.chord[0][0], {
+    type: 'chord',
+    root: 'C',
+    chordRoot: 'C',
+    quality: 'maj7',
+    label: 'Cmaj7',
+    toneRoots: ['C', 'E', 'G', 'B'],
+    addedNotes: ['C5'],
+    removedTonePitches: ['C4'],
+  });
+
+  const changedRootMatrix = setChordEnrichTarget(richMatrix, 0, 0, 'G7');
+
+  assert.deepEqual(changedRootMatrix.chord[0][0], {
+    type: 'chord',
+    root: 'G',
+    chordRoot: 'G',
+    quality: '7',
+    label: 'G7',
+    toneRoots: ['G', 'B', 'D', 'F'],
+    addedNotes: ['C5'],
+  });
 });
 
 test('chord display labels use groove source chord labels and merge arpeggio spans', () => {

@@ -80,8 +80,8 @@ test('createTimelineTracks decorates chord clips with the current chord label', 
   });
   const chord = tracks.find((track) => track.id === 'chord');
 
-  assert.equal(chord.clip.chordLabel, 'Cmaj7 + A');
-  assert.equal(chord.bars[2].clip.chordLabel, 'Cmaj7 + A');
+  assert.equal(chord.clip.chordLabel, 'Cmaj7');
+  assert.equal(chord.bars[2].clip.chordLabel, 'Cmaj7');
 });
 
 test('createTimelineTracks marks drums clips with matrix content as non-empty', () => {

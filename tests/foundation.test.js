@@ -3,7 +3,6 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 const requiredFiles = [
-  'src/data/chords.js',
   'src/data/bassNotes.js',
   'src/data/melodyScales.js',
   'src/data/drumsNotes.js',
@@ -19,8 +18,12 @@ test('foundation assets and music data are present', () => {
   }
 });
 
+test('stale chord pitch library is removed from the runtime data set', () => {
+  assert.equal(existsSync('src/data/chords.js'), false);
+});
+
 test('new v0.22 sample assets are playable wav files', () => {
-  for (const file of requiredFiles.slice(4)) {
+  for (const file of requiredFiles.slice(3)) {
     const header = readFileSync(file).subarray(0, 12);
     assert.equal(header.subarray(0, 4).toString('ascii'), 'RIFF');
     assert.equal(header.subarray(8, 12).toString('ascii'), 'WAVE');

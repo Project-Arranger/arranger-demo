@@ -16,6 +16,7 @@ import {
   createChordNotesCell,
   createChordTonePitches,
   getChordCellNotes,
+  getChordEffectiveTonePitches,
   getDoowopPassingTargetChord,
   getPassingChordOptions,
   getChordVariantOptions,
@@ -363,4 +364,42 @@ test('chord cells can carry added notes without changing the main chord label', 
   assert.deepEqual(toggleChordNoteCell(enrichedCell, 'F').addedNotes, ['D', 'F']);
   assert.deepEqual(toggleChordNoteCell(enrichedCell, 'F5').addedNotes, ['D', 'F5']);
   assert.deepEqual(toggleChordNoteCell({ ...cCell, addedNotes: ['D'] }, 'D'), cCell);
+});
+
+test('chord tones can be muted and replaced with explicit octave notes', () => {
+  const cCell = createChordCell('C');
+  const mutedRootCell = toggleChordNoteCell(cCell, 'C4');
+
+  assert.deepEqual(mutedRootCell, {
+    ...cCell,
+    removedTonePitches: ['C4'],
+  });
+  assert.deepEqual(getChordEffectiveTonePitches(mutedRootCell), ['E4', 'G4']);
+  assert.equal(isChordCellActive(mutedRootCell, 'C4'), false);
+  assert.equal(isChordCellActive(mutedRootCell, 'E4'), true);
+  assert.equal(isChordCellActive(mutedRootCell, 'G4'), true);
+  assert.deepEqual(toggleChordNoteCell(mutedRootCell, 'C4'), cCell);
+
+  const replacedRootCell = toggleChordNoteCell(mutedRootCell, 'C5');
+
+  assert.deepEqual(replacedRootCell, {
+    ...cCell,
+    removedTonePitches: ['C4'],
+    addedNotes: ['C5'],
+  });
+  assert.equal(isChordCellActive(replacedRootCell, 'C4'), false);
+  assert.equal(isChordAddedNoteActive(replacedRootCell, 'C5'), true);
+  assert.deepEqual(getChordEffectiveTonePitches(replacedRootCell), ['E4', 'G4']);
+});
+
+test('clicking another octave does not automatically mute the fourth-octave tone', () => {
+  const cCell = createChordCell('C');
+  const cWithHighRoot = toggleChordNoteCell(cCell, 'C5');
+
+  assert.deepEqual(cWithHighRoot, {
+    ...cCell,
+    addedNotes: ['C5'],
+  });
+  assert.equal(isChordCellActive(cWithHighRoot, 'C4'), true);
+  assert.equal(isChordAddedNoteActive(cWithHighRoot, 'C5'), true);
 });

@@ -154,6 +154,24 @@ test('extractChordEvent reads chord cells into playable chord events', () => {
       duration: '4n',
     },
   );
+  assert.deepEqual(
+    extractChordEvent({ type: 'chord', root: 'C', chordRoot: 'C', quality: 'maj', label: 'C', toneRoots: ['C', 'E', 'G'], removedTonePitches: ['C4'], addedNotes: ['C5'] }, 2, 4),
+    {
+      type: 'chord',
+      trackId: 'chord',
+      bar: 2,
+      step: 4,
+      root: 'C',
+      quality: 'maj',
+      label: 'C',
+      notes: ['E4', 'G4', 'C5'],
+      duration: '4n',
+    },
+  );
+  assert.deepEqual(
+    extractChordEvent({ type: 'chord', root: 'C', chordRoot: 'C', quality: 'maj', label: 'C', toneRoots: ['C', 'E', 'G'], removedTonePitches: ['C4'], addedNotes: ['C5', 'D'] }, 2, 4)?.notes,
+    ['E4', 'G4', 'D4', 'C5'],
+  );
 });
 
 test('matrix playback adapter treats Beat 1 column 2 as sustain and plays multi-notes separately', () => {

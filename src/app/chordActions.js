@@ -10,6 +10,7 @@ import {
   createChordTonePitches,
   createPassingChordCell,
   getChordCellNotes,
+  getChordRemovedTonePitches,
   getChordSpanStep,
   isPassingChordCell,
   toggleChordNoteCell,
@@ -72,8 +73,20 @@ function createChordCellWithPreviousNotes(root, previousCell) {
   const cell = createChordCell(root);
   if (!cell) return null;
 
+  return mergeChordManualNotes(cell, previousCell);
+}
+
+function mergeChordManualNotes(cell, previousCell) {
   const addedNotes = getChordCellNotes(previousCell);
-  return addedNotes.length ? { ...cell, addedNotes } : cell;
+  const tonePitches = createChordTonePitches(cell.root, cell.toneRoots);
+  const removedTonePitches = getChordRemovedTonePitches(previousCell)
+    .filter((pitch) => tonePitches.includes(pitch));
+
+  return {
+    ...cell,
+    ...(addedNotes.length ? { addedNotes } : {}),
+    ...(removedTonePitches.length ? { removedTonePitches } : {}),
+  };
 }
 
 function setChordStepCells(matrix, barIndex, cellsByStep) {
@@ -165,10 +178,12 @@ function getGrooveHitIndex(bar, step, grooveTemplateId) {
 }
 
 function createEnrichedGrooveCell(previousCell, chordName, hitIndex) {
-  const chordCell = createChordCell(chordName);
-  if (!chordCell || !previousCell?.grooveTemplateId) return null;
+  if (!previousCell?.grooveTemplateId) return null;
 
   if (previousCell.type === 'chord') {
+    const chordCell = createChordCellWithPreviousNotes(chordName, previousCell);
+    if (!chordCell) return null;
+
     return {
       ...chordCell,
       ...(previousCell.duration ? { duration: previousCell.duration } : {}),
@@ -178,6 +193,9 @@ function createEnrichedGrooveCell(previousCell, chordName, hitIndex) {
   }
 
   if (previousCell.type === 'notes') {
+    const chordCell = createChordCell(chordName);
+    if (!chordCell) return null;
+
     const note = getGrooveNoteAt(getChordTonePitches(chordName), hitIndex);
     const noteCell = note ? createChordNotesCell([note]) : null;
     return noteCell ? {
@@ -264,15 +282,7 @@ function getChordSpanDisplayLabel(matrix, barIndex, spanIndex) {
   const mainCell = getChordCell(matrix, barIndex, spanIndex);
   if (mainCell?.type !== 'chord') return null;
 
-  const addedNotes = cells.reduce((notes, cell) => {
-    if (isPassingChordCell(cell)) return notes;
-    getChordCellNotes(cell).forEach((note) => {
-      if (!notes.includes(note)) notes.push(note);
-    });
-    return notes;
-  }, []);
-
-  return addedNotes.length ? `${mainCell.label} + ${addedNotes.join('/')}` : mainCell.label;
+  return mainCell.label;
 }
 
 function getChordEnrichTargetLabel(matrix, barIndex, spanIndex) {
