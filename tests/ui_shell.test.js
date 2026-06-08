@@ -216,6 +216,11 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.doesNotMatch(addChordPopoverSource, /className="cv-custom"/);
   assert.match(addChordPopoverSource, /data-action="preview"/);
   assert.match(chordEditorSource, /CHORD_GRID_PITCHES\.flatMap/);
+  assert.match(chordEditorSource, /const \[hoveredPitchRow,\s*setHoveredPitchRow\] = useState\(null\);/);
+  assert.match(chordEditorSource, /CHORD_GRID_PITCHES\.map\(\(note,\s*rowIndex\)/);
+  assert.match(chordEditorSource, /'row-hovered'/);
+  assert.match(chordEditorSource, /onPointerEnter=\{\(\) => setHoveredPitchRow\(rowIndex\)\}/);
+  assert.match(chordEditorSource, /onPointerLeave=\{\(\) => setHoveredPitchRow\(null\)\}/);
   assert.match(chordEditorSource, /usePitchScrollSync/);
   assert.match(chordEditorSource, /scalePitchViewportRef/);
   assert.match(pitchScrollSyncSource, /beatCellsViewportRefs/);
@@ -491,6 +496,12 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(melodyEditorSource, /Scale Picker/);
   assert.doesNotMatch(melodyEditorSource, /className="melody-beat-number-row"/);
   assert.doesNotMatch(melodyEditorSource, /className="beat-num mono"/);
+  assert.match(melodyEditorSource, /const \[hoveredPitchRow,\s*setHoveredPitchRow\] = useState\(null\);/);
+  assert.match(melodyEditorSource, /MELODY_RAIL_NOTES\.map\(\(note,\s*rowIndex\)/);
+  assert.match(melodyEditorSource, /className="pitch-grid-head-spacer"/);
+  assert.match(melodyEditorSource, /'row-hovered'/);
+  assert.match(melodyEditorSource, /onPointerEnter=\{\(\) => setHoveredPitchRow\(rowIndex\)\}/);
+  assert.match(melodyEditorSource, /onPointerLeave=\{\(\) => setHoveredPitchRow\(null\)\}/);
   assert.match(melodyDataSource, /自然大调音阶/);
   assert.match(melodyDataSource, /五声音阶/);
   assert.match(melodyEditorSource, /清空本小节/);
@@ -533,6 +544,12 @@ test('app exposes the bass editor and existing-clip groove template workflow', a
   assert.match(bassEditorSource, /Bass · Phrase/);
   assert.match(bassEditorSource, /BASS EDITOR - BAR/);
   assert.match(bassEditorSource, /BASS_NOTES\.flatMap/);
+  assert.match(bassEditorSource, /const \[hoveredPitchRow,\s*setHoveredPitchRow\] = useState\(null\);/);
+  assert.match(bassEditorSource, /BASS_NOTES\.map\(\(note,\s*rowIndex\)/);
+  assert.match(bassEditorSource, /className="pitch-grid-head-spacer"/);
+  assert.match(bassEditorSource, /'row-hovered'/);
+  assert.match(bassEditorSource, /onPointerEnter=\{\(\) => setHoveredPitchRow\(rowIndex\)\}/);
+  assert.match(bassEditorSource, /onPointerLeave=\{\(\) => setHoveredPitchRow\(null\)\}/);
   assert.match(bassEditorSource, /usePitchScrollSync/);
   assert.match(bassEditorSource, /scalePitchViewportRef/);
   assert.match(bassEditorSource, /setBeatCellsViewportRef/);

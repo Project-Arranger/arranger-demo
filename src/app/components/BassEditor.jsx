@@ -56,6 +56,7 @@ function BassEditor({
 }) {
   const [pickerMode, setPickerMode] = useState(null);
   const [selectedGrooveTemplateId, setSelectedGrooveTemplateId] = useState('bass-8th-basic');
+  const [hoveredPitchRow, setHoveredPitchRow] = useState(null);
   const groovePickerOpen = pickerMode === 'groove';
   const closeBassPicker = useCallback(() => setPickerMode(null), []);
   const {
@@ -164,16 +165,20 @@ function BassEditor({
             onScroll={handlePitchViewportScroll}
           >
             <div className="scale-notes bass-scale-notes">
-              {BASS_NOTES.map((note) => (
+              {BASS_NOTES.map((note, rowIndex) => (
                 <button
                   className={[
                     'note-key',
                     'bass-note-key',
                     note.sharp ? 'sharp' : '',
                     note.root ? 'root' : '',
+                    hoveredPitchRow === rowIndex ? 'row-hovered' : '',
                   ].filter(Boolean).join(' ')}
+                  data-row={rowIndex}
                   key={note.note}
                   type="button"
+                  onPointerEnter={() => setHoveredPitchRow(rowIndex)}
+                  onPointerLeave={() => setHoveredPitchRow(null)}
                   onClick={() => onBassPreview(note.note)}
                 >
                   {note.label}
@@ -203,6 +208,7 @@ function BassEditor({
                 key={beatNumber}
                 style={{ gridColumn: beatIndex + 1 }}
               >
+                <div className="pitch-grid-head-spacer" aria-hidden="true" />
                 <div
                   className="beat-cells-viewport"
                   ref={(viewport) => setBeatCellsViewportRef(beatIndex, viewport)}
@@ -221,6 +227,7 @@ function BassEditor({
                               'bass-cell',
                               note.sharp ? 'sharp' : '',
                               active ? 'active' : '',
+                              hoveredPitchRow === rowIndex ? 'row-hovered' : '',
                             ].filter(Boolean).join(' ')}
                             data-row={rowIndex}
                             data-col={colIndex}
@@ -229,6 +236,8 @@ function BassEditor({
                             type="button"
                             aria-label={`${note.note} beat ${beatNumber}.${stepNumber}`}
                             aria-pressed={active}
+                            onPointerEnter={() => setHoveredPitchRow(rowIndex)}
+                            onPointerLeave={() => setHoveredPitchRow(null)}
                             onClick={() => onBassStepToggle(step, note.note)}
                           />
                         );

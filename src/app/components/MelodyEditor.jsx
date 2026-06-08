@@ -71,6 +71,7 @@ function MelodyEditor({
 }) {
   const [pickerMode, setPickerMode] = useState(null);
   const [playingKeys, setPlayingKeys] = useState(() => new Set());
+  const [hoveredPitchRow, setHoveredPitchRow] = useState(null);
   const activeScale = getMelodyScale(melodyScaleId);
   const activeNoteNames = useMemo(() => new Set(
     [...playingKeys]
@@ -214,7 +215,7 @@ function MelodyEditor({
             {renderIcon(ChevronUp)}
           </button>
           <div className="scale-notes melody-scale-notes">
-            {MELODY_RAIL_NOTES.map((note) => (
+            {MELODY_RAIL_NOTES.map((note, rowIndex) => (
               <div
                 className={[
                   'note-key',
@@ -222,8 +223,12 @@ function MelodyEditor({
                   note.sharp ? 'sharp' : '',
                   note.root ? 'root' : '',
                   activeNoteNames.has(note.label) ? 'playing' : '',
+                  hoveredPitchRow === rowIndex ? 'row-hovered' : '',
                 ].filter(Boolean).join(' ')}
+                data-row={rowIndex}
                 key={note.label}
+                onPointerEnter={() => setHoveredPitchRow(rowIndex)}
+                onPointerLeave={() => setHoveredPitchRow(null)}
               >
                 {note.label}
               </div>
@@ -240,6 +245,7 @@ function MelodyEditor({
 
             return (
               <div className="melody-beat-group" key={beatNumber}>
+                <div className="pitch-grid-head-spacer" aria-hidden="true" />
                 <div className="beat-cells melody-beat-cells">
                   {MELODY_RAIL_NOTES.flatMap((note, rowIndex) => (
                     BEAT_NUMBERS.map((stepNumber, colIndex) => {
@@ -253,6 +259,7 @@ function MelodyEditor({
                             note.sharp ? 'sharp' : '',
                             colIndex === 0 ? 'downbeat' : '',
                             active ? 'active' : '',
+                            hoveredPitchRow === rowIndex ? 'row-hovered' : '',
                           ].filter(Boolean).join(' ')}
                           data-row={rowIndex}
                           data-col={colIndex}
@@ -261,6 +268,8 @@ function MelodyEditor({
                           type="button"
                           aria-label={`${note.note} beat ${beatNumber}.${stepNumber}`}
                           aria-pressed={active}
+                          onPointerEnter={() => setHoveredPitchRow(rowIndex)}
+                          onPointerLeave={() => setHoveredPitchRow(null)}
                           onClick={() => onMelodyStepToggle(step, note.note)}
                         />
                       );

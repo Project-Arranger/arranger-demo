@@ -1794,6 +1794,9 @@ button {
   --chord-cell-grid-height: 220px;
   --chord-cell-gap: 3px;
   --chord-cell-padding: 6px;
+  --pitch-rail-head-height: var(--chord-beat-head-height);
+  --pitch-row-hover: var(--c-chord);
+  --pitch-row-hover-ink: var(--c-chord-ink);
   display: grid;
   grid-template-columns: 64px 1fr;
   min-height: 0;
@@ -1802,7 +1805,7 @@ button {
 
 .scale-rail {
   display: grid;
-  grid-template-rows: 22px var(--chord-cell-grid-height) 22px;
+  grid-template-rows: var(--pitch-rail-head-height) var(--chord-cell-grid-height) 22px;
   gap: var(--chord-beat-gap);
   min-height: 0;
   padding: 14px 8px 16px 14px;
@@ -1810,6 +1813,7 @@ button {
 }
 
 .scale-arrow {
+  align-self: center;
   height: 22px;
   border: 1px solid var(--border-soft);
   border-radius: 7px;
@@ -1874,6 +1878,20 @@ button {
   box-shadow: inset 2px 0 0 var(--c-chord-ink);
 }
 
+.note-key.row-hovered {
+  color: var(--pitch-row-hover-ink);
+  background: color-mix(in oklab, var(--pitch-row-hover) 72%, white);
+  border-color: color-mix(in oklab, var(--pitch-row-hover-ink) 36%, var(--border));
+  outline: 2px solid color-mix(in oklab, var(--pitch-row-hover-ink) 30%, transparent);
+  outline-offset: -2px;
+}
+
+.note-key.sharp.row-hovered {
+  color: white;
+  background: color-mix(in oklab, var(--pitch-row-hover-ink) 88%, black);
+  border-color: color-mix(in oklab, var(--pitch-row-hover) 44%, white);
+}
+
 .chord-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(128px, 1fr));
@@ -1892,6 +1910,13 @@ button {
   gap: var(--chord-beat-gap);
   min-width: 0;
   min-height: 0;
+}
+
+.pitch-grid-head-spacer {
+  flex: 0 0 var(--pitch-rail-head-height);
+  height: var(--pitch-rail-head-height);
+  min-height: var(--pitch-rail-head-height);
+  pointer-events: none;
 }
 
 .beat-head {
@@ -2029,7 +2054,24 @@ button {
   transform: translateY(-1px);
 }
 
+.cell.row-hovered,
+.melody-cell.row-hovered,
+.bass-cell.row-hovered {
+  border-color: color-mix(in oklab, var(--pitch-row-hover-ink) 36%, var(--border));
+  outline: 2px solid color-mix(in oklab, var(--pitch-row-hover-ink) 32%, transparent);
+  outline-offset: -2px;
+}
+
+.cell.row-hovered:not(.active):not(.added),
+.melody-cell.row-hovered:not(.active),
+.bass-cell.row-hovered:not(.active) {
+  background: color-mix(in oklab, var(--pitch-row-hover) 46%, white);
+}
+
 .melody-seq-body {
+  --pitch-rail-head-height: 22px;
+  --pitch-row-hover: var(--c-melody);
+  --pitch-row-hover-ink: var(--c-melody-ink);
   grid-template-columns: 64px 1fr;
 }
 
@@ -2074,6 +2116,9 @@ button {
 }
 
 .melody-beat-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--chord-beat-gap);
   min-width: 0;
   min-height: 0;
 }
@@ -2119,6 +2164,12 @@ button {
 .bass-note-key {
   padding: 0;
   cursor: pointer;
+}
+
+.bass-seq-body {
+  --pitch-rail-head-height: 22px;
+  --pitch-row-hover: var(--c-bass);
+  --pitch-row-hover-ink: var(--c-bass-ink);
 }
 
 .bass-note-key.root {

@@ -336,6 +336,7 @@ function ChordEditor({
   const [selectedGrooveTemplateId, setSelectedGrooveTemplateId] = useState('block-basic');
   const [addChordPanel, setAddChordPanel] = useState(null);
   const [passingChordPanel, setPassingChordPanel] = useState(null);
+  const [hoveredPitchRow, setHoveredPitchRow] = useState(null);
   const templates = useMemo(() => Object.values(CHORD_TEMPLATES), []);
   const pageCount = Math.ceil(templates.length / TEMPLATE_PAGE_SIZE);
   const chordPickerOpen = pickerMode === 'chord';
@@ -527,14 +528,18 @@ function ChordEditor({
             onScroll={handlePitchViewportScroll}
           >
             <div className="scale-notes">
-              {CHORD_GRID_PITCHES.map((note) => (
+              {CHORD_GRID_PITCHES.map((note, rowIndex) => (
                 <div
                   className={[
                     'note-key',
                     note.sharp ? 'sharp' : '',
                     note.root ? 'root' : '',
+                    hoveredPitchRow === rowIndex ? 'row-hovered' : '',
                   ].filter(Boolean).join(' ')}
+                  data-row={rowIndex}
                   key={note.label}
+                  onPointerEnter={() => setHoveredPitchRow(rowIndex)}
+                  onPointerLeave={() => setHoveredPitchRow(null)}
                 >
                   {note.label}
                 </div>
@@ -628,6 +633,7 @@ function ChordEditor({
                               active ? 'active' : '',
                               added ? 'added' : '',
                               note.sharp ? 'sharp' : '',
+                              hoveredPitchRow === rowIndex ? 'row-hovered' : '',
                             ].filter(Boolean).join(' ')}
                             data-row={rowIndex}
                             data-col={colIndex}
@@ -637,6 +643,8 @@ function ChordEditor({
                             type="button"
                             aria-label={`${note.label} beat ${beatNumber}.${stepNumber}`}
                             aria-pressed={active || added}
+                            onPointerEnter={() => setHoveredPitchRow(rowIndex)}
+                            onPointerLeave={() => setHoveredPitchRow(null)}
                             onClick={() => {
                               onChordNoteSelect(spanIndex, colIndex, note.label);
                               closeChordPanels();
