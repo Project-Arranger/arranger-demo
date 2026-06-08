@@ -25,7 +25,11 @@ function createMockStore(initial = {}) {
     play: () => calls.push(['play']),
     pause: () => calls.push(['pause']),
     stop: () => calls.push(['stop']),
-    setTransportPosition: (bar, step) => calls.push(['setTransportPosition', bar, step]),
+    setTransportPosition: (bar, step) => {
+      calls.push(['setTransportPosition', bar, step]);
+      state.currentBar = bar;
+      state.currentStep = step;
+    },
     setSeekPosition: (bar, step) => calls.push(['setSeekPosition', bar, step]),
   };
 
@@ -50,20 +54,26 @@ test('dispatchCommand rejects invalid commands before side effects', async () =>
 test('transport commands dispatch to store and optional audio dependencies', async () => {
   const store = createMockStore({ isPlaying: false, bpm: 96, currentBar: 1, currentStep: 4 });
   const audioCalls = [];
+  let playOptions = null;
   const audio = {
-    play: (options) => audioCalls.push([
-      'audio.play',
-      options.bpm,
-      options.bar,
-      options.step,
-      options.matrixSource().drums,
-    ]),
+    play: (options) => {
+      playOptions = options;
+      audioCalls.push([
+        'audio.play',
+        options.bpm,
+        options.bar,
+        options.step,
+        options.matrixSource().drums,
+        typeof options.onPositionChange,
+      ]);
+    },
     pause: () => audioCalls.push(['audio.pause']),
     stop: () => audioCalls.push(['audio.stop']),
     seekToStep: (bar, step) => audioCalls.push(['audio.seekToStep', bar, step]),
   };
 
   assert.deepEqual(await dispatchCommand({ type: 'transport.togglePlay' }, { store, audio }), { ok: true });
+  playOptions.onPositionChange(1, 5);
   store.getState().isPlaying = true;
   assert.deepEqual(await dispatchCommand({ type: 'transport.togglePlay' }, { store, audio }), { ok: true });
   assert.deepEqual(await dispatchCommand({ type: 'transport.seek', bar: 2, step: 8 }, { store, audio }), { ok: true });
@@ -71,12 +81,15 @@ test('transport commands dispatch to store and optional audio dependencies', asy
 
   assert.deepEqual(store.calls, [
     ['play'],
+    ['setTransportPosition', 1, 5],
     ['pause'],
     ['setTransportPosition', 2, 8],
     ['stop'],
   ]);
+  assert.equal(store.getState().currentBar, 2);
+  assert.equal(store.getState().currentStep, 8);
   assert.deepEqual(audioCalls, [
-    ['audio.play', 96, 1, 4, []],
+    ['audio.play', 96, 1, 4, [], 'function'],
     ['audio.pause'],
     ['audio.seekToStep', 2, 8],
     ['audio.stop'],

@@ -66,22 +66,28 @@ test('seedDefaultDrumsPattern is idempotent and keeps non-pattern cells intact',
 test('createUiAudioDispatcher connects transport commands and drums preview audio', async () => {
   const store = createMockStore({ bpm: 98, currentBar: 1, currentStep: 4 });
   const audioCalls = [];
+  let playOptions = null;
   const dispatch = createUiAudioDispatcher({
     store,
     audio: {
-      play: (options) => audioCalls.push([
-        'play',
-        options.bpm,
-        options.bar,
-        options.step,
-        options.matrixSource(),
-      ]),
+      play: (options) => {
+        playOptions = options;
+        audioCalls.push([
+          'play',
+          options.bpm,
+          options.bar,
+          options.step,
+          options.matrixSource(),
+          typeof options.onPositionChange,
+        ]);
+      },
       stop: () => audioCalls.push(['stop']),
       triggerDrumsStep: (instruments) => audioCalls.push(['preview', instruments]),
     },
   });
 
   await dispatch({ type: 'transport.togglePlay' });
+  playOptions.onPositionChange(1, 5);
   await dispatch({
     type: 'drums.toggle',
     bar: 0,
@@ -93,6 +99,7 @@ test('createUiAudioDispatcher connects transport commands and drums preview audi
 
   assert.deepEqual(store.calls, [
     ['play'],
+    ['seek', 1, 5],
     ['stop'],
   ]);
   assert.equal(audioCalls[0][0], 'play');
@@ -100,6 +107,9 @@ test('createUiAudioDispatcher connects transport commands and drums preview audi
   assert.equal(audioCalls[0][2], 1);
   assert.equal(audioCalls[0][3], 4);
   assert.equal(audioCalls[0][4], store.getState().matrix);
+  assert.equal(audioCalls[0][5], 'function');
+  assert.equal(store.getState().currentBar, 1);
+  assert.equal(store.getState().currentStep, 5);
   assert.deepEqual(audioCalls.slice(1), [
     ['preview', ['kick', 'hihat']],
     ['stop'],

@@ -601,6 +601,11 @@ export default class AudioEngine {
     if (Object.hasOwn(options, 'volumeSource')) {
       this.setVolumeSource(options.volumeSource);
     }
+    if (Object.hasOwn(options, 'onPositionChange')) {
+      this.onPositionChange = typeof options.onPositionChange === 'function'
+        ? options.onPositionChange
+        : null;
+    }
     this.syncTransport(options);
 
     if (options.matrixSource || this.matrixSource) {

@@ -23,8 +23,20 @@ function createAudioPlayOptions(store, state) {
     bar: state.currentBar,
     step: state.currentStep,
     matrixSource: () => store.getState().matrix,
+    onPositionChange: (bar, step) => syncStoreTransportPosition(store, bar, step),
     volumeSource: () => store.getState().volumes,
   };
+}
+
+function syncStoreTransportPosition(store, bar, step) {
+  const state = store.getState();
+  if (typeof state.setTransportPosition === 'function') {
+    state.setTransportPosition(bar, step);
+    return;
+  }
+
+  state.setPosition?.(bar, step);
+  state.setSeekPosition?.(bar, step);
 }
 
 async function dispatchTransportCommand(command, deps) {
@@ -48,12 +60,7 @@ async function dispatchTransportCommand(command, deps) {
       return { ok: true };
 
     case APP_COMMAND_TYPES.TRANSPORT_SEEK:
-      if (typeof state.setTransportPosition === 'function') {
-        state.setTransportPosition(command.bar, command.step);
-      } else {
-        state.setPosition?.(command.bar, command.step);
-        state.setSeekPosition?.(command.bar, command.step);
-      }
+      syncStoreTransportPosition(store, command.bar, command.step);
       await maybeCallMethod(deps.audio, 'seekToStep', command.bar, command.step);
       return { ok: true };
 

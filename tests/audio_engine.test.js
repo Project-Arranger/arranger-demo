@@ -511,6 +511,34 @@ test('AudioEngine syncs transport play pause stop and seek', async () => {
   ]);
 });
 
+test('AudioEngine play position callback follows scheduled transport ticks', async () => {
+  const tone = createFakeTone();
+  const matrix = createInitialMatrix();
+  const positions = [];
+  const engine = new AudioEngine({
+    tone,
+    matrixSource: matrix,
+    playerFactory: createPlayerFactory(tone.calls),
+  });
+
+  await engine.play({
+    bpm: 120,
+    onPositionChange: (bar, step) => positions.push([bar, step]),
+  });
+  tone.Transport.scheduledCallback(24);
+  tone.Transport.scheduledCallback(24.125);
+  tone.Transport.scheduledCallback(24.25);
+
+  assert.deepEqual(positions, [
+    [0, 0],
+    [0, 1],
+    [0, 2],
+  ]);
+  assert.equal(engine.currentBar, 0);
+  assert.equal(engine.currentStep, 2);
+  assert.equal(engine.transportFlatStep, 3);
+});
+
 test('AudioEngine avoids touching Tone transport before audio starts', async () => {
   const engine = new AudioEngine({ tone: createToneWithBlockedTransport() });
 
