@@ -1,4 +1,8 @@
-const MELODY_KEY_SEQUENCE = Object.freeze(['.', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=']);
+const MELODY_KEY_SEQUENCE = Object.freeze(['·', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=']);
+const MELODY_KEY_ALIASES = Object.freeze({
+  '`': '·',
+  '~': '·',
+});
 
 const MELODY_SCALES = Object.freeze({
   major: Object.freeze({
@@ -98,8 +102,12 @@ function getMelodyScale(scaleId) {
   return MELODY_SCALES[scaleId] ?? MELODY_SCALES.major;
 }
 
+function getMelodyKeyboardKey(key) {
+  return MELODY_KEY_ALIASES[key] ?? key;
+}
+
 function getMelodyKeyNote(scaleId, key) {
-  const keyIndex = MELODY_KEY_SEQUENCE.indexOf(key);
+  const keyIndex = MELODY_KEY_SEQUENCE.indexOf(getMelodyKeyboardKey(key));
   if (keyIndex < 0) return null;
 
   return getMelodyScale(scaleId).keyNotes[keyIndex] ?? null;
@@ -115,6 +123,7 @@ function formatMelodyNoteParts(note) {
 
 export {
   formatMelodyNoteParts,
+  getMelodyKeyboardKey,
   getMelodyKeyNote,
   getMelodyScale,
   MELODY_KEY_SEQUENCE,

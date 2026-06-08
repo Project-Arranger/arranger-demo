@@ -53,7 +53,7 @@ function createRecordingStore(initial = {}) {
 }
 
 test('melody scales map the fixed keyboard row to major and pentatonic notes', () => {
-  assert.deepEqual(MELODY_KEY_SEQUENCE, ['.', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=']);
+  assert.deepEqual(MELODY_KEY_SEQUENCE, ['·', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=']);
   assert.deepEqual(MELODY_SCALES.major.keyNotes, [
     'G3',
     'A3',
@@ -84,7 +84,10 @@ test('melody scales map the fixed keyboard row to major and pentatonic notes', (
     'E5',
     'G5',
   ]);
-  assert.equal(getMelodyKeyNote('major', '.'), 'G3');
+  assert.equal(getMelodyKeyNote('major', '·'), 'G3');
+  assert.equal(getMelodyKeyNote('major', '`'), 'G3');
+  assert.equal(getMelodyKeyNote('major', '~'), 'G3');
+  assert.equal(getMelodyKeyNote('major', '.'), null);
   assert.equal(getMelodyKeyNote('major', '='), 'E5');
   assert.equal(getMelodyKeyNote('pentatonic', '4'), 'C4');
   assert.equal(getMelodyKeyNote('missing', '4'), 'D4');

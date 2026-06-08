@@ -86,7 +86,7 @@ function mapKeyboardEventToCommand(event, state = {}) {
     return mapArrowKeyToCommand(key, state);
   }
 
-  if (/^[.0-9\-=]$/.test(key)) {
+  if (/^[·`~0-9\-=]$/.test(key)) {
     return mapNumberKeyToCommand(eventType, key, state);
   }
 

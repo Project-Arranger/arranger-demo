@@ -226,8 +226,20 @@ test('keyboard map turns common keys into app commands', () => {
     { type: 'transport.seek', bar: 0, step: 0 },
   );
   assert.deepEqual(
-    mapKeyboardEventToCommand({ type: 'keydown', key: '.' }, { activeTrackId: 'melody', melodyScaleId: 'major' }),
+    mapKeyboardEventToCommand({ type: 'keydown', key: '·' }, { activeTrackId: 'melody', melodyScaleId: 'major' }),
     { type: 'melody.noteOn', note: 'G3' },
+  );
+  assert.deepEqual(
+    mapKeyboardEventToCommand({ type: 'keydown', key: '`' }, { activeTrackId: 'melody', melodyScaleId: 'major' }),
+    { type: 'melody.noteOn', note: 'G3' },
+  );
+  assert.deepEqual(
+    mapKeyboardEventToCommand({ type: 'keydown', key: '~' }, { activeTrackId: 'melody', melodyScaleId: 'major' }),
+    { type: 'melody.noteOn', note: 'G3' },
+  );
+  assert.equal(
+    mapKeyboardEventToCommand({ type: 'keydown', key: '.' }, { activeTrackId: 'melody', melodyScaleId: 'major' }),
+    null,
   );
   assert.deepEqual(
     mapKeyboardEventToCommand({ type: 'keydown', key: '4' }, { activeTrackId: 'melody', melodyScaleId: 'pentatonic' }),

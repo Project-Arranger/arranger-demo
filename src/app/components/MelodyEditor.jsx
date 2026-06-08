@@ -15,6 +15,7 @@ import {
 } from 'react';
 import {
   formatMelodyNoteParts,
+  getMelodyKeyboardKey,
   getMelodyKeyNote,
   getMelodyScale,
   MELODY_KEY_SEQUENCE,
@@ -85,11 +86,11 @@ function MelodyEditor({
       if (event.repeat || isEditableKeyboardTarget(event.target)) return;
       const note = getMelodyKeyNote(melodyScaleId, event.key);
       if (!note) return;
-      setPlayingKeys((keys) => addSetValue(keys, event.key));
+      setPlayingKeys((keys) => addSetValue(keys, getMelodyKeyboardKey(event.key)));
     };
     const handleKeyUp = (event) => {
       if (!getMelodyKeyNote(melodyScaleId, event.key)) return;
-      setPlayingKeys((keys) => deleteSetValue(keys, event.key));
+      setPlayingKeys((keys) => deleteSetValue(keys, getMelodyKeyboardKey(event.key)));
     };
 
     window.addEventListener('keydown', handleKeyDown);
