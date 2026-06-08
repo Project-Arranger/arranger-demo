@@ -275,6 +275,11 @@ test('groove template picker mirrors the reference secondary menu layout', async
   assert.match(css, /\.btn-template-groove-active\s*\{[^}]*align-items:\s*center;/s);
   assert.match(css, /\.btn-template-groove-active\s*\{[^}]*justify-content:\s*center;/s);
   assert.match(css, /\.gtpl-picker\s*\{[^}]*grid-template-rows:\s*48px 1fr 52px;/s);
+  assert.match(css, /\.gtpl-list-centered\s*\{[^}]*grid-template-columns:\s*repeat\(6,\s*minmax\(0,\s*1fr\)\);/s);
+  assert.match(css, /\.gtpl-list-centered\s*\{[^}]*justify-content:\s*center;/s);
+  assert.match(css, /\.gtpl-list-centered > \.gtpl-card\s*\{[^}]*grid-column:\s*span 2;/s);
+  assert.match(css, /\.gtpl-list-centered > \.gtpl-card:first-child\s*\{[^}]*grid-column:\s*2 \/ span 2;/s);
+  assert.match(css, /@media \(max-width:\s*760px\)\s*\{[\s\S]*\.gtpl-list-centered\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\);[\s\S]*\.gtpl-list-centered > \.gtpl-card\s*\{[^}]*grid-column:\s*auto;/s);
   assert.match(css, /\.gtpl-card\s*\{[^}]*display:\s*flex;/s);
   assert.match(css, /\.gtpl-rhythm-grid\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*1fr\);/s);
   assert.match(css, /\.gtpl-beat\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*1fr\);/s);

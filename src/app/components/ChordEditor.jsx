@@ -809,7 +809,7 @@ function ChordEditor({
         </header>
 
         <div className="tpl-body">
-          <div className="tpl-list" id="gtplList">
+          <div className="tpl-list gtpl-list-centered" id="gtplList">
             {CHORD_GROOVE_TEMPLATES.map((template) => (
               <article
                 className={[

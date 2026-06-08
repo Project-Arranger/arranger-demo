@@ -29,15 +29,6 @@ const CHORD_GROOVE_TEMPLATES = Object.freeze([
     detail: '在每小节的第 1/16、7/16、13/16 处添加和弦的柱式音型。',
     steps: Object.freeze([0, 6, 12]),
   }),
-  Object.freeze({
-    id: 'arp-basic',
-    name: '琶音基础律动',
-    kind: 'arpeggio',
-    hitLabel: '4 hits / bar · arpeggio',
-    desc: '将和弦的组成音按基础律动依次单个弹出，听感更加柔和，创造更多的旋律线条感。',
-    detail: '在每小节的 1/16、3/16、5/16、7/16 处将和弦的组成音依次弹出；如果和弦超过四个音的，可以继续往后延展；如果和弦只有三个音，则在 7/16 处继续插入根音的八度音。',
-    steps: Object.freeze([0, 2, 4, 6]),
-  }),
 ]);
 
 function getChordGrooveTemplate(templateId) {

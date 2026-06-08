@@ -185,9 +185,11 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(chordEditorSource, /pickerMode === 'groove'/);
   assert.match(chordEditorSource, /data-picker=\{pickerMode/);
   assert.match(chordEditorSource, /gtpl-card/);
+  assert.match(chordEditorSource, /className="tpl-list gtpl-list-centered"/);
   assert.match(chordEditorSource, /gtpl-rhythm-grid/);
   assert.match(chordGrooveActionsSource, /柱式音型基础律动/);
-  assert.match(chordGrooveActionsSource, /琶音基础律动/);
+  assert.match(chordGrooveActionsSource, /柱式音型切分律动/);
+  assert.doesNotMatch(chordGrooveActionsSource, /琶音基础律动/);
   assert.match(chordEditorSource, /添加经过和弦/);
   assert.match(chordEditorSource, /className="passing-anchor"/);
   assert.match(chordEditorSource, /className=\{passingButtonClassName\}/);

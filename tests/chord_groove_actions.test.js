@@ -7,7 +7,6 @@ import {
   getChordGrooveTemplate,
 } from '../src/app/chordGrooveActions.js';
 import {
-  applyChordTemplateToExistingClips,
   getChordBeatDisplaySegments,
   setChordCell,
 } from '../src/app/chordActions.js';
@@ -20,15 +19,14 @@ function createClips(...records) {
   };
 }
 
-test('chord groove templates expose the three reference picker options in order', () => {
+test('chord groove templates expose the two block picker options in order', () => {
   assert.deepEqual(CHORD_GROOVE_TEMPLATES.map((template) => template.id), [
     'block-basic',
     'block-syncopated',
-    'arp-basic',
   ]);
   assert.equal(getChordGrooveTemplate('block-basic').name, '柱式音型基础律动');
   assert.equal(getChordGrooveTemplate('block-syncopated').hitLabel, '3 hits / bar');
-  assert.equal(getChordGrooveTemplate('arp-basic').kind, 'arpeggio');
+  assert.equal(getChordGrooveTemplate('arp-basic'), null);
 });
 
 test('applyChordGrooveTemplateToExistingClips writes a short block hit to existing chord clips only', () => {
@@ -83,45 +81,14 @@ test('applyChordGrooveTemplateToExistingClips writes syncopated block hits and c
   });
 });
 
-test('applyChordGrooveTemplateToExistingClips writes arpeggio notes with source chord metadata', () => {
+test('removed arpeggio groove template no-ops when applied by legacy id', () => {
   let matrix = createInitialMatrix();
   matrix = setChordCell(matrix, 1, 0, 'Cmaj7');
   const clips = createClips({ id: 'chord-bar-1', trackId: 'chord', bar: 1 });
 
   const nextMatrix = applyChordGrooveTemplateToExistingClips(matrix, clips, 'arp-basic');
 
-  assert.deepEqual(
-    [0, 2, 4, 6].map((step) => nextMatrix.chord[1][step]),
-    [
-      { type: 'notes', notes: ['C4'], label: 'C4', grooveTemplateId: 'arp-basic', sourceChordLabel: 'Cmaj7' },
-      { type: 'notes', notes: ['E4'], label: 'E4', grooveTemplateId: 'arp-basic', sourceChordLabel: 'Cmaj7' },
-      { type: 'notes', notes: ['G4'], label: 'G4', grooveTemplateId: 'arp-basic', sourceChordLabel: 'Cmaj7' },
-      { type: 'notes', notes: ['B4'], label: 'B4', grooveTemplateId: 'arp-basic', sourceChordLabel: 'Cmaj7' },
-    ],
-  );
-});
-
-test('arpeggio groove preserves chord progression labels across existing clips', () => {
-  let matrix = createInitialMatrix();
-  const clips = createClips(
-    { id: 'chord-bar-0', trackId: 'chord', bar: 0 },
-    { id: 'chord-bar-1', trackId: 'chord', bar: 1 },
-    { id: 'chord-bar-2', trackId: 'chord', bar: 2 },
-    { id: 'chord-bar-3', trackId: 'chord', bar: 3 },
-  );
-
-  matrix = applyChordTemplateToExistingClips(matrix, clips, 'doowop');
-  const nextMatrix = applyChordGrooveTemplateToExistingClips(matrix, clips, 'arp-basic');
-
-  assert.deepEqual(
-    [0, 1, 2, 3].map((barIndex) => getChordBeatDisplaySegments(nextMatrix, barIndex)[0]),
-    [
-      { startBeat: 0, span: 2, label: 'C', hasValue: true, hasChord: false, mergeKey: 'arp-basic:C' },
-      { startBeat: 0, span: 2, label: 'Am', hasValue: true, hasChord: false, mergeKey: 'arp-basic:Am' },
-      { startBeat: 0, span: 2, label: 'F', hasValue: true, hasChord: false, mergeKey: 'arp-basic:F' },
-      { startBeat: 0, span: 2, label: 'G', hasValue: true, hasChord: false, mergeKey: 'arp-basic:G' },
-    ],
-  );
+  assert.equal(nextMatrix, matrix);
 });
 
 test('createChordGroovePreviewEvents returns timed playable notes for the requested chord', () => {
@@ -130,11 +97,6 @@ test('createChordGroovePreviewEvents returns timed playable notes for the reques
     { step: 6, notes: ['F4', 'A4', 'C5'], duration: '16n' },
     { step: 12, notes: ['F4', 'A4', 'C5'], duration: '16n' },
   ]);
-  assert.deepEqual(createChordGroovePreviewEvents('arp-basic', 'C'), [
-    { step: 0, notes: ['C4'], duration: '16n' },
-    { step: 2, notes: ['E4'], duration: '16n' },
-    { step: 4, notes: ['G4'], duration: '16n' },
-    { step: 6, notes: ['C5'], duration: '16n' },
-  ]);
+  assert.deepEqual(createChordGroovePreviewEvents('arp-basic', 'C'), []);
   assert.deepEqual(createChordGroovePreviewEvents('missing', 'C'), []);
 });

@@ -2404,6 +2404,29 @@ button {
   min-height: 100%;
 }
 
+.gtpl-list-centered {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  justify-content: center;
+}
+
+.gtpl-list-centered > .gtpl-card {
+  grid-column: span 2;
+}
+
+.gtpl-list-centered > .gtpl-card:first-child {
+  grid-column: 2 / span 2;
+}
+
+@media (max-width: 760px) {
+  .gtpl-list-centered {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gtpl-list-centered > .gtpl-card {
+    grid-column: auto;
+  }
+}
+
 .tpl-card {
   display: flex;
   flex-direction: column;
