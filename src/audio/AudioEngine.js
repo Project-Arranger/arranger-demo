@@ -13,6 +13,7 @@ const DRUMS_SAMPLE_FILES = Object.freeze({
   snare: 'samples/Drums/Snare_v0.22.wav',
   hihat: 'samples/Drums/Hihat_v0.22.wav',
 });
+const CHORD_SAMPLE_DURATION = '2s';
 
 function createRootOctaveSampleFiles({ directory, prefix, roots, octaves }) {
   return Object.freeze(Object.fromEntries(
@@ -351,7 +352,7 @@ export default class AudioEngine {
     if (this.chordSampler?.triggerAttackRelease) {
       try {
         applyVolume(this.chordSampler, volume);
-        this.chordSampler.triggerAttackRelease(notes, duration, time);
+        this.chordSampler.triggerAttackRelease(notes, CHORD_SAMPLE_DURATION, time);
         return true;
       } catch {
         // Fall through to synth so a missing or not-yet-loaded chord sample stays audible.

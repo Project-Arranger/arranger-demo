@@ -283,7 +283,7 @@ test('AudioEngine starts audio and triggers chord sampler notes', async () => {
 
   assert.deepEqual(tone.calls.filter(([name]) => name.startsWith('chordSampler.')), [
     ['chordSampler.toDestination'],
-    ['chordSampler.triggerAttackRelease', ['C4', 'E4', 'G4'], '4n', 12.5, createChordSampleUrls()],
+    ['chordSampler.triggerAttackRelease', ['C4', 'E4', 'G4'], '2s', 12.5, createChordSampleUrls()],
   ]);
   assert.deepEqual(tone.calls.filter(([name]) => name.startsWith('chord.')), [
     ['chord.toDestination'],
@@ -555,7 +555,7 @@ test('AudioEngine matrix playback triggers drums bass chord and melody events', 
       24,
       createBassSampleUrls(),
     ],
-    ['chordSampler.triggerAttackRelease', ['C4', 'E4', 'G4'], '4n', 24, createChordSampleUrls()],
+    ['chordSampler.triggerAttackRelease', ['C4', 'E4', 'G4'], '2s', 24, createChordSampleUrls()],
     [
       'sampler.triggerAttackRelease',
       'G4',
@@ -622,7 +622,7 @@ test('AudioEngine applies current track volumes to matrix playback events', asyn
       -12,
       createBassSampleUrls(),
     ],
-    ['chordSampler.triggerAttackRelease', ['C4', 'E4', 'G4'], '4n', 24, -9, createChordSampleUrls()],
+    ['chordSampler.triggerAttackRelease', ['C4', 'E4', 'G4'], '2s', 24, -9, createChordSampleUrls()],
     [
       'sampler.triggerAttackRelease',
       'A4',
@@ -671,8 +671,8 @@ test('AudioEngine previews chord sequences with one audio start and timed chord 
 
   assert.equal(tone.calls.filter(([name]) => name === 'tone.start').length, 1);
   assert.deepEqual(tone.calls.filter(([name]) => name === 'chordSampler.triggerAttackRelease'), [
-    ['chordSampler.triggerAttackRelease', ['C4', 'E4', 'G4'], '8n', 12.5, -7, createChordSampleUrls()],
-    ['chordSampler.triggerAttackRelease', ['F4', 'A4', 'C5'], '8n', 13.05, -7, createChordSampleUrls()],
+    ['chordSampler.triggerAttackRelease', ['C4', 'E4', 'G4'], '2s', 12.5, -7, createChordSampleUrls()],
+    ['chordSampler.triggerAttackRelease', ['F4', 'A4', 'C5'], '2s', 13.05, -7, createChordSampleUrls()],
   ]);
 });
 
@@ -695,9 +695,9 @@ test('AudioEngine previews chord groove patterns with sixteenth-step timing', as
 
   assert.equal(tone.calls.filter(([name]) => name === 'tone.start').length, 1);
   assert.deepEqual(tone.calls.filter(([name]) => name === 'chordSampler.triggerAttackRelease'), [
-    ['chordSampler.triggerAttackRelease', ['C4', 'E4', 'G4'], '16n', 12.5, -5, createChordSampleUrls()],
-    ['chordSampler.triggerAttackRelease', ['C4', 'E4', 'G4'], '16n', 13.25, -5, createChordSampleUrls()],
-    ['chordSampler.triggerAttackRelease', ['C4', 'E4', 'G4'], '16n', 14, -5, createChordSampleUrls()],
+    ['chordSampler.triggerAttackRelease', ['C4', 'E4', 'G4'], '2s', 12.5, -5, createChordSampleUrls()],
+    ['chordSampler.triggerAttackRelease', ['C4', 'E4', 'G4'], '2s', 13.25, -5, createChordSampleUrls()],
+    ['chordSampler.triggerAttackRelease', ['C4', 'E4', 'G4'], '2s', 14, -5, createChordSampleUrls()],
   ]);
 });
 
