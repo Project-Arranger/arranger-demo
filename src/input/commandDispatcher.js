@@ -122,7 +122,6 @@ async function dispatchHandlerCommand(command, deps) {
 
     case APP_COMMAND_TYPES.MELODY_NOTE_ON:
       await maybeCallMethod(deps.audio, 'triggerMelodyNote', command.note, '16n');
-      await maybeCall(handlers.melody?.noteOn, command);
       return { ok: true };
 
     case APP_COMMAND_TYPES.MELODY_NOTE_OFF:

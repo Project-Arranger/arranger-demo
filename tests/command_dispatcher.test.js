@@ -168,7 +168,6 @@ test('domain commands dispatch to injected handlers with drums naming', async ()
     ['chord.confirm'],
     ['chord.setCell', 2, 1, 'G#'],
     ['chord.clearCell', 2, 1],
-    ['melody.noteOn', 'D3'],
     ['melody.noteOff', 'D3'],
   ]);
   assert.deepEqual(audioCalls, [
@@ -176,7 +175,7 @@ test('domain commands dispatch to injected handlers with drums naming', async ()
   ]);
 });
 
-test('melody noteOn prioritizes audio before editor recording handlers', async () => {
+test('melody noteOn previews audio without calling editor recording handlers', async () => {
   const calls = [];
   const handlers = {
     melody: {
@@ -191,11 +190,10 @@ test('melody noteOn prioritizes audio before editor recording handlers', async (
 
   assert.deepEqual(calls, [
     ['audio.triggerMelodyNote', 'C4', '16n'],
-    ['handler.melody.noteOn', 'C4'],
   ]);
 });
 
-test('melody noteOn still records when audio preview is unavailable', async () => {
+test('melody noteOn does not fall back to editor recording when audio preview is unavailable', async () => {
   const calls = [];
   const handlers = {
     melody: {
@@ -203,11 +201,9 @@ test('melody noteOn still records when audio preview is unavailable', async () =
     },
   };
 
-  await dispatchCommand({ type: 'melody.noteOn', note: 'C4' }, { handlers });
+  assert.deepEqual(await dispatchCommand({ type: 'melody.noteOn', note: 'C4' }, { handlers }), { ok: true });
 
-  assert.deepEqual(calls, [
-    ['handler.melody.noteOn', 'C4'],
-  ]);
+  assert.deepEqual(calls, []);
 });
 
 test('createCommandDispatcher binds dependencies', async () => {

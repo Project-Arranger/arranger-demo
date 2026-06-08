@@ -557,6 +557,7 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
     new URL('../src/app/components/MelodyEditor.jsx', import.meta.url),
     'utf8',
   );
+  const audioBridgeSource = await readFile(new URL('../src/app/audioUiBridge.js', import.meta.url), 'utf8');
   const melodyDataSource = await readFile(new URL('../src/data/melodyScales.js', import.meta.url), 'utf8');
   const uiDataSource = await readFile(new URL('../src/app/uiShellData.js', import.meta.url), 'utf8');
   const contextSliceSource = await readFile(
@@ -595,6 +596,11 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(melodyEditorSource, /MELODY_KEY_SEQUENCE/);
   assert.match(melodyEditorSource, /MELODY_RAIL_NOTES/);
   assert.match(melodyEditorSource, /isMelodyCellActive/);
+  assert.match(melodyEditorSource, /onClick=\{\(\) => onMelodyStepToggle\(step, note\.note\)\}/);
+  assert.match(melodyEditorSource, /setPlayingKeys/);
+  assert.match(melodyEditorSource, /onMelodyPreview\(note\)/);
+  assert.doesNotMatch(melodyEditorSource, /recordMelodyKeyInput/);
+  assert.doesNotMatch(audioBridgeSource, /recordMelodyKeyInput/);
   assert.match(source, /melodyScaleId/);
   assert.match(source, /handleMelodyStepToggle/);
   assert.match(source, /handleMelodyPreview/);

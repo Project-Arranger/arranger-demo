@@ -5,7 +5,6 @@ import {
 } from '../domain/drumsCells.js';
 import { dispatchCommand } from '../input/commandDispatcher.js';
 import { createDefaultDrumsPattern } from './drumsPatternActions.js';
-import { recordMelodyKeyInput } from './melodyActions.js';
 
 function seedDefaultDrumsPattern(store, pattern = createDefaultDrumsPattern()) {
   const state = store.getState?.();
@@ -30,11 +29,6 @@ function seedDefaultDrumsPattern(store, pattern = createDefaultDrumsPattern()) {
 function createUiAudioDispatcher({ store, audio, dispatch = dispatchCommand }) {
   return (command) => dispatch(command, {
     audio,
-    handlers: {
-      melody: {
-        noteOn: ({ note }) => recordMelodyKeyInput(store, note),
-      },
-    },
     store,
   });
 }

@@ -8,49 +8,9 @@ import {
 import {
   clearMelodyBar,
   isMelodyCellActive,
-  recordMelodyKeyInput,
   toggleMelodyCell,
 } from '../src/app/melodyActions.js';
 import createInitialMatrix from '../src/store/createInitialMatrix.js';
-
-function createRecordingStore(initial = {}) {
-  const calls = [];
-  const state = {
-    activeTrackId: 'melody',
-    clips: {
-      ids: ['melody-bar-2'],
-      byId: {
-        'melody-bar-2': {
-          id: 'melody-bar-2',
-          trackId: 'melody',
-          bar: 2,
-          name: 'Melody 03',
-        },
-      },
-    },
-    currentBar: 2,
-    currentStep: 5,
-    isPlaying: false,
-    matrix: createInitialMatrix(),
-    selectedBar: 2,
-    selectedClipId: 'melody-bar-2',
-    setCell: (trackId, bar, step, cell) => {
-      calls.push(['setCell', trackId, bar, step, cell]);
-      state.matrix[trackId][bar][step] = cell;
-    },
-    setTransportPosition: (bar, step) => {
-      calls.push(['seek', bar, step]);
-      state.currentBar = bar;
-      state.currentStep = step;
-    },
-    ...initial,
-  };
-
-  return {
-    calls,
-    getState: () => state,
-  };
-}
 
 test('melody scales map the fixed keyboard row to major and pentatonic notes', () => {
   assert.deepEqual(MELODY_KEY_SEQUENCE, ['·', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=']);
@@ -121,65 +81,4 @@ test('clearMelodyBar clears only the selected melody bar', () => {
   assert.equal(nextMatrix.melody[1].every((cell) => cell === null), true);
   assert.deepEqual(nextMatrix.melody[2][0], { type: 'melody', note: 'E4' });
   assert.deepEqual(nextMatrix.drums[1][0], { instruments: ['kick'] });
-});
-
-test('recordMelodyKeyInput writes and replaces the current melody step', () => {
-  const store = createRecordingStore();
-  store.getState().matrix.melody[2][5] = { type: 'melody', note: 'D4' };
-
-  assert.equal(recordMelodyKeyInput(store, 'E4'), true);
-  assert.deepEqual(store.getState().matrix.melody[2][5], { type: 'melody', note: 'E4' });
-  assert.deepEqual(store.calls, [
-    ['setCell', 'melody', 2, 5, { type: 'melody', note: 'E4' }],
-    ['seek', 2, 6],
-  ]);
-
-  assert.equal(recordMelodyKeyInput(store, 'E4'), true);
-  assert.deepEqual(store.getState().matrix.melody[2][6], { type: 'melody', note: 'E4' });
-});
-
-test('recordMelodyKeyInput stops auto-step at the end of the open melody clip', () => {
-  const store = createRecordingStore({ currentStep: 15 });
-
-  assert.equal(recordMelodyKeyInput(store, 'C4'), true);
-  assert.deepEqual(store.calls, [
-    ['setCell', 'melody', 2, 15, { type: 'melody', note: 'C4' }],
-    ['seek', 2, 15],
-  ]);
-});
-
-test('recordMelodyKeyInput does not step the transport while playing', () => {
-  const store = createRecordingStore({ currentStep: 8, isPlaying: true });
-
-  assert.equal(recordMelodyKeyInput(store, 'G4'), true);
-  assert.deepEqual(store.calls, [
-    ['setCell', 'melody', 2, 8, { type: 'melody', note: 'G4' }],
-  ]);
-});
-
-test('recordMelodyKeyInput refuses invalid editor states without writing', () => {
-  const cases = [
-    createRecordingStore({ selectedClipId: null }),
-    createRecordingStore({ activeTrackId: 'chord' }),
-    createRecordingStore({
-      clips: {
-        ids: ['drums-bar-2'],
-        byId: {
-          'drums-bar-2': {
-            id: 'drums-bar-2',
-            trackId: 'drums',
-            bar: 2,
-            name: 'Drum 03',
-          },
-        },
-      },
-      selectedClipId: 'drums-bar-2',
-    }),
-    createRecordingStore({ currentStep: 16 }),
-  ];
-
-  cases.forEach((store) => {
-    assert.equal(recordMelodyKeyInput(store, 'C4'), false);
-    assert.deepEqual(store.calls, []);
-  });
 });

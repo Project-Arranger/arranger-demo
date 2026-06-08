@@ -116,7 +116,7 @@ test('createUiAudioDispatcher connects transport commands and drums preview audi
   ]);
 });
 
-test('createUiAudioDispatcher records melody key presses while keeping note preview', async () => {
+test('createUiAudioDispatcher previews melody key presses without recording notes', async () => {
   const store = createMockStore({
     activeTrackId: 'melody',
     clips: {
@@ -146,30 +146,30 @@ test('createUiAudioDispatcher records melody key presses while keeping note prev
   await dispatch({ type: 'melody.noteOn', note: 'C4' });
   await dispatch({ type: 'melody.noteOff', note: 'C4' });
 
-  assert.deepEqual(store.getState().matrix.melody[1][5], { type: 'melody', note: 'C4' });
-  assert.deepEqual(store.calls, [
-    ['setCell', 'melody', 1, 5, { type: 'melody', note: 'C4' }],
-    ['seek', 1, 6],
-  ]);
+  assert.equal(store.getState().matrix.melody[1][5], null);
+  assert.deepEqual(store.calls, []);
+  assert.equal(store.getState().currentStep, 5);
   assert.deepEqual(audioCalls, [
     ['melody', 'C4', '16n'],
   ]);
 });
 
-test('createUiAudioDispatcher still previews melody notes when recording is unavailable', async () => {
-  const store = createMockStore({ activeTrackId: 'chord' });
+test('createUiAudioDispatcher does not fall back to recording melody notes without audio', async () => {
+  const store = createMockStore({
+    activeTrackId: 'melody',
+    currentBar: 0,
+    currentStep: 3,
+  });
   const audioCalls = [];
   const dispatch = createUiAudioDispatcher({
     store,
-    audio: {
-      triggerMelodyNote: (note, duration) => audioCalls.push(['melody', note, duration]),
-    },
+    audio: {},
   });
 
   await dispatch({ type: 'melody.noteOn', note: 'D4' });
 
   assert.deepEqual(store.calls, []);
-  assert.deepEqual(audioCalls, [
-    ['melody', 'D4', '16n'],
-  ]);
+  assert.equal(store.getState().matrix.melody[0][3], null);
+  assert.equal(store.getState().currentStep, 3);
+  assert.deepEqual(audioCalls, []);
 });
