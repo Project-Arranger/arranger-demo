@@ -178,6 +178,7 @@ export default function App() {
   const [currentTutorialStepIndex, setCurrentTutorialStepIndex] = useState(0);
   const [tutorialProgress, setTutorialProgress] = useState(() => createTutorialState());
   const [tutorialVisible, setTutorialVisible] = useState(true);
+  const [tutorialSidebarCollapsed, setTutorialSidebarCollapsed] = useState(false);
   const [appliedTutorialSetups, setAppliedTutorialSetups] = useState(() => new Set());
   const [editorHeightPx, setEditorHeightPx] = useState(null);
   const [editorResizeMaxHeight, setEditorResizeMaxHeight] = useState(EDITOR_RESIZE_DEFAULT_HEIGHT);
@@ -996,6 +997,10 @@ export default function App() {
     setTutorialVisible(false);
   }, [stopTutorialPreviewPlayback]);
 
+  const handleTutorialSidebarToggle = useCallback(() => {
+    setTutorialSidebarCollapsed((collapsed) => !collapsed);
+  }, []);
+
   const handleTutorialCompleteTask = useCallback(() => {
     if (currentTutorialStep?.id !== TUTORIAL_STEP_IDS.DRUMS_TASK_4) return;
     const nextProgress = completeTutorialTask4(tutorialProgress);
@@ -1005,7 +1010,14 @@ export default function App() {
 
   const appClassName = [
     'app',
+    tutorialVisible && !tutorialSidebarCollapsed ? 'tutorial-sidebar-open' : '',
+    tutorialVisible && tutorialSidebarCollapsed ? 'tutorial-sidebar-collapsed' : '',
     isEditorResizing ? 'editor-resizing' : '',
+  ].filter(Boolean).join(' ');
+  const workspaceClassName = [
+    'workspace',
+    tutorialVisible && !tutorialSidebarCollapsed ? 'tutorial-sidebar-open' : '',
+    tutorialVisible && tutorialSidebarCollapsed ? 'tutorial-sidebar-collapsed' : '',
   ].filter(Boolean).join(' ');
   const appStyle = editorHeightPx === null ? undefined : {
     '--app-editor-height': `${editorHeightPx}px`,
@@ -1018,121 +1030,126 @@ export default function App() {
       aria-label="Project Arranger workspace"
       style={appStyle}
     >
-      {createElement(TopBar, {
-        activeTutorialTarget,
-        bpm,
-        currentBar,
-        currentStep,
-        isPlaying,
-        onBackToStart: handleBackToStart,
-        onPlayToggle: handlePlayToggle,
-        onStop: handleStop,
-        rootKey,
-        scale,
-      })}
-      <main className="workspace">
-        {createElement(TracksColumn, {
-          activeTrackId,
-          addTrackOptions: availableAddTrackOptions,
-          fillEmptyClipsDisabled: tutorialVisible && tutorialViewModel.locked,
-          onAddTrack: handleAddTrack,
-          onFillEmptyTrackClips: handleFillEmptyTrackClips,
-          onTrackSelect: handleTrackSelect,
-          onVolumeChange: handleTrackVolumeChange,
-          ref: tracksScrollRef,
-          tracks,
-        })}
-        {createElement(Timeline, {
+      <div className="app-main">
+        {createElement(TopBar, {
           activeTutorialTarget,
-          activeTrackId,
+          bpm,
           currentBar,
           currentStep,
-          onAddClip: handleAddClip,
-          onMoveClip: handleMoveClip,
-          onOpenClip: handleOpenClip,
-          onTransportSeek: handleTransportSeek,
-          onTutorialOpenClip: handleTutorialOpenClip,
-          onTrackSelect: handleTrackSelect,
-          ref: timelineScrollRef,
-          selectedClipId,
+          isPlaying,
+          onBackToStart: handleBackToStart,
+          onPlayToggle: handlePlayToggle,
+          onStop: handleStop,
+          onTutorialToggle: handleTutorialSidebarToggle,
+          rootKey,
+          scale,
+          showTutorialToggle: tutorialVisible,
+          tutorialCollapsed: tutorialSidebarCollapsed,
+        })}
+        <main className={workspaceClassName}>
+          {createElement(TracksColumn, {
+            activeTrackId,
+            addTrackOptions: availableAddTrackOptions,
+            fillEmptyClipsDisabled: tutorialVisible && tutorialViewModel.locked,
+            onAddTrack: handleAddTrack,
+            onFillEmptyTrackClips: handleFillEmptyTrackClips,
+            onTrackSelect: handleTrackSelect,
+            onVolumeChange: handleTrackVolumeChange,
+            ref: tracksScrollRef,
+            tracks,
+          })}
+          {createElement(Timeline, {
+            activeTutorialTarget,
+            activeTrackId,
+            currentBar,
+            currentStep,
+            onAddClip: handleAddClip,
+            onMoveClip: handleMoveClip,
+            onOpenClip: handleOpenClip,
+            onTransportSeek: handleTransportSeek,
+            onTutorialOpenClip: handleTutorialOpenClip,
+            onTrackSelect: handleTrackSelect,
+            ref: timelineScrollRef,
+            selectedClipId,
+            tutorialLocked: tutorialViewModel.locked,
+            tutorialTargets: tutorialViewModel.targets,
+            tracks,
+          })}
+          {tutorialVisible ? createElement(TutorialOverlay, {
+            canGoBack: currentTutorialStepIndex > 0,
+            canManualNext: tutorialViewModel.canManualNext,
+            collapsed: tutorialSidebarCollapsed,
+            displayCopy: tutorialViewModel.displayCopy,
+            isLastStep: currentTutorialStepIndex === DRUMS_TUTORIAL_STEPS.length - 1,
+            onBack: handleTutorialBack,
+            onCompleteTask: handleTutorialCompleteTask,
+            onPrimaryAction: handleTutorialNext,
+            onSkip: handleTutorialSkip,
+            showCompleteButton: tutorialViewModel.showCompleteButton,
+            step: currentTutorialStep,
+          }) : null}
+        </main>
+        <div
+          className="editor-resizer"
+          role="separator"
+          aria-label="调整上下屏幕大小"
+          aria-orientation="horizontal"
+          aria-valuemin={EDITOR_RESIZE_MIN_HEIGHT}
+          aria-valuemax={editorResizeMaxHeight}
+          aria-valuenow={currentEditorResizeValue}
+          tabIndex={0}
+          onPointerDown={handleEditorResizePointerDown}
+          onKeyDown={handleEditorResizeKeyDown}
+        >
+          <span className="editor-resizer-grip" aria-hidden="true" />
+        </div>
+        {createElement(BottomEditor, {
+          activeTrackId,
+          activeTutorialTarget,
           tutorialLocked: tutorialViewModel.locked,
           tutorialTargets: tutorialViewModel.targets,
-          tracks,
+          matrix,
+          melodyScaleId,
+          selectedClipName: selectedClip?.name ?? '',
+          onChordCellSelect: handleChordCellSelect,
+          onChordNoteSelect: handleChordNoteSelect,
+          onChordPick: handleChordPick,
+          onChordPreview: handleChordPreview,
+          onChordGrooveTemplatePreview: handleChordGrooveTemplatePreview,
+          onChordGrooveTemplateApply: handleChordGrooveTemplateApply,
+          onChordTemplatePreview: handleChordTemplatePreview,
+          onChordTemplateApply: handleChordTemplateApply,
+          shouldConfirmChordTemplateApply,
+          onPassingChordPick: handlePassingChordPick,
+          onPassingChordPreview: handlePassingChordPreview,
+          onBassPreview: handleBassPreview,
+          onBassStepToggle: handleBassStepToggle,
+          onBassGrooveTemplatePreview: handleBassGrooveTemplatePreview,
+          onBassGrooveTemplateApply: handleBassGrooveTemplateApply,
+          onCloseEditor: handleCloseEditor,
+          onClearBass: handleClearBass,
+          onClearBassBar: handleClearBassBar,
+          onClearMelody: handleClearMelody,
+          onClearMelodyBar: handleClearMelodyBar,
+          onMelodyPreview: handleMelodyPreview,
+          onMelodyScaleChange: handleMelodyScaleChange,
+          onMelodyStepToggle: handleMelodyStepToggle,
+          onRenameClip: handleRenameClip,
+          onClearCurrentDrumsBar: handleClearCurrentDrumsBar,
+          onClearChordBar: handleClearChordBar,
+          onClearChord: handleClearChord,
+          onClearDrums: handleClearDrums,
+          canPageBars,
+          onGenerateAllDrumsBars: handleGenerateAllDrumsBars,
+          onGenerateCurrentDrumsBar: handleGenerateCurrentDrumsBar,
+          onNextBar: handleNextBar,
+          onPreviousBar: handlePreviousBar,
+          onDrumsStepMove: handleDrumsStepMove,
+          onDrumsStepToggle: handleDrumsStepToggle,
+          selectedBar,
+          selectedClipId,
         })}
-      </main>
-      <div
-        className="editor-resizer"
-        role="separator"
-        aria-label="调整上下屏幕大小"
-        aria-orientation="horizontal"
-        aria-valuemin={EDITOR_RESIZE_MIN_HEIGHT}
-        aria-valuemax={editorResizeMaxHeight}
-        aria-valuenow={currentEditorResizeValue}
-        tabIndex={0}
-        onPointerDown={handleEditorResizePointerDown}
-        onKeyDown={handleEditorResizeKeyDown}
-      >
-        <span className="editor-resizer-grip" aria-hidden="true" />
       </div>
-      {createElement(BottomEditor, {
-        activeTrackId,
-        activeTutorialTarget,
-        tutorialLocked: tutorialViewModel.locked,
-        tutorialTargets: tutorialViewModel.targets,
-        matrix,
-        melodyScaleId,
-        selectedClipName: selectedClip?.name ?? '',
-        onChordCellSelect: handleChordCellSelect,
-        onChordNoteSelect: handleChordNoteSelect,
-        onChordPick: handleChordPick,
-        onChordPreview: handleChordPreview,
-        onChordGrooveTemplatePreview: handleChordGrooveTemplatePreview,
-        onChordGrooveTemplateApply: handleChordGrooveTemplateApply,
-        onChordTemplatePreview: handleChordTemplatePreview,
-        onChordTemplateApply: handleChordTemplateApply,
-        shouldConfirmChordTemplateApply,
-        onPassingChordPick: handlePassingChordPick,
-        onPassingChordPreview: handlePassingChordPreview,
-        onBassPreview: handleBassPreview,
-        onBassStepToggle: handleBassStepToggle,
-        onBassGrooveTemplatePreview: handleBassGrooveTemplatePreview,
-        onBassGrooveTemplateApply: handleBassGrooveTemplateApply,
-        onCloseEditor: handleCloseEditor,
-        onClearBass: handleClearBass,
-        onClearBassBar: handleClearBassBar,
-        onClearMelody: handleClearMelody,
-        onClearMelodyBar: handleClearMelodyBar,
-        onMelodyPreview: handleMelodyPreview,
-        onMelodyScaleChange: handleMelodyScaleChange,
-        onMelodyStepToggle: handleMelodyStepToggle,
-        onRenameClip: handleRenameClip,
-        onClearCurrentDrumsBar: handleClearCurrentDrumsBar,
-        onClearChordBar: handleClearChordBar,
-        onClearChord: handleClearChord,
-        onClearDrums: handleClearDrums,
-        canPageBars,
-        onGenerateAllDrumsBars: handleGenerateAllDrumsBars,
-        onGenerateCurrentDrumsBar: handleGenerateCurrentDrumsBar,
-        onNextBar: handleNextBar,
-        onPreviousBar: handlePreviousBar,
-        onDrumsStepMove: handleDrumsStepMove,
-        onDrumsStepToggle: handleDrumsStepToggle,
-        selectedBar,
-        selectedClipId,
-      })}
-      {tutorialVisible ? createElement(TutorialOverlay, {
-        canGoBack: currentTutorialStepIndex > 0,
-        canManualNext: tutorialViewModel.canManualNext,
-        displayCopy: tutorialViewModel.displayCopy,
-        isLastStep: currentTutorialStepIndex === DRUMS_TUTORIAL_STEPS.length - 1,
-        onBack: handleTutorialBack,
-        onCompleteTask: handleTutorialCompleteTask,
-        onPrimaryAction: handleTutorialNext,
-        onSkip: handleTutorialSkip,
-        showCompleteButton: tutorialViewModel.showCompleteButton,
-        step: currentTutorialStep,
-        targetName: activeTutorialTarget,
-      }) : null}
     </div>
   );
 }

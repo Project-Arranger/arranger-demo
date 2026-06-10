@@ -700,14 +700,26 @@ test('app keeps the editor focused on the playback bar while transport is playin
   assert.match(source, /\[\s*activeTrackId,\s*currentBar,\s*isPlaying,\s*selectedBar\s*\]/);
 });
 
-test('app mounts the drums tutorial preview overlay', async () => {
+test('app mounts the drums tutorial right sidebar', async () => {
   const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
   const overlaySource = await readFile(
     new URL('../src/app/components/TutorialOverlay.jsx', import.meta.url),
     'utf8',
   );
+  const topBarSource = await readFile(new URL('../src/app/components/TopBar.jsx', import.meta.url), 'utf8');
 
   assert.match(source, /TutorialOverlay/);
+  assert.match(source, /className="app-main"/);
+  assert.match(source, /const workspaceClassName = \[/);
+  assert.match(source, /<main className=\{workspaceClassName\}>/);
+  assert.match(source, /<main className=\{workspaceClassName\}>[\s\S]*createElement\(TracksColumn[\s\S]*createElement\(Timeline[\s\S]*createElement\(TutorialOverlay[\s\S]*<\/main>/);
+  assert.match(source, /tutorialSidebarCollapsed/);
+  assert.match(source, /setTutorialSidebarCollapsed/);
+  assert.match(source, /showTutorialToggle:\s*tutorialVisible/);
+  assert.match(source, /onTutorialToggle:\s*handleTutorialSidebarToggle/);
+  assert.match(source, /tutorialCollapsed:\s*tutorialSidebarCollapsed/);
+  assert.doesNotMatch(source, /showTutorialReopen/);
+  assert.doesNotMatch(source, /onTutorialReopen/);
   assert.match(source, /DRUMS_TUTORIAL_STEPS/);
   assert.match(source, /currentTutorialStepIndex/);
   assert.match(source, /getTutorialViewModel/);
@@ -715,12 +727,36 @@ test('app mounts the drums tutorial preview overlay', async () => {
   assert.match(source, /APP_COMMAND_TYPES\.TRANSPORT_STOP/);
   assert.match(source, /stopTutorialPreviewPlayback/);
   assert.match(overlaySource, /tutorial-panel/);
-  assert.match(overlaySource, /getTutorialPlacement/);
-  assert.match(overlaySource, /data-placement=/);
+  assert.match(overlaySource, /collapsed/);
+  assert.doesNotMatch(overlaySource, /onToggleCollapsed/);
+  assert.doesNotMatch(overlaySource, /\bonClose\b/);
+  assert.match(overlaySource, /if \(collapsed\) return null;/);
+  assert.doesNotMatch(overlaySource, /tutorial-panel-tools/);
+  assert.doesNotMatch(overlaySource, /tutorial-icon-button/);
+  assert.doesNotMatch(overlaySource, /ChevronLeft/);
+  assert.doesNotMatch(overlaySource, /\bX\b/);
+  assert.doesNotMatch(overlaySource, /tutorial-reopen-button/);
+  assert.doesNotMatch(topBarSource, /ChevronLeft/);
+  assert.doesNotMatch(topBarSource, /ChevronRight/);
+  assert.match(topBarSource, /showTutorialToggle/);
+  assert.match(topBarSource, /onTutorialToggle/);
+  assert.match(topBarSource, /tutorialCollapsed/);
+  assert.match(topBarSource, /const tutorialToggleLabel = tutorialCollapsed \? '展开教程' : '收起教程';/);
+  assert.doesNotMatch(topBarSource, /TutorialToggleIcon/);
+  assert.match(topBarSource, /className="tutorial-topbar-button"/);
+  assert.doesNotMatch(topBarSource, /className="tutorial-topbar-button icon-btn"/);
+  assert.match(topBarSource, /aria-label=\{tutorialToggleLabel\}/);
+  assert.match(topBarSource, /title=\{tutorialToggleLabel\}/);
+  assert.match(topBarSource, />\s*教程\s*<\/button>/);
+  assert.doesNotMatch(topBarSource, /showTutorialReopen/);
+  assert.doesNotMatch(topBarSource, /onTutorialReopen/);
   assert.match(overlaySource, /displayCopy/);
   assert.match(overlaySource, /showCompleteButton/);
   assert.match(overlaySource, /onPrimaryAction/);
   assert.match(overlaySource, /跳过教程/);
+  assert.doesNotMatch(overlaySource, /getTutorialPlacement/);
+  assert.doesNotMatch(overlaySource, /data-placement=/);
+  assert.doesNotMatch(overlaySource, /targetName/);
   assert.doesNotMatch(overlaySource, /step\.phase/);
   assert.doesNotMatch(overlaySource, /step\.title/);
   assert.doesNotMatch(overlaySource, /tutorial-phase/);
@@ -749,6 +785,7 @@ test('tutorial navigation buttons interrupt preview playback', async () => {
   assert.match(source, /handleTutorialNext = useCallback\(\(\) => \{[\s\S]*clearTutorialAutoAdvanceTimer\(\);[\s\S]*stopTutorialPreviewPlayback\(\);/);
   assert.match(source, /handleTutorialSkip = useCallback\(\(\) => \{[\s\S]*clearTutorialAutoAdvanceTimer\(\);[\s\S]*stopTutorialPreviewPlayback\(\);[\s\S]*setTutorialVisible\(false\);/);
   assert.match(source, /onSkip:\s*handleTutorialSkip/);
+  assert.doesNotMatch(source, /onClose:\s*handleTutorialSkip/);
 });
 
 test('tutorial preview points to real app regions', async () => {
@@ -775,7 +812,7 @@ test('tutorial preview points to real app regions', async () => {
   assert.doesNotMatch(timelineSource, /activeTutorialTarget === 'track-area'/);
   assert.match(bottomEditorSource, /data-tutorial-target="track-editor"/);
   assert.match(bottomEditorSource, /tutorial-target-active/);
-  assert.match(overlaySource, /getTutorialPlacement\(targetName\)/);
+  assert.doesNotMatch(overlaySource, /getTutorialPlacement\(targetName\)/);
 });
 
 test('app routes drums tutorial tasks through guards and target props', async () => {

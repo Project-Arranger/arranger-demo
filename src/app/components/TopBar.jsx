@@ -20,10 +20,14 @@ function TopBar({
   onBackToStart,
   onPlayToggle,
   onStop,
+  onTutorialToggle,
   rootKey,
   scale,
+  showTutorialToggle = false,
+  tutorialCollapsed = false,
 }) {
   const active = activeTutorialTarget === 'top-bar';
+  const tutorialToggleLabel = tutorialCollapsed ? '展开教程' : '收起教程';
 
   return (
     <header
@@ -92,6 +96,17 @@ function TopBar({
       </div>
 
       <div className="right-tools">
+        {showTutorialToggle ? (
+          <button
+            className="tutorial-topbar-button"
+            type="button"
+            aria-label={tutorialToggleLabel}
+            title={tutorialToggleLabel}
+            onClick={onTutorialToggle}
+          >
+            教程
+          </button>
+        ) : null}
         <div className="save-pill" title="All changes saved">
           <span className="dot" />
           Saved

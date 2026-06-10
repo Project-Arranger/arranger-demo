@@ -81,57 +81,52 @@ button {
 }
 
 .tutorial-panel {
-  position: fixed;
+  position: relative;
   z-index: 90;
   display: grid;
-  grid-template-rows: auto auto;
-  width: min(360px, calc(100vw - 32px));
-  height: auto;
-  max-height: calc(100dvh - 32px);
-  padding: 16px;
+  grid-template-rows: 48px minmax(0, 1fr) var(--track-footer-height);
+  align-self: stretch;
+  width: 100%;
+  height: 100%;
+  padding: 0;
   overflow: hidden;
   color: var(--ink);
-  background: oklch(98% 0.012 165 / 0.84);
-  border: 1px solid color-mix(in oklab, var(--c-drums-ink) 14%, transparent);
-  border-radius: 8px;
+  background: color-mix(in oklab, var(--surface) 58%, var(--bg));
+  border: 0;
+  border-left: 1px solid var(--border);
+  border-radius: 0;
   font-family: "Baloo 2", "Nunito", "Arial Rounded MT Bold", "Avenir Next Rounded", "Trebuchet MS", "PingFang SC", "Microsoft YaHei", sans-serif;
   text-align: center;
-  box-shadow:
-    0 14px 36px color-mix(in oklab, black 14%, transparent),
-    0 1px 0 color-mix(in oklab, white 68%, transparent) inset;
-  backdrop-filter: blur(12px);
+  box-shadow: inset 1px 0 0 color-mix(in oklab, white 34%, transparent);
 }
 
-.tutorial-panel[data-placement="center"] {
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+.tutorial-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 14px 0 16px;
+  border-bottom: 1px solid var(--border-soft);
 }
 
-.tutorial-panel[data-placement="top"] {
-  top: calc(var(--app-topbar-height) + 14px);
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.tutorial-panel[data-placement="middle"] {
-  top: 50%;
-  right: clamp(16px, 3vw, 32px);
-  transform: translateY(-50%);
-}
-
-.tutorial-panel[data-placement="editor"] {
-  bottom: calc(var(--app-editor-height) + 14px);
-  left: 50%;
-  transform: translateX(-50%);
+.tutorial-panel-label {
+  color: var(--c-drums-ink);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  line-height: 1;
 }
 
 .tutorial-panel-body {
   display: grid;
-  align-content: start;
+  align-content: center;
   justify-items: center;
   gap: 8px;
   min-width: 0;
+  min-height: 0;
+  padding: 18px;
+  overflow: auto;
 }
 
 .tutorial-panel p {
@@ -201,13 +196,18 @@ button {
 .tutorial-panel-actions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
   gap: 6px;
-  margin-top: 12px;
+  height: var(--track-footer-height);
+  min-height: 0;
+  padding: 5px 12px;
+  border-top: 1px solid var(--border-soft);
 }
 
 .tutorial-primary,
 .tutorial-secondary,
 .tutorial-link {
+  height: 36px;
   min-height: 36px;
   padding: 0 12px;
   border: 1px solid color-mix(in oklab, var(--c-drums-ink) 16%, transparent);
@@ -238,29 +238,45 @@ button {
 }
 
 @media (max-width: 760px), (max-height: 620px) {
-  .tutorial-panel,
-  .tutorial-panel[data-placement] {
+  .tutorial-panel {
+    position: fixed;
     top: auto;
     right: 16px;
     bottom: 16px;
     left: 16px;
     width: auto;
+    height: auto;
     max-height: min(68dvh, calc(100dvh - 32px));
-    transform: none;
+    border: 1px solid color-mix(in oklab, var(--c-drums-ink) 14%, transparent);
+    border-radius: 8px;
+    box-shadow:
+      0 1px 0 color-mix(in oklab, white 52%, transparent) inset,
+      0 8px 20px color-mix(in oklab, black 10%, transparent);
   }
 }
 
 .app {
   position: relative;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.app-main {
+  position: relative;
+  display: grid;
   grid-template-rows: var(--app-topbar-height) minmax(0, 1fr) var(--app-editor-height);
   height: 100dvh;
+  min-width: 0;
   min-height: 0;
   overflow: hidden;
 }
 
-.app:has(.tutorial-target-active)::before {
-  position: fixed;
+.app-main:has(.tutorial-target-active)::before {
+  position: absolute;
   inset: 0;
   z-index: 50;
   pointer-events: none;
@@ -622,12 +638,39 @@ button {
   border-radius: 10px;
 }
 
+.tutorial-topbar-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 36px;
+  flex: 0 0 58px;
+  padding: 0 12px;
+  color: var(--c-drums-ink);
+  border: 1px solid color-mix(in oklab, var(--c-drums-ink) 12%, transparent);
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--c-drums) 38%, white);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .workspace {
   display: grid;
   grid-template-columns: clamp(188px, 18vw, 246px) minmax(0, 1fr);
   min-height: 0;
   overflow: hidden;
   background: var(--bg);
+}
+
+.workspace.tutorial-sidebar-open {
+  grid-template-columns: clamp(188px, 18vw, 246px) minmax(0, 1fr) clamp(300px, 24vw, 360px);
+}
+
+.workspace.tutorial-sidebar-collapsed {
+  grid-template-columns: clamp(188px, 18vw, 246px) minmax(0, 1fr);
 }
 
 .tracks-col {
@@ -920,6 +963,7 @@ button {
   position: relative;
   display: grid;
   align-items: center;
+  height: var(--track-footer-height);
   min-width: 0;
   padding: 0 14px;
 }
@@ -1045,6 +1089,7 @@ button {
 
 .timeline-footer-spacer {
   min-width: var(--timeline-min-width);
+  height: var(--track-footer-height);
   min-height: var(--track-footer-height);
   background: color-mix(in oklab, var(--surface) 58%, var(--bg));
   border-top: 1px solid var(--border-soft);
@@ -3646,7 +3691,7 @@ button {
 }
 
 @media (max-width: 980px) {
-  .app {
+  .app-main {
     grid-template-rows: auto minmax(0, 1fr) var(--app-editor-height);
   }
 
@@ -3663,15 +3708,23 @@ button {
   }
 
   .btn-new,
-  .right-tools {
+  .right-tools .save-pill,
+  .right-tools .btn-export,
+  .right-tools .icon-btn:not(.tutorial-topbar-button) {
     display: none;
   }
 
   .topbar-center {
     grid-column: 1 / -1;
+    grid-row: 2;
     width: 100%;
     min-width: 0;
     overflow-x: auto;
+  }
+
+  .right-tools {
+    grid-column: 2;
+    grid-row: 1;
   }
 
   .stat:nth-child(4) {
@@ -3770,5 +3823,12 @@ button {
   .drum-step-group {
     grid-template-columns: repeat(4, minmax(16px, 26px));
     gap: 4px;
+  }
+}
+
+@media (max-width: 760px), (max-height: 620px) {
+  .workspace.tutorial-sidebar-open,
+  .workspace.tutorial-sidebar-collapsed {
+    grid-template-columns: 168px minmax(0, 1fr);
   }
 }

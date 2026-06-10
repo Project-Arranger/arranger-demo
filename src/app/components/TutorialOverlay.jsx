@@ -1,18 +1,7 @@
-import { TUTORIAL_TARGETS } from '../../tutorial/drumsTutorialConstants.js';
-
-const TUTORIAL_TARGET_PLACEMENTS = Object.freeze({
-  [TUTORIAL_TARGETS.TOP_BAR]: 'top',
-  [TUTORIAL_TARGETS.TRACK_AREA]: 'middle',
-  [TUTORIAL_TARGETS.TRACK_EDITOR]: 'editor',
-});
-
-function getTutorialPlacement(targetName) {
-  return TUTORIAL_TARGET_PLACEMENTS[targetName] ?? 'center';
-}
-
 function TutorialOverlay({
   canGoBack = true,
   canManualNext = true,
+  collapsed = false,
   displayCopy,
   isLastStep = false,
   onBack,
@@ -21,19 +10,23 @@ function TutorialOverlay({
   onSkip,
   showCompleteButton = false,
   step,
-  targetName,
 }) {
   if (!step) return null;
 
   const primaryLabel = showCompleteButton
     ? '完成'
     : step.id === 'opening' ? '开始创造' : '下一步';
-  const placement = getTutorialPlacement(targetName);
   const primaryDisabled = showCompleteButton ? false : isLastStep || !canManualNext;
   const handlePrimaryAction = showCompleteButton ? onCompleteTask : onPrimaryAction;
 
+  if (collapsed) return null;
+
   return (
-    <aside className="tutorial-panel" data-placement={placement} aria-live="polite">
+    <aside className="tutorial-panel" aria-live="polite">
+      <div className="tutorial-panel-header">
+        <div className="tutorial-panel-label">教程</div>
+      </div>
+
       <div className="tutorial-panel-body">
         <p>{displayCopy ?? step.copy}</p>
       </div>
