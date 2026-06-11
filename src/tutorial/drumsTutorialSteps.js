@@ -46,8 +46,8 @@ const DRUMS_TUTORIAL_STEPS = [
     id: TUTORIAL_STEP_IDS.DRUMS_FILL_TRACK_CLIPS,
     section: SECTION_TARGET_2,
     trigger: '点击播放按钮并播放完第一个Clip',
-    uiEvent: '补齐空Clip按钮闪烁',
-    copy: '创建完整的打击乐音轨\n\n一键填充\n点击“补齐Clip”按钮，可以一键给整个音轨都创建乐句；其他轨也可以这样操作',
+    uiEvent: '填充整轨按钮闪烁',
+    copy: '创建完整的打击乐音轨\n\n一键填充\n点击“填充整轨”按钮，可以一键给整个音轨都创建乐句；其他轨也可以这样操作',
     primaryLabel: '下一步',
     completion: {
       type: 'fill-track-clips',
@@ -58,7 +58,7 @@ const DRUMS_TUTORIAL_STEPS = [
   {
     id: TUTORIAL_STEP_IDS.DRUMS_GENERATE_ALL_BARS,
     section: SECTION_TARGET_2,
-    trigger: '点击“补齐Clip”按钮',
+    trigger: '点击“填充整轨”按钮',
     uiEvent: '全局生成基础律动按钮闪烁',
     copy: '编辑你的第一个打击乐乐句\n\n给整轨添加基础律动\n点击全局生成基础律动按钮，给所有打击乐乐句添加基础律动',
     primaryLabel: '下一步',
@@ -101,7 +101,7 @@ DRUMS_TUTORIAL_STEPS.errata = Object.freeze({
   phase1: '目标1-3无需修正',
   future: Object.freeze([
     '目标4/行18与行19疑似错字：让你你的...',
-    '目标5/行20疑似错列：Chord轨补齐空Clip按钮闪烁',
+    '目标5/行20疑似错列：Chord轨填充整轨按钮闪烁',
   ]),
 });
 

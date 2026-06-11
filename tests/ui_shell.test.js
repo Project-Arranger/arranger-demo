@@ -89,8 +89,8 @@ test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async
   assert.doesNotMatch(uiDataSource, /trackClips|clipName|selected:/);
   assert.match(tracksColumnSource, /onFillEmptyTrackClips/);
   assert.match(tracksColumnSource, /onFillEmptyTrackClips\(track\.id\)/);
-  assert.match(tracksColumnSource, /补齐空Clip/);
-  assert.match(tracksColumnSource, /aria-label="补齐这一轨缺失的空 clips"/);
+  assert.match(tracksColumnSource, /填充整轨/);
+  assert.match(tracksColumnSource, /aria-label="填充整轨"/);
   assert.match(tracksColumnSource, /aria-haspopup="menu"/);
   assert.match(tracksColumnSource, /add-track-menu/);
   assert.match(tracksColumnSource, /role="menuitem"/);

@@ -126,8 +126,8 @@ function TrackRow({
         <button
           className={fillButtonClassName}
           type="button"
-          aria-label="补齐这一轨缺失的空 clips"
-          title="补齐这一轨缺失的空 clips"
+          aria-label="填充整轨"
+          title="填充整轨"
           disabled={fillButtonDisabled}
           onClick={handleFillEmptyClips}
         >
@@ -137,7 +137,7 @@ function TrackRow({
             <span />
             <span />
           </span>
-          <span className="fill-empty-clips-label">补齐空Clip</span>
+          <span className="fill-empty-clips-label">填充整轨</span>
         </button>
       </div>
       <label
