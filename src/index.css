@@ -2933,6 +2933,11 @@ button {
   display: none;
 }
 
+.app-main:has(.tutorial-panel) .tpl-picker:not([hidden]),
+.app-main:has(.tutorial-panel) .gtpl-picker:not([hidden]) {
+  z-index: var(--tutorial-floating-ui-z);
+}
+
 .gtpl-card {
   display: flex;
   flex-direction: column;
@@ -2965,6 +2970,19 @@ button {
   box-shadow:
     0 0 0 2px color-mix(in oklab, var(--ink) 18%, transparent),
     var(--shadow-2);
+}
+
+.tpl-card.tutorial-control-target,
+.gtpl-card.tutorial-control-target {
+  --tutorial-highlight-rest-shadow: var(--tutorial-target-contained-rest-shadow);
+  --tutorial-highlight-peak-shadow: var(--tutorial-target-contained-peak-shadow);
+
+  color: var(--tutorial-target-ink);
+  background: color-mix(in oklab, white 78%, var(--tutorial-target-surface));
+  border: 1px solid var(--tutorial-target-surface-border);
+  outline-offset: -4px;
+  opacity: 1;
+  box-shadow: var(--tutorial-highlight-rest-shadow);
 }
 
 .gtpl-name-row {
