@@ -12,7 +12,6 @@ import {
   handleTutorialDrumToggle,
   handleTutorialPlaybackComplete,
   isTutorialStepComplete,
-  resetTutorialStepForRetry,
 } from '../src/tutorial/drumsTutorialRuntime.js';
 import { DRUMS_TUTORIAL_STEPS } from '../src/tutorial/drumsTutorialSteps.js';
 import { TUTORIAL_STEP_IDS } from '../src/tutorial/tutorialStepIds.js';
@@ -420,27 +419,4 @@ test('free create step keeps editor open and advances only from continue explora
     playhead: null,
     timelineBars: [],
   });
-});
-
-test('retry reset for drag step restores source and target kicks', () => {
-  const step = getStep(TUTORIAL_STEP_IDS.DRUMS_DRAG_KICK);
-  const matrix = createInitialMatrix();
-  matrix.drums[0][0] = createDrumsCell(['hihat']);
-  matrix.drums[0][2] = createDrumsCell(['kick', 'snare']);
-  const progress = {
-    ...createTutorialState(),
-    kickDragMoved: true,
-  };
-
-  const reset = resetTutorialStepForRetry({ matrix, progress, step });
-
-  assert.deepEqual(reset.nextProgress, {
-    ...progress,
-    kickDragMoved: false,
-    kickDragComplete: false,
-  });
-  assert.deepEqual(reset.nextMatrixPatch, [
-    { bar: 0, cell: { instruments: ['kick', 'hihat'] }, step: 0 },
-    { bar: 0, cell: { instruments: ['snare'] }, step: 2 },
-  ]);
 });

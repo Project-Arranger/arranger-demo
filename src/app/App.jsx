@@ -26,9 +26,13 @@ import {
   handleTutorialDrumMove,
   handleTutorialDrumToggle,
   handleTutorialPlaybackComplete,
-  resetTutorialStepForRetry,
 } from '../tutorial/drumsTutorialRuntime.js';
 import { DRUMS_TUTORIAL_STEPS } from '../tutorial/drumsTutorialSteps.js';
+import {
+  createTutorialCheckpoint,
+  pruneTutorialCheckpoints,
+  restoreTutorialCheckpoint,
+} from '../tutorial/tutorialCheckpoints.js';
 import { TUTORIAL_STEP_IDS } from '../tutorial/tutorialStepIds.js';
 import { createUiAudioDispatcher } from './audioUiBridge.js';
 import {
@@ -94,11 +98,6 @@ const EDITOR_RESIZE_MIN_HEIGHT = 180;
 const EDITOR_RESIZE_WORKSPACE_MIN_HEIGHT = 180;
 const EDITOR_RESIZE_KEYBOARD_STEP = 16;
 const EDITOR_RESIZE_DEFAULT_HEIGHT = 300;
-const TUTORIAL_BACK_TARGET_RESET_STEP_IDS = new Set([
-  TUTORIAL_STEP_IDS.DRUMS_OPEN_FIRST_CLIP,
-  TUTORIAL_STEP_IDS.DRUMS_ADD_KICK_VARIATION,
-  TUTORIAL_STEP_IDS.DRUMS_DRAG_KICK,
-]);
 
 let tutorialAutoAdvanceTimerId = null;
 
@@ -169,6 +168,13 @@ export default function App() {
   const [tutorialVisible, setTutorialVisible] = useState(true);
   const [tutorialSidebarCollapsed, setTutorialSidebarCollapsed] = useState(false);
   const [appliedTutorialSetups, setAppliedTutorialSetups] = useState(() => new Set());
+  const [tutorialStepCheckpoints, setTutorialStepCheckpoints] = useState(() => ({
+    0: createTutorialCheckpoint({
+      appState: useMusicStore.getState(),
+      appliedTutorialSetups: new Set(),
+      tutorialProgress: createTutorialState(),
+    }),
+  }));
   const [editorHeightPx, setEditorHeightPx] = useState(null);
   const [editorResizeMaxHeight, setEditorResizeMaxHeight] = useState(EDITOR_RESIZE_DEFAULT_HEIGHT);
   const [currentEditorResizeValue, setCurrentEditorResizeValue] = useState(EDITOR_RESIZE_DEFAULT_HEIGHT);
@@ -360,9 +366,9 @@ export default function App() {
     useMusicStore.getState().createClip(trackId, barIndex);
   }, []);
 
-  const applyTutorialStepSetup = useCallback((step) => {
+  const applyTutorialStepSetup = useCallback((step, knownAppliedSetups = appliedTutorialSetups) => {
     const setupType = step?.setup?.type;
-    if (!setupType || appliedTutorialSetups.has(step.id)) return;
+    if (!setupType || knownAppliedSetups?.has?.(step.id)) return;
 
     const state = useMusicStore.getState();
 
@@ -385,16 +391,37 @@ export default function App() {
     });
   }, [appliedTutorialSetups]);
 
-  const advanceTutorialToNextStep = useCallback(() => {
-    const nextStepIndex = Math.min(currentTutorialStepIndex + 1, DRUMS_TUTORIAL_STEPS.length - 1);
-    applyTutorialStepSetup(DRUMS_TUTORIAL_STEPS[nextStepIndex]);
+  const enterTutorialStepIndex = useCallback((
+    requestedStepIndex,
+    checkpointProgress = tutorialProgress,
+  ) => {
+    const nextStepIndex = Math.max(
+      0,
+      Math.min(requestedStepIndex, DRUMS_TUTORIAL_STEPS.length - 1),
+    );
+    const nextStep = DRUMS_TUTORIAL_STEPS[nextStepIndex];
+    const nextStepCheckpoint = createTutorialCheckpoint({
+      appState: useMusicStore.getState(),
+      appliedTutorialSetups,
+      tutorialProgress: checkpointProgress,
+    });
+
+    setTutorialStepCheckpoints((checkpoints) => ({
+      ...checkpoints,
+      [nextStepIndex]: nextStepCheckpoint,
+    }));
+    applyTutorialStepSetup(nextStep);
     setCurrentTutorialStepIndex(nextStepIndex);
-  }, [applyTutorialStepSetup, currentTutorialStepIndex]);
+  }, [appliedTutorialSetups, applyTutorialStepSetup, tutorialProgress]);
+
+  const advanceTutorialToNextStep = useCallback((checkpointProgress = tutorialProgress) => {
+    enterTutorialStepIndex(currentTutorialStepIndex + 1, checkpointProgress);
+  }, [currentTutorialStepIndex, enterTutorialStepIndex, tutorialProgress]);
 
   const applyTutorialActionProgress = useCallback((tutorialAction) => {
     setTutorialProgress(tutorialAction.nextProgress);
     if (tutorialAction.shouldAdvance) {
-      scheduleTutorialAutoAdvance(advanceTutorialToNextStep);
+      scheduleTutorialAutoAdvance(() => advanceTutorialToNextStep(tutorialAction.nextProgress));
     }
   }, [advanceTutorialToNextStep]);
 
@@ -930,57 +957,17 @@ export default function App() {
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
   }, [dispatchAppCommand]);
 
-  const resetTutorialStepsForBack = useCallback((steps) => {
-    const state = useMusicStore.getState();
-    let nextProgress = tutorialProgress;
-    const resetStepIds = new Set();
-
-    steps.forEach((step) => {
-      if (!step || resetStepIds.has(step.id)) return;
-      resetStepIds.add(step.id);
-
-      const reset = resetTutorialStepForRetry({
-        matrix: useMusicStore.getState().matrix,
-        progress: nextProgress,
-        step,
-      });
-
-      reset.nextMatrixPatch.forEach(({ bar, cell, step: stepIndex }) => {
-        state.setCell('drums', bar, stepIndex, cell);
-      });
-      if (reset.nextTransportPosition) {
-        void dispatchAppCommand({
-          type: APP_COMMAND_TYPES.TRANSPORT_SEEK,
-          bar: reset.nextTransportPosition.bar,
-          step: reset.nextTransportPosition.step,
-        });
-      }
-      nextProgress = reset.nextProgress;
-    });
-
-    if (currentTutorialStep?.setup) {
-      setAppliedTutorialSetups((setups) => {
-        if (!setups.has(currentTutorialStep.id)) return setups;
-        const nextSetups = new Set(setups);
-        nextSetups.delete(currentTutorialStep.id);
-        return nextSetups;
-      });
-    }
-
-    setTutorialProgress(nextProgress);
-  }, [currentTutorialStep, dispatchAppCommand, tutorialProgress]);
-
   const handleTutorialNext = useCallback(() => {
     if (!tutorialViewModel.canManualNext) return;
     clearTutorialAutoAdvanceTimer();
     stopTutorialPreviewPlayback();
     const nextStepIndex = Math.min(currentTutorialStepIndex + 1, DRUMS_TUTORIAL_STEPS.length - 1);
-    applyTutorialStepSetup(DRUMS_TUTORIAL_STEPS[nextStepIndex]);
-    setCurrentTutorialStepIndex(nextStepIndex);
+    enterTutorialStepIndex(nextStepIndex, tutorialProgress);
   }, [
-    applyTutorialStepSetup,
     currentTutorialStepIndex,
+    enterTutorialStepIndex,
     stopTutorialPreviewPlayback,
+    tutorialProgress,
     tutorialViewModel.canManualNext,
   ]);
 
@@ -999,15 +986,15 @@ export default function App() {
 
     if (tutorialAction.shouldAdvance) {
       const nextStepIndex = Math.min(currentTutorialStepIndex + 1, DRUMS_TUTORIAL_STEPS.length - 1);
-      applyTutorialStepSetup(DRUMS_TUTORIAL_STEPS[nextStepIndex]);
-      setCurrentTutorialStepIndex(nextStepIndex);
+      if (clip?.id) useMusicStore.getState().selectClip(clip.id);
+      enterTutorialStepIndex(nextStepIndex, tutorialAction.nextProgress);
     }
 
     return true;
   }, [
-    applyTutorialStepSetup,
     currentTutorialStep,
     currentTutorialStepIndex,
+    enterTutorialStepIndex,
     tutorialProgress,
     tutorialVisible,
   ]);
@@ -1015,21 +1002,28 @@ export default function App() {
   const handleTutorialBack = useCallback(() => {
     clearTutorialAutoAdvanceTimer();
     stopTutorialPreviewPlayback();
-    const nextStepIndex = Math.max(currentTutorialStepIndex - 1, 0);
-    const nextStep = DRUMS_TUTORIAL_STEPS[nextStepIndex];
-    const stepsToReset = [currentTutorialStep];
-
-    if (TUTORIAL_BACK_TARGET_RESET_STEP_IDS.has(nextStep?.id)) {
-      stepsToReset.push(nextStep);
-    }
-
-    resetTutorialStepsForBack(stepsToReset);
-    setCurrentTutorialStepIndex(nextStepIndex);
+    const targetStepIndex = Math.max(currentTutorialStepIndex - 1, 0);
+    const targetCheckpoint = tutorialStepCheckpoints[targetStepIndex];
+    restoreTutorialCheckpoint({
+      checkpoint: targetCheckpoint,
+      setAppliedTutorialSetups,
+      setTutorialProgress,
+      store: useMusicStore,
+    });
+    applyTutorialStepSetup(
+      DRUMS_TUTORIAL_STEPS[targetStepIndex],
+      targetCheckpoint?.appliedTutorialSetups,
+    );
+    setTutorialStepCheckpoints((checkpoints) => pruneTutorialCheckpoints(
+      checkpoints,
+      targetStepIndex + 1,
+    ));
+    setCurrentTutorialStepIndex(targetStepIndex);
   }, [
-    currentTutorialStep,
+    applyTutorialStepSetup,
     currentTutorialStepIndex,
-    resetTutorialStepsForBack,
     stopTutorialPreviewPlayback,
+    tutorialStepCheckpoints,
   ]);
 
   const handleTutorialSkip = useCallback(() => {

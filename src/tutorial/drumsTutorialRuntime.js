@@ -1,7 +1,4 @@
-import {
-  createDrumsCell,
-  getDrumsCellInstruments,
-} from '../domain/drumsCells.js';
+import { getDrumsCellInstruments } from '../domain/drumsCells.js';
 import { createDrumsStepMovePatch } from '../domain/drumsStepMove.js';
 import {
   DRUMS_DRAG_SOURCE_STEP,
@@ -110,15 +107,6 @@ function addDrumCellTarget(targets, { bar, instrument = 'kick', role, step }) {
     role,
     steps: [step],
   });
-}
-
-function makeCellWithoutInstrument(cell, instrument) {
-  const instruments = getDrumsCellInstruments(cell).filter((item) => item !== instrument);
-  return createDrumsCell(instruments);
-}
-
-function makeCellWithInstrument(cell, instrument) {
-  return createDrumsCell([...getDrumsCellInstruments(cell), instrument]);
 }
 
 function isTutorialStepComplete(step, progress = createTutorialState()) {
@@ -454,42 +442,6 @@ function completeTutorialPrimaryAction({
   return createAllowedAction(progress, true);
 }
 
-function resetTutorialStepForRetry({
-  matrix,
-  progress = createTutorialState(),
-  step,
-} = {}) {
-  if (step?.id === TUTORIAL_STEP_IDS.DRUMS_DRAG_KICK) {
-    const targetBar = DRUMS_TUTORIAL_FIRST_BAR;
-    const sourceCell = matrix?.drums?.[targetBar]?.[DRUMS_DRAG_SOURCE_STEP] ?? null;
-    const targetCell = matrix?.drums?.[targetBar]?.[DRUMS_DRAG_TARGET_STEP] ?? null;
-    return {
-      nextMatrixPatch: [
-        {
-          bar: targetBar,
-          cell: makeCellWithInstrument(sourceCell, 'kick'),
-          step: DRUMS_DRAG_SOURCE_STEP,
-        },
-        {
-          bar: targetBar,
-          cell: makeCellWithoutInstrument(targetCell, 'kick'),
-          step: DRUMS_DRAG_TARGET_STEP,
-        },
-      ],
-      nextProgress: {
-        ...progress,
-        kickDragMoved: false,
-        kickDragComplete: false,
-      },
-    };
-  }
-
-  return {
-    nextMatrixPatch: [],
-    nextProgress: progress,
-  };
-}
-
 export {
   completeTutorialPrimaryAction,
   createTutorialState,
@@ -501,5 +453,4 @@ export {
   handleTutorialDrumToggle,
   handleTutorialPlaybackComplete,
   isTutorialStepComplete,
-  resetTutorialStepForRetry,
 };
