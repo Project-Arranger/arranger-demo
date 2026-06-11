@@ -628,6 +628,9 @@ test('passing chord shortcut anchors over column fifteen without shifting the gr
   assert.match(css, /\.beat-group\.has-passing \.beat-head\s*\{[^}]*position:\s*relative;/s);
   assert.match(css, /\.beat-group\.has-passing \.beat-head \.add-chord-btn\s*\{[^}]*width:\s*auto;/s);
   assert.match(css, /\.passing-anchor\s*\{[^}]*position:\s*absolute;[^}]*top:\s*50%;[^}]*left:\s*62\.5%;/s);
+  assert.match(css, /\.passing-anchor\.tutorial-passing-anchor-target\s*\{[^}]*z-index:\s*var\(--tutorial-target-z\);/s);
+  assert.match(css, /\.passing-btn\.tutorial-control-target\s*\{[^}]*color:\s*var\(--tutorial-target-ink\);[^}]*background:\s*color-mix\(in oklab, white 82%, var\(--tutorial-target-surface\)\);[^}]*border:\s*1px solid var\(--tutorial-target-surface-border\);/s);
+  assert.match(css, /\.passing-btn\.tutorial-control-target\s*\{[^}]*box-shadow:\s*var\(--tutorial-target-contained-rest-shadow\),/s);
   assert.match(css, /\.add-chord-btn\s*\{[^}]*background:\s*var\(--bg-deep\);[^}]*border:\s*1px solid var\(--border-soft\);[^}]*border-radius:\s*999px;/s);
   assert.match(css, /\.chord-label-segment\s*\{/);
   assert.match(css, /\.add-chord-btn\.variants-open,\s*\.passing-btn\.variants-open\s*\{/);

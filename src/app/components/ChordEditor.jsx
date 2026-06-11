@@ -38,6 +38,7 @@ import {
   isChordCellActive,
 } from '../../domain/chordCells.js';
 import { CHORD_GROOVE_TEMPLATES } from '../chordGrooveActions.js';
+import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
 import { usePitchScrollSync } from '../usePitchScrollSync.js';
 import { ClipNameInput } from './ClipNameInput.jsx';
 import { renderIcon } from './icons.js';
@@ -351,6 +352,8 @@ function ChordEditor({
   selectedBar,
   shouldConfirmChordTemplateApply = false,
   trackId = 'chord',
+  tutorialLocked = false,
+  tutorialTargets,
 }) {
   const [pickerMode, setPickerMode] = useState(null);
   const [templatePage, setTemplatePage] = useState(0);
@@ -373,11 +376,33 @@ function ChordEditor({
   const passingSourceChord = getChordCell(matrix, selectedBar, 0)?.label ?? primaryChordLabel;
   const passingTargetChord = getDoowopPassingTargetChord(passingSourceChord);
   const passingChordDisplayLabel = getPassingChordDisplayLabel(matrix, selectedBar, PASSING_CHORD_STEP_INDEX);
+  const passingRole = getTutorialControlRole(tutorialTargets, 'chord-passing-button');
+  const passingAnchorClassName = [
+    'passing-anchor',
+    passingRole === 'target' ? 'tutorial-passing-anchor-target' : '',
+  ].filter(Boolean).join(' ');
   const passingButtonClassName = [
     'add-chord-btn',
     'passing-btn',
     passingChordDisplayLabel ? 'filled' : '',
+    passingRole === 'target' ? 'tutorial-control-target' : '',
     passingChordPanel?.bar === selectedBar ? 'variants-open' : '',
+  ].filter(Boolean).join(' ');
+  const templateButtonRole = getTutorialControlRole(
+    tutorialTargets,
+    'chord-template-button',
+  );
+  const grooveButtonRole = getTutorialControlRole(
+    tutorialTargets,
+    'chord-groove-button',
+  );
+  const templateButtonClassName = [
+    'btn-template',
+    templateButtonRole === 'target' ? 'tutorial-control-target' : '',
+  ].filter(Boolean).join(' ');
+  const grooveButtonClassName = [
+    'btn-template-groove',
+    grooveButtonRole === 'target' ? 'tutorial-control-target' : '',
   ].filter(Boolean).join(' ');
   const closeChordPanels = useCallback(() => {
     setAddChordPanel(null);
@@ -513,9 +538,10 @@ function ChordEditor({
 
         <div className="tools">
           <button
-            className="btn-template"
+            className={templateButtonClassName}
             aria-label="选择和弦进行模板"
             type="button"
+            disabled={tutorialLocked && templateButtonRole !== 'target'}
             onClick={() => {
               setPickerMode('chord');
               closeChordPanels();
@@ -525,9 +551,10 @@ function ChordEditor({
             选择和弦进行模板
           </button>
           <button
-            className="btn-template-groove"
+            className={grooveButtonClassName}
             aria-label="选择和弦弹奏律动模板"
             type="button"
+            disabled={tutorialLocked && grooveButtonRole !== 'target'}
             onClick={() => {
               setPickerMode('groove');
               closeChordPanels();
@@ -536,13 +563,23 @@ function ChordEditor({
             {renderIcon(AudioWaveform)}
             选择和弦弹奏律动模板
           </button>
-          <button className="btn-template drum-clear-action" type="button" onClick={handleClear}>
+          <button
+            className="btn-template drum-clear-action"
+            type="button"
+            disabled={tutorialLocked}
+            onClick={handleClear}
+          >
             清空本小节
           </button>
-          <button className="btn-template drum-clear-action" type="button" onClick={handleClearChord}>
+          <button
+            className="btn-template drum-clear-action"
+            type="button"
+            disabled={tutorialLocked}
+            onClick={handleClearChord}
+          >
             清空整轨
           </button>
-          <button className="tool-icon" aria-label="More" title="More" type="button">
+          <button className="tool-icon" aria-label="More" title="More" type="button" disabled={tutorialLocked}>
             {renderIcon(MoreHorizontal)}
           </button>
           <button
@@ -618,10 +655,14 @@ function ChordEditor({
             const label = getChordSpanDisplayLabel(matrix, selectedBar, spanIndex);
             const enrichTargetLabel = getChordEnrichTargetLabel(matrix, selectedBar, spanIndex);
             const hasValue = Boolean(label);
+            const enrichControlName = `chord-enrich-button:${spanIndex}`;
+            const enrichRole = getTutorialControlRole(tutorialTargets, enrichControlName);
+            const canUseEnrichButton = !tutorialLocked || enrichRole === 'target';
             const beatHeadAddButtonClassName = [
               'add-chord-btn',
               'chord-label-segment',
               hasValue ? 'filled' : '',
+              enrichRole === 'target' ? 'tutorial-control-target' : '',
               addChordPanel?.bar === selectedBar && addChordPanel?.spanIndex === spanIndex ? 'variants-open' : '',
             ].filter(Boolean).join(' ');
 
@@ -641,6 +682,7 @@ function ChordEditor({
                       aria-label={`添加和弦 beat ${beatNumber}`}
                       data-chord-root={enrichTargetLabel ?? label}
                       type="button"
+                      disabled={!canUseEnrichButton}
                       onClick={(event) => {
                         openAddChordPanel(spanIndex, event.currentTarget, enrichTargetLabel);
                       }}
@@ -649,13 +691,20 @@ function ChordEditor({
                     </button>
                   ) : null}
                   {hasPassingShortcut ? (
-                    <div className="passing-anchor">
+                    <div className={passingAnchorClassName}>
                       <button
                         className={passingButtonClassName}
                         type="button"
                         aria-label="添加经过和弦"
                         title="添加经过和弦"
                         aria-expanded={passingChordPanel?.bar === selectedBar}
+                        disabled={
+                          tutorialLocked
+                          && getTutorialControlRole(
+                            tutorialTargets,
+                            'chord-passing-button',
+                          ) !== 'target'
+                        }
                         onClick={(event) => {
                           event.stopPropagation();
                           openPassingChordPanel(event.currentTarget);
@@ -696,6 +745,7 @@ function ChordEditor({
                             type="button"
                             aria-label={`${note.label} beat ${beatNumber}.${stepNumber}`}
                             aria-pressed={active || added}
+                            disabled={tutorialLocked}
                             onPointerEnter={() => setHoveredPitchRow(rowIndex)}
                             onPointerLeave={() => setHoveredPitchRow(null)}
                             onClick={() => {
@@ -760,51 +810,66 @@ function ChordEditor({
 
         <div className="tpl-body">
           <div className="tpl-list" id="tplList">
-            {visibleTemplates.map((template) => (
-              <article
-                className={[
-                  'tpl-card',
-                  selectedTemplateId === template.id ? 'selected' : '',
-                ].filter(Boolean).join(' ')}
-                data-tpl={template.id}
-                key={template.id}
-                onClick={() => handleTemplateRequest(template.id)}
-              >
-                <div className="tpl-name-row">
-                  <h3 className="tpl-name">{template.name}</h3>
-                  <span className="tpl-tag">{template.tag}</span>
-                </div>
-                <div className="tpl-prog">
-                  <div className="tpl-chords">
-                    {template.chords.map((chord, index) => (
-                      <span className="tpl-chord-wrap" key={`${template.id}-${chord}-${index}`}>
-                        <span className="tpl-chord">{chord}</span>
-                        {index < template.chords.length - 1 ? <span className="tpl-chord-sep">-</span> : null}
-                      </span>
+            {visibleTemplates.map((template) => {
+              const templateCardRole = getTutorialControlRole(
+                tutorialTargets,
+                `chord-template-card:${template.id}`,
+              );
+              const templateCardDisabled = tutorialLocked && templateCardRole !== 'target';
+              const templateCardClassName = [
+                'tpl-card',
+                selectedTemplateId === template.id ? 'selected' : '',
+                templateCardRole === 'target' ? 'tutorial-control-target' : '',
+              ].filter(Boolean).join(' ');
+
+              return (
+                <article
+                  className={templateCardClassName}
+                  aria-disabled={templateCardDisabled}
+                  data-tpl={template.id}
+                  key={template.id}
+                  onClick={() => {
+                    if (templateCardDisabled) return;
+                    handleTemplateRequest(template.id);
+                  }}
+                >
+                  <div className="tpl-name-row">
+                    <h3 className="tpl-name">{template.name}</h3>
+                    <span className="tpl-tag">{template.tag}</span>
+                  </div>
+                  <div className="tpl-prog">
+                    <div className="tpl-chords">
+                      {template.chords.map((chord, index) => (
+                        <span className="tpl-chord-wrap" key={`${template.id}-${chord}-${index}`}>
+                          <span className="tpl-chord">{chord}</span>
+                          {index < template.chords.length - 1 ? <span className="tpl-chord-sep">-</span> : null}
+                        </span>
+                      ))}
+                    </div>
+                    <button
+                      className="tpl-play"
+                      aria-label="试听"
+                      data-action="preview"
+                      type="button"
+                      disabled={templateCardDisabled}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onChordTemplatePreview(template.chords);
+                      }}
+                    >
+                      <span className="play-glyph" aria-hidden="true" />
+                    </button>
+                  </div>
+                  <p className="tpl-desc">{template.desc}</p>
+                  <div className="tpl-songs">
+                    <span className="tpl-songs-label">代表曲目</span>
+                    {template.songs.map((song) => (
+                      <span className="tpl-song" key={song}>{song}</span>
                     ))}
                   </div>
-                  <button
-                    className="tpl-play"
-                    aria-label="试听"
-                    data-action="preview"
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onChordTemplatePreview(template.chords);
-                    }}
-                  >
-                    <span className="play-glyph" aria-hidden="true" />
-                  </button>
-                </div>
-                <p className="tpl-desc">{template.desc}</p>
-                <div className="tpl-songs">
-                  <span className="tpl-songs-label">代表曲目</span>
-                  {template.songs.map((song) => (
-                    <span className="tpl-song" key={song}>{song}</span>
-                  ))}
-                </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
         </div>
 
@@ -895,64 +960,79 @@ function ChordEditor({
 
         <div className="tpl-body">
           <div className="tpl-list gtpl-list-centered" id="gtplList">
-            {CHORD_GROOVE_TEMPLATES.map((template) => (
-              <article
-                className={[
-                  'gtpl-card',
-                  selectedGrooveTemplateId === template.id ? 'selected' : '',
-                ].filter(Boolean).join(' ')}
-                data-gtpl={template.id}
-                key={template.id}
-                onClick={() => handleGrooveTemplateApply(template.id)}
-              >
-                <div className="gtpl-name-row">
-                  <h3 className="gtpl-name">{template.name}</h3>
-                  {template.default ? <span className="gtpl-default-tag">默认</span> : null}
-                </div>
-                <div className="gtpl-rhythm" aria-label={`律动预览·${template.name}`}>
-                  <div className="gtpl-rhythm-grid">
-                    {BEAT_NUMBERS.map((beatNumber) => (
-                      <div className="gtpl-beat" key={`${template.id}-beat-${beatNumber}`}>
-                        {BEAT_NUMBERS.map((stepNumber) => {
-                          const step = (beatNumber - 1) * GROOVE_STEPS_PER_BEAT + stepNumber - 1;
+            {CHORD_GROOVE_TEMPLATES.map((template) => {
+              const grooveCardRole = getTutorialControlRole(
+                tutorialTargets,
+                `chord-groove-card:${template.id}`,
+              );
+              const grooveCardDisabled = tutorialLocked && grooveCardRole !== 'target';
+              const grooveCardClassName = [
+                'gtpl-card',
+                selectedGrooveTemplateId === template.id ? 'selected' : '',
+                grooveCardRole === 'target' ? 'tutorial-control-target' : '',
+              ].filter(Boolean).join(' ');
 
-                          return (
-                            <span
-                              className={getGrooveStepClass(template, step)}
-                              key={`${template.id}-${step}`}
-                              style={getGrooveStepStyle(template, step)}
-                            />
-                          );
-                        })}
-                      </div>
-                    ))}
+              return (
+                <article
+                  className={grooveCardClassName}
+                  aria-disabled={grooveCardDisabled}
+                  data-gtpl={template.id}
+                  key={template.id}
+                  onClick={() => {
+                    if (grooveCardDisabled) return;
+                    handleGrooveTemplateApply(template.id);
+                  }}
+                >
+                  <div className="gtpl-name-row">
+                    <h3 className="gtpl-name">{template.name}</h3>
+                    {template.default ? <span className="gtpl-default-tag">默认</span> : null}
                   </div>
-                  <div className="gtpl-beat-num mono">
-                    {BEAT_NUMBERS.map((beatNumber) => (
-                      <span key={`${template.id}-num-${beatNumber}`}>{beatNumber}</span>
-                    ))}
+                  <div className="gtpl-rhythm" aria-label={`律动预览·${template.name}`}>
+                    <div className="gtpl-rhythm-grid">
+                      {BEAT_NUMBERS.map((beatNumber) => (
+                        <div className="gtpl-beat" key={`${template.id}-beat-${beatNumber}`}>
+                          {BEAT_NUMBERS.map((stepNumber) => {
+                            const step = (beatNumber - 1) * GROOVE_STEPS_PER_BEAT + stepNumber - 1;
+
+                            return (
+                              <span
+                                className={getGrooveStepClass(template, step)}
+                                key={`${template.id}-${step}`}
+                                style={getGrooveStepStyle(template, step)}
+                              />
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="gtpl-beat-num mono">
+                      {BEAT_NUMBERS.map((beatNumber) => (
+                        <span key={`${template.id}-num-${beatNumber}`}>{beatNumber}</span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-                <p className="gtpl-desc">{template.desc}</p>
-                <p className="gtpl-detail">{template.detail}</p>
-                <div className="gtpl-foot">
-                  <span className="gtpl-foot-label mono">{template.hitLabel}</span>
-                  <button
-                    className="gtpl-play"
-                    type="button"
-                    aria-label={`试听 ${template.name}`}
-                    data-action="gpreview"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onChordGrooveTemplatePreview(template.id);
-                    }}
-                  >
-                    <span className="play-glyph" aria-hidden="true" />
-                    试听
-                  </button>
-                </div>
-              </article>
-            ))}
+                  <p className="gtpl-desc">{template.desc}</p>
+                  <p className="gtpl-detail">{template.detail}</p>
+                  <div className="gtpl-foot">
+                    <span className="gtpl-foot-label mono">{template.hitLabel}</span>
+                    <button
+                      className="gtpl-play"
+                      type="button"
+                      aria-label={`试听 ${template.name}`}
+                      data-action="gpreview"
+                      disabled={grooveCardDisabled}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onChordGrooveTemplatePreview(template.id);
+                      }}
+                    >
+                      <span className="play-glyph" aria-hidden="true" />
+                      试听
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </div>
 

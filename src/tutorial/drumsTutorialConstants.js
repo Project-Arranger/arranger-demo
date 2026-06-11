@@ -6,6 +6,12 @@ const DRUMS_DRAG_SOURCE_STEP = 0;
 const DRUMS_DRAG_TARGET_STEP = 2;
 
 const TUTORIAL_CONTROL_TARGETS = Object.freeze({
+  CHORD_ENRICH_BUTTON_PREFIX: 'chord-enrich-button',
+  CHORD_GROOVE_BUTTON: 'chord-groove-button',
+  CHORD_GROOVE_CARD_PREFIX: 'chord-groove-card',
+  CHORD_PASSING_BUTTON: 'chord-passing-button',
+  CHORD_TEMPLATE_BUTTON: 'chord-template-button',
+  CHORD_TEMPLATE_CARD_PREFIX: 'chord-template-card',
   FILL_EMPTY_CLIPS_PREFIX: 'fill-empty-clips',
   GENERATE_ALL_DRUMS_BARS: 'generate-all-drums-bars',
   GENERATE_CURRENT_DRUMS_BAR: 'generate-current-drums-bar',

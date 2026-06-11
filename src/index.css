@@ -2187,8 +2187,23 @@ button {
   transform: translate(-50%, -50%);
 }
 
+.passing-anchor.tutorial-passing-anchor-target {
+  z-index: var(--tutorial-target-z);
+}
+
 .passing-btn {
   flex: 0 0 auto;
+}
+
+.passing-btn.tutorial-control-target {
+  color: var(--tutorial-target-ink);
+  background: color-mix(in oklab, white 82%, var(--tutorial-target-surface));
+  border: 1px solid var(--tutorial-target-surface-border);
+  outline-color: color-mix(in oklab, white 74%, transparent);
+  opacity: 1;
+  box-shadow:
+    var(--tutorial-target-contained-rest-shadow),
+    0 10px 24px color-mix(in oklab, black 16%, transparent);
 }
 
 .add-chord-btn {
@@ -2784,6 +2799,17 @@ button {
 .tpl-card.selected {
   background: color-mix(in oklab, var(--c-chord) 24%, var(--surface));
   border-color: color-mix(in oklab, var(--c-chord-ink) 35%, var(--border));
+}
+
+.tpl-card[aria-disabled="true"],
+.gtpl-card[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.tpl-card[aria-disabled="true"]:hover,
+.gtpl-card[aria-disabled="true"]:hover {
+  transform: none;
 }
 
 .tpl-name-row,

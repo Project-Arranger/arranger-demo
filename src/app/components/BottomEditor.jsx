@@ -119,6 +119,8 @@ function BottomEditor({
       onRenameClip,
       selectedBar,
       trackId: activeTrackId,
+      tutorialLocked,
+      tutorialTargets,
     });
   } else if (activeTrackId === 'melody' && selectedClipId) {
     editor = createElement(MelodyEditor, {

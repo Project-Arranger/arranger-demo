@@ -7,6 +7,12 @@ const TUTORIAL_STEP_IDS = Object.freeze({
   DRUMS_ADD_KICK_VARIATION: 'drums-add-kick-variation',
   DRUMS_DRAG_KICK: 'drums-drag-kick',
   DRUMS_FREE_CREATE: 'drums-free-create',
+  CHORD_FILL_TRACK_CLIPS: 'chord-fill-track-clips',
+  CHORD_SELECT_PROGRESSION_TEMPLATE: 'chord-select-progression-template',
+  CHORD_SELECT_GROOVE_TEMPLATE: 'chord-select-groove-template',
+  CHORD_LISTEN_LOOP: 'chord-listen-loop',
+  CHORD_ENRICH_HARMONY: 'chord-enrich-harmony',
+  CHORD_ADD_PASSING: 'chord-add-passing',
 });
 
 const TUTORIAL_STEP_ORDER = Object.freeze(Object.values(TUTORIAL_STEP_IDS));

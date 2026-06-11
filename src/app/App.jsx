@@ -26,6 +26,7 @@ import {
   handleTutorialDrumMove,
   handleTutorialDrumToggle,
   handleTutorialPlaybackComplete,
+  handleTutorialPlaybackPosition,
 } from '../tutorial/drumsTutorialRuntime.js';
 import { DRUMS_TUTORIAL_STEPS } from '../tutorial/drumsTutorialSteps.js';
 import {
@@ -202,6 +203,13 @@ export default function App() {
     () => createUiAudioDispatcher({ store: useMusicStore, audio: audioEngine }),
     [],
   );
+
+  const resetTutorialTransportToStart = useCallback(() => {
+    void (async () => {
+      await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
+      await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_SEEK, bar: 0, step: 0 });
+    })();
+  }, [dispatchAppCommand]);
 
   useKeyboardCommands({ dispatch: dispatchAppCommand });
 
@@ -417,11 +425,22 @@ export default function App() {
   }, [appliedTutorialSetups, applyTutorialStepSetup, tutorialProgress]);
 
   const advanceTutorialToNextStep = useCallback((checkpointProgress = tutorialProgress) => {
+    resetTutorialTransportToStart();
     enterTutorialStepIndex(currentTutorialStepIndex + 1, checkpointProgress);
-  }, [currentTutorialStepIndex, enterTutorialStepIndex, tutorialProgress]);
+  }, [
+    currentTutorialStepIndex,
+    enterTutorialStepIndex,
+    resetTutorialTransportToStart,
+    tutorialProgress,
+  ]);
 
   const applyTutorialActionProgress = useCallback((tutorialAction) => {
     setTutorialProgress(tutorialAction.nextProgress);
+    if (tutorialAction.shouldEnd) {
+      clearTutorialAutoAdvanceTimer();
+      setTutorialVisible(false);
+      return;
+    }
     if (tutorialAction.shouldAdvance) {
       scheduleTutorialAutoAdvance(() => advanceTutorialToNextStep(tutorialAction.nextProgress));
     }
@@ -612,6 +631,24 @@ export default function App() {
         });
         if (tutorialAction.allowed) applyTutorialActionProgress(tutorialAction);
       }
+
+      if (
+        tutorialVisible
+        && currentTutorialStep?.id === TUTORIAL_STEP_IDS.CHORD_LISTEN_LOOP
+      ) {
+        setTutorialProgress((progress) => {
+          const tutorialAction = handleTutorialPlaybackPosition({
+            bar,
+            progress,
+            step: currentTutorialStep,
+            stepIndex: step,
+            trackId: 'chord',
+          });
+
+          if (!tutorialAction.allowed) return progress;
+          return tutorialAction.nextProgress;
+        });
+      }
     };
 
     return () => {
@@ -774,27 +811,69 @@ export default function App() {
     if (step === null) return;
 
     const nextMatrix = setChordEnrichTarget(state.matrix, selectedBar, spanIndex, root);
+    const changedOffsets = [];
     for (let offset = 0; offset < 4; offset += 1) {
       const nextCell = nextMatrix.chord[selectedBar][step + offset];
       if (nextCell !== state.matrix.chord[selectedBar][step + offset]) {
-        state.setCell('chord', selectedBar, step + offset, nextCell);
+        changedOffsets.push(offset);
       }
     }
+    if (!changedOffsets.length) return;
+
+    const tutorialAction = tutorialVisible && currentTutorialStep?.id === TUTORIAL_STEP_IDS.CHORD_ENRICH_HARMONY
+      ? handleTutorialControlAction({
+        control: `chord-enrich-button:${spanIndex}`,
+        progress: tutorialProgress,
+        selectedBar,
+        step: currentTutorialStep,
+      })
+      : null;
+    if (tutorialAction && !tutorialAction.allowed) return;
+
+    changedOffsets.forEach((offset) => {
+      const nextCell = nextMatrix.chord[selectedBar][step + offset];
+      state.setCell('chord', selectedBar, step + offset, nextCell);
+    });
     void dispatchAppCommand({
       type: APP_COMMAND_TYPES.CHORD_SET_CELL,
       bar: selectedBar,
       span: spanIndex,
       root,
     });
-  }, [dispatchAppCommand, selectedBar]);
+    if (tutorialAction) applyTutorialActionProgress(tutorialAction);
+  }, [
+    applyTutorialActionProgress,
+    currentTutorialStep,
+    dispatchAppCommand,
+    selectedBar,
+    tutorialProgress,
+    tutorialVisible,
+  ]);
 
   const handlePassingChordPick = useCallback((stepIndex, chordName) => {
     const state = useMusicStore.getState();
     const nextMatrix = setChordStepChord(state.matrix, selectedBar, stepIndex, chordName);
     if (nextMatrix === state.matrix) return;
 
+    const tutorialAction = tutorialVisible && currentTutorialStep?.id === TUTORIAL_STEP_IDS.CHORD_ADD_PASSING
+      ? handleTutorialControlAction({
+        control: 'chord-passing-button',
+        progress: tutorialProgress,
+        selectedBar,
+        step: currentTutorialStep,
+      })
+      : null;
+    if (tutorialAction && !tutorialAction.allowed) return;
+
     state.setCell('chord', selectedBar, stepIndex, nextMatrix.chord[selectedBar][stepIndex]);
-  }, [selectedBar]);
+    if (tutorialAction) applyTutorialActionProgress(tutorialAction);
+  }, [
+    applyTutorialActionProgress,
+    currentTutorialStep,
+    selectedBar,
+    tutorialProgress,
+    tutorialVisible,
+  ]);
 
   const previewChordNames = useCallback((chordNames) => {
     const noteGroups = chordNames
@@ -836,6 +915,17 @@ export default function App() {
   }, [selectedBar]);
 
   const handleChordTemplateApply = useCallback((templateId) => {
+    let tutorialAction = null;
+    if (tutorialVisible && currentTutorialStep?.id === TUTORIAL_STEP_IDS.CHORD_SELECT_PROGRESSION_TEMPLATE) {
+      tutorialAction = handleTutorialControlAction({
+        control: `chord-template-card:${templateId}`,
+        progress: tutorialProgress,
+        selectedBar,
+        step: currentTutorialStep,
+      });
+      if (!tutorialAction.allowed) return;
+    }
+
     const state = useMusicStore.getState();
     const nextMatrix = applyChordTemplateToExistingClips(state.matrix, state.clips, templateId);
 
@@ -846,9 +936,27 @@ export default function App() {
         state.setCell('chord', clip.bar, 0, nextMatrix.chord[clip.bar][0]);
         state.setCell('chord', clip.bar, 1, nextMatrix.chord[clip.bar][1]);
       });
-  }, []);
+    if (tutorialAction) applyTutorialActionProgress(tutorialAction);
+  }, [
+    applyTutorialActionProgress,
+    currentTutorialStep,
+    selectedBar,
+    tutorialProgress,
+    tutorialVisible,
+  ]);
 
   const handleChordGrooveTemplateApply = useCallback((templateId) => {
+    let tutorialAction = null;
+    if (tutorialVisible && currentTutorialStep?.id === TUTORIAL_STEP_IDS.CHORD_SELECT_GROOVE_TEMPLATE) {
+      tutorialAction = handleTutorialControlAction({
+        control: `chord-groove-card:${templateId}`,
+        progress: tutorialProgress,
+        selectedBar,
+        step: currentTutorialStep,
+      });
+      if (!tutorialAction.allowed) return;
+    }
+
     const state = useMusicStore.getState();
     const nextMatrix = applyChordGrooveTemplateToExistingClips(state.matrix, state.clips, templateId);
 
@@ -860,7 +968,14 @@ export default function App() {
           state.setCell('chord', clip.bar, step, cell);
         });
       });
-  }, []);
+    if (tutorialAction) applyTutorialActionProgress(tutorialAction);
+  }, [
+    applyTutorialActionProgress,
+    currentTutorialStep,
+    selectedBar,
+    tutorialProgress,
+    tutorialVisible,
+  ]);
 
   const handleClearChordBar = useCallback(() => {
     const state = useMusicStore.getState();
@@ -962,13 +1077,9 @@ export default function App() {
   const handleTutorialNext = useCallback(() => {
     if (!tutorialViewModel.canManualNext) return;
     clearTutorialAutoAdvanceTimer();
-    stopTutorialPreviewPlayback();
-    const nextStepIndex = Math.min(currentTutorialStepIndex + 1, DRUMS_TUTORIAL_STEPS.length - 1);
-    enterTutorialStepIndex(nextStepIndex, tutorialProgress);
+    advanceTutorialToNextStep(tutorialProgress);
   }, [
-    currentTutorialStepIndex,
-    enterTutorialStepIndex,
-    stopTutorialPreviewPlayback,
+    advanceTutorialToNextStep,
     tutorialProgress,
     tutorialViewModel.canManualNext,
   ]);
@@ -987,16 +1098,14 @@ export default function App() {
     setTutorialProgress(tutorialAction.nextProgress);
 
     if (tutorialAction.shouldAdvance) {
-      const nextStepIndex = Math.min(currentTutorialStepIndex + 1, DRUMS_TUTORIAL_STEPS.length - 1);
       if (clip?.id) useMusicStore.getState().selectClip(clip.id);
-      enterTutorialStepIndex(nextStepIndex, tutorialAction.nextProgress);
+      advanceTutorialToNextStep(tutorialAction.nextProgress);
     }
 
     return true;
   }, [
+    advanceTutorialToNextStep,
     currentTutorialStep,
-    currentTutorialStepIndex,
-    enterTutorialStepIndex,
     tutorialProgress,
     tutorialVisible,
   ]);
