@@ -347,9 +347,11 @@ test('tutorial sidebar is embedded as a workbench column and reopens from the to
   assert.match(css, /\.tutorial-topbar-button\s*\{[^}]*font-size:\s*13px;/s);
   assert.match(css, /\.tutorial-topbar-button\s*\{[^}]*font-weight:\s*800;/s);
   assert.match(css, /\.tutorial-topbar-button\s*\{[^}]*white-space:\s*nowrap;/s);
+  assert.match(css, /--tutorial-floating-ui-z:\s*110;/);
   assert.match(css, /@media \(max-width:\s*980px\)\s*\{[\s\S]*\.topbar-center\s*\{[^}]*grid-row:\s*2;/);
   assert.match(css, /@media \(max-width:\s*980px\)\s*\{[\s\S]*\.right-tools\s*\{[^}]*grid-column:\s*2;[^}]*grid-row:\s*1;/);
   assert.match(css, /\.tutorial-panel\s*\{[^}]*position:\s*relative;/s);
+  assert.match(css, /\.tutorial-panel\s*\{[^}]*z-index:\s*90;/s);
   assert.match(css, /\.tutorial-panel\s*\{[^}]*grid-template-rows:\s*48px minmax\(0,\s*1fr\) var\(--track-footer-height\);/s);
   assert.match(css, /\.tutorial-panel\s*\{[^}]*width:\s*100%;/s);
   assert.match(css, /\.tutorial-panel\s*\{[^}]*height:\s*100%;/s);
@@ -598,7 +600,10 @@ test('add chord panels keep enrich and passing picker layout without diatonic UI
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
   assert.match(css, /\.chord-variants\s*\{[^}]*position:\s*fixed;/s);
+  assert.match(css, /\.chord-variants\s*\{[^}]*z-index:\s*50;/s);
   assert.match(css, /\.chord-variants\s*\{[^}]*width:\s*min\(760px,\s*calc\(100vw - 32px\)\);/s);
+  assert.match(css, /\.app-main:has\(\.tutorial-panel\) \.chord-variants\s*\{[^}]*z-index:\s*var\(--tutorial-floating-ui-z\);/s);
+  assert.doesNotMatch(css, /\.app-main:has\(\.tutorial-panel\) \.chord-variants\s*\{[^}]*width:/s);
   assert.match(css, /\.cv-title\s*\{[^}]*font-size:\s*15\.5px;[^}]*font-weight:\s*800;/s);
   assert.doesNotMatch(css, /\.cv-tabs\s*\{/);
   assert.doesNotMatch(css, /\.cv-tab/);

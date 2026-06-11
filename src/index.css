@@ -39,6 +39,7 @@
   --tutorial-breathe-ease: cubic-bezier(0.37, 0, 0.63, 1);
   --tutorial-spotlight-z: 50;
   --tutorial-target-z: 60;
+  --tutorial-floating-ui-z: 110;
   --tutorial-highlight-accent: var(--c-drums);
   --tutorial-highlight-ink: var(--c-drums-ink);
   --tutorial-target-surface: color-mix(in oklab, var(--surface) 74%, var(--tutorial-highlight-accent));
@@ -3360,6 +3361,10 @@ button {
     0 4px 14px oklch(20% 0.02 270 / 0.08);
   transform-origin: var(--arrow-x, 50%) top;
   animation: cv-pop 0.18s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+
+.app-main:has(.tutorial-panel) .chord-variants {
+  z-index: var(--tutorial-floating-ui-z);
 }
 
 @keyframes cv-pop {
