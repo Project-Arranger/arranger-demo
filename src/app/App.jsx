@@ -191,7 +191,9 @@ export default function App() {
     selectedBar,
     step: currentTutorialStep,
   }), [clips, currentTutorialStep, matrix, selectedBar, tutorialProgress]);
-  const activeTutorialTarget = currentTutorialStep?.target?.name ?? null;
+  const activeTutorialTarget = tutorialVisible ? currentTutorialStep?.target?.name ?? null : null;
+  const activeTutorialTargets = tutorialVisible ? tutorialViewModel.targets : undefined;
+  const activeTutorialLocked = tutorialVisible && tutorialViewModel.locked;
   const shouldConfirmChordTemplateApply = useMemo(() => (
     hasExistingChordClipContent(matrix, clips)
   ), [clips, matrix]);
@@ -1029,6 +1031,18 @@ export default function App() {
   const handleTutorialSkip = useCallback(() => {
     clearTutorialAutoAdvanceTimer();
     stopTutorialPreviewPlayback();
+    useMusicStore.setState(useMusicStore.getInitialState(), true);
+    setCurrentTutorialStepIndex(0);
+    setTutorialProgress(createTutorialState());
+    setAppliedTutorialSetups(() => new Set());
+    setTutorialStepCheckpoints(() => ({
+      0: createTutorialCheckpoint({
+        appState: useMusicStore.getInitialState(),
+        appliedTutorialSetups: new Set(),
+        tutorialProgress: createTutorialState(),
+      }),
+    }));
+    setTutorialSidebarCollapsed(false);
     setTutorialVisible(false);
   }, [stopTutorialPreviewPlayback]);
 
@@ -1082,7 +1096,7 @@ export default function App() {
           scale,
           showTutorialToggle: tutorialVisible,
           tutorialCollapsed: tutorialSidebarCollapsed,
-          tutorialTargets: tutorialViewModel.targets,
+          tutorialTargets: activeTutorialTargets,
         })}
         <main className={workspaceClassName}>
           {createElement(TracksColumn, {
@@ -1093,8 +1107,8 @@ export default function App() {
             onTrackSelect: handleTrackSelect,
             onVolumeChange: handleTrackVolumeChange,
             ref: tracksScrollRef,
-            tutorialLocked: tutorialVisible && tutorialViewModel.locked,
-            tutorialTargets: tutorialViewModel.targets,
+            tutorialLocked: activeTutorialLocked,
+            tutorialTargets: activeTutorialTargets,
             tracks,
           })}
           {createElement(Timeline, {
@@ -1110,8 +1124,8 @@ export default function App() {
             onTrackSelect: handleTrackSelect,
             ref: timelineScrollRef,
             selectedClipId,
-            tutorialLocked: tutorialViewModel.locked,
-            tutorialTargets: tutorialViewModel.targets,
+            tutorialLocked: activeTutorialLocked,
+            tutorialTargets: activeTutorialTargets,
             tracks,
           })}
           {tutorialVisible ? createElement(TutorialOverlay, {
@@ -1146,8 +1160,8 @@ export default function App() {
         {createElement(BottomEditor, {
           activeTrackId,
           activeTutorialTarget,
-          tutorialLocked: tutorialViewModel.locked,
-          tutorialTargets: tutorialViewModel.targets,
+          tutorialLocked: activeTutorialLocked,
+          tutorialTargets: activeTutorialTargets,
           matrix,
           melodyScaleId,
           selectedClipName: selectedClip?.name ?? '',

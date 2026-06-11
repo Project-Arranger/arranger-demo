@@ -722,6 +722,9 @@ test('app mounts the drums tutorial right sidebar', async () => {
   assert.match(source, /DRUMS_TUTORIAL_STEPS/);
   assert.match(source, /currentTutorialStepIndex/);
   assert.match(source, /getTutorialViewModel/);
+  assert.match(source, /const activeTutorialTarget = tutorialVisible \? currentTutorialStep\?\.target\?\.name \?\? null : null;/);
+  assert.match(source, /const activeTutorialTargets = tutorialVisible \? tutorialViewModel\.targets : undefined;/);
+  assert.match(source, /const activeTutorialLocked = tutorialVisible && tutorialViewModel\.locked;/);
   assert.match(source, /tutorialViewModel\.displayCopy/);
   assert.match(source, /APP_COMMAND_TYPES\.TRANSPORT_STOP/);
   assert.match(source, /stopTutorialPreviewPlayback/);
@@ -809,7 +812,13 @@ test('tutorial navigation buttons interrupt preview playback', async () => {
   assert.doesNotMatch(source, /resetTutorialStepsForBack/);
   assert.doesNotMatch(source, /resetTutorialStepForRetry/);
   assert.match(source, /handleTutorialNext = useCallback\(\(\) => \{[\s\S]*clearTutorialAutoAdvanceTimer\(\);[\s\S]*stopTutorialPreviewPlayback\(\);/);
-  assert.match(source, /handleTutorialSkip = useCallback\(\(\) => \{[\s\S]*clearTutorialAutoAdvanceTimer\(\);[\s\S]*stopTutorialPreviewPlayback\(\);[\s\S]*setTutorialVisible\(false\);/);
+  assert.match(source, /handleTutorialSkip = useCallback\(\(\) => \{[\s\S]*clearTutorialAutoAdvanceTimer\(\);[\s\S]*stopTutorialPreviewPlayback\(\);[\s\S]*useMusicStore\.setState\(useMusicStore\.getInitialState\(\), true\);[\s\S]*setCurrentTutorialStepIndex\(0\);[\s\S]*setTutorialProgress\(createTutorialState\(\)\);[\s\S]*setAppliedTutorialSetups\(\(\) => new Set\(\)\);[\s\S]*setTutorialStepCheckpoints\(\(\) => \(\{[\s\S]*0: createTutorialCheckpoint\(\{[\s\S]*appState: useMusicStore\.getInitialState\(\),[\s\S]*appliedTutorialSetups: new Set\(\),[\s\S]*tutorialProgress: createTutorialState\(\),[\s\S]*\}\),[\s\S]*\}\)\);[\s\S]*setTutorialSidebarCollapsed\(false\);[\s\S]*setTutorialVisible\(false\);/);
+  assert.doesNotMatch(source, /handleTutorialSkip = useCallback\(\(\) => \{[\s\S]*restoreTutorialCheckpoint/);
+  assert.match(source, /tutorialTargets:\s*activeTutorialTargets/);
+  assert.match(source, /tutorialLocked:\s*activeTutorialLocked/);
+  assert.doesNotMatch(source, /tutorialTargets:\s*tutorialViewModel\.targets/);
+  assert.doesNotMatch(source, /tutorialLocked:\s*tutorialViewModel\.locked/);
+  assert.doesNotMatch(source, /tutorialLocked:\s*tutorialVisible && tutorialViewModel\.locked/);
   assert.match(source, /onSkip:\s*handleTutorialSkip/);
   assert.doesNotMatch(source, /onClose:\s*handleTutorialSkip/);
 });
