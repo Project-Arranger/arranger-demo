@@ -17,11 +17,11 @@ const SAMPLE_ASSET_VERSION = 'sample-refresh-20260608';
 const CHORD_SAMPLE_DURATION = '2s';
 const MELODY_SAMPLE_DURATION = '2s';
 
-function createRootOctaveSampleFiles({ directory, prefix, roots, octaves }) {
+function createRootOctaveSampleFiles({ directory, prefix, roots, octaves, sampleVersion = 'v0.22' }) {
   return Object.freeze(Object.fromEntries(
     octaves.flatMap((octave) => roots.map((root) => {
       const note = `${root}${octave}`;
-      return [note, `samples/${directory}/${prefix}_${note}_v0.22.wav`];
+      return [note, `samples/${directory}/${prefix}_${note}_${sampleVersion}.wav`];
     })),
   ));
 }
@@ -40,6 +40,7 @@ const CHORD_SAMPLE_FILES = createRootOctaveSampleFiles({
   prefix: 'Chord',
   roots: NATURAL_SAMPLE_ROOTS,
   octaves: [2, 3, 4],
+  sampleVersion: 'v0.3',
 });
 
 const BASS_SAMPLE_FILES = Object.freeze({

@@ -245,12 +245,12 @@ test('createBassSampleUrls maps v0.22 bass anchor samples for sampler playback',
   assert.equal(urls['F#3'], undefined);
 });
 
-test('createChordSampleUrls maps v0.22 chord note anchor samples', () => {
+test('createChordSampleUrls maps v0.3 chord note anchor samples', () => {
   const urls = createChordSampleUrls('/arranger/');
 
-  assert.equal(urls.C4, versioned('/arranger/samples/Chords/Chord_C4_v0.22.wav'));
-  assert.equal(urls.E4, versioned('/arranger/samples/Chords/Chord_E4_v0.22.wav'));
-  assert.equal(urls.G4, versioned('/arranger/samples/Chords/Chord_G4_v0.22.wav'));
+  assert.equal(urls.C4, versioned('/arranger/samples/Chords/Chord_C4_v0.3.wav'));
+  assert.equal(urls.E4, versioned('/arranger/samples/Chords/Chord_E4_v0.3.wav'));
+  assert.equal(urls.G4, versioned('/arranger/samples/Chords/Chord_G4_v0.3.wav'));
   assert.equal(urls['F#4'], undefined);
 });
 
