@@ -2335,16 +2335,28 @@ button {
   --pitch-rail-head-height: 22px;
   --pitch-row-hover: var(--c-melody);
   --pitch-row-hover-ink: var(--c-melody-ink);
+  --melody-pitch-row-count: 13;
+  --melody-pitch-viewport-height: var(--chord-cell-grid-height);
   grid-template-columns: 64px 1fr;
 }
 
 .melody-scale-rail {
-  grid-template-rows: 22px var(--chord-cell-grid-height) 22px;
+  grid-template-rows: var(--pitch-rail-head-height) var(--melody-pitch-viewport-height) 22px;
 }
 
-.melody-scale-notes {
-  grid-template-rows: repeat(12, minmax(0, 1fr));
-  min-height: 0;
+.melody-seq-body .scale-notes-viewport,
+.melody-seq-body .beat-cells-viewport {
+  height: var(--melody-pitch-viewport-height);
+  overflow-y: hidden;
+}
+
+.melody-scale-notes,
+.melody-beat-cells {
+  grid-template-rows: repeat(var(--melody-pitch-row-count), minmax(0, 1fr));
+  gap: var(--chord-cell-gap);
+  height: var(--melody-pitch-viewport-height);
+  min-height: var(--melody-pitch-viewport-height);
+  padding: var(--chord-cell-padding);
 }
 
 .melody-note-key.root {
@@ -2386,42 +2398,10 @@ button {
   min-height: 0;
 }
 
-.melody-beat-cells {
-  grid-template-rows: repeat(12, minmax(0, 1fr));
-  min-height: var(--chord-cell-grid-height);
-}
-
-.melody-cell {
-  min-width: 0;
-  min-height: 0;
-  background: oklch(97% 0.003 270);
-  border: 1px solid color-mix(in oklab, var(--border) 35%, transparent);
-  border-radius: 4px;
-  cursor: pointer;
-  transition:
-    background 0.1s ease,
-    border-color 0.12s ease,
-    transform 0.08s ease;
-}
-
-.melody-cell.sharp {
-  background: color-mix(in oklab, var(--bg-deep) 70%, oklch(96% 0 0));
-}
-
-.melody-cell.downbeat {
-  box-shadow: inset 2px 0 0 color-mix(in oklab, var(--border) 70%, transparent);
-}
-
 .melody-cell.active {
   background: var(--c-melody);
   border-color: color-mix(in oklab, var(--c-melody-ink) 42%, var(--border));
   box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c-melody-ink) 24%, transparent);
-}
-
-.melody-cell:hover {
-  background: color-mix(in oklab, var(--c-melody) 60%, white);
-  border-color: color-mix(in oklab, var(--c-melody-ink) 30%, var(--border));
-  transform: translateY(-1px);
 }
 
 .bass-note-key {

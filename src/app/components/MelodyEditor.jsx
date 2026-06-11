@@ -18,8 +18,8 @@ import {
   getMelodyKeyboardKey,
   getMelodyKeyNote,
   getMelodyScale,
+  getMelodyScaleRailNotes,
   MELODY_KEY_SEQUENCE,
-  MELODY_RAIL_NOTES,
   MELODY_SCALES,
 } from '../../data/melodyScales.js';
 import { BEAT_NUMBERS } from '../uiShellData.js';
@@ -50,10 +50,6 @@ function isEditableKeyboardTarget(target) {
   return tagName === 'input' || tagName === 'textarea' || tagName === 'select';
 }
 
-function getRootName(note) {
-  return formatMelodyNoteParts(note).name;
-}
-
 function renderPlayGlyph() {
   return <span className="play-glyph" aria-hidden="true" />;
 }
@@ -79,11 +75,14 @@ function MelodyEditor({
   const [playingKeys, setPlayingKeys] = useState(() => new Set());
   const [hoveredPitchRow, setHoveredPitchRow] = useState(null);
   const activeScale = getMelodyScale(melodyScaleId);
-  const activeNoteNames = useMemo(() => new Set(
+  const melodyRailNotes = useMemo(
+    () => getMelodyScaleRailNotes(melodyScaleId),
+    [melodyScaleId],
+  );
+  const activePlayedNotes = useMemo(() => new Set(
     [...playingKeys]
       .map((key) => getMelodyKeyNote(melodyScaleId, key))
-      .filter(Boolean)
-      .map(getRootName),
+      .filter(Boolean),
   ), [melodyScaleId, playingKeys]);
 
   useEffect(() => {
@@ -224,30 +223,45 @@ function MelodyEditor({
 
         <div className="seq-body melody-seq-body">
           <aside className="scale-rail melody-scale-rail" aria-label="Scale ruler">
-            <button className="scale-arrow" aria-label="Scroll up an octave" title="Scroll up an octave" type="button" disabled>
+            <button
+              className="scale-arrow"
+              aria-label="Scroll up an octave"
+              title="Scroll up an octave"
+              type="button"
+              disabled
+            >
               {renderIcon(ChevronUp)}
             </button>
-            <div className="scale-notes melody-scale-notes">
-              {MELODY_RAIL_NOTES.map((note, rowIndex) => (
-                <div
-                  className={[
-                    'note-key',
-                    'melody-note-key',
-                    note.sharp ? 'sharp' : '',
-                    note.root ? 'root' : '',
-                    activeNoteNames.has(note.label) ? 'playing' : '',
-                    hoveredPitchRow === rowIndex ? 'row-hovered' : '',
-                  ].filter(Boolean).join(' ')}
-                  data-row={rowIndex}
-                  key={note.label}
-                  onPointerEnter={() => setHoveredPitchRow(rowIndex)}
-                  onPointerLeave={() => setHoveredPitchRow(null)}
-                >
-                  {note.label}
-                </div>
-              ))}
+            <div className="scale-notes-viewport">
+              <div className="scale-notes melody-scale-notes">
+                {melodyRailNotes.map((note, rowIndex) => (
+                  <div
+                    className={[
+                      'note-key',
+                      'melody-note-key',
+                      note.sharp ? 'sharp' : '',
+                      note.root ? 'root' : '',
+                      activePlayedNotes.has(note.note) ? 'playing' : '',
+                      hoveredPitchRow === rowIndex ? 'row-hovered' : '',
+                    ].filter(Boolean).join(' ')}
+                    data-row={rowIndex}
+                    key={note.note}
+                    title={note.note}
+                    onPointerEnter={() => setHoveredPitchRow(rowIndex)}
+                    onPointerLeave={() => setHoveredPitchRow(null)}
+                  >
+                    {note.label}
+                  </div>
+                ))}
+              </div>
             </div>
-            <button className="scale-arrow" aria-label="Scroll down an octave" title="Scroll down an octave" type="button" disabled>
+            <button
+              className="scale-arrow"
+              aria-label="Scroll down an octave"
+              title="Scroll down an octave"
+              type="button"
+              disabled
+            >
               {renderIcon(ChevronDown)}
             </button>
           </aside>
@@ -259,35 +273,39 @@ function MelodyEditor({
               return (
                 <div className="melody-beat-group" key={beatNumber}>
                   <div className="pitch-grid-head-spacer" aria-hidden="true" />
-                  <div className="beat-cells melody-beat-cells">
-                    {MELODY_RAIL_NOTES.flatMap((note, rowIndex) => (
-                      BEAT_NUMBERS.map((stepNumber, colIndex) => {
-                        const step = beatIndex * 4 + colIndex;
-                        const active = isMelodyCellActive(matrix, selectedBar, step, note.note);
+                  <div
+                    className="beat-cells-viewport"
+                  >
+                    <div className="beat-cells melody-beat-cells">
+                      {melodyRailNotes.flatMap((note, rowIndex) => (
+                        BEAT_NUMBERS.map((stepNumber, colIndex) => {
+                          const step = beatIndex * 4 + colIndex;
+                          const active = isMelodyCellActive(matrix, selectedBar, step, note.note);
 
-                        return (
-                          <button
-                            className={[
-                              'melody-cell',
-                              note.sharp ? 'sharp' : '',
-                              colIndex === 0 ? 'downbeat' : '',
-                              active ? 'active' : '',
-                              hoveredPitchRow === rowIndex ? 'row-hovered' : '',
-                            ].filter(Boolean).join(' ')}
-                            data-row={rowIndex}
-                            data-col={colIndex}
-                            data-note={note.note}
-                            key={`${note.note}-${stepNumber}`}
-                            type="button"
-                            aria-label={`${note.note} beat ${beatNumber}.${stepNumber}`}
-                            aria-pressed={active}
-                            onPointerEnter={() => setHoveredPitchRow(rowIndex)}
-                            onPointerLeave={() => setHoveredPitchRow(null)}
-                            onClick={() => onMelodyStepToggle(step, note.note)}
-                          />
-                        );
-                      })
-                    ))}
+                          return (
+                            <button
+                              className={[
+                                'cell',
+                                'melody-cell',
+                                note.sharp ? 'sharp' : '',
+                                active ? 'active' : '',
+                                hoveredPitchRow === rowIndex ? 'row-hovered' : '',
+                              ].filter(Boolean).join(' ')}
+                              data-row={rowIndex}
+                              data-col={colIndex}
+                              data-note={note.note}
+                              key={`${note.note}-${stepNumber}`}
+                              type="button"
+                              aria-label={`${note.note} beat ${beatNumber}.${stepNumber}`}
+                              aria-pressed={active}
+                              onPointerEnter={() => setHoveredPitchRow(rowIndex)}
+                              onPointerLeave={() => setHoveredPitchRow(null)}
+                              onClick={() => onMelodyStepToggle(step, note.note)}
+                            />
+                          );
+                        })
+                      ))}
+                    </div>
                   </div>
                 </div>
               );

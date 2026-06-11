@@ -55,48 +55,30 @@ const MELODY_SCALES = Object.freeze({
 
 const MELODY_SCALE_IDS = Object.freeze(Object.keys(MELODY_SCALES));
 
-const MELODY_RAIL_ROOTS = Object.freeze(['B', 'A#', 'A', 'G#', 'G', 'F#', 'F', 'E', 'D#', 'D', 'C#', 'C']);
-const MELODY_RAIL_NOTES = Object.freeze(
-  MELODY_RAIL_ROOTS.map((label) => Object.freeze({
-    label,
-    note: `${label}4`,
-    root: label === 'C',
-    sharp: label.includes('#'),
-  })),
-);
+const MELODY_PITCH_CLASS_ORDER = Object.freeze({
+  C: 0,
+  'C#': 1,
+  D: 2,
+  'D#': 3,
+  E: 4,
+  F: 5,
+  'F#': 6,
+  G: 7,
+  'G#': 8,
+  A: 9,
+  'A#': 10,
+  B: 11,
+});
 
-const MELODY_NOTE_IDS = Object.freeze([
-  'D3',
-  'D#3',
-  'E3',
-  'F3',
-  'F#3',
-  'G3',
-  'G#3',
-  'A3',
-  'A#3',
-  'B3',
-  'C4',
-  'C#4',
-  'D4',
-  'D#4',
-  'E4',
-  'F4',
-  'F#4',
-  'G4',
-  'G#4',
-  'A4',
-  'A#4',
-  'B4',
-  'C5',
-  'C#5',
-  'D5',
-  'D#5',
-  'E5',
-  'F5',
-  'F#5',
-  'G5',
-]);
+function getMelodyNotePitch(note) {
+  const { name, octave } = formatMelodyNoteParts(note);
+  return Number(octave) * 12 + (MELODY_PITCH_CLASS_ORDER[name] ?? 0);
+}
+
+const MELODY_NOTE_IDS = Object.freeze(
+  [...new Set(Object.values(MELODY_SCALES).flatMap(({ keyNotes }) => keyNotes))]
+    .sort((leftNote, rightNote) => getMelodyNotePitch(leftNote) - getMelodyNotePitch(rightNote)),
+);
 
 function getMelodyScale(scaleId) {
   return MELODY_SCALES[scaleId] ?? MELODY_SCALES.major;
@@ -104,6 +86,26 @@ function getMelodyScale(scaleId) {
 
 function getMelodyKeyboardKey(key) {
   return MELODY_KEY_ALIASES[key] ?? key;
+}
+
+function getMelodyScaleRailNotes(scaleId) {
+  return Object.freeze(
+    getMelodyScale(scaleId).keyNotes
+      .slice()
+      .reverse()
+      .map((note) => {
+        const { name, octave } = formatMelodyNoteParts(note);
+
+        return Object.freeze({
+          label: note,
+          note,
+          octave: Number(octave),
+          rootName: name,
+          root: name === 'C',
+          sharp: name.includes('#'),
+        });
+      }),
+  );
 }
 
 function getMelodyKeyNote(scaleId, key) {
@@ -125,10 +127,10 @@ export {
   formatMelodyNoteParts,
   getMelodyKeyboardKey,
   getMelodyKeyNote,
+  getMelodyScaleRailNotes,
   getMelodyScale,
   MELODY_KEY_SEQUENCE,
   MELODY_NOTE_IDS,
-  MELODY_RAIL_NOTES,
   MELODY_SCALES,
   MELODY_SCALE_IDS,
 };
