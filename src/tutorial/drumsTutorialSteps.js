@@ -5,6 +5,8 @@ const SECTION_TARGET_1 = '目标1\n点击第一个Drums Clip并添加基础律�
 const SECTION_TARGET_2 = '目标2\n添加整轨的Clips，并全局添加基础律动';
 const SECTION_TARGET_3 = '目标3\n编辑所有Drums Clips，找到用户喜欢的律动感';
 const SECTION_TARGET_4 = '目标4\n编辑所有Chord Clips，对和弦进行概念建立感性认识，并得到一段自己觉得好听的和弦进行Loop';
+const SECTION_TARGET_5 = '目标5\n完成编辑Bass轨';
+const BASS_TARGET_COPY = '创建完整的低音音轨\n\n选择一个你喜欢的低音律动\n低音虽存在感低，但不可或缺，它让你的音乐听起来更加丰满完整。现在，你可以简单地选择一个律动模板，系统会自动让低音旋律和你所选择的和弦进行相匹配。\n觉得满意后，点击[继续探索]以继续';
 
 const DRUMS_TUTORIAL_STEPS = [
   {
@@ -167,7 +169,51 @@ const DRUMS_TUTORIAL_STEPS = [
     uiEvent: '+经过和弦按钮闪烁',
     copy: '让你的和弦进行听起来更性感\n\n添加经过和弦\n在两个和弦之间，还可以添加特殊的过渡和弦，让它们衔接时的听觉效果更有戏剧感\n觉得满意后，点击[继续探索]以继续',
     primaryLabel: '继续探索',
-    completion: { type: 'chord-passing', endsTutorial: true },
+    completion: { type: 'chord-passing' },
+  },
+  {
+    id: TUTORIAL_STEP_IDS.BASS_FILL_TRACK_CLIPS,
+    section: SECTION_TARGET_5,
+    trigger: '点击[继续探索]按钮',
+    uiEvent: 'Bass轨填充整轨按钮闪烁',
+    copy: BASS_TARGET_COPY,
+    primaryLabel: '下一步',
+    completion: {
+      type: 'fill-track-clips',
+      control: `${TUTORIAL_CONTROL_TARGETS.FILL_EMPTY_CLIPS_PREFIX}:bass`,
+      trackId: 'bass',
+    },
+  },
+  {
+    id: TUTORIAL_STEP_IDS.BASS_SELECT_GROOVE_TEMPLATE,
+    section: SECTION_TARGET_5,
+    trigger: '点击Bass轨填充整轨按钮',
+    uiEvent: '选择Bass弹奏律动模板按钮闪烁',
+    copy: BASS_TARGET_COPY,
+    primaryLabel: '下一步',
+    completion: {
+      type: 'bass-groove-template',
+      controls: [
+        `${TUTORIAL_CONTROL_TARGETS.BASS_GROOVE_CARD_PREFIX}:bass-8th-basic`,
+        `${TUTORIAL_CONTROL_TARGETS.BASS_GROOVE_CARD_PREFIX}:bass-8th-swing`,
+        `${TUTORIAL_CONTROL_TARGETS.BASS_GROOVE_CARD_PREFIX}:bass-16th-swing`,
+      ],
+    },
+  },
+  {
+    id: TUTORIAL_STEP_IDS.BASS_LISTEN_LOOP,
+    section: SECTION_TARGET_5,
+    trigger: '在二级菜单完成选择',
+    uiEvent: '播放按钮闪烁',
+    copy: BASS_TARGET_COPY,
+    primaryLabel: '继续探索',
+    completion: {
+      type: 'playback-loop-complete',
+      control: TUTORIAL_CONTROL_TARGETS.TRANSPORT_PLAY,
+      trackId: 'bass',
+      bars: [0, 1, 2, 3],
+      endsTutorial: true,
+    },
   },
 ];
 
@@ -181,8 +227,15 @@ DRUMS_TUTORIAL_STEPS.errata = Object.freeze({
     '目标4/行18与行19：删除独立成行的 [继续探索]',
     '目标4/播放步骤：8小节播放完成改为前4小节后开放下一步',
   ]),
+  target5: Object.freeze([
+    '目标5/行20：Chord轨补齐空Clip按钮闪烁 已修正为 Bass轨填充整轨按钮闪烁',
+    '目标5/行21：补齐空Clip 已按当前 UI 修正为 填充整轨',
+    '目标5/行21-22：空 Tutorial 文案继承上一条 Bass 说明',
+    '目标5/行20：删除独立成行的 [继续探索]',
+    '目标5/播放步骤：按确认改为前4小节后开放继续探索',
+  ]),
   future: Object.freeze([
-    '目标5/行20疑似错列：Chord轨填充整轨按钮闪烁',
+    '目标6 待实现',
   ]),
 });
 

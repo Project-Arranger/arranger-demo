@@ -721,6 +721,178 @@ test('target 4 enrich and passing steps enable continue only after their chord e
     step: passingStep,
   });
   assert.equal(finishTarget4.allowed, true);
-  assert.equal(finishTarget4.shouldAdvance, false);
-  assert.equal(finishTarget4.shouldEnd, true);
+  assert.equal(finishTarget4.shouldAdvance, true);
+  assert.equal(finishTarget4.shouldEnd, undefined);
+});
+
+test('target 5 starts by filling bass clips from the bass track control', () => {
+  const step = getStep(TUTORIAL_STEP_IDS.BASS_FILL_TRACK_CLIPS);
+  const progress = {
+    ...createTutorialState(),
+    chordPassingAdded: true,
+  };
+  const viewModel = getTutorialViewModel({
+    matrix: createInitialMatrix(),
+    progress,
+    selectedBar: 0,
+    step,
+  });
+
+  assert.equal(viewModel.locked, true);
+  assert.deepEqual(viewModel.targets.controls, [
+    { name: 'fill-empty-clips:bass', role: 'target' },
+  ]);
+
+  const wrongTrack = handleTutorialControlAction({
+    control: 'fill-empty-clips:chord',
+    progress,
+    step,
+  });
+  assert.equal(wrongTrack.allowed, false);
+
+  const filled = handleTutorialControlAction({
+    control: 'fill-empty-clips:bass',
+    progress,
+    step,
+  });
+  assert.equal(filled.allowed, true);
+  assert.equal(filled.shouldAdvance, true);
+  assert.equal(filled.nextProgress.bassTrackClipsFilled, true);
+});
+
+test('target 5 bass groove step accepts any bass groove card', () => {
+  const step = getStep(TUTORIAL_STEP_IDS.BASS_SELECT_GROOVE_TEMPLATE);
+  const progress = {
+    ...createTutorialState(),
+    bassTrackClipsFilled: true,
+  };
+  const viewModel = getTutorialViewModel({
+    matrix: createInitialMatrix(),
+    progress,
+    selectedBar: 0,
+    step,
+  });
+
+  assert.equal(viewModel.locked, true);
+  assert.deepEqual(viewModel.targets.controls, [
+    { name: 'bass-groove-button', role: 'target' },
+    { name: 'bass-groove-card:bass-8th-basic', role: 'target' },
+    { name: 'bass-groove-card:bass-8th-swing', role: 'target' },
+    { name: 'bass-groove-card:bass-16th-swing', role: 'target' },
+  ]);
+
+  const wrongTemplate = handleTutorialControlAction({
+    control: 'chord-groove-card:block-basic',
+    progress,
+    step,
+  });
+  assert.equal(wrongTemplate.allowed, false);
+
+  const selected = handleTutorialControlAction({
+    control: 'bass-groove-card:bass-8th-swing',
+    progress,
+    step,
+  });
+  assert.equal(selected.allowed, true);
+  assert.equal(selected.shouldAdvance, true);
+  assert.equal(selected.nextProgress.bassGrooveSelected, true);
+});
+
+test('target 5 bass listen step enables continue after the first four bars', () => {
+  const step = getStep(TUTORIAL_STEP_IDS.BASS_LISTEN_LOOP);
+  let progress = {
+    ...createTutorialState(),
+    bassGrooveSelected: true,
+  };
+  const viewModel = getTutorialViewModel({
+    matrix: createInitialMatrix(),
+    progress,
+    selectedBar: 0,
+    step,
+  });
+
+  assert.equal(viewModel.locked, true);
+  assert.equal(viewModel.showCompleteButton, true);
+  assert.equal(viewModel.primaryLabel, '继续探索');
+  assert.equal(viewModel.primaryDisabled, true);
+  assert.deepEqual(viewModel.targets.controls, [
+    { name: 'transport-play', role: 'target' },
+  ]);
+
+  const blockedNext = completeTutorialPrimaryAction({
+    progress,
+    step,
+  });
+  assert.equal(blockedNext.allowed, false);
+
+  const play = handleTutorialControlAction({
+    control: 'transport-play',
+    progress,
+    step,
+  });
+  assert.equal(play.allowed, true);
+  assert.equal(play.shouldAdvance, false);
+  assert.equal(play.nextProgress.bassLoopPlaybackStarted, true);
+  progress = play.nextProgress;
+
+  for (const [bar, stepIndex] of [[0, 4], [1, 8], [2, 12]]) {
+    const visited = handleTutorialPlaybackPosition({
+      bar,
+      progress,
+      step,
+      stepIndex,
+      trackId: 'bass',
+    });
+    assert.equal(visited.allowed, true);
+    assert.equal(visited.shouldAdvance, false);
+    assert.equal(visited.nextProgress.bassLoopPlaybackComplete, false);
+    progress = visited.nextProgress;
+  }
+
+  const repeated = handleTutorialPlaybackPosition({
+    bar: 2,
+    progress,
+    step,
+    stepIndex: 15,
+    trackId: 'bass',
+  });
+  assert.equal(repeated.allowed, true);
+  assert.equal(repeated.nextProgress, progress);
+
+  const completed = handleTutorialPlaybackPosition({
+    bar: 3,
+    progress,
+    step,
+    stepIndex: 2,
+    trackId: 'bass',
+  });
+  assert.equal(completed.allowed, true);
+  assert.equal(completed.shouldAdvance, false);
+  assert.equal(completed.nextProgress.bassLoopPlaybackComplete, true);
+  assert.deepEqual(completed.nextProgress.bassLoopVisitedBars, [0, 1, 2, 3]);
+
+  const wrongTrack = handleTutorialPlaybackPosition({
+    bar: 0,
+    progress,
+    step,
+    stepIndex: 0,
+    trackId: 'chord',
+  });
+  assert.equal(wrongTrack.allowed, false);
+
+  const readyViewModel = getTutorialViewModel({
+    matrix: createInitialMatrix(),
+    progress: completed.nextProgress,
+    selectedBar: 0,
+    step,
+  });
+  assert.equal(readyViewModel.primaryDisabled, false);
+
+  const finishTarget5 = completeTutorialPrimaryAction({
+    progress: completed.nextProgress,
+    step,
+  });
+  assert.equal(finishTarget5.allowed, true);
+  assert.equal(finishTarget5.shouldAdvance, false);
+  assert.equal(finishTarget5.shouldEnd, true);
 });

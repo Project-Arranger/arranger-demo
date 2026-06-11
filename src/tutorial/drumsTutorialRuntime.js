@@ -1,5 +1,6 @@
 import { getDrumsCellInstruments } from '../domain/drumsCells.js';
 import { createDrumsStepMovePatch } from '../domain/drumsStepMove.js';
+import { BASS_GROOVE_TEMPLATES } from '../app/bassActions.js';
 import {
   DRUMS_DRAG_SOURCE_STEP,
   DRUMS_DRAG_TARGET_STEP,
@@ -25,6 +26,9 @@ const STEP_COMPLETION_FIELDS = Object.freeze({
   [TUTORIAL_STEP_IDS.CHORD_LISTEN_LOOP]: 'chordLoopPlaybackComplete',
   [TUTORIAL_STEP_IDS.CHORD_ENRICH_HARMONY]: 'chordEnriched',
   [TUTORIAL_STEP_IDS.CHORD_ADD_PASSING]: 'chordPassingAdded',
+  [TUTORIAL_STEP_IDS.BASS_FILL_TRACK_CLIPS]: 'bassTrackClipsFilled',
+  [TUTORIAL_STEP_IDS.BASS_SELECT_GROOVE_TEMPLATE]: 'bassGrooveSelected',
+  [TUTORIAL_STEP_IDS.BASS_LISTEN_LOOP]: 'bassLoopPlaybackComplete',
 });
 
 const LOCKED_STEP_IDS = new Set([
@@ -37,6 +41,9 @@ const LOCKED_STEP_IDS = new Set([
   TUTORIAL_STEP_IDS.CHORD_SELECT_PROGRESSION_TEMPLATE,
   TUTORIAL_STEP_IDS.CHORD_SELECT_GROOVE_TEMPLATE,
   TUTORIAL_STEP_IDS.CHORD_LISTEN_LOOP,
+  TUTORIAL_STEP_IDS.BASS_FILL_TRACK_CLIPS,
+  TUTORIAL_STEP_IDS.BASS_SELECT_GROOVE_TEMPLATE,
+  TUTORIAL_STEP_IDS.BASS_LISTEN_LOOP,
 ]);
 
 const CHORD_ENRICH_SPANS = Object.freeze([0, 1, 2, 3]);
@@ -72,6 +79,11 @@ function createTutorialState() {
     chordLoopPlaybackComplete: false,
     chordEnriched: false,
     chordPassingAdded: false,
+    bassTrackClipsFilled: false,
+    bassGrooveSelected: false,
+    bassLoopPlaybackStarted: false,
+    bassLoopVisitedBars: [],
+    bassLoopPlaybackComplete: false,
   };
 }
 
@@ -175,6 +187,14 @@ function getPrimaryState(step, progress) {
   if (step?.id === TUTORIAL_STEP_IDS.CHORD_ADD_PASSING) {
     return {
       primaryDisabled: !progress.chordPassingAdded,
+      primaryLabel: step.primaryLabel,
+      showCompleteButton: true,
+    };
+  }
+
+  if (step?.id === TUTORIAL_STEP_IDS.BASS_LISTEN_LOOP) {
+    return {
+      primaryDisabled: !progress.bassLoopPlaybackComplete,
       primaryLabel: step.primaryLabel,
       showCompleteButton: true,
     };
@@ -322,6 +342,27 @@ function getTutorialViewModel({
     }];
   }
 
+  if (step.id === TUTORIAL_STEP_IDS.BASS_FILL_TRACK_CLIPS) {
+    targets.controls = [{
+      name: `${TUTORIAL_CONTROL_TARGETS.FILL_EMPTY_CLIPS_PREFIX}:bass`,
+      role: 'target',
+    }];
+  }
+
+  if (step.id === TUTORIAL_STEP_IDS.BASS_SELECT_GROOVE_TEMPLATE) {
+    targets.controls = [
+      { name: TUTORIAL_CONTROL_TARGETS.BASS_GROOVE_BUTTON, role: 'target' },
+      ...BASS_GROOVE_TEMPLATES.map((template) => ({
+        name: `${TUTORIAL_CONTROL_TARGETS.BASS_GROOVE_CARD_PREFIX}:${template.id}`,
+        role: 'target',
+      })),
+    ];
+  }
+
+  if (step.id === TUTORIAL_STEP_IDS.BASS_LISTEN_LOOP) {
+    targets.controls = [{ name: TUTORIAL_CONTROL_TARGETS.TRANSPORT_PLAY, role: 'target' }];
+  }
+
   const primaryState = getPrimaryState(step, progress);
   const locked = LOCKED_STEP_IDS.has(step.id);
 
@@ -416,6 +457,13 @@ function handleTutorialControlAction({
     }, true);
   }
 
+  if (step.id === TUTORIAL_STEP_IDS.BASS_FILL_TRACK_CLIPS) {
+    return createAllowedAction({
+      ...progress,
+      bassTrackClipsFilled: true,
+    }, true);
+  }
+
   if (step.id === TUTORIAL_STEP_IDS.DRUMS_GENERATE_ALL_BARS) {
     return createAllowedAction({
       ...progress,
@@ -437,11 +485,26 @@ function handleTutorialControlAction({
     }, true);
   }
 
+  if (step.id === TUTORIAL_STEP_IDS.BASS_SELECT_GROOVE_TEMPLATE) {
+    return createAllowedAction({
+      ...progress,
+      bassGrooveSelected: true,
+    }, true);
+  }
+
   if (step.id === TUTORIAL_STEP_IDS.CHORD_LISTEN_LOOP) {
     return createAllowedAction({
       ...progress,
       chordLoopPlaybackStarted: true,
       chordLoopVisitedBars: [],
+    });
+  }
+
+  if (step.id === TUTORIAL_STEP_IDS.BASS_LISTEN_LOOP) {
+    return createAllowedAction({
+      ...progress,
+      bassLoopPlaybackStarted: true,
+      bassLoopVisitedBars: [],
     });
   }
 
@@ -484,19 +547,22 @@ function handleTutorialPlaybackPosition({
   const loopBars = step.completion.bars ?? [];
   if (!loopBars.includes(bar)) return createAllowedAction(progress);
 
-  const visitedBefore = new Set(progress.chordLoopVisitedBars ?? []);
+  const isBassLoop = step.id === TUTORIAL_STEP_IDS.BASS_LISTEN_LOOP;
+  const visitedField = isBassLoop ? 'bassLoopVisitedBars' : 'chordLoopVisitedBars';
+  const completeField = isBassLoop ? 'bassLoopPlaybackComplete' : 'chordLoopPlaybackComplete';
+  const visitedBefore = new Set(progress[visitedField] ?? []);
   if (visitedBefore.has(bar)) return createAllowedAction(progress);
 
   const visitedNext = new Set(visitedBefore);
   visitedNext.add(bar);
   const nextVisitedBars = loopBars.filter((loopBar) => visitedNext.has(loopBar));
-  const completedLoop = progress.chordLoopPlaybackComplete
+  const completedLoop = progress[completeField]
     || loopBars.every((loopBar) => visitedNext.has(loopBar));
 
   return createAllowedAction({
     ...progress,
-    chordLoopVisitedBars: nextVisitedBars,
-    chordLoopPlaybackComplete: completedLoop,
+    [visitedField]: nextVisitedBars,
+    [completeField]: completedLoop,
   });
 }
 
@@ -618,6 +684,11 @@ function completeTutorialPrimaryAction({
 
   if (step?.id === TUTORIAL_STEP_IDS.CHORD_ADD_PASSING) {
     if (!progress.chordPassingAdded) return createRejectedAction(progress);
+    return createAllowedAction(progress, true);
+  }
+
+  if (step?.id === TUTORIAL_STEP_IDS.BASS_LISTEN_LOOP) {
+    if (!progress.bassLoopPlaybackComplete) return createRejectedAction(progress);
     return createAllowedAction(progress, false, { shouldEnd: true });
   }
 

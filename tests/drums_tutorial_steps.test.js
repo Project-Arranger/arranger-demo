@@ -22,10 +22,13 @@ test('drums tutorial exposes the priority step order', () => {
     TUTORIAL_STEP_IDS.CHORD_LISTEN_LOOP,
     TUTORIAL_STEP_IDS.CHORD_ENRICH_HARMONY,
     TUTORIAL_STEP_IDS.CHORD_ADD_PASSING,
+    TUTORIAL_STEP_IDS.BASS_FILL_TRACK_CLIPS,
+    TUTORIAL_STEP_IDS.BASS_SELECT_GROOVE_TEMPLATE,
+    TUTORIAL_STEP_IDS.BASS_LISTEN_LOOP,
   ]);
 });
 
-test('drums tutorial v0.2 targets 1-4 keep exact table source columns', () => {
+test('drums tutorial v0.2 targets 1-5 keep exact table source columns', () => {
   assert.deepEqual(DRUMS_TUTORIAL_STEPS.map((step) => ({
     section: step.section,
     trigger: step.trigger,
@@ -131,6 +134,27 @@ test('drums tutorial v0.2 targets 1-4 keep exact table source columns', () => {
       copy: '让你的和弦进行听起来更性感\n\n添加经过和弦\n在两个和弦之间，还可以添加特殊的过渡和弦，让它们衔接时的听觉效果更有戏剧感\n觉得满意后，点击[继续探索]以继续',
       primaryLabel: '继续探索',
     },
+    {
+      section: '目标5\n完成编辑Bass轨',
+      trigger: '点击[继续探索]按钮',
+      uiEvent: 'Bass轨填充整轨按钮闪烁',
+      copy: '创建完整的低音音轨\n\n选择一个你喜欢的低音律动\n低音虽存在感低，但不可或缺，它让你的音乐听起来更加丰满完整。现在，你可以简单地选择一个律动模板，系统会自动让低音旋律和你所选择的和弦进行相匹配。\n觉得满意后，点击[继续探索]以继续',
+      primaryLabel: '下一步',
+    },
+    {
+      section: '目标5\n完成编辑Bass轨',
+      trigger: '点击Bass轨填充整轨按钮',
+      uiEvent: '选择Bass弹奏律动模板按钮闪烁',
+      copy: '创建完整的低音音轨\n\n选择一个你喜欢的低音律动\n低音虽存在感低，但不可或缺，它让你的音乐听起来更加丰满完整。现在，你可以简单地选择一个律动模板，系统会自动让低音旋律和你所选择的和弦进行相匹配。\n觉得满意后，点击[继续探索]以继续',
+      primaryLabel: '下一步',
+    },
+    {
+      section: '目标5\n完成编辑Bass轨',
+      trigger: '在二级菜单完成选择',
+      uiEvent: '播放按钮闪烁',
+      copy: '创建完整的低音音轨\n\n选择一个你喜欢的低音律动\n低音虽存在感低，但不可或缺，它让你的音乐听起来更加丰满完整。现在，你可以简单地选择一个律动模板，系统会自动让低音旋律和你所选择的和弦进行相匹配。\n觉得满意后，点击[继续探索]以继续',
+      primaryLabel: '继续探索',
+    },
   ]);
 });
 
@@ -145,8 +169,15 @@ test('drums tutorial v0.2 documents errata scope', () => {
       '目标4/行18与行19：删除独立成行的 [继续探索]',
       '目标4/播放步骤：8小节播放完成改为前4小节后开放下一步',
     ],
+    target5: [
+      '目标5/行20：Chord轨补齐空Clip按钮闪烁 已修正为 Bass轨填充整轨按钮闪烁',
+      '目标5/行21：补齐空Clip 已按当前 UI 修正为 填充整轨',
+      '目标5/行21-22：空 Tutorial 文案继承上一条 Bass 说明',
+      '目标5/行20：删除独立成行的 [继续探索]',
+      '目标5/播放步骤：按确认改为前4小节后开放继续探索',
+    ],
     future: [
-      '目标5/行20疑似错列：Chord轨填充整轨按钮闪烁',
+      '目标6 待实现',
     ],
   });
 });

@@ -634,7 +634,7 @@ export default function App() {
 
       if (
         tutorialVisible
-        && currentTutorialStep?.id === TUTORIAL_STEP_IDS.CHORD_LISTEN_LOOP
+        && currentTutorialStep?.completion?.type === 'playback-loop-complete'
       ) {
         setTutorialProgress((progress) => {
           const tutorialAction = handleTutorialPlaybackPosition({
@@ -642,7 +642,7 @@ export default function App() {
             progress,
             step: currentTutorialStep,
             stepIndex: step,
-            trackId: 'chord',
+            trackId: currentTutorialStep.completion.trackId,
           });
 
           if (!tutorialAction.allowed) return progress;
@@ -1010,6 +1010,17 @@ export default function App() {
   }, [selectedBar]);
 
   const handleBassGrooveTemplateApply = useCallback((templateId) => {
+    let tutorialAction = null;
+    if (tutorialVisible && currentTutorialStep?.id === TUTORIAL_STEP_IDS.BASS_SELECT_GROOVE_TEMPLATE) {
+      tutorialAction = handleTutorialControlAction({
+        control: `bass-groove-card:${templateId}`,
+        progress: tutorialProgress,
+        selectedBar,
+        step: currentTutorialStep,
+      });
+      if (!tutorialAction.allowed) return;
+    }
+
     const state = useMusicStore.getState();
     const nextMatrix = applyBassGrooveTemplateToExistingClips(state.matrix, state.clips, templateId);
     if (nextMatrix === state.matrix) return;
@@ -1022,7 +1033,14 @@ export default function App() {
           state.setCell('bass', clip.bar, step, cell);
         });
       });
-  }, []);
+    if (tutorialAction) applyTutorialActionProgress(tutorialAction);
+  }, [
+    applyTutorialActionProgress,
+    currentTutorialStep,
+    selectedBar,
+    tutorialProgress,
+    tutorialVisible,
+  ]);
 
   const handleClearBassBar = useCallback(() => {
     const state = useMusicStore.getState();

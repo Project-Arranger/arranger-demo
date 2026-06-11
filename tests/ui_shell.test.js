@@ -648,7 +648,11 @@ test('app exposes the bass editor and existing-clip groove template workflow', a
   assert.match(bottomEditorSource, /onBassGrooveTemplateApply/);
   assert.match(bottomEditorSource, /onClearBassBar/);
   assert.match(bottomEditorSource, /onClearBass/);
+  assert.match(bottomEditorSource, /createElement\(BassEditor,[\s\S]*tutorialLocked,[\s\S]*tutorialTargets/);
   assert.match(bassEditorSource, /data-screen-label="Bass Editor"/);
+  assert.match(bassEditorSource, /tutorialLocked = false/);
+  assert.match(bassEditorSource, /tutorialTargets/);
+  assert.match(bassEditorSource, /getTutorialControlRole/);
   assert.match(bassEditorSource, /Bass · Phrase/);
   assert.match(bassEditorSource, /BASS EDITOR - BAR/);
   assert.match(bassEditorSource, /BASS_NOTES\.flatMap/);
@@ -675,6 +679,12 @@ test('app exposes the bass editor and existing-clip groove template workflow', a
   assert.match(bassEditorSource, /'bass-cell'/);
   assert.match(bassEditorSource, /BASS_GROOVE_TEMPLATES/);
   assert.match(bassEditorSource, /选择Bass弹奏律动模板/);
+  assert.match(bassEditorSource, /bass-groove-button/);
+  assert.match(bassEditorSource, /bass-groove-card:\$\{template\.id\}/);
+  assert.match(bassEditorSource, /tutorial-control-target/);
+  assert.match(bassEditorSource, /data-tutorial-role=\{grooveButtonRole/);
+  assert.match(bassEditorSource, /data-tutorial-role=\{templateCardRole/);
+  assert.match(bassEditorSource, /aria-disabled=\{templateCardDisabled\}/);
   assert.match(bassEditorSource, /Bass Groove Template Picker/);
   assert.match(bassEditorSource, /gtpl-step/);
   assert.match(bassEditorSource, /hit-root/);
@@ -701,6 +711,9 @@ test('app exposes the bass editor and existing-clip groove template workflow', a
   assert.match(source, /handleBassGrooveTemplatePreview/);
   assert.match(source, /createBassPreviewEvents\(state\.matrix,\s*selectedBar,\s*templateId\)/);
   assert.match(source, /handleBassGrooveTemplateApply/);
+  assert.match(source, /currentTutorialStep\?\.id === TUTORIAL_STEP_IDS\.BASS_SELECT_GROOVE_TEMPLATE/);
+  assert.match(source, /control:\s*`bass-groove-card:\$\{templateId\}`/);
+  assert.match(source, /applyTutorialActionProgress\(tutorialAction\)/);
   assert.match(source, /applyBassGrooveTemplateToExistingClips\(state\.matrix,\s*state\.clips,\s*templateId\)/);
   assert.match(source, /filter\(\(clip\) => clip\?\.trackId === 'bass'\)/);
   assert.match(source, /handleClearBassBar/);

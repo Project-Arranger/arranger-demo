@@ -6,6 +6,8 @@ const DRUMS_DRAG_SOURCE_STEP = 0;
 const DRUMS_DRAG_TARGET_STEP = 2;
 
 const TUTORIAL_CONTROL_TARGETS = Object.freeze({
+  BASS_GROOVE_BUTTON: 'bass-groove-button',
+  BASS_GROOVE_CARD_PREFIX: 'bass-groove-card',
   CHORD_ENRICH_BUTTON_PREFIX: 'chord-enrich-button',
   CHORD_GROOVE_BUTTON: 'chord-groove-button',
   CHORD_GROOVE_CARD_PREFIX: 'chord-groove-card',

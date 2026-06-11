@@ -13,6 +13,9 @@ const TUTORIAL_STEP_IDS = Object.freeze({
   CHORD_LISTEN_LOOP: 'chord-listen-loop',
   CHORD_ENRICH_HARMONY: 'chord-enrich-harmony',
   CHORD_ADD_PASSING: 'chord-add-passing',
+  BASS_FILL_TRACK_CLIPS: 'bass-fill-track-clips',
+  BASS_SELECT_GROOVE_TEMPLATE: 'bass-select-groove-template',
+  BASS_LISTEN_LOOP: 'bass-listen-loop',
 });
 
 const TUTORIAL_STEP_ORDER = Object.freeze(Object.values(TUTORIAL_STEP_IDS));
