@@ -31,8 +31,46 @@
   --app-topbar-height: clamp(52px, 7vh, 64px);
   --app-editor-height: clamp(260px, 39vh, 330px);
   --timeline-min-width: min(640px, 100%);
+  --timeline-clip-y-inset: 6px;
+  --timeline-bar-x-inset: 4px;
   --track-row-size: minmax(clamp(48px, 7.5vh, 74px), 1fr);
   --track-footer-height: 48px;
+  --tutorial-breathe-duration: 1.25s;
+  --tutorial-breathe-ease: cubic-bezier(0.37, 0, 0.63, 1);
+  --tutorial-spotlight-z: 50;
+  --tutorial-target-z: 60;
+  --tutorial-highlight-accent: var(--c-drums);
+  --tutorial-highlight-ink: var(--c-drums-ink);
+  --tutorial-target-surface: color-mix(in oklab, var(--surface) 74%, var(--tutorial-highlight-accent));
+  --tutorial-target-ink: var(--tutorial-highlight-ink);
+  --tutorial-target-surface-border: color-mix(in oklab, var(--tutorial-highlight-ink) 18%, transparent);
+  --tutorial-highlight-rest-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--tutorial-highlight-ink) 44%, white),
+    inset 0 0 12px color-mix(in oklab, white 10%, transparent),
+    0 0 0 2px color-mix(in oklab, white 42%, transparent),
+    0 0 0 6px color-mix(in oklab, var(--tutorial-highlight-accent) 18%, transparent),
+    0 10px 24px color-mix(in oklab, black 18%, transparent);
+  --tutorial-highlight-peak-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--tutorial-highlight-ink) 54%, white),
+    inset 0 0 16px color-mix(in oklab, white 14%, transparent),
+    0 0 0 2px color-mix(in oklab, white 52%, transparent),
+    0 0 0 8px color-mix(in oklab, var(--tutorial-highlight-accent) 24%, transparent),
+    0 14px 30px color-mix(in oklab, black 24%, transparent);
+  --tutorial-target-contained-rest-shadow:
+    inset 0 0 0 2px color-mix(in oklab, white 52%, transparent),
+    inset 0 0 0 4px color-mix(in oklab, var(--tutorial-highlight-accent) 18%, transparent),
+    inset 0 0 14px color-mix(in oklab, white 10%, transparent),
+    0 0 0 2px color-mix(in oklab, white 36%, transparent),
+    0 8px 20px color-mix(in oklab, black 18%, transparent);
+  --tutorial-target-contained-peak-shadow:
+    inset 0 0 0 2px color-mix(in oklab, white 60%, transparent),
+    inset 0 0 0 5px color-mix(in oklab, var(--tutorial-highlight-accent) 22%, transparent),
+    inset 0 0 18px color-mix(in oklab, white 13%, transparent),
+    0 0 0 3px color-mix(in oklab, white 44%, transparent),
+    0 10px 24px color-mix(in oklab, black 22%, transparent);
+  --tutorial-highlight-complete-shadow:
+    inset 0 0 0 2px color-mix(in oklab, var(--play) 72%, white),
+    0 0 0 4px color-mix(in oklab, var(--play) 30%, transparent);
   --radius-sm: 8px;
   --radius: 12px;
   --shadow-1:
@@ -110,6 +148,17 @@ button {
   border-bottom: 1px solid var(--border-soft);
 }
 
+.tutorial-panel-header::before {
+  width: 3px;
+  height: 18px;
+  flex: 0 0 3px;
+  content: "";
+  background: color-mix(in oklab, var(--c-drums-ink) 66%, var(--ink-3));
+  border-radius: 999px;
+  box-shadow: none;
+  animation: tutorial-panel-rail-breathe var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
+}
+
 .tutorial-panel-label {
   color: var(--c-drums-ink);
   font-size: 12px;
@@ -129,24 +178,63 @@ button {
   overflow: auto;
 }
 
-.tutorial-panel p {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 800;
-  line-height: 1.48;
+.tutorial-copy {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  width: min(100%, 28rem);
+}
+
+.tutorial-copy-title-group,
+.tutorial-copy-body-group {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+
+.tutorial-copy-title,
+.tutorial-copy-subtitle,
+.tutorial-copy-body {
+  display: block;
   text-align: center;
   text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.tutorial-copy-title {
+  max-width: 14em;
+  color: var(--ink);
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1.18;
+}
+
+.tutorial-copy-subtitle {
+  max-width: 16em;
+  color: var(--c-drums-ink);
+  font-size: 18px;
+  font-weight: 850;
+  line-height: 1.28;
+}
+
+.tutorial-copy-body {
+  max-width: 26em;
+  color: var(--ink-2);
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.62;
 }
 
 .tutorial-target-active {
+  --tutorial-highlight-accent: var(--c-drums);
+  --tutorial-highlight-ink: var(--c-drums-ink);
+
   position: relative;
-  z-index: 55;
-  outline: 0;
-  box-shadow:
-    inset 0 0 0 2px color-mix(in oklab, var(--c-drums-ink) 76%, white),
-    inset 0 0 24px color-mix(in oklab, var(--c-drums) 20%, transparent),
-    0 0 18px color-mix(in oklab, var(--c-drums-ink) 16%, transparent);
-  animation: tutorial-target-pulse 1.35s ease-in-out infinite;
+  z-index: var(--tutorial-target-z);
+  outline: 2px solid color-mix(in oklab, white 58%, transparent);
+  outline-offset: 3px;
+  box-shadow: var(--tutorial-highlight-rest-shadow);
+  animation: tutorial-highlight-breathe var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
 }
 
 .tutorial-target-active::after {
@@ -168,20 +256,42 @@ button {
   box-shadow: 0 6px 18px color-mix(in oklab, black 24%, transparent);
 }
 
-@keyframes tutorial-target-pulse {
+@keyframes tutorial-panel-rail-breathe {
   0%,
   100% {
-    box-shadow:
-      inset 0 0 0 2px color-mix(in oklab, var(--c-drums-ink) 76%, white),
-      inset 0 0 24px color-mix(in oklab, var(--c-drums) 20%, transparent),
-      0 0 18px color-mix(in oklab, var(--c-drums-ink) 16%, transparent);
+    opacity: 0.72;
   }
 
   50% {
-    box-shadow:
-      inset 0 0 0 3px color-mix(in oklab, var(--c-drums-ink) 84%, white),
-      inset 0 0 32px color-mix(in oklab, var(--c-drums) 26%, transparent),
-      0 0 24px color-mix(in oklab, var(--c-drums-ink) 20%, transparent);
+    opacity: 1;
+  }
+}
+
+@keyframes tutorial-highlight-breathe {
+  0%,
+  100% {
+    box-shadow: var(--tutorial-highlight-rest-shadow);
+  }
+
+  50% {
+    box-shadow: var(--tutorial-highlight-peak-shadow);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tutorial-target-active,
+  .tutorial-cell-target,
+  .tutorial-cell-source,
+  .tutorial-bar-target,
+  .tutorial-control-target,
+  .playhead.tutorial-playhead-target,
+  .ruler-playhead.tutorial-playhead-target::after {
+    animation: none;
+    box-shadow: var(--tutorial-highlight-rest-shadow);
+  }
+
+  .tutorial-panel-header::before {
+    animation: none;
   }
 }
 
@@ -275,17 +385,22 @@ button {
   overflow: hidden;
 }
 
-.app-main:has(.tutorial-target-active)::before {
+.app-main:has(.tutorial-target-active)::before,
+.app-main:has(.tutorial-bar-target)::before,
+.app-main:has(.tutorial-control-target)::before,
+.app-main:has(.tutorial-cell-target)::before,
+.app-main:has(.tutorial-cell-source)::before,
+.app-main:has(.tutorial-playhead-target)::before {
   position: absolute;
   inset: 0;
-  z-index: 50;
+  z-index: var(--tutorial-spotlight-z);
   pointer-events: none;
   content: "";
-  background: color-mix(in oklab, black 34%, transparent);
+  background: color-mix(in oklab, black 46%, transparent);
 }
 
 .app .tutorial-target-active {
-  z-index: 55;
+  z-index: var(--tutorial-target-z);
 }
 
 .app.editor-resizing {
@@ -379,6 +494,19 @@ button {
   padding: 0 18px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
+}
+
+.topbar:has(.tutorial-transport-target) {
+  z-index: calc(var(--tutorial-target-z) + 2);
+}
+
+.topbar:has(.tutorial-transport-target)::after {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  content: "";
+  background: color-mix(in oklab, black 46%, transparent);
 }
 
 .brand {
@@ -1123,8 +1251,8 @@ button {
   appearance: none;
   position: absolute;
   z-index: 2;
-  top: 6px;
-  bottom: 6px;
+  top: var(--timeline-clip-y-inset);
+  bottom: var(--timeline-clip-y-inset);
   left: 0;
   left: calc(var(--bar-index) * 100% / var(--bars));
   width: calc(100% / var(--bars));
@@ -1230,10 +1358,10 @@ button {
 .bar-drop-zone {
   position: absolute;
   z-index: 1;
-  top: 6px;
-  bottom: 6px;
-  left: calc(var(--bar-index) * 100% / var(--bars) + 4px);
-  width: calc(100% / var(--bars) - 8px);
+  top: var(--timeline-clip-y-inset);
+  bottom: var(--timeline-clip-y-inset);
+  left: calc(var(--bar-index) * 100% / var(--bars) + var(--timeline-bar-x-inset));
+  width: calc(100% / var(--bars) - var(--timeline-bar-x-inset) - var(--timeline-bar-x-inset));
   border: 1px solid transparent;
   border-radius: 12px;
 }
@@ -1258,19 +1386,97 @@ button {
 }
 
 .tutorial-bar-target {
-  animation: tutorial-bar-pulse 1.05s ease-in-out infinite;
-  outline: 3px solid color-mix(in oklab, var(--c-drums-ink) 78%, white);
-  outline-offset: -3px;
-  box-shadow:
-    inset 0 0 0 4px color-mix(in oklab, var(--c-drums-ink) 68%, transparent),
-    0 0 0 8px color-mix(in oklab, var(--c-drums) 72%, transparent),
-    0 10px 24px color-mix(in oklab, var(--c-drums-ink) 22%, transparent);
+  --tutorial-highlight-accent: var(--c-drums);
+  --tutorial-highlight-ink: var(--c-drums-ink);
+
+  position: relative;
+  z-index: var(--tutorial-target-z);
+  animation: tutorial-highlight-breathe var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
+  outline: 2px solid color-mix(in oklab, white 58%, transparent);
+  outline-offset: 3px;
+  box-shadow: var(--tutorial-highlight-rest-shadow);
 }
 
 .tutorial-bar-completed {
-  box-shadow:
-    inset 0 0 0 2px color-mix(in oklab, var(--play) 72%, white),
-    0 0 0 3px color-mix(in oklab, var(--play) 28%, transparent);
+  box-shadow: var(--tutorial-highlight-complete-shadow);
+}
+
+.tutorial-control-target {
+  --tutorial-highlight-accent: var(--c-drums);
+  --tutorial-highlight-ink: var(--c-drums-ink);
+
+  position: relative;
+  z-index: var(--tutorial-target-z);
+  animation: tutorial-highlight-breathe var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
+  outline: 2px solid color-mix(in oklab, white 58%, transparent);
+  outline-offset: 3px;
+  box-shadow: var(--tutorial-highlight-rest-shadow);
+}
+
+.fill-empty-clips.tutorial-control-target,
+.clip.tutorial-bar-target {
+  color: var(--tutorial-target-ink);
+  background: var(--tutorial-target-surface);
+  border: 1px solid var(--tutorial-target-surface-border);
+}
+
+.fill-empty-clips.tutorial-control-target:hover:not(:disabled),
+.fill-empty-clips.tutorial-control-target:focus-visible:not(:disabled) {
+  color: var(--tutorial-target-ink);
+  background: var(--tutorial-target-surface);
+  border-color: var(--tutorial-target-surface-border);
+}
+
+.clip.tutorial-bar-target {
+  --clip-bg: var(--tutorial-target-surface);
+  --clip-ink: var(--tutorial-target-ink);
+  --tutorial-highlight-rest-shadow: var(--tutorial-target-contained-rest-shadow);
+  --tutorial-highlight-peak-shadow: var(--tutorial-target-contained-peak-shadow);
+
+  position: absolute;
+  outline-offset: -3px;
+  box-shadow: var(--tutorial-highlight-rest-shadow);
+}
+
+.transport.tutorial-transport-target {
+  --tutorial-highlight-accent: var(--c-drums);
+  --tutorial-highlight-ink: var(--c-drums-ink);
+  --tutorial-highlight-rest-shadow: var(--tutorial-target-contained-rest-shadow);
+  --tutorial-highlight-peak-shadow: var(--tutorial-target-contained-peak-shadow);
+
+  color: var(--tutorial-target-ink);
+  background: var(--tutorial-target-surface);
+  border: 1px solid var(--tutorial-target-surface-border);
+  position: relative;
+  z-index: calc(var(--tutorial-target-z) + 3);
+  outline-offset: -3px;
+  box-shadow: var(--tutorial-highlight-rest-shadow);
+}
+
+.transport.tutorial-transport-target .t-btn {
+  color: color-mix(in oklab, var(--tutorial-target-ink) 58%, var(--ink-3));
+  background: transparent;
+  box-shadow: none;
+  opacity: 0.5;
+}
+
+.transport.tutorial-transport-target .t-btn.play {
+  position: relative;
+  z-index: calc(var(--tutorial-target-z) + 1);
+  color: var(--tutorial-target-ink);
+  background: color-mix(in oklab, white 86%, var(--tutorial-target-surface));
+  border: 1px solid var(--tutorial-target-surface-border);
+  outline: 2px solid color-mix(in oklab, white 64%, transparent);
+  outline-offset: -2px;
+  box-shadow: var(--tutorial-target-contained-rest-shadow);
+  opacity: 1;
+}
+
+.transport.tutorial-transport-target .t-btn.play.active {
+  color: var(--tutorial-target-ink);
+  background: color-mix(in oklab, white 86%, var(--tutorial-target-surface));
+  border-color: var(--tutorial-target-surface-border);
+  box-shadow: var(--tutorial-target-contained-rest-shadow);
 }
 
 .hover-row:hover .add-clip {
@@ -1314,19 +1520,6 @@ button {
   100% {
     opacity: 0;
     transform: scaleX(1);
-  }
-}
-
-@keyframes tutorial-bar-pulse {
-  0%,
-  100% {
-    opacity: 0.72;
-    transform: scaleX(1);
-  }
-
-  50% {
-    opacity: 1;
-    transform: scaleX(1.015);
   }
 }
 
@@ -1413,18 +1606,23 @@ button {
 }
 
 .ruler-playhead.tutorial-playhead-target {
-  z-index: 12;
+  --tutorial-highlight-accent: var(--c-drums);
+  --tutorial-highlight-ink: var(--c-drums-ink);
+
+  z-index: var(--tutorial-target-z);
   background: transparent;
   box-shadow: none;
   animation: none;
 }
 
 .playhead.tutorial-playhead-target {
+  --tutorial-highlight-accent: var(--c-drums);
+  --tutorial-highlight-ink: var(--c-drums-ink);
+
+  z-index: var(--tutorial-target-z);
   background: color-mix(in oklab, var(--c-drums-ink) 86%, white);
-  box-shadow:
-    0 0 0 2px color-mix(in oklab, white 72%, transparent),
-    0 0 12px color-mix(in oklab, var(--c-drums-ink) 46%, transparent);
-  animation: tutorial-playhead-pulse 0.95s ease-in-out infinite;
+  box-shadow: var(--tutorial-highlight-rest-shadow);
+  animation: tutorial-highlight-breathe var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
 }
 
 .ruler-playhead.tutorial-playhead-target::before,
@@ -1435,10 +1633,11 @@ button {
 
 .ruler-playhead.tutorial-playhead-target::after {
   background: color-mix(in oklab, var(--c-drums-ink) 88%, black);
-  border: 2px solid color-mix(in oklab, white 90%, transparent);
-  box-shadow:
-    0 0 0 2px color-mix(in oklab, var(--c-drums) 44%, transparent),
-    0 0 14px color-mix(in oklab, var(--c-drums) 74%, transparent);
+  border: 2px solid color-mix(in oklab, white 66%, transparent);
+  outline: 2px solid color-mix(in oklab, white 60%, transparent);
+  outline-offset: 2px;
+  box-shadow: var(--tutorial-highlight-rest-shadow);
+  animation: tutorial-highlight-breathe var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
 }
 
 .ruler-playhead.tutorial-playhead-completed {
@@ -1449,34 +1648,13 @@ button {
 
 .playhead.tutorial-playhead-completed {
   background: color-mix(in oklab, var(--play) 72%, white);
-  box-shadow:
-    0 0 0 2px color-mix(in oklab, white 70%, transparent),
-    0 0 10px color-mix(in oklab, var(--play) 42%, transparent);
+  box-shadow: var(--tutorial-highlight-complete-shadow);
 }
 
 .ruler-playhead.tutorial-playhead-completed::after {
   background: color-mix(in oklab, var(--play) 72%, black);
   border: 2px solid color-mix(in oklab, white 88%, transparent);
-  box-shadow:
-    0 0 0 2px color-mix(in oklab, var(--play) 32%, transparent),
-    0 0 12px color-mix(in oklab, var(--play) 56%, transparent);
-}
-
-@keyframes tutorial-playhead-pulse {
-  0%,
-  100% {
-    opacity: 0.88;
-    box-shadow:
-      0 0 0 2px color-mix(in oklab, white 78%, transparent),
-      0 0 13px color-mix(in oklab, var(--c-drums-ink) 48%, transparent);
-  }
-
-  50% {
-    opacity: 1;
-    box-shadow:
-      0 0 0 3px color-mix(in oklab, white 86%, transparent),
-      0 0 20px color-mix(in oklab, var(--c-drums-ink) 58%, transparent);
-  }
+  box-shadow: var(--tutorial-highlight-complete-shadow);
 }
 
 .editor {
@@ -3622,32 +3800,98 @@ button {
 }
 
 .tutorial-cell-target {
-  animation: tutorial-cell-pulse 0.95s ease-in-out infinite;
-  outline: 3px solid color-mix(in oklab, var(--c-drums-ink) 82%, white);
+  --tutorial-cell-accent: var(--c-drums);
+  --tutorial-cell-ink: var(--tutorial-cell-accent);
+  --tutorial-cell-surface: color-mix(in oklab, white 46%, var(--tutorial-cell-accent));
+  --tutorial-cell-border: color-mix(in oklab, var(--tutorial-cell-accent) 82%, var(--tutorial-cell-ink));
+  --tutorial-highlight-accent: var(--tutorial-cell-accent);
+  --tutorial-highlight-ink: var(--tutorial-cell-ink);
+
+  position: relative;
+  z-index: var(--tutorial-target-z);
+  animation: tutorial-highlight-breathe var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
+  outline: 2px solid color-mix(in oklab, white 60%, transparent);
   outline-offset: 2px;
-  border-color: color-mix(in oklab, var(--c-drums-ink) 74%, white);
+  background: var(--tutorial-cell-surface);
+  border-color: var(--tutorial-cell-border);
+  box-shadow: var(--tutorial-highlight-rest-shadow);
+}
+
+.drum-step.active.tutorial-cell-target {
+  background: var(--tutorial-cell-surface);
+  border-color: var(--tutorial-cell-border);
+}
+
+.tutorial-cell-completed {
+  --tutorial-cell-accent: var(--c-drums);
+  --tutorial-cell-ink: var(--tutorial-cell-accent);
+  --tutorial-cell-surface: color-mix(in oklab, white 36%, var(--tutorial-cell-accent));
+  --tutorial-cell-border: color-mix(in oklab, var(--tutorial-cell-accent) 76%, var(--tutorial-cell-ink));
+  --tutorial-highlight-accent: var(--tutorial-cell-accent);
+  --tutorial-highlight-ink: var(--tutorial-cell-ink);
+
+  position: relative;
+  z-index: var(--tutorial-target-z);
+  opacity: 1;
+  background: var(--tutorial-cell-surface);
+  border-color: var(--tutorial-cell-border);
   box-shadow:
-    0 0 0 4px color-mix(in oklab, white 86%, transparent),
-    0 0 0 10px color-mix(in oklab, var(--c-drums) 82%, transparent),
-    0 8px 20px color-mix(in oklab, var(--c-drums-ink) 24%, transparent);
+    inset 0 0 0 2px color-mix(in oklab, white 58%, transparent),
+    inset 0 0 0 4px color-mix(in oklab, var(--tutorial-cell-accent) 18%, transparent),
+    0 0 0 2px color-mix(in oklab, white 34%, transparent);
+}
+
+.drum-step.active.tutorial-cell-completed {
+  background: var(--tutorial-cell-surface);
+  border-color: var(--tutorial-cell-border);
+}
+
+.tutorial-cell-target-blue {
+  --tutorial-cell-accent: oklch(70% 0.17 252);
+  --tutorial-cell-ink: oklch(36% 0.14 252);
+}
+
+.tutorial-cell-completed-blue {
+  --tutorial-cell-accent: oklch(70% 0.17 252);
+  --tutorial-cell-ink: oklch(36% 0.14 252);
+}
+
+.tutorial-cell-target-green {
+  --tutorial-cell-accent: oklch(72% 0.16 150);
+  --tutorial-cell-ink: oklch(35% 0.13 150);
+}
+
+.tutorial-cell-completed-green {
+  --tutorial-cell-accent: oklch(72% 0.16 150);
+  --tutorial-cell-ink: oklch(35% 0.13 150);
+}
+
+.tutorial-cell-target-yellow {
+  --tutorial-cell-accent: oklch(84% 0.18 88);
+  --tutorial-cell-ink: oklch(42% 0.13 82);
+}
+
+.tutorial-cell-completed-yellow {
+  --tutorial-cell-accent: oklch(84% 0.18 88);
+  --tutorial-cell-ink: oklch(42% 0.13 82);
 }
 
 .tutorial-cell-source {
+  --tutorial-highlight-accent: var(--brand);
+  --tutorial-highlight-ink: var(--brand);
+
+  position: relative;
+  z-index: var(--tutorial-target-z);
   cursor: grab;
-  border-color: color-mix(in oklab, var(--brand) 62%, white);
-  box-shadow:
-    0 0 0 3px color-mix(in oklab, white 80%, transparent),
-    0 0 0 7px color-mix(in oklab, var(--brand) 34%, transparent);
+  animation: tutorial-highlight-breathe var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
+  outline: 2px solid color-mix(in oklab, white 60%, transparent);
+  outline-offset: 2px;
+  border-color: color-mix(in oklab, var(--brand) 44%, white);
+  box-shadow: var(--tutorial-highlight-rest-shadow);
 }
 
 .tutorial-cell-source:active {
   cursor: grabbing;
-}
-
-.tutorial-cell-completed {
-  box-shadow:
-    inset 0 0 0 2px color-mix(in oklab, var(--play) 72%, white),
-    0 0 0 3px color-mix(in oklab, var(--play) 28%, transparent);
 }
 
 .drum-step.tutorial-locked:not(.active):not(.tutorial-cell-target):not(.tutorial-cell-source) {
@@ -3657,17 +3901,6 @@ button {
   border-color: color-mix(in oklab, var(--border) 42%, var(--ink-4));
   filter: grayscale(1) saturate(0.2);
   transform: none;
-}
-
-@keyframes tutorial-cell-pulse {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-
-  50% {
-    transform: scale(1.13);
-  }
 }
 
 .drum-bar-indicator {

@@ -510,8 +510,7 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(source, /getDrumsClipBarIndexes/);
   assert.match(source, /applyBasicDrumsAllBars/);
   assert.match(source, /applyBasicDrumsAllBars\(state\.matrix,\s*drumsClipBars\)/);
-  assert.match(source, /createBasicDrumsBarWithoutKick/);
-  assert.match(source, /createBasicDrumsBarWithoutKick\(\)\.forEach\(\(cell,\s*step\) => \{/);
+  assert.doesNotMatch(source, /createBasicDrumsBarWithoutKick/);
   assert.match(source, /clearDrumsBar/);
   assert.match(source, /getAdjacentTrackClipBar/);
   assert.match(source, /canPageTrackClipBars/);
@@ -751,7 +750,20 @@ test('app mounts the drums tutorial right sidebar', async () => {
   assert.doesNotMatch(topBarSource, /showTutorialReopen/);
   assert.doesNotMatch(topBarSource, /onTutorialReopen/);
   assert.match(overlaySource, /displayCopy/);
+  assert.match(overlaySource, /renderTutorialCopy/);
+  assert.match(overlaySource, /\.split\('\\n\\n'\)/);
+  assert.match(overlaySource, /\.split\('\\n'\)/);
+  assert.match(overlaySource, /className="tutorial-copy"/);
+  assert.match(overlaySource, /className="tutorial-copy-title"/);
+  assert.match(overlaySource, /className="tutorial-copy-subtitle"/);
+  assert.match(overlaySource, /className="tutorial-copy-body"/);
+  assert.doesNotMatch(overlaySource, /isTutorialActionHintLine/);
+  assert.doesNotMatch(overlaySource, /tutorial-copy-action-hint/);
+  assert.doesNotMatch(overlaySource, /className="tutorial-copy-line"/);
+  assert.doesNotMatch(overlaySource, /<p>\{displayCopy \?\? step\.copy\}<\/p>/);
   assert.match(overlaySource, /showCompleteButton/);
+  assert.match(overlaySource, /primaryLabel/);
+  assert.match(overlaySource, /primaryDisabled/);
   assert.match(overlaySource, /onPrimaryAction/);
   assert.match(overlaySource, /跳过教程/);
   assert.doesNotMatch(overlaySource, /getTutorialPlacement/);
@@ -772,7 +784,9 @@ test('tutorial navigation buttons interrupt preview playback', async () => {
   assert.match(source, /function clearTutorialAutoAdvanceTimer\(\)/);
   assert.match(source, /window\.clearTimeout\(tutorialAutoAdvanceTimerId\)/);
   assert.match(source, /function scheduleTutorialAutoAdvance\(callback\)/);
-  assert.match(source, /TUTORIAL_STEP_IDS\.UI_TRACK_AREA,[\s\S]*TUTORIAL_STEP_IDS\.DRUMS_TASK_1/);
+  assert.match(source, /TUTORIAL_STEP_IDS\.DRUMS_OPEN_FIRST_CLIP,[\s\S]*TUTORIAL_STEP_IDS\.DRUMS_DRAG_KICK/);
+  assert.match(source, /handleTutorialPlaybackComplete/);
+  assert.match(source, /onPositionChange[\s\S]*handleTutorialPlaybackComplete/);
   assert.match(source, /stopTutorialPreviewPlayback\(\);[\s\S]*setCurrentTutorialStepIndex/);
   assert.match(source, /handleTutorialBack = useCallback\(\(\) => \{[\s\S]*stopTutorialPreviewPlayback\(\);/);
   assert.match(source, /handleTutorialBack = useCallback\(\(\) => \{[\s\S]*clearTutorialAutoAdvanceTimer\(\);[\s\S]*stopTutorialPreviewPlayback\(\);/);
@@ -829,22 +843,41 @@ test('app routes drums tutorial tasks through guards and target props', async ()
     new URL('../src/app/components/DrumSequencer.jsx', import.meta.url),
     'utf8',
   );
+  const tracksColumnSource = await readFile(
+    new URL('../src/app/components/TracksColumn.jsx', import.meta.url),
+    'utf8',
+  );
+  const topBarSource = await readFile(new URL('../src/app/components/TopBar.jsx', import.meta.url), 'utf8');
 
   assert.match(source, /handleTutorialDrumToggle/);
   assert.match(source, /handleTutorialDrumMove/);
   assert.match(source, /handleTutorialClipOpen/);
-  assert.match(source, /handleTutorialPlayheadDrag/);
+  assert.match(source, /handleTutorialControlAction/);
+  assert.match(source, /handleTutorialPlaybackComplete/);
+  assert.doesNotMatch(source, /handleTutorialPlayheadDrag/);
   assert.match(source, /handleTransportSeek/);
   assert.match(source, /if \(!tutorialAction\.allowed\) return false;\n\n {4}setTutorialProgress\(tutorialAction\.nextProgress\);\n\n {4}if \(tutorialAction\.shouldAdvance\)/);
   assert.match(source, /handleTutorialOpenClip/);
   assert.match(source, /createDrumsStepMovePatch/);
-  assert.match(source, /completeTutorialTask4/);
+  assert.match(source, /completeTutorialPrimaryAction/);
+  assert.doesNotMatch(source, /completeTutorialTask4/);
   assert.match(source, /getDrumsCellInstruments/);
   assert.match(source, /previewInstruments:\s*getDrumsCellInstruments\(nextCell\)/);
   assert.match(source, /tutorialViewModel\.targets/);
   assert.match(source, /tutorialViewModel\.locked/);
-  assert.match(source, /tutorialViewModel\.suggestedSelectedBar/);
+  assert.match(source, /tutorialViewModel\.primaryLabel/);
+  assert.match(source, /tutorialViewModel\.primaryDisabled/);
   assert.match(source, /onDrumsStepMove:\s*handleDrumsStepMove/);
+  assert.match(topBarSource, /tutorialTargets/);
+  assert.match(topBarSource, /getTutorialControlRole\(tutorialTargets,\s*'transport-play'\)/);
+  assert.match(topBarSource, /const transportClassName = \[/);
+  assert.match(topBarSource, /playTutorialRole === 'target' \? 'tutorial-control-target tutorial-transport-target' : ''/);
+  assert.match(topBarSource, /<div className=\{transportClassName\} role="toolbar" aria-label="Transport">/);
+  assert.doesNotMatch(topBarSource, /playTutorialRole === 'target' \? 'tutorial-control-target' : ''/);
+  assert.match(topBarSource, /tutorial-control-target/);
+  assert.match(tracksColumnSource, /tutorialTargets/);
+  assert.match(tracksColumnSource, /getTutorialControlRole\(tutorialTargets,\s*`fill-empty-clips:\$\{track\.id\}`\)/);
+  assert.match(tracksColumnSource, /tutorial-control-target/);
   assert.match(timelineSource, /tutorialTargets/);
   assert.match(timelineSource, /tutorial-bar-target/);
   assert.match(timelineSource, /getTutorialBarClass\(tutorialBarRole\)/);
@@ -863,6 +896,21 @@ test('app routes drums tutorial tasks through guards and target props', async ()
   assert.match(drumSequencerSource, /getDropTargetFromPoint/);
   assert.match(drumSequencerSource, /drag-over/);
   assert.match(drumSequencerSource, /tutorial-cell-target/);
+  assert.match(drumSequencerSource, /tutorial-cell-target-blue/);
+  assert.match(drumSequencerSource, /tutorial-cell-target-green/);
+  assert.match(drumSequencerSource, /tutorial-cell-target-yellow/);
+  assert.doesNotMatch(drumSequencerSource, /tutorial-cell-existing/);
+  assert.doesNotMatch(drumSequencerSource, /tutorial-cell-existing-blue/);
+  assert.doesNotMatch(drumSequencerSource, /tutorial-cell-existing-green/);
+  assert.doesNotMatch(drumSequencerSource, /tutorial-cell-existing-yellow/);
+  assert.match(drumSequencerSource, /tutorial-cell-completed/);
+  assert.match(drumSequencerSource, /tutorial-cell-completed-blue/);
+  assert.match(drumSequencerSource, /tutorial-cell-completed-green/);
+  assert.match(drumSequencerSource, /tutorial-cell-completed-yellow/);
+  assert.doesNotMatch(drumSequencerSource, /tutorialRole\.startsWith\('existing'\)/);
+  assert.match(drumSequencerSource, /tutorialRole\.startsWith\('completed'\)/);
+  assert.match(drumSequencerSource, /getTutorialControlRole\(tutorialTargets,\s*'generate-current-drums-bar'\)/);
+  assert.match(drumSequencerSource, /getTutorialControlRole\(tutorialTargets,\s*'generate-all-drums-bars'\)/);
   assert.match(drumSequencerSource, /tutorial-cell-source/);
   assert.match(drumSequencerSource, /tutorial-cell-completed/);
 });

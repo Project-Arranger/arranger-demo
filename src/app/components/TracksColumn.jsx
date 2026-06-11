@@ -13,6 +13,7 @@ import {
   MIN_TRACK_VOLUME_DB,
 } from '../trackVolumeViewModels.js';
 import { getTrackVolumeFromClientX } from '../trackVolumeInteraction.js';
+import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
 import { TRACK_ICONS, renderIcon } from './icons.js';
 
 function TrackRow({
@@ -21,6 +22,8 @@ function TrackRow({
   onFillEmptyTrackClips = () => {},
   onSelect,
   onVolumeChange = () => {},
+  tutorialLocked = false,
+  tutorialTargets,
   track,
 }) {
   const volumeInputRef = useRef(null);
@@ -95,6 +98,12 @@ function TrackRow({
     event.stopPropagation();
     onFillEmptyTrackClips(track.id);
   };
+  const fillControlRole = getTutorialControlRole(tutorialTargets, `fill-empty-clips:${track.id}`);
+  const fillButtonClassName = [
+    'fill-empty-clips',
+    fillControlRole === 'target' ? 'tutorial-control-target' : '',
+  ].filter(Boolean).join(' ');
+  const fillButtonDisabled = fillEmptyClipsDisabled || (tutorialLocked && fillControlRole !== 'target');
 
   return (
     <div
@@ -115,11 +124,11 @@ function TrackRow({
           <span className="track-name">{track.label}</span>
         </button>
         <button
-          className="fill-empty-clips"
+          className={fillButtonClassName}
           type="button"
           aria-label="补齐这一轨缺失的空 clips"
           title="补齐这一轨缺失的空 clips"
-          disabled={fillEmptyClipsDisabled}
+          disabled={fillButtonDisabled}
           onClick={handleFillEmptyClips}
         >
           <span className="fill-empty-clips-icon" aria-hidden="true">
@@ -174,6 +183,8 @@ const TracksColumn = forwardRef(function TracksColumn(
     onFillEmptyTrackClips,
     onTrackSelect,
     onVolumeChange,
+    tutorialLocked = false,
+    tutorialTargets,
     tracks,
   },
   scrollRef,
@@ -205,6 +216,8 @@ const TracksColumn = forwardRef(function TracksColumn(
           onFillEmptyTrackClips,
           onSelect: onTrackSelect,
           onVolumeChange,
+          tutorialLocked,
+          tutorialTargets,
           track,
         }))}
       </div>
