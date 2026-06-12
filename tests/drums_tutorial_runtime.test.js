@@ -1096,7 +1096,7 @@ test('target 6 melody examples advance by primary buttons and then end tutorial'
     step: play3Step,
   });
   assert.deepEqual(play3ViewModel.targets.controls, [
-    { name: 'melody-example-keys:23623523434345455', role: 'target' },
+    { name: 'melody-example-keys:236235234343454', role: 'target' },
   ]);
   const nextToFree = completeTutorialPrimaryAction({ progress, step: play3Step });
   assert.equal(nextToFree.allowed, true);

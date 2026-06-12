@@ -171,6 +171,7 @@ export default function App() {
   const [currentTutorialStepIndex, setCurrentTutorialStepIndex] = useState(0);
   const [tutorialProgress, setTutorialProgress] = useState(() => createTutorialState());
   const [tutorialVisible, setTutorialVisible] = useState(true);
+  const [tutorialModeActive, setTutorialModeActive] = useState(true);
   const [tutorialSidebarCollapsed, setTutorialSidebarCollapsed] = useState(false);
   const [appliedTutorialSetups, setAppliedTutorialSetups] = useState(() => new Set());
   const [tutorialStepCheckpoints, setTutorialStepCheckpoints] = useState(() => ({
@@ -196,9 +197,10 @@ export default function App() {
     selectedBar,
     step: currentTutorialStep,
   }), [clips, currentTutorialStep, matrix, selectedBar, tutorialProgress]);
-  const activeTutorialTarget = tutorialVisible ? currentTutorialStep?.target?.name ?? null : null;
-  const activeTutorialTargets = tutorialVisible ? tutorialViewModel.targets : undefined;
-  const activeTutorialLocked = tutorialVisible && tutorialViewModel.locked;
+  const tutorialActive = tutorialVisible && tutorialModeActive;
+  const activeTutorialTarget = tutorialActive ? currentTutorialStep?.target?.name ?? null : null;
+  const activeTutorialTargets = tutorialActive ? tutorialViewModel.targets : undefined;
+  const activeTutorialLocked = tutorialActive && tutorialViewModel.locked;
   const tutorialDirectoryItems = useMemo(() => (
     TUTORIAL_DIRECTORY_ITEMS.map((item, itemIndex) => {
       const stepIndex = DRUMS_TUTORIAL_STEPS.findIndex((step) => step.id === item.stepId);
@@ -488,6 +490,7 @@ export default function App() {
       clearTutorialAutoAdvanceTimer();
       stopTutorialPreviewPlayback();
       resetTutorialTransportToStart();
+      setTutorialModeActive(false);
       setTutorialSidebarCollapsed(true);
       return;
     }
@@ -510,7 +513,7 @@ export default function App() {
 
   const handleFillEmptyTrackClips = useCallback((trackId) => {
     let tutorialAction = null;
-    if (tutorialVisible) {
+    if (tutorialActive) {
       tutorialAction = handleTutorialControlAction({
         control: `${TUTORIAL_CONTROL_TARGETS.FILL_EMPTY_CLIPS_PREFIX}:${trackId}`,
         progress: tutorialProgress,
@@ -526,8 +529,8 @@ export default function App() {
     applyTutorialActionProgress,
     currentTutorialStep,
     selectedBar,
+    tutorialActive,
     tutorialProgress,
-    tutorialVisible,
   ]);
 
   const handleAddTrack = useCallback((trackId) => {
@@ -566,7 +569,7 @@ export default function App() {
 
   const handleGenerateCurrentDrumsBar = useCallback(() => {
     let tutorialAction = null;
-    if (tutorialVisible) {
+    if (tutorialActive) {
       tutorialAction = handleTutorialControlAction({
         control: TUTORIAL_CONTROL_TARGETS.GENERATE_CURRENT_DRUMS_BAR,
         progress: tutorialProgress,
@@ -584,14 +587,14 @@ export default function App() {
     applyTutorialActionProgress,
     currentTutorialStep,
     selectedBar,
+    tutorialActive,
     tutorialProgress,
-    tutorialVisible,
     writeDrumsBars,
   ]);
 
   const handleGenerateAllDrumsBars = useCallback(() => {
     let tutorialAction = null;
-    if (tutorialVisible) {
+    if (tutorialActive) {
       tutorialAction = handleTutorialControlAction({
         control: TUTORIAL_CONTROL_TARGETS.GENERATE_ALL_DRUMS_BARS,
         progress: tutorialProgress,
@@ -610,8 +613,8 @@ export default function App() {
     applyTutorialActionProgress,
     currentTutorialStep,
     selectedBar,
+    tutorialActive,
     tutorialProgress,
-    tutorialVisible,
     writeDrumsBars,
   ]);
 
@@ -652,7 +655,7 @@ export default function App() {
   }, [dispatchAppCommand]);
 
   const handlePlayToggle = useCallback(() => {
-    if (tutorialVisible) {
+    if (tutorialActive) {
       const tutorialAction = handleTutorialControlAction({
         control: TUTORIAL_CONTROL_TARGETS.TRANSPORT_PLAY,
         progress: tutorialProgress,
@@ -671,8 +674,8 @@ export default function App() {
     currentTutorialStep,
     dispatchAppCommand,
     selectedBar,
+    tutorialActive,
     tutorialProgress,
-    tutorialVisible,
   ]);
 
   const dispatchKeyboardCommand = useCallback((command) => {
@@ -691,7 +694,7 @@ export default function App() {
       useMusicStore.getState().setTransportPosition(bar, step);
 
       if (
-        tutorialVisible
+        tutorialActive
         && currentTutorialStep?.id === TUTORIAL_STEP_IDS.DRUMS_LISTEN_FIRST_CLIP
         && bar > DRUMS_TUTORIAL_FIRST_BAR
         && step === 0
@@ -706,7 +709,7 @@ export default function App() {
       }
 
       if (
-        tutorialVisible
+        tutorialActive
         && currentTutorialStep?.completion?.type === 'playback-loop-complete'
       ) {
         setTutorialProgress((progress) => {
@@ -730,16 +733,16 @@ export default function App() {
   }, [
     applyTutorialActionProgress,
     currentTutorialStep,
+    tutorialActive,
     tutorialProgress,
-    tutorialVisible,
   ]);
 
   useEffect(() => {
-    if (!tutorialVisible) return;
+    if (!tutorialActive) return;
 
     const suggestedBar = tutorialViewModel.suggestedSelectedBar;
     syncEditorToTutorialSuggestedBar(useMusicStore.getState(), suggestedBar, { isPlaying });
-  }, [isPlaying, selectedBar, tutorialViewModel.suggestedSelectedBar, tutorialVisible]);
+  }, [isPlaying, selectedBar, tutorialActive, tutorialViewModel.suggestedSelectedBar]);
 
   useEffect(() => {
     const playback = currentTutorialStep?.playback;
@@ -764,7 +767,7 @@ export default function App() {
 
   const handleDrumsStepToggle = useCallback((instrument, step) => {
     const state = useMusicStore.getState();
-    const tutorialAction = tutorialVisible ? handleTutorialDrumToggle({
+    const tutorialAction = tutorialActive ? handleTutorialDrumToggle({
       instrument,
       matrix: state.matrix,
       progress: tutorialProgress,
@@ -792,13 +795,13 @@ export default function App() {
     currentTutorialStep,
     dispatchAppCommand,
     selectedBar,
+    tutorialActive,
     tutorialProgress,
-    tutorialVisible,
   ]);
 
   const handleDrumsStepMove = useCallback((instrument, fromStep, toStep) => {
     const state = useMusicStore.getState();
-    const tutorialAction = tutorialVisible
+    const tutorialAction = tutorialActive
       ? handleTutorialDrumMove({
         fromStep,
         instrument,
@@ -841,8 +844,8 @@ export default function App() {
     currentTutorialStep,
     dispatchAppCommand,
     selectedBar,
+    tutorialActive,
     tutorialProgress,
-    tutorialVisible,
   ]);
 
   const handleChordCellSelect = useCallback((spanIndex, root) => {
@@ -893,7 +896,7 @@ export default function App() {
     }
     if (!changedOffsets.length) return;
 
-    const tutorialAction = tutorialVisible && currentTutorialStep?.id === TUTORIAL_STEP_IDS.CHORD_ENRICH_HARMONY
+    const tutorialAction = tutorialActive && currentTutorialStep?.id === TUTORIAL_STEP_IDS.CHORD_ENRICH_HARMONY
       ? handleTutorialControlAction({
         control: `chord-enrich-button:${spanIndex}`,
         progress: tutorialProgress,
@@ -919,8 +922,8 @@ export default function App() {
     currentTutorialStep,
     dispatchAppCommand,
     selectedBar,
+    tutorialActive,
     tutorialProgress,
-    tutorialVisible,
   ]);
 
   const handlePassingChordPick = useCallback((stepIndex, chordName) => {
@@ -928,7 +931,7 @@ export default function App() {
     const nextMatrix = setChordStepChord(state.matrix, selectedBar, stepIndex, chordName);
     if (nextMatrix === state.matrix) return;
 
-    const tutorialAction = tutorialVisible && currentTutorialStep?.id === TUTORIAL_STEP_IDS.CHORD_ADD_PASSING
+    const tutorialAction = tutorialActive && currentTutorialStep?.id === TUTORIAL_STEP_IDS.CHORD_ADD_PASSING
       ? handleTutorialControlAction({
         control: 'chord-passing-button',
         progress: tutorialProgress,
@@ -944,8 +947,8 @@ export default function App() {
     applyTutorialActionProgress,
     currentTutorialStep,
     selectedBar,
+    tutorialActive,
     tutorialProgress,
-    tutorialVisible,
   ]);
 
   const previewChordNames = useCallback((chordNames) => {
@@ -989,7 +992,7 @@ export default function App() {
 
   const handleChordTemplateApply = useCallback((templateId) => {
     let tutorialAction = null;
-    if (tutorialVisible && currentTutorialStep?.id === TUTORIAL_STEP_IDS.CHORD_SELECT_PROGRESSION_TEMPLATE) {
+    if (tutorialActive && currentTutorialStep?.id === TUTORIAL_STEP_IDS.CHORD_SELECT_PROGRESSION_TEMPLATE) {
       tutorialAction = handleTutorialControlAction({
         control: `chord-template-card:${templateId}`,
         progress: tutorialProgress,
@@ -1014,13 +1017,13 @@ export default function App() {
     applyTutorialActionProgress,
     currentTutorialStep,
     selectedBar,
+    tutorialActive,
     tutorialProgress,
-    tutorialVisible,
   ]);
 
   const handleChordGrooveTemplateApply = useCallback((templateId) => {
     let tutorialAction = null;
-    if (tutorialVisible && currentTutorialStep?.id === TUTORIAL_STEP_IDS.CHORD_SELECT_GROOVE_TEMPLATE) {
+    if (tutorialActive && currentTutorialStep?.id === TUTORIAL_STEP_IDS.CHORD_SELECT_GROOVE_TEMPLATE) {
       tutorialAction = handleTutorialControlAction({
         control: `chord-groove-card:${templateId}`,
         progress: tutorialProgress,
@@ -1046,8 +1049,8 @@ export default function App() {
     applyTutorialActionProgress,
     currentTutorialStep,
     selectedBar,
+    tutorialActive,
     tutorialProgress,
-    tutorialVisible,
   ]);
 
   const handleClearChordBar = useCallback(() => {
@@ -1084,7 +1087,7 @@ export default function App() {
 
   const handleBassGrooveTemplateApply = useCallback((templateId) => {
     let tutorialAction = null;
-    if (tutorialVisible && currentTutorialStep?.id === TUTORIAL_STEP_IDS.BASS_SELECT_GROOVE_TEMPLATE) {
+    if (tutorialActive && currentTutorialStep?.id === TUTORIAL_STEP_IDS.BASS_SELECT_GROOVE_TEMPLATE) {
       tutorialAction = handleTutorialControlAction({
         control: `bass-groove-card:${templateId}`,
         progress: tutorialProgress,
@@ -1111,8 +1114,8 @@ export default function App() {
     applyTutorialActionProgress,
     currentTutorialStep,
     selectedBar,
+    tutorialActive,
     tutorialProgress,
-    tutorialVisible,
   ]);
 
   const handleClearBassBar = useCallback(() => {
@@ -1146,7 +1149,7 @@ export default function App() {
 
   const handleMelodyScaleChange = useCallback((scaleId) => {
     let tutorialAction = null;
-    if (tutorialVisible && currentTutorialStep?.id === TUTORIAL_STEP_IDS.MELODY_SELECT_SCALE) {
+    if (tutorialActive && currentTutorialStep?.id === TUTORIAL_STEP_IDS.MELODY_SELECT_SCALE) {
       tutorialAction = handleTutorialControlAction({
         control: `melody-scale-card:${scaleId}`,
         progress: tutorialProgress,
@@ -1162,8 +1165,8 @@ export default function App() {
     applyTutorialActionProgress,
     currentTutorialStep,
     selectedBar,
+    tutorialActive,
     tutorialProgress,
-    tutorialVisible,
   ]);
 
   const handleClearMelodyBar = useCallback(() => {
@@ -1190,7 +1193,7 @@ export default function App() {
   ]);
 
   const handleTutorialOpenClip = useCallback((clip) => {
-    if (!tutorialVisible) return true;
+    if (!tutorialActive) return true;
 
     const tutorialAction = handleTutorialClipOpen({
       bar: clip?.bar,
@@ -1211,8 +1214,8 @@ export default function App() {
   }, [
     advanceTutorialToNextStep,
     currentTutorialStep,
+    tutorialActive,
     tutorialProgress,
-    tutorialVisible,
   ]);
 
   const handleTutorialBack = useCallback(() => {
@@ -1261,6 +1264,7 @@ export default function App() {
       targetCheckpoint?.appliedTutorialSetups,
     );
     setCurrentTutorialStepIndex(targetStepIndex);
+    setTutorialModeActive(true);
     setTutorialSidebarCollapsed(false);
     setTutorialVisible(true);
   }, [
@@ -1283,12 +1287,16 @@ export default function App() {
         tutorialProgress: createTutorialState(),
       }),
     }));
-    setTutorialSidebarCollapsed(false);
-    setTutorialVisible(false);
+    setTutorialModeActive(false);
+    setTutorialSidebarCollapsed(true);
+    setTutorialVisible(true);
   }, [stopTutorialPreviewPlayback]);
 
   const handleTutorialSidebarToggle = useCallback(() => {
-    setTutorialSidebarCollapsed((collapsed) => !collapsed);
+    setTutorialSidebarCollapsed((collapsed) => {
+      if (collapsed) setTutorialModeActive(true);
+      return !collapsed;
+    });
   }, []);
 
   const handleTutorialCompleteTask = useCallback(() => {
