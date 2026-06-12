@@ -224,11 +224,9 @@ export default function App() {
     [],
   );
 
-  const resetTutorialTransportToStart = useCallback(() => {
-    void (async () => {
-      await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
-      await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_SEEK, bar: 0, step: 0 });
-    })();
+  const resetTutorialTransportToStart = useCallback(async () => {
+    await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
+    await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_SEEK, bar: 0, step: 0 });
   }, [dispatchAppCommand]);
 
   const stopTutorialPreviewPlayback = useCallback(() => {
@@ -446,11 +444,20 @@ export default function App() {
     setCurrentTutorialStepIndex(nextStepIndex);
   }, [appliedTutorialSetups, applyTutorialStepSetup, tutorialProgress]);
 
-  const advanceTutorialToNextStep = useCallback((checkpointProgress = tutorialProgress) => {
-    resetTutorialTransportToStart();
-    enterTutorialStepIndex(currentTutorialStepIndex + 1, checkpointProgress);
+  const advanceTutorialToNextStep = useCallback((
+    checkpointProgress = tutorialProgress,
+    options = {},
+  ) => {
+    void (async () => {
+      await resetTutorialTransportToStart();
+      enterTutorialStepIndex(currentTutorialStepIndex + 1, checkpointProgress);
+      if (options.startPlaybackAfterAdvance) {
+        await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY });
+      }
+    })();
   }, [
     currentTutorialStepIndex,
+    dispatchAppCommand,
     enterTutorialStepIndex,
     resetTutorialTransportToStart,
     tutorialProgress,
@@ -490,7 +497,10 @@ export default function App() {
       return;
     }
     if (tutorialAction.shouldAdvance) {
-      scheduleTutorialAutoAdvance(() => advanceTutorialToNextStep(tutorialAction.nextProgress));
+      scheduleTutorialAutoAdvance(() => advanceTutorialToNextStep(
+        tutorialAction.nextProgress,
+        { startPlaybackAfterAdvance: tutorialAction.shouldStartPlaybackAfterAdvance },
+      ));
     }
   }, [
     advanceTutorialToNextStep,

@@ -1,6 +1,7 @@
 import { getDrumsCellInstruments } from '../domain/drumsCells.js';
 import { createDrumsStepMovePatch } from '../domain/drumsStepMove.js';
 import { BASS_GROOVE_TEMPLATES } from '../app/bassActions.js';
+import { CHORD_GROOVE_TEMPLATES } from '../app/chordGrooveActions.js';
 import {
   DRUMS_DRAG_SOURCE_STEP,
   DRUMS_DRAG_TARGET_STEP,
@@ -360,7 +361,14 @@ function getTutorialViewModel({
   }
 
   if (step.id === TUTORIAL_STEP_IDS.CHORD_LISTEN_LOOP) {
-    targets.controls = [{ name: TUTORIAL_CONTROL_TARGETS.TRANSPORT_PLAY, role: 'target' }];
+    targets.controls = [
+      { name: TUTORIAL_CONTROL_TARGETS.TRANSPORT_PLAY, role: 'target' },
+      { name: TUTORIAL_CONTROL_TARGETS.CHORD_GROOVE_BUTTON, role: 'target' },
+      ...CHORD_GROOVE_TEMPLATES.map((template) => ({
+        name: `${TUTORIAL_CONTROL_TARGETS.CHORD_GROOVE_CARD_PREFIX}:${template.id}`,
+        role: 'target',
+      })),
+    ];
   }
 
   if (step.id === TUTORIAL_STEP_IDS.CHORD_ENRICH_HARMONY && !progress.chordEnriched) {
@@ -395,7 +403,14 @@ function getTutorialViewModel({
   }
 
   if (step.id === TUTORIAL_STEP_IDS.BASS_LISTEN_LOOP) {
-    targets.controls = [{ name: TUTORIAL_CONTROL_TARGETS.TRANSPORT_PLAY, role: 'target' }];
+    targets.controls = [
+      { name: TUTORIAL_CONTROL_TARGETS.TRANSPORT_PLAY, role: 'target' },
+      { name: TUTORIAL_CONTROL_TARGETS.BASS_GROOVE_BUTTON, role: 'target' },
+      ...BASS_GROOVE_TEMPLATES.map((template) => ({
+        name: `${TUTORIAL_CONTROL_TARGETS.BASS_GROOVE_CARD_PREFIX}:${template.id}`,
+        role: 'target',
+      })),
+    ];
   }
 
   if (step.id === TUTORIAL_STEP_IDS.MELODY_FILL_TRACK_CLIPS) {
@@ -769,7 +784,7 @@ function completeTutorialPrimaryAction({
       ...progress,
       melodyExampleStarted: true,
       melodyExampleStep: 1,
-    }, true);
+    }, true, { shouldStartPlaybackAfterAdvance: true });
   }
 
   if (step?.id === TUTORIAL_STEP_IDS.MELODY_PLAY_EXAMPLE_1) {
@@ -780,14 +795,14 @@ function completeTutorialPrimaryAction({
   }
 
   if (step?.id === TUTORIAL_STEP_IDS.MELODY_EXAMPLE_INTRO_2) {
-    return createAllowedAction(progress, true);
+    return createAllowedAction(progress, true, { shouldStartPlaybackAfterAdvance: true });
   }
 
   if (step?.id === TUTORIAL_STEP_IDS.MELODY_PLAY_EXAMPLE_2) {
     return createAllowedAction({
       ...progress,
       melodyExampleStep: 3,
-    }, true);
+    }, true, { shouldStartPlaybackAfterAdvance: true });
   }
 
   if (step?.id === TUTORIAL_STEP_IDS.MELODY_PLAY_EXAMPLE_3) {

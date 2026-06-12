@@ -635,6 +635,8 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(melodyEditorSource, /清空本小节/);
   assert.match(melodyEditorSource, /清空整轨/);
   assert.doesNotMatch(melodyEditorSource, /清空 Melody/);
+  assert.match(melodyEditorSource, /createElement\(TrackBarPager,\s*\{[\s\S]*className:\s*'melody-editor-pager-shell'/);
+  assert.match(melodyEditorSource, /createElement\(TrackBarPager,\s*\{[\s\S]*contentClassName:\s*'melody-editor-scroll'/);
   assert.match(melodyEditorSource, /MELODY_KEY_SEQUENCE/);
   assert.match(melodyEditorSource, /melodyRailNotes/);
   assert.match(melodyEditorSource, /isMelodyCellActive/);
@@ -857,7 +859,7 @@ test('tutorial navigation buttons interrupt preview playback', async () => {
 
   assert.match(source, /const stopTutorialPreviewPlayback = useCallback/);
   assert.match(source, /const resetTutorialTransportToStart = useCallback/);
-  assert.match(source, /resetTutorialTransportToStart = useCallback\(\(\) => \{[\s\S]*APP_COMMAND_TYPES\.TRANSPORT_STOP[\s\S]*APP_COMMAND_TYPES\.TRANSPORT_SEEK,\s*bar:\s*0,\s*step:\s*0/);
+  assert.match(source, /resetTutorialTransportToStart = useCallback\(async \(\) => \{[\s\S]*APP_COMMAND_TYPES\.TRANSPORT_STOP[\s\S]*APP_COMMAND_TYPES\.TRANSPORT_SEEK,\s*bar:\s*0,\s*step:\s*0/);
   assert.doesNotMatch(source, /tutorialPlaybackStateRef/);
   assert.match(source, /let tutorialAutoAdvanceTimerId = null/);
   assert.match(source, /function clearTutorialAutoAdvanceTimer\(\)/);
@@ -891,8 +893,8 @@ test('tutorial navigation buttons interrupt preview playback', async () => {
   assert.match(source, /const nextStepCheckpoint = createTutorialCheckpoint\(\{[\s\S]*appState: useMusicStore\.getState\(\)/);
   assert.match(source, /setTutorialStepCheckpoints\(\(checkpoints\) => \(\{[\s\S]*\[nextStepIndex\]: nextStepCheckpoint/);
   assert.match(source, /setTutorialStepCheckpoints\(\(checkpoints\) => \(\{[\s\S]*applyTutorialStepSetup\(nextStep\)/);
-  assert.match(source, /advanceTutorialToNextStep\(tutorialAction\.nextProgress\)/);
-  assert.match(source, /const advanceTutorialToNextStep = useCallback\(\(checkpointProgress = tutorialProgress\) => \{[\s\S]*resetTutorialTransportToStart\(\);[\s\S]*enterTutorialStepIndex\(currentTutorialStepIndex \+ 1,\s*checkpointProgress\)/);
+  assert.match(source, /advanceTutorialToNextStep\([\s\S]*tutorialAction\.nextProgress,\s*\{[\s\S]*startPlaybackAfterAdvance:\s*tutorialAction\.shouldStartPlaybackAfterAdvance/);
+  assert.match(source, /const advanceTutorialToNextStep = useCallback\(\([\s\S]*checkpointProgress = tutorialProgress,[\s\S]*options = \{\},[\s\S]*\) => \{[\s\S]*await resetTutorialTransportToStart\(\);[\s\S]*enterTutorialStepIndex\(currentTutorialStepIndex \+ 1,\s*checkpointProgress\);[\s\S]*if \(options\.startPlaybackAfterAdvance\)[\s\S]*APP_COMMAND_TYPES\.TRANSPORT_TOGGLE_PLAY/);
   assert.match(source, /const targetStepIndex = Math\.max\(currentTutorialStepIndex - 1, 0\);/);
   assert.match(source, /const targetCheckpoint = ensureTutorialStepCheckpoint\(targetStepIndex\);/);
   assert.match(source, /restoreTutorialCheckpoint\(\{[\s\S]*checkpoint:\s*targetCheckpoint/);
@@ -968,6 +970,10 @@ test('app routes drums tutorial tasks through guards and target props', async ()
     'utf8',
   );
   const topBarSource = await readFile(new URL('../src/app/components/TopBar.jsx', import.meta.url), 'utf8');
+  const tutorialRuntimeSource = await readFile(
+    new URL('../src/tutorial/drumsTutorialRuntime.js', import.meta.url),
+    'utf8',
+  );
 
   assert.match(source, /handleTutorialDrumToggle/);
   assert.match(source, /handleTutorialDrumMove/);
@@ -1029,6 +1035,8 @@ test('app routes drums tutorial tasks through guards and target props', async ()
   assert.match(chordEditorSource, /tutorial-control-target/);
   assert.match(source, /handleChordTemplateApply = useCallback\(\(templateId\) => \{[\s\S]*handleTutorialControlAction\(\{[\s\S]*`chord-template-card:\$\{templateId\}`/);
   assert.match(source, /handleChordGrooveTemplateApply = useCallback\(\(templateId\) => \{[\s\S]*handleTutorialControlAction\(\{[\s\S]*`chord-groove-card:\$\{templateId\}`/);
+  assert.match(tutorialRuntimeSource, /CHORD_LISTEN_LOOP[\s\S]*CHORD_GROOVE_BUTTON[\s\S]*CHORD_GROOVE_CARD_PREFIX/);
+  assert.match(tutorialRuntimeSource, /BASS_LISTEN_LOOP[\s\S]*BASS_GROOVE_BUTTON[\s\S]*BASS_GROOVE_CARD_PREFIX/);
   assert.match(source, /handleChordPick = useCallback\(\(spanIndex,\s*root\) => \{[\s\S]*handleTutorialControlAction\(\{[\s\S]*`chord-enrich-button:\$\{spanIndex\}`/);
   assert.match(source, /handlePassingChordPick = useCallback\(\(stepIndex,\s*chordName\) => \{[\s\S]*handleTutorialControlAction\(\{[\s\S]*'chord-passing-button'/);
   assert.match(drumSequencerSource, /onStepMove/);

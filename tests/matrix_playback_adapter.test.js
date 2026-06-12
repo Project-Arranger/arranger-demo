@@ -72,11 +72,18 @@ test('extractMelodyEvent reads melody cells into playable melody events', () => 
 });
 
 test('createChordNotes maps major chord roots to playable triads', () => {
-  assert.deepEqual(createChordNotes('C'), ['C4', 'E4', 'G4']);
+  assert.deepEqual(createChordNotes('C'), ['C3', 'E3', 'G3']);
   assert.deepEqual(createChordNotes('F#'), ['F#4', 'A#4', 'C#4']);
   assert.deepEqual(createChordNotes('A#'), ['A#4', 'D4', 'F4']);
-  assert.deepEqual(createChordNotes('Cmaj7'), ['C4', 'E4', 'G4', 'B4']);
-  assert.deepEqual(createChordNotes('Am9'), ['A4', 'C4', 'E4', 'G4', 'B4']);
+  assert.deepEqual(createChordNotes('Cmaj7'), ['C3', 'E3', 'G3', 'B3']);
+  assert.deepEqual(createChordNotes('Am9'), ['A3', 'B3', 'C3', 'E3', 'G3']);
+  assert.deepEqual(createChordNotes('E7'), ['E3', 'B2', 'D3', 'G#3']);
+  assert.deepEqual(createChordNotes('Bø'), ['B2', 'D3', 'F3', 'A3']);
+  assert.deepEqual(createChordNotes('Am/G'), ['G2', 'A3', 'C3', 'E3']);
+  assert.deepEqual(createChordNotes('D7'), ['D4', 'C4', 'A3', 'F#3']);
+  assert.deepEqual(createChordNotes('F#ø'), ['F#3', 'A3', 'C4', 'E4']);
+  assert.deepEqual(createChordNotes('bA'), ['G#3', 'C4', 'D#3']);
+  assert.deepEqual(createChordNotes('Bm7(no5)'), ['B2', 'D3', 'A3']);
   assert.deepEqual(createChordNotes('H'), []);
 });
 
@@ -127,7 +134,7 @@ test('extractChordEvent reads chord cells into playable chord events', () => {
     duration: '16n',
   });
   assert.deepEqual(
-    extractChordEvent({ type: 'chord', root: 'C', chordRoot: 'C', quality: 'maj7', label: 'Cmaj7', toneRoots: ['C', 'E', 'G', 'B'], addedNotes: ['D'] }, 2, 4),
+    extractChordEvent({ type: 'chord', root: 'C', chordRoot: 'C', quality: 'maj7', label: 'Cmaj7', toneRoots: ['C', 'E', 'G', 'B'], tonePitches: ['C3', 'E3', 'G3', 'B3'], addedNotes: ['D'] }, 2, 4),
     {
       type: 'chord',
       trackId: 'chord',
@@ -136,12 +143,12 @@ test('extractChordEvent reads chord cells into playable chord events', () => {
       root: 'C',
       quality: 'maj7',
       label: 'Cmaj7',
-      notes: ['C4', 'E4', 'G4', 'B4', 'D4'],
+      notes: ['C3', 'E3', 'G3', 'B3', 'D4'],
       duration: '4n',
     },
   );
   assert.deepEqual(
-    extractChordEvent({ type: 'chord', root: 'C', chordRoot: 'C', quality: 'maj7', label: 'Cmaj7', toneRoots: ['C', 'E', 'G', 'B'], addedNotes: ['D3', 'F5'] }, 2, 4),
+    extractChordEvent({ type: 'chord', root: 'C', chordRoot: 'C', quality: 'maj7', label: 'Cmaj7', toneRoots: ['C', 'E', 'G', 'B'], tonePitches: ['C3', 'E3', 'G3', 'B3'], addedNotes: ['D3', 'F5'] }, 2, 4),
     {
       type: 'chord',
       trackId: 'chord',
@@ -150,9 +157,13 @@ test('extractChordEvent reads chord cells into playable chord events', () => {
       root: 'C',
       quality: 'maj7',
       label: 'Cmaj7',
-      notes: ['C4', 'E4', 'G4', 'B4', 'D3', 'F5'],
+      notes: ['C3', 'E3', 'G3', 'B3', 'D3', 'F5'],
       duration: '4n',
     },
+  );
+  assert.deepEqual(
+    extractChordEvent({ type: 'chord', root: 'C', chordRoot: 'C', quality: 'maj7', label: 'Cmaj7', toneRoots: ['C', 'E', 'G', 'B'], addedNotes: ['D'] }, 2, 4)?.notes,
+    ['C4', 'E4', 'G4', 'B4', 'D4'],
   );
   assert.deepEqual(
     extractChordEvent({ type: 'chord', root: 'C', chordRoot: 'C', quality: 'maj', label: 'C', toneRoots: ['C', 'E', 'G'], removedTonePitches: ['C4'], addedNotes: ['C5'] }, 2, 4),
@@ -169,8 +180,8 @@ test('extractChordEvent reads chord cells into playable chord events', () => {
     },
   );
   assert.deepEqual(
-    extractChordEvent({ type: 'chord', root: 'C', chordRoot: 'C', quality: 'maj', label: 'C', toneRoots: ['C', 'E', 'G'], removedTonePitches: ['C4'], addedNotes: ['C5', 'D'] }, 2, 4)?.notes,
-    ['E4', 'G4', 'D4', 'C5'],
+    extractChordEvent({ type: 'chord', root: 'C', chordRoot: 'C', quality: 'maj', label: 'C', toneRoots: ['C', 'E', 'G'], tonePitches: ['C3', 'E3', 'G3'], removedTonePitches: ['C3'], addedNotes: ['C5', 'D'] }, 2, 4)?.notes,
+    ['E3', 'G3', 'D4', 'C5'],
   );
 });
 
@@ -246,10 +257,13 @@ test('matrix playback adapter plays groove-authored short chord hits on any sixt
 
 test('matrix playback adapter plays passing shortcut chord table tones at step fifteen', () => {
   const matrix = createInitialMatrix();
-  matrix.chord[0][14] = createPassingChordCell('C/B');
-  matrix.chord[1][14] = createPassingChordCell('E7');
-  matrix.chord[2][14] = createPassingChordCell('F#ø');
-  matrix.chord[3][14] = createPassingChordCell('Bm7(no5)');
+  matrix.chord[0][14] = createPassingChordCell('E7');
+  matrix.chord[1][14] = createPassingChordCell('Bø');
+  matrix.chord[2][14] = createPassingChordCell('Am/G');
+  matrix.chord[3][14] = createPassingChordCell('D7');
+  matrix.chord[4][14] = createPassingChordCell('F#ø');
+  matrix.chord[5][14] = createPassingChordCell('bA');
+  matrix.chord[6][14] = createPassingChordCell('Bm7(no5)');
 
   const adapter = createMatrixPlaybackAdapter(() => matrix);
 
@@ -259,10 +273,10 @@ test('matrix playback adapter plays passing shortcut chord table tones at step f
       trackId: 'chord',
       bar: 0,
       step: 14,
-      root: 'B',
-      quality: 'slash',
-      label: 'C/B',
-      notes: ['B4', 'C4', 'E4', 'G4'],
+      root: 'E',
+      quality: '7',
+      label: 'E7',
+      notes: ['E3', 'B2', 'D3', 'G#3'],
       duration: '16n',
     },
   ]);
@@ -272,10 +286,10 @@ test('matrix playback adapter plays passing shortcut chord table tones at step f
       trackId: 'chord',
       bar: 1,
       step: 14,
-      root: 'E',
-      quality: '7',
-      label: 'E7',
-      notes: ['E4', 'B4', 'D4', 'G#4'],
+      root: 'B',
+      quality: 'half-dim7',
+      label: 'Bø',
+      notes: ['B2', 'D3', 'F3', 'A3'],
       duration: '16n',
     },
   ]);
@@ -285,10 +299,10 @@ test('matrix playback adapter plays passing shortcut chord table tones at step f
       trackId: 'chord',
       bar: 2,
       step: 14,
-      root: 'F#',
-      quality: 'half-dim7',
-      label: 'F#ø',
-      notes: ['F#4', 'A4', 'C4', 'E4'],
+      root: 'G',
+      quality: 'slash',
+      label: 'Am/G',
+      notes: ['G2', 'A3', 'C3', 'E3'],
       duration: '16n',
     },
   ]);
@@ -298,10 +312,49 @@ test('matrix playback adapter plays passing shortcut chord table tones at step f
       trackId: 'chord',
       bar: 3,
       step: 14,
+      root: 'D',
+      quality: '7',
+      label: 'D7',
+      notes: ['D4', 'C4', 'A3', 'F#3'],
+      duration: '16n',
+    },
+  ]);
+  assert.deepEqual(adapter.getEventsForStep(4, 14), [
+    {
+      type: 'chord',
+      trackId: 'chord',
+      bar: 4,
+      step: 14,
+      root: 'F#',
+      quality: 'half-dim7',
+      label: 'F#ø',
+      notes: ['F#3', 'A3', 'C4', 'E4'],
+      duration: '16n',
+    },
+  ]);
+  assert.deepEqual(adapter.getEventsForStep(5, 14), [
+    {
+      type: 'chord',
+      trackId: 'chord',
+      bar: 5,
+      step: 14,
+      root: 'G#',
+      quality: 'maj',
+      label: 'bA',
+      notes: ['G#3', 'C4', 'D#3'],
+      duration: '16n',
+    },
+  ]);
+  assert.deepEqual(adapter.getEventsForStep(6, 14), [
+    {
+      type: 'chord',
+      trackId: 'chord',
+      bar: 6,
+      step: 14,
       root: 'B',
       quality: 'm7-no5',
       label: 'Bm7(no5)',
-      notes: ['B4', 'D4', 'A4'],
+      notes: ['B2', 'D3', 'A3'],
       duration: '16n',
     },
   ]);

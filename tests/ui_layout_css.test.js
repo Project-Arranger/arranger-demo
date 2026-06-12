@@ -243,7 +243,11 @@ test('melody editor mirrors the reference keyboard strip and scale picker layout
 
   assert.match(css, /\.app:has\(\.editor\[data-screen-label="Melody Editor"\]:not\(\[data-picker="scale"\]\)\)\s*\{[^}]*--app-editor-height:\s*clamp\(360px,\s*46vh,\s*430px\);/s);
   assert.match(css, /\.app:has\(\.editor\[data-picker="scale"\]\)\s*\{[^}]*--app-editor-height:\s*clamp\(380px,\s*55vh,\s*560px\);/s);
-  assert.match(css, /\.editor\[data-screen-label="Melody Editor"\]\s*\{[^}]*grid-template-rows:\s*auto auto minmax\(0,\s*1fr\);/s);
+  assert.match(css, /\.editor\[data-screen-label="Melody Editor"\]\s*\{[^}]*grid-template-rows:\s*auto minmax\(0,\s*1fr\);/s);
+  assert.match(css, /\.melody-editor-pager-shell\s*\{[^}]*align-items:\s*stretch;[^}]*min-height:\s*0;/s);
+  assert.match(css, /\.melody-editor-pager-shell \.track-page-btn\s*\{[^}]*align-self:\s*center;/s);
+  assert.match(css, /\.melody-editor-scroll\s*\{[^}]*min-height:\s*0;[^}]*overflow-y:\s*auto;[^}]*overscroll-behavior:\s*contain;[^}]*scrollbar-gutter:\s*stable;/s);
+  assert.match(css, /\.melody-editor-scroll > \.keyboard-strip,\s*\n\.melody-editor-scroll > \.melody-example-keys,\s*\n\.melody-editor-scroll > \.melody-seq-body\s*\{[^}]*flex:\s*0 0 auto;/s);
   assert.match(css, /\.editor\[data-screen-label="Melody Editor"\] \.clip-chip\s*\{[^}]*background:\s*var\(--c-melody\);/s);
   assert.match(css, /\.keyboard-strip\s*\{[^}]*display:\s*flex;/s);
   assert.match(css, /\.ks-keys\s*\{[^}]*grid-template-columns:\s*repeat\(13,\s*minmax\(0,\s*1fr\)\);/s);

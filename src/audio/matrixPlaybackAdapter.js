@@ -34,15 +34,15 @@ function createDrumsEvent(bar, step, instrument) {
   };
 }
 
-function createNotesFromToneRoots(root, toneRoots) {
-  return createChordTonePitches(root, toneRoots);
+function createNotesFromToneRoots(root, toneRoots, tonePitches = null) {
+  return createChordTonePitches(root, toneRoots, tonePitches);
 }
 
 function createChordNotes(root) {
   const definition = getChordDefinition(root);
   if (!definition) return [];
 
-  return createNotesFromToneRoots(definition.root, definition.toneRoots);
+  return createNotesFromToneRoots(definition.root, definition.toneRoots, definition.tonePitches);
 }
 
 function createSingleNotes(noteRoots) {
@@ -54,7 +54,7 @@ function createSingleNotes(noteRoots) {
   return noteRoots.map((noteRoot) => getChordNotePitch(noteRoot)).filter(Boolean);
 }
 
-function createChordNotesWithAddedNotes(root, toneRoots, addedNotes, removedTonePitches = []) {
+function createChordNotesWithAddedNotes(root, toneRoots, addedNotes, removedTonePitches = [], tonePitches = null) {
   const legacyAddedNotes = addedNotes.filter((note) => getChordNoteOctave(note) === null);
   const exactAddedNotes = addedNotes
     .filter((note) => getChordNoteOctave(note) !== null)
@@ -63,7 +63,7 @@ function createChordNotesWithAddedNotes(root, toneRoots, addedNotes, removedTone
   const removedPitches = new Set(removedTonePitches);
 
   return [
-    ...createNotesFromToneRoots(root, toneRoots).filter((note) => !removedPitches.has(note)),
+    ...createNotesFromToneRoots(root, toneRoots, tonePitches).filter((note) => !removedPitches.has(note)),
     ...createNotesFromToneRoots(root, legacyAddedNotes),
     ...exactAddedNotes,
   ];
@@ -109,6 +109,7 @@ function extractChordEvent(cell, bar, step) {
       toneRoots,
       addedNotes,
       getChordRemovedTonePitches(cell),
+      cell.tonePitches,
     );
     if (!notes.length) return null;
 
@@ -148,6 +149,7 @@ function extractChordEvent(cell, bar, step) {
     toneRoots,
     addedNotes,
     getChordRemovedTonePitches(cell),
+    cell.tonePitches,
   );
   if (!notes.length) return null;
 

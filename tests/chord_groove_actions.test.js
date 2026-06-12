@@ -46,12 +46,14 @@ test('applyChordGrooveTemplateToExistingClips writes a short block hit to existi
   const nextMatrix = applyChordGrooveTemplateToExistingClips(matrix, clips, 'block-basic');
 
   assert.equal(nextMatrix.chord[0][0].label, 'C');
+  assert.deepEqual(nextMatrix.chord[0][0].tonePitches, ['C3', 'E3', 'G3']);
   assert.equal(nextMatrix.chord[0][0].duration, '16n');
   assert.equal(nextMatrix.chord[0][0].grooveTemplateId, 'block-basic');
   assert.equal(nextMatrix.chord[0][0].sourceChordLabel, 'C');
   assert.equal(nextMatrix.chord[0][1], null);
   assert.equal(nextMatrix.chord[0][6], null);
   assert.equal(nextMatrix.chord[3][0].label, 'Am');
+  assert.deepEqual(nextMatrix.chord[3][0].tonePitches, ['A3', 'C4', 'E3']);
   assert.equal(nextMatrix.chord[5][0].label, 'C');
   assert.equal(nextMatrix.chord[5][0].sourceChordLabel, 'C');
   assert.equal(nextMatrix.chord[4][0].label, 'F');
@@ -93,9 +95,9 @@ test('removed arpeggio groove template no-ops when applied by legacy id', () => 
 
 test('createChordGroovePreviewEvents returns timed playable notes for the requested chord', () => {
   assert.deepEqual(createChordGroovePreviewEvents('block-syncopated', 'F'), [
-    { step: 0, notes: ['F4', 'A4', 'C4'], duration: '16n' },
-    { step: 6, notes: ['F4', 'A4', 'C4'], duration: '16n' },
-    { step: 12, notes: ['F4', 'A4', 'C4'], duration: '16n' },
+    { step: 0, notes: ['F3', 'A3', 'C3'], duration: '16n' },
+    { step: 6, notes: ['F3', 'A3', 'C3'], duration: '16n' },
+    { step: 12, notes: ['F3', 'A3', 'C3'], duration: '16n' },
   ]);
   assert.deepEqual(createChordGroovePreviewEvents('arp-basic', 'C'), []);
   assert.deepEqual(createChordGroovePreviewEvents('missing', 'C'), []);

@@ -1874,7 +1874,7 @@ button {
 }
 
 .editor[data-screen-label="Melody Editor"] {
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
 }
 
 .editor[data-screen-label="Melody Editor"] .clip-chip {
@@ -2475,6 +2475,30 @@ button {
   padding: 14px 22px 16px 14px;
   overflow-x: auto;
   overflow-y: hidden;
+}
+
+.melody-editor-pager-shell {
+  align-items: stretch;
+  min-height: 0;
+  height: 100%;
+}
+
+.melody-editor-pager-shell .track-page-btn {
+  align-self: center;
+}
+
+.melody-editor-scroll {
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.melody-editor-scroll > .keyboard-strip,
+.melody-editor-scroll > .melody-example-keys,
+.melody-editor-scroll > .melody-seq-body {
+  flex: 0 0 auto;
 }
 
 .melody-beat-group {

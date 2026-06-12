@@ -16,6 +16,7 @@ import {
   createChordNotesCell,
   createChordTonePitches,
   getChordCellNotes,
+  getChordDefinition,
   getChordEffectiveTonePitches,
   getDoowopPassingTargetChord,
   getPassingChordOptions,
@@ -82,6 +83,7 @@ test('createChordCell normalizes valid roots and rejects invalid roots', () => {
     quality: 'maj',
     label: 'C',
     toneRoots: ['C', 'E', 'G'],
+    tonePitches: ['C3', 'E3', 'G3'],
   });
   assert.deepEqual(createChordCell('F#'), {
     type: 'chord',
@@ -97,6 +99,8 @@ test('createChordCell normalizes valid roots and rejects invalid roots', () => {
 test('chord definitions include template and variant chord colors', () => {
   assert.equal(isChordName('Cmaj7'), true);
   assert.equal(isChordName('Am9'), true);
+  assert.equal(isChordName('Amadd9'), true);
+  assert.equal(isChordName('Fmaj9'), true);
   assert.equal(isChordName('Bdim'), true);
   assert.equal(isChordName('C/B'), true);
   assert.equal(isChordName('E7'), true);
@@ -104,6 +108,7 @@ test('chord definitions include template and variant chord colors', () => {
   assert.equal(isChordName('F#ø'), true);
   assert.equal(isChordName('Bm7(no5)'), true);
   assert.equal(isChordName('G#'), true);
+  assert.equal(isChordName('bA'), true);
   assert.equal(isChordName('Hmaj7'), false);
   assert.deepEqual(getChordToneRoots('Cmaj7'), ['C', 'E', 'G', 'B']);
   assert.deepEqual(getChordToneRoots('Dm7'), ['D', 'F', 'A', 'C']);
@@ -118,10 +123,54 @@ test('chord definitions include template and variant chord colors', () => {
     chordRoot: 'Am',
     quality: 'm9',
     label: 'Am9',
-    toneRoots: ['A', 'C', 'E', 'G', 'B'],
+    toneRoots: ['A', 'B', 'C', 'E', 'G'],
+    tonePitches: ['A3', 'B3', 'C3', 'E3', 'G3'],
   });
   assert.deepEqual(CHORD_TEMPLATES.doowop.chords, ['C', 'Am', 'F', 'G']);
   assert.equal(Object.keys(CHORD_TEMPLATES).length, 6);
+});
+
+test('rich chord definitions use table voicings', () => {
+  assert.deepEqual(
+    Object.fromEntries([
+      'C',
+      'Cmaj7',
+      'Csus2',
+      'Csus4',
+      'Cadd9',
+      'Am',
+      'Am7',
+      'Am9',
+      'Amadd9',
+      'F',
+      'Fmaj7',
+      'Fmaj9',
+      'F6',
+      'G',
+      'G7',
+      'Gsus2',
+      'Gsus4',
+    ].map((name) => [name, getChordDefinition(name)?.tonePitches])),
+    {
+      C: ['C3', 'E3', 'G3'],
+      Cmaj7: ['C3', 'E3', 'G3', 'B3'],
+      Csus2: ['C3', 'D3', 'G3'],
+      Csus4: ['C3', 'F3', 'G3'],
+      Cadd9: ['C3', 'E3', 'G3', 'D3'],
+      Am: ['A3', 'C4', 'E3'],
+      Am7: ['A3', 'C4', 'E3', 'G3'],
+      Am9: ['A3', 'B3', 'C3', 'E3', 'G3'],
+      Amadd9: ['A3', 'C3', 'E3', 'B3'],
+      F: ['F3', 'A3', 'C3'],
+      Fmaj7: ['F3', 'A3', 'C4', 'E3'],
+      Fmaj9: ['F3', 'G3', 'A3', 'C4', 'E3'],
+      F6: ['F3', 'A3', 'C4', 'D3'],
+      G: ['G3', 'B3', 'D4'],
+      G7: ['G3', 'B3', 'D4', 'F3'],
+      Gsus2: ['G3', 'A3', 'D4'],
+      Gsus4: ['G3', 'C3', 'D4'],
+    },
+  );
 });
 
 test('chord helpers expose diatonic and context-aware passing option data', () => {
@@ -134,36 +183,35 @@ test('chord helpers expose diatonic and context-aware passing option data', () =
     Object.fromEntries(
       Object.entries(PASSING_CHORD_OPTIONS).map(([key, options]) => [
         key,
-        options.map((option) => [option.name, option.toneRoots]),
+        options.map((option) => [option.name, option.tonePitches]),
       ]),
     ),
     {
       'C→Am': [
-        ['C/B', ['B', 'C', 'E', 'G']],
-        ['E7', ['E', 'B', 'D', 'G#']],
-        ['Bø', ['B', 'D', 'F', 'A']],
+        ['E7', ['E3', 'B2', 'D3', 'G#3']],
+        ['Bø', ['B2', 'D3', 'F3', 'A3']],
       ],
       'Am→F': [
-        ['Am/G', ['G', 'A', 'C', 'E']],
-        ['C7', ['C', 'E', 'G', 'A#']],
+        ['Am/G', ['G2', 'A3', 'C3', 'E3']],
+        ['E7', ['E3', 'B2', 'D3', 'G#3']],
       ],
       'F→G': [
-        ['D7', ['D', 'A', 'C', 'F#']],
-        ['F#ø', ['F#', 'A', 'C', 'E']],
+        ['D7', ['D4', 'C4', 'A3', 'F#3']],
+        ['F#ø', ['F#3', 'A3', 'C4', 'E4']],
       ],
       'G→C': [
-        ['G#', ['G#', 'C', 'D#']],
-        ['Bm7(no5)', ['B', 'D', 'A']],
+        ['bA', ['G#3', 'C4', 'D#3']],
+        ['Bm7(no5)', ['B2', 'D3', 'A3']],
       ],
     },
   );
   assert.deepEqual(
     getPassingChordOptions('C', 'Am').map((option) => option.name),
-    ['C/B', 'E7', 'Bø'],
+    ['E7', 'Bø'],
   );
   assert.deepEqual(
     getPassingChordOptions('Am', 'F').map((option) => option.name),
-    ['Am/G', 'C7'],
+    ['Am/G', 'E7'],
   );
   assert.deepEqual(
     getPassingChordOptions('F', 'G').map((option) => option.name),
@@ -171,7 +219,7 @@ test('chord helpers expose diatonic and context-aware passing option data', () =
   );
   assert.deepEqual(
     getPassingChordOptions('G', 'C').map((option) => option.name),
-    ['G#', 'Bm7(no5)'],
+    ['bA', 'Bm7(no5)'],
   );
   assert.deepEqual(
     getPassingChordOptions('C', 'F').map((option) => option.name),
@@ -201,6 +249,7 @@ test('createPassingChordCell creates a short playable chord hit', () => {
     quality: '7',
     label: 'E7',
     toneRoots: ['E', 'B', 'D', 'G#'],
+    tonePitches: ['E3', 'B2', 'D3', 'G#3'],
     duration: '16n',
     grooveTemplateId: 'passing-shortcut',
     sourceChordLabel: 'E7',
@@ -212,6 +261,7 @@ test('createPassingChordCell creates a short playable chord hit', () => {
     quality: 'half-dim7',
     label: 'F#ø',
     toneRoots: ['F#', 'A', 'C', 'E'],
+    tonePitches: ['F#3', 'A3', 'C4', 'E4'],
     duration: '16n',
     grooveTemplateId: 'passing-shortcut',
     sourceChordLabel: 'F#ø',
@@ -223,20 +273,22 @@ test('createPassingChordCell creates a short playable chord hit', () => {
     quality: 'm7-no5',
     label: 'Bm7(no5)',
     toneRoots: ['B', 'D', 'A'],
+    tonePitches: ['B2', 'D3', 'A3'],
     duration: '16n',
     grooveTemplateId: 'passing-shortcut',
     sourceChordLabel: 'Bm7(no5)',
   });
-  assert.deepEqual(createPassingChordCell('G#'), {
+  assert.deepEqual(createPassingChordCell('bA'), {
     type: 'chord',
     root: 'G#',
-    chordRoot: 'G#',
+    chordRoot: 'bA',
     quality: 'maj',
-    label: 'G#',
+    label: 'bA',
     toneRoots: ['G#', 'C', 'D#'],
+    tonePitches: ['G#3', 'C4', 'D#3'],
     duration: '16n',
     grooveTemplateId: 'passing-shortcut',
-    sourceChordLabel: 'G#',
+    sourceChordLabel: 'bA',
   });
   assert.equal(createPassingChordCell('Hmaj7'), null);
 });
@@ -249,6 +301,18 @@ test('add chord panel exposes rich variants for supported chord roots', () => {
   assert.deepEqual(
     getChordVariantOptions('Cmaj7').map((option) => option.name),
     ['Cmaj7', 'Csus2', 'Csus4', 'Cadd9'],
+  );
+  assert.deepEqual(
+    getChordVariantOptions('Am').map((option) => option.name),
+    ['Am7', 'Am9', 'Amadd9'],
+  );
+  assert.deepEqual(
+    getChordVariantOptions('F').map((option) => option.name),
+    ['Fmaj7', 'Fmaj9', 'F6'],
+  );
+  assert.deepEqual(
+    getChordVariantOptions('G').map((option) => option.name),
+    ['G7', 'Gsus2', 'Gsus4'],
   );
   assert.deepEqual(getChordVariantOptions('Dm'), []);
   assert.deepEqual(getChordVariantOptions(null), []);
@@ -268,12 +332,13 @@ test('chord active tones light wherever the chord cell is placed', () => {
   assert.deepEqual(getChordToneRoots('F#'), ['F#', 'A#', 'C#']);
   assert.deepEqual(getChordToneRoots('H'), []);
   assert.deepEqual(createChordTonePitches('F#', getChordToneRoots('F#')), ['F#4', 'A#4', 'C#4']);
-  assert.deepEqual(getActiveChordGridLabels(g7Cell), ['B4', 'G4', 'F4', 'D4']);
+  assert.deepEqual(getActiveChordGridLabels(g7Cell), ['D4', 'B3', 'G3', 'F3']);
   assert.deepEqual(getActiveChordGridLabels(fSharpCell), ['A#4', 'F#4', 'C#4']);
   assert.equal(isChordCellActive(g7Cell, 'D5'), false);
   assert.equal(isChordCellActive(g7Cell, 'F5'), false);
   assert.equal(isChordCellActive(g7Cell, 'D4'), true);
-  assert.equal(isChordCellActive(g7Cell, 'F4'), true);
+  assert.equal(isChordCellActive(g7Cell, 'F4'), false);
+  assert.equal(isChordCellActive(g7Cell, 'F3'), true);
   assert.equal(isChordCellActive(cCell, 'C', 0), true);
   assert.equal(isChordCellActive(cCell, 'E', 0), true);
   assert.equal(isChordCellActive(cCell, 'G', 0), true);
@@ -287,20 +352,22 @@ test('chord active tones light wherever the chord cell is placed', () => {
   assert.equal(isChordCellActive(null, 'C', 0), false);
 });
 
-test('passing shortcut chords light table tones in the fourth octave', () => {
-  assert.deepEqual(getActiveChordGridLabels(createPassingChordCell('C/B')), ['B4', 'G4', 'E4', 'C4']);
-  assert.deepEqual(getActiveChordGridLabels(createPassingChordCell('E7')), ['B4', 'G#4', 'E4', 'D4']);
-  assert.deepEqual(getActiveChordGridLabels(createPassingChordCell('Am/G')), ['A4', 'G4', 'E4', 'C4']);
-  assert.deepEqual(getActiveChordGridLabels(createPassingChordCell('D7')), ['A4', 'F#4', 'D4', 'C4']);
-  assert.deepEqual(getActiveChordGridLabels(createPassingChordCell('F#ø')), ['A4', 'F#4', 'E4', 'C4']);
-  assert.deepEqual(getActiveChordGridLabels(createPassingChordCell('G#')), ['G#4', 'D#4', 'C4']);
-  assert.deepEqual(getActiveChordGridLabels(createPassingChordCell('Bm7(no5)')), ['B4', 'A4', 'D4']);
+test('passing shortcut chords light table tones that are visible in the chord grid', () => {
+  assert.deepEqual(getActiveChordGridLabels(createPassingChordCell('E7')), ['G#3', 'E3', 'D3']);
+  assert.deepEqual(getActiveChordGridLabels(createPassingChordCell('Bø')), ['A3', 'F3', 'D3']);
+  assert.deepEqual(getActiveChordGridLabels(createPassingChordCell('Am/G')), ['A3', 'E3', 'C3']);
+  assert.deepEqual(getActiveChordGridLabels(createPassingChordCell('D7')), ['D4', 'C4', 'A3', 'F#3']);
+  assert.deepEqual(getActiveChordGridLabels(createPassingChordCell('F#ø')), ['E4', 'C4', 'A3', 'F#3']);
+  assert.deepEqual(getActiveChordGridLabels(createPassingChordCell('bA')), ['C4', 'G#3', 'D#3']);
+  assert.deepEqual(getActiveChordGridLabels(createPassingChordCell('Bm7(no5)')), ['A3', 'D3']);
 
   const e7 = createPassingChordCell('E7');
   assert.equal(isChordCellActive(e7, 'D5'), false);
   assert.equal(isChordCellActive(e7, 'G#5'), false);
-  assert.equal(isChordCellActive(e7, 'D4'), true);
-  assert.equal(isChordCellActive(e7, 'G#4'), true);
+  assert.equal(isChordCellActive(e7, 'D4'), false);
+  assert.equal(isChordCellActive(e7, 'G#4'), false);
+  assert.equal(isChordCellActive(e7, 'D3'), true);
+  assert.equal(isChordCellActive(e7, 'G#3'), true);
 });
 
 test('toggleChordCell clears matching roots and preserves added notes when replacing', () => {
@@ -368,28 +435,28 @@ test('chord cells can carry added notes without changing the main chord label', 
 
 test('chord tones can be muted and replaced with explicit octave notes', () => {
   const cCell = createChordCell('C');
-  const mutedRootCell = toggleChordNoteCell(cCell, 'C4');
+  const mutedRootCell = toggleChordNoteCell(cCell, 'C3');
 
   assert.deepEqual(mutedRootCell, {
     ...cCell,
-    removedTonePitches: ['C4'],
+    removedTonePitches: ['C3'],
   });
-  assert.deepEqual(getChordEffectiveTonePitches(mutedRootCell), ['E4', 'G4']);
-  assert.equal(isChordCellActive(mutedRootCell, 'C4'), false);
-  assert.equal(isChordCellActive(mutedRootCell, 'E4'), true);
-  assert.equal(isChordCellActive(mutedRootCell, 'G4'), true);
-  assert.deepEqual(toggleChordNoteCell(mutedRootCell, 'C4'), cCell);
+  assert.deepEqual(getChordEffectiveTonePitches(mutedRootCell), ['E3', 'G3']);
+  assert.equal(isChordCellActive(mutedRootCell, 'C3'), false);
+  assert.equal(isChordCellActive(mutedRootCell, 'E3'), true);
+  assert.equal(isChordCellActive(mutedRootCell, 'G3'), true);
+  assert.deepEqual(toggleChordNoteCell(mutedRootCell, 'C3'), cCell);
 
   const replacedRootCell = toggleChordNoteCell(mutedRootCell, 'C5');
 
   assert.deepEqual(replacedRootCell, {
     ...cCell,
-    removedTonePitches: ['C4'],
+    removedTonePitches: ['C3'],
     addedNotes: ['C5'],
   });
-  assert.equal(isChordCellActive(replacedRootCell, 'C4'), false);
+  assert.equal(isChordCellActive(replacedRootCell, 'C3'), false);
   assert.equal(isChordAddedNoteActive(replacedRootCell, 'C5'), true);
-  assert.deepEqual(getChordEffectiveTonePitches(replacedRootCell), ['E4', 'G4']);
+  assert.deepEqual(getChordEffectiveTonePitches(replacedRootCell), ['E3', 'G3']);
 });
 
 test('clicking another octave does not automatically mute the fourth-octave tone', () => {
@@ -400,6 +467,7 @@ test('clicking another octave does not automatically mute the fourth-octave tone
     ...cCell,
     addedNotes: ['C5'],
   });
-  assert.equal(isChordCellActive(cWithHighRoot, 'C4'), true);
+  assert.equal(isChordCellActive(cWithHighRoot, 'C3'), true);
+  assert.equal(isChordCellActive(cWithHighRoot, 'C4'), false);
   assert.equal(isChordAddedNoteActive(cWithHighRoot, 'C5'), true);
 });

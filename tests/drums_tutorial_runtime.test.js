@@ -553,6 +553,9 @@ test('target 4 chord listen step enables next after the first four bars', () => 
   assert.equal(viewModel.primaryDisabled, true);
   assert.deepEqual(viewModel.targets.controls, [
     { name: 'transport-play', role: 'target' },
+    { name: 'chord-groove-button', role: 'target' },
+    { name: 'chord-groove-card:block-basic', role: 'target' },
+    { name: 'chord-groove-card:block-syncopated', role: 'target' },
   ]);
 
   const blockedNext = completeTutorialPrimaryAction({
@@ -840,6 +843,10 @@ test('target 5 bass listen step enables continue after the first four bars', () 
   assert.equal(viewModel.primaryDisabled, true);
   assert.deepEqual(viewModel.targets.controls, [
     { name: 'transport-play', role: 'target' },
+    { name: 'bass-groove-button', role: 'target' },
+    { name: 'bass-groove-card:bass-8th-basic', role: 'target' },
+    { name: 'bass-groove-card:bass-8th-swing', role: 'target' },
+    { name: 'bass-groove-card:bass-16th-swing', role: 'target' },
   ]);
 
   const blockedNext = completeTutorialPrimaryAction({
@@ -1028,6 +1035,7 @@ test('target 6 melody examples advance by primary buttons and then end tutorial'
   const startExample = completeTutorialPrimaryAction({ progress, step: intro1Step });
   assert.equal(startExample.allowed, true);
   assert.equal(startExample.shouldAdvance, true);
+  assert.equal(startExample.shouldStartPlaybackAfterAdvance, true);
   assert.equal(startExample.nextProgress.melodyExampleStarted, true);
   assert.equal(startExample.nextProgress.melodyExampleStep, 1);
   progress = startExample.nextProgress;
@@ -1045,6 +1053,7 @@ test('target 6 melody examples advance by primary buttons and then end tutorial'
   const nextToIntro2 = completeTutorialPrimaryAction({ progress, step: play1Step });
   assert.equal(nextToIntro2.allowed, true);
   assert.equal(nextToIntro2.shouldAdvance, true);
+  assert.equal(nextToIntro2.shouldStartPlaybackAfterAdvance, undefined);
   assert.equal(nextToIntro2.nextProgress.melodyExampleStep, 2);
   progress = nextToIntro2.nextProgress;
 
@@ -1061,6 +1070,7 @@ test('target 6 melody examples advance by primary buttons and then end tutorial'
   const startSecondExample = completeTutorialPrimaryAction({ progress, step: intro2Step });
   assert.equal(startSecondExample.allowed, true);
   assert.equal(startSecondExample.shouldAdvance, true);
+  assert.equal(startSecondExample.shouldStartPlaybackAfterAdvance, true);
   progress = startSecondExample.nextProgress;
 
   const play2ViewModel = getTutorialViewModel({
@@ -1075,6 +1085,7 @@ test('target 6 melody examples advance by primary buttons and then end tutorial'
   const nextToThird = completeTutorialPrimaryAction({ progress, step: play2Step });
   assert.equal(nextToThird.allowed, true);
   assert.equal(nextToThird.shouldAdvance, true);
+  assert.equal(nextToThird.shouldStartPlaybackAfterAdvance, true);
   assert.equal(nextToThird.nextProgress.melodyExampleStep, 3);
   progress = nextToThird.nextProgress;
 
@@ -1090,6 +1101,7 @@ test('target 6 melody examples advance by primary buttons and then end tutorial'
   const nextToFree = completeTutorialPrimaryAction({ progress, step: play3Step });
   assert.equal(nextToFree.allowed, true);
   assert.equal(nextToFree.shouldAdvance, true);
+  assert.equal(nextToFree.shouldStartPlaybackAfterAdvance, undefined);
   assert.equal(nextToFree.nextProgress.melodyFreeCreateReady, true);
   progress = nextToFree.nextProgress;
 

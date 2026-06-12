@@ -197,6 +197,8 @@ function MelodyEditor({
 
       {createElement(TrackBarPager, {
         canPageBars,
+        className: 'melody-editor-pager-shell',
+        contentClassName: 'melody-editor-scroll',
         onNextBar,
         onPreviousBar,
         trackId,
