@@ -797,7 +797,7 @@ function completeTutorialPrimaryAction({
 
   if (step?.id === TUTORIAL_STEP_IDS.MELODY_FREE_CREATE) {
     if (!progress.melodyFreeCreateReady) return createRejectedAction(progress);
-    return createAllowedAction(progress, false, { shouldEnd: true });
+    return createAllowedAction(progress, false, { shouldCompleteTutorial: true });
   }
 
   return createAllowedAction(progress, true);

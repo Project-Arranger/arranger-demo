@@ -34,7 +34,11 @@ import {
   pruneTutorialCheckpoints,
   restoreTutorialCheckpoint,
 } from '../tutorial/tutorialCheckpoints.js';
-import { TUTORIAL_STEP_IDS } from '../tutorial/tutorialStepIds.js';
+import { createTutorialDirectoryCheckpoint } from '../tutorial/tutorialDirectoryCheckpoints.js';
+import {
+  TUTORIAL_DIRECTORY_ITEMS,
+  TUTORIAL_STEP_IDS,
+} from '../tutorial/tutorialStepIds.js';
 import { createUiAudioDispatcher } from './audioUiBridge.js';
 import {
   applyBassGrooveTemplateToExistingClips,
@@ -195,6 +199,22 @@ export default function App() {
   const activeTutorialTarget = tutorialVisible ? currentTutorialStep?.target?.name ?? null : null;
   const activeTutorialTargets = tutorialVisible ? tutorialViewModel.targets : undefined;
   const activeTutorialLocked = tutorialVisible && tutorialViewModel.locked;
+  const tutorialDirectoryItems = useMemo(() => (
+    TUTORIAL_DIRECTORY_ITEMS.map((item, itemIndex) => {
+      const stepIndex = DRUMS_TUTORIAL_STEPS.findIndex((step) => step.id === item.stepId);
+      const nextDirectoryStepId = TUTORIAL_DIRECTORY_ITEMS[itemIndex + 1]?.stepId;
+      const nextDirectoryStepIndex = nextDirectoryStepId
+        ? DRUMS_TUTORIAL_STEPS.findIndex((step) => step.id === nextDirectoryStepId)
+        : DRUMS_TUTORIAL_STEPS.length;
+
+      return {
+        ...item,
+        active: stepIndex <= currentTutorialStepIndex && nextDirectoryStepIndex > currentTutorialStepIndex,
+        disabled: false,
+        stepIndex,
+      };
+    })
+  ), [currentTutorialStepIndex]);
   const shouldConfirmChordTemplateApply = useMemo(() => (
     hasExistingChordClipContent(matrix, clips)
   ), [clips, matrix]);
@@ -209,6 +229,10 @@ export default function App() {
       await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
       await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_SEEK, bar: 0, step: 0 });
     })();
+  }, [dispatchAppCommand]);
+
+  const stopTutorialPreviewPlayback = useCallback(() => {
+    void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
   }, [dispatchAppCommand]);
 
   useKeyboardCommands({ dispatch: dispatchAppCommand });
@@ -434,8 +458,34 @@ export default function App() {
     tutorialProgress,
   ]);
 
+  const ensureTutorialStepCheckpoint = useCallback((targetStepIndex) => {
+    const existingCheckpoint = tutorialStepCheckpoints[targetStepIndex];
+    if (existingCheckpoint) return existingCheckpoint;
+
+    const targetStep = DRUMS_TUTORIAL_STEPS[targetStepIndex];
+    const targetCheckpoint = createTutorialDirectoryCheckpoint({
+      initialState: useMusicStore.getInitialState(),
+      stepId: targetStep?.id,
+    });
+    if (!targetCheckpoint) return null;
+
+    setTutorialStepCheckpoints((checkpoints) => ({
+      ...checkpoints,
+      [targetStepIndex]: targetCheckpoint,
+    }));
+
+    return targetCheckpoint;
+  }, [tutorialStepCheckpoints]);
+
   const applyTutorialActionProgress = useCallback((tutorialAction) => {
     setTutorialProgress(tutorialAction.nextProgress);
+    if (tutorialAction.shouldCompleteTutorial) {
+      clearTutorialAutoAdvanceTimer();
+      stopTutorialPreviewPlayback();
+      resetTutorialTransportToStart();
+      setTutorialSidebarCollapsed(true);
+      return;
+    }
     if (tutorialAction.shouldEnd) {
       clearTutorialAutoAdvanceTimer();
       setTutorialVisible(false);
@@ -444,7 +494,11 @@ export default function App() {
     if (tutorialAction.shouldAdvance) {
       scheduleTutorialAutoAdvance(() => advanceTutorialToNextStep(tutorialAction.nextProgress));
     }
-  }, [advanceTutorialToNextStep]);
+  }, [
+    advanceTutorialToNextStep,
+    resetTutorialTransportToStart,
+    stopTutorialPreviewPlayback,
+  ]);
 
   const handleFillEmptyTrackClips = useCallback((trackId) => {
     let tutorialAction = null;
@@ -1106,10 +1160,6 @@ export default function App() {
     useMusicStore.getState().clearTrack('melody');
   }, []);
 
-  const stopTutorialPreviewPlayback = useCallback(() => {
-    void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
-  }, [dispatchAppCommand]);
-
   const handleTutorialNext = useCallback(() => {
     if (!tutorialViewModel.canManualNext) return;
     clearTutorialAutoAdvanceTimer();
@@ -1150,7 +1200,9 @@ export default function App() {
     clearTutorialAutoAdvanceTimer();
     stopTutorialPreviewPlayback();
     const targetStepIndex = Math.max(currentTutorialStepIndex - 1, 0);
-    const targetCheckpoint = tutorialStepCheckpoints[targetStepIndex];
+    const targetCheckpoint = ensureTutorialStepCheckpoint(targetStepIndex);
+    if (!targetCheckpoint) return;
+
     restoreTutorialCheckpoint({
       checkpoint: targetCheckpoint,
       setAppliedTutorialSetups,
@@ -1169,8 +1221,33 @@ export default function App() {
   }, [
     applyTutorialStepSetup,
     currentTutorialStepIndex,
+    ensureTutorialStepCheckpoint,
     stopTutorialPreviewPlayback,
-    tutorialStepCheckpoints,
+  ]);
+
+  const handleTutorialJumpToSection = useCallback((targetStepIndex) => {
+    clearTutorialAutoAdvanceTimer();
+    stopTutorialPreviewPlayback();
+    const targetCheckpoint = ensureTutorialStepCheckpoint(targetStepIndex);
+    if (!targetCheckpoint) return;
+
+    restoreTutorialCheckpoint({
+      checkpoint: targetCheckpoint,
+      setAppliedTutorialSetups,
+      setTutorialProgress,
+      store: useMusicStore,
+    });
+    applyTutorialStepSetup(
+      DRUMS_TUTORIAL_STEPS[targetStepIndex],
+      targetCheckpoint?.appliedTutorialSetups,
+    );
+    setCurrentTutorialStepIndex(targetStepIndex);
+    setTutorialSidebarCollapsed(false);
+    setTutorialVisible(true);
+  }, [
+    applyTutorialStepSetup,
+    ensureTutorialStepCheckpoint,
+    stopTutorialPreviewPlayback,
   ]);
 
   const handleTutorialSkip = useCallback(() => {
@@ -1277,9 +1354,11 @@ export default function App() {
             canGoBack: currentTutorialStepIndex > 0,
             canManualNext: tutorialViewModel.canManualNext,
             collapsed: tutorialSidebarCollapsed,
+            directoryItems: tutorialDirectoryItems,
             displayCopy: tutorialViewModel.displayCopy,
             onBack: handleTutorialBack,
             onCompleteTask: handleTutorialCompleteTask,
+            onDirectorySelect: handleTutorialJumpToSection,
             onPrimaryAction: handleTutorialNext,
             onSkip: handleTutorialSkip,
             primaryDisabled: tutorialViewModel.primaryDisabled,

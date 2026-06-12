@@ -15,7 +15,10 @@ import {
   isTutorialStepComplete,
 } from '../src/tutorial/drumsTutorialRuntime.js';
 import { DRUMS_TUTORIAL_STEPS } from '../src/tutorial/drumsTutorialSteps.js';
-import { TUTORIAL_STEP_IDS } from '../src/tutorial/tutorialStepIds.js';
+import {
+  TUTORIAL_DIRECTORY_ITEMS,
+  TUTORIAL_STEP_IDS,
+} from '../src/tutorial/tutorialStepIds.js';
 
 function getStep(stepId) {
   return DRUMS_TUTORIAL_STEPS.find((step) => step.id === stepId);
@@ -1081,5 +1084,15 @@ test('target 6 melody examples advance by primary buttons and then end tutorial'
   const finishTutorial = completeTutorialPrimaryAction({ progress, step: freeStep });
   assert.equal(finishTutorial.allowed, true);
   assert.equal(finishTutorial.shouldAdvance, false);
-  assert.equal(finishTutorial.shouldEnd, true);
+  assert.equal(finishTutorial.shouldEnd, undefined);
+  assert.equal(finishTutorial.shouldCompleteTutorial, true);
+});
+
+test('tutorial directory points to each track teaching start', () => {
+  assert.deepEqual(TUTORIAL_DIRECTORY_ITEMS, [
+    { id: 'drums', label: 'Drums', stepId: TUTORIAL_STEP_IDS.DRUMS_OPEN_FIRST_CLIP },
+    { id: 'chord', label: 'Chord', stepId: TUTORIAL_STEP_IDS.CHORD_FILL_TRACK_CLIPS },
+    { id: 'bass', label: 'Bass', stepId: TUTORIAL_STEP_IDS.BASS_FILL_TRACK_CLIPS },
+    { id: 'melody', label: 'Melody', stepId: TUTORIAL_STEP_IDS.MELODY_FILL_TRACK_CLIPS },
+  ]);
 });

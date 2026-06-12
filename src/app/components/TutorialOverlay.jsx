@@ -35,9 +35,11 @@ function TutorialOverlay({
   canGoBack = true,
   canManualNext = true,
   collapsed = false,
+  directoryItems = [],
   displayCopy,
   onBack,
   onCompleteTask,
+  onDirectorySelect,
   onPrimaryAction,
   onSkip,
   primaryDisabled = false,
@@ -57,6 +59,29 @@ function TutorialOverlay({
     <aside className="tutorial-panel" aria-live="polite">
       <div className="tutorial-panel-header">
         <div className="tutorial-panel-label">教程</div>
+        {directoryItems.length ? (
+          <nav className="tutorial-directory" aria-label="教程目录">
+            {directoryItems.map((item) => {
+              const directoryButtonClassName = [
+                'tutorial-directory-button',
+                item.active ? 'active' : '',
+              ].filter(Boolean).join(' ');
+
+              return (
+                <button
+                  aria-current={item.active ? 'step' : undefined}
+                  className={directoryButtonClassName}
+                  disabled={item.disabled}
+                  key={item.id}
+                  onClick={() => onDirectorySelect(item.stepIndex)}
+                  type="button"
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </nav>
+        ) : null}
       </div>
 
       <div className="tutorial-panel-body">
