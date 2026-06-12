@@ -6,7 +6,7 @@ const requiredFiles = [
   'src/data/bassNotes.js',
   'src/data/melodyScales.js',
   'src/data/drumsNotes.js',
-  'public/samples/Chords/Chord_C4_v0.22.wav',
+  'public/samples/Chords/Chord_C4_v0.3.wav',
   'public/samples/Bass/Bass_C1_v0.22.wav',
   'public/samples/Melody/Melody_C4_v0.22.wav',
   'public/samples/Drums/Kick_v0.22.wav',

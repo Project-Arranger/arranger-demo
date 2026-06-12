@@ -18,15 +18,22 @@ import {
   getMelodyKeyboardKey,
   getMelodyKeyNote,
   getMelodyScale,
+  getMelodyScaleRailNotes,
   MELODY_KEY_SEQUENCE,
-  MELODY_RAIL_NOTES,
   MELODY_SCALES,
 } from '../../data/melodyScales.js';
 import { BEAT_NUMBERS } from '../uiShellData.js';
 import { isMelodyCellActive } from '../melodyActions.js';
+import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
 import { ClipNameInput } from './ClipNameInput.jsx';
 import { renderIcon } from './icons.js';
 import { TrackBarPager } from './TrackBarPager.jsx';
+
+const MELODY_EXAMPLE_DISPLAY_BY_TARGET = Object.freeze({
+  '4477887': '4477887',
+  '890--098-098': '890- -098 -0 98',
+  '23623523434345455': '236 235 234 3434 5455',
+});
 
 function addSetValue(set, value) {
   if (!value || set.has(value)) return set;
@@ -50,10 +57,6 @@ function isEditableKeyboardTarget(target) {
   return tagName === 'input' || tagName === 'textarea' || tagName === 'select';
 }
 
-function getRootName(note) {
-  return formatMelodyNoteParts(note).name;
-}
-
 function renderPlayGlyph() {
   return <span className="play-glyph" aria-hidden="true" />;
 }
@@ -74,16 +77,29 @@ function MelodyEditor({
   onRenameClip,
   selectedBar,
   trackId = 'melody',
+  tutorialLocked = false,
+  tutorialTargets,
 }) {
   const [pickerMode, setPickerMode] = useState(null);
   const [playingKeys, setPlayingKeys] = useState(() => new Set());
   const [hoveredPitchRow, setHoveredPitchRow] = useState(null);
+  const scaleButtonRole = getTutorialControlRole(tutorialTargets, 'melody-scale-button');
+  const scaleButtonDisabled = tutorialLocked && scaleButtonRole !== 'target';
+  const exampleKeysTarget = tutorialTargets?.controls?.find((target) => (
+    target.name?.startsWith?.('melody-example-keys:')
+  ));
+  const exampleKeysRole = exampleKeysTarget?.role ?? null;
+  const exampleKeysId = exampleKeysTarget?.name?.slice('melody-example-keys:'.length) ?? '';
+  const exampleKeysLabel = MELODY_EXAMPLE_DISPLAY_BY_TARGET[exampleKeysId] ?? exampleKeysId;
   const activeScale = getMelodyScale(melodyScaleId);
-  const activeNoteNames = useMemo(() => new Set(
+  const melodyRailNotes = useMemo(
+    () => getMelodyScaleRailNotes(melodyScaleId),
+    [melodyScaleId],
+  );
+  const activePlayedNotes = useMemo(() => new Set(
     [...playingKeys]
       .map((key) => getMelodyKeyNote(melodyScaleId, key))
-      .filter(Boolean)
-      .map(getRootName),
+      .filter(Boolean),
   ), [melodyScaleId, playingKeys]);
 
   useEffect(() => {
@@ -141,24 +157,30 @@ function MelodyEditor({
 
         <div className="tools">
           <button
-            className="btn-template-groove"
+            className={[
+              'btn-template-groove',
+              scaleButtonRole === 'target' ? 'tutorial-control-target' : '',
+            ].filter(Boolean).join(' ')}
             aria-label="选择音阶"
+            aria-disabled={scaleButtonDisabled}
+            data-tutorial-role={scaleButtonRole ?? undefined}
             type="button"
+            disabled={scaleButtonDisabled}
             onClick={() => setPickerMode('scale')}
           >
             {renderIcon(ChevronUp)}
             选择音阶
           </button>
-          <button className="btn-template drum-clear-action" type="button" onClick={onClearMelodyBar}>
+          <button className="btn-template drum-clear-action" type="button" disabled={tutorialLocked} onClick={onClearMelodyBar}>
             清空本小节
           </button>
-          <button className="btn-template drum-clear-action" type="button" onClick={onClearMelody}>
+          <button className="btn-template drum-clear-action" type="button" disabled={tutorialLocked} onClick={onClearMelody}>
             清空整轨
           </button>
-          <button className="tool-icon" aria-label="Clear phrase" title="Clear phrase" type="button" onClick={onClearMelodyBar}>
+          <button className="tool-icon" aria-label="Clear phrase" title="Clear phrase" type="button" disabled={tutorialLocked} onClick={onClearMelodyBar}>
             {renderIcon(Trash2)}
           </button>
-          <button className="tool-icon" aria-label="More" title="More" type="button">
+          <button className="tool-icon" aria-label="More" title="More" type="button" disabled={tutorialLocked}>
             {renderIcon(MoreHorizontal)}
           </button>
           <button
@@ -222,32 +244,68 @@ function MelodyEditor({
           </div>
         </div>
 
+        {exampleKeysTarget ? (
+          <div
+            className={[
+              'melody-example-keys',
+              exampleKeysRole === 'target' ? 'tutorial-control-target' : '',
+            ].filter(Boolean).join(' ')}
+            aria-label={`示例乐句 ${exampleKeysLabel}`}
+            data-tutorial-role={exampleKeysRole ?? undefined}
+          >
+            {exampleKeysLabel.split('').map((character, index) => (
+              character === ' ' ? (
+                <span className="melody-example-gap" aria-hidden="true" key={`gap-${index}`} />
+              ) : (
+                <span className="melody-example-key" key={`${character}-${index}`}>
+                  {character}
+                </span>
+              )
+            ))}
+          </div>
+        ) : null}
+
         <div className="seq-body melody-seq-body">
           <aside className="scale-rail melody-scale-rail" aria-label="Scale ruler">
-            <button className="scale-arrow" aria-label="Scroll up an octave" title="Scroll up an octave" type="button" disabled>
+            <button
+              className="scale-arrow"
+              aria-label="Scroll up an octave"
+              title="Scroll up an octave"
+              type="button"
+              disabled
+            >
               {renderIcon(ChevronUp)}
             </button>
-            <div className="scale-notes melody-scale-notes">
-              {MELODY_RAIL_NOTES.map((note, rowIndex) => (
-                <div
-                  className={[
-                    'note-key',
-                    'melody-note-key',
-                    note.sharp ? 'sharp' : '',
-                    note.root ? 'root' : '',
-                    activeNoteNames.has(note.label) ? 'playing' : '',
-                    hoveredPitchRow === rowIndex ? 'row-hovered' : '',
-                  ].filter(Boolean).join(' ')}
-                  data-row={rowIndex}
-                  key={note.label}
-                  onPointerEnter={() => setHoveredPitchRow(rowIndex)}
-                  onPointerLeave={() => setHoveredPitchRow(null)}
-                >
-                  {note.label}
-                </div>
-              ))}
+            <div className="scale-notes-viewport">
+              <div className="scale-notes melody-scale-notes">
+                {melodyRailNotes.map((note, rowIndex) => (
+                  <div
+                    className={[
+                      'note-key',
+                      'melody-note-key',
+                      note.sharp ? 'sharp' : '',
+                      note.root ? 'root' : '',
+                      activePlayedNotes.has(note.note) ? 'playing' : '',
+                      hoveredPitchRow === rowIndex ? 'row-hovered' : '',
+                    ].filter(Boolean).join(' ')}
+                    data-row={rowIndex}
+                    key={note.note}
+                    title={note.note}
+                    onPointerEnter={() => setHoveredPitchRow(rowIndex)}
+                    onPointerLeave={() => setHoveredPitchRow(null)}
+                  >
+                    {note.label}
+                  </div>
+                ))}
+              </div>
             </div>
-            <button className="scale-arrow" aria-label="Scroll down an octave" title="Scroll down an octave" type="button" disabled>
+            <button
+              className="scale-arrow"
+              aria-label="Scroll down an octave"
+              title="Scroll down an octave"
+              type="button"
+              disabled
+            >
               {renderIcon(ChevronDown)}
             </button>
           </aside>
@@ -259,35 +317,40 @@ function MelodyEditor({
               return (
                 <div className="melody-beat-group" key={beatNumber}>
                   <div className="pitch-grid-head-spacer" aria-hidden="true" />
-                  <div className="beat-cells melody-beat-cells">
-                    {MELODY_RAIL_NOTES.flatMap((note, rowIndex) => (
-                      BEAT_NUMBERS.map((stepNumber, colIndex) => {
-                        const step = beatIndex * 4 + colIndex;
-                        const active = isMelodyCellActive(matrix, selectedBar, step, note.note);
+                  <div
+                    className="beat-cells-viewport"
+                  >
+                    <div className="beat-cells melody-beat-cells">
+                      {melodyRailNotes.flatMap((note, rowIndex) => (
+                        BEAT_NUMBERS.map((stepNumber, colIndex) => {
+                          const step = beatIndex * 4 + colIndex;
+                          const active = isMelodyCellActive(matrix, selectedBar, step, note.note);
 
-                        return (
-                          <button
-                            className={[
-                              'melody-cell',
-                              note.sharp ? 'sharp' : '',
-                              colIndex === 0 ? 'downbeat' : '',
-                              active ? 'active' : '',
-                              hoveredPitchRow === rowIndex ? 'row-hovered' : '',
-                            ].filter(Boolean).join(' ')}
-                            data-row={rowIndex}
-                            data-col={colIndex}
-                            data-note={note.note}
-                            key={`${note.note}-${stepNumber}`}
-                            type="button"
-                            aria-label={`${note.note} beat ${beatNumber}.${stepNumber}`}
-                            aria-pressed={active}
-                            onPointerEnter={() => setHoveredPitchRow(rowIndex)}
-                            onPointerLeave={() => setHoveredPitchRow(null)}
-                            onClick={() => onMelodyStepToggle(step, note.note)}
-                          />
-                        );
-                      })
-                    ))}
+                          return (
+                            <button
+                              className={[
+                                'cell',
+                                'melody-cell',
+                                note.sharp ? 'sharp' : '',
+                                active ? 'active' : '',
+                                hoveredPitchRow === rowIndex ? 'row-hovered' : '',
+                              ].filter(Boolean).join(' ')}
+                              data-row={rowIndex}
+                              data-col={colIndex}
+                              data-note={note.note}
+                              key={`${note.note}-${stepNumber}`}
+                              type="button"
+                              aria-label={`${note.note} beat ${beatNumber}.${stepNumber}`}
+                              aria-pressed={active}
+                              disabled={tutorialLocked}
+                              onPointerEnter={() => setHoveredPitchRow(rowIndex)}
+                              onPointerLeave={() => setHoveredPitchRow(null)}
+                              onClick={() => onMelodyStepToggle(step, note.note)}
+                            />
+                          );
+                        })
+                      ))}
+                    </div>
                   </div>
                 </div>
               );
@@ -322,48 +385,62 @@ function MelodyEditor({
         <div className="tpl-body">
           <div className="tpl-viewport">
             <div className="tpl-list" id="scaleList">
-              {Object.values(MELODY_SCALES).map((scale) => (
-                <article
-                  className={['sctpl-card', scale.id === activeScale.id ? 'selected' : ''].filter(Boolean).join(' ')}
-                  data-scale={scale.id}
-                  key={scale.id}
-                  onClick={() => {
-                    onMelodyScaleChange(scale.id);
-                    setPickerMode(null);
-                  }}
-                >
-                  <div className="sctpl-name-row">
-                    <h3 className="sctpl-name">{scale.label}</h3>
-                    {scale.tag ? <span className="sctpl-default-tag">{scale.tag}</span> : null}
-                  </div>
-                  <div className="sctpl-notes" aria-label="音阶包含的音符">
-                    {scale.notes.map((note, index) => (
-                      note ? (
-                        <span className="sctpl-note" key={`${scale.id}-${note}-${index}`}>{note}</span>
-                      ) : (
-                        <span className="sctpl-note gap" aria-hidden="true" key={`${scale.id}-gap-${index}`} />
-                      )
-                    ))}
-                  </div>
-                  <p className="sctpl-desc">{scale.description}</p>
-                  <div className="sctpl-foot">
-                    <span className="sctpl-foot-label">{scale.footLabel}</span>
-                    <button
-                      className="sctpl-play"
-                      aria-label={`试听${scale.label}`}
-                      data-action="preview"
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onMelodyPreview(scale.keyNotes);
-                      }}
-                    >
-                      {renderPlayGlyph()}
-                      试听
-                    </button>
-                  </div>
-                </article>
-              ))}
+              {Object.values(MELODY_SCALES).map((scale) => {
+                const scaleCardRole = getTutorialControlRole(tutorialTargets, `melody-scale-card:${scale.id}`);
+                const scaleCardDisabled = tutorialLocked && scaleCardRole !== 'target';
+
+                return (
+                  <article
+                    className={[
+                      'sctpl-card',
+                      scale.id === activeScale.id ? 'selected' : '',
+                      scaleCardRole === 'target' ? 'tutorial-control-target' : '',
+                    ].filter(Boolean).join(' ')}
+                    aria-disabled={scaleCardDisabled}
+                    data-scale={scale.id}
+                    data-tutorial-role={scaleCardRole ?? undefined}
+                    key={scale.id}
+                    onClick={() => {
+                      if (scaleCardDisabled) return;
+                      onMelodyScaleChange(scale.id);
+                      setPickerMode(null);
+                    }}
+                  >
+                    <div className="sctpl-name-row">
+                      <h3 className="sctpl-name">{scale.label}</h3>
+                      {scale.tag ? <span className="sctpl-default-tag">{scale.tag}</span> : null}
+                    </div>
+                    <div className="sctpl-notes" aria-label="音阶包含的音符">
+                      {scale.notes.map((note, index) => (
+                        note ? (
+                          <span className="sctpl-note" key={`${scale.id}-${note}-${index}`}>{note}</span>
+                        ) : (
+                          <span className="sctpl-note gap" aria-hidden="true" key={`${scale.id}-gap-${index}`} />
+                        )
+                      ))}
+                    </div>
+                    <p className="sctpl-desc">{scale.description}</p>
+                    <div className="sctpl-foot">
+                      <span className="sctpl-foot-label">{scale.footLabel}</span>
+                      <button
+                        className="sctpl-play"
+                        aria-label={`试听${scale.label}`}
+                        data-action="preview"
+                        type="button"
+                        disabled={scaleCardDisabled}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          if (scaleCardDisabled) return;
+                          onMelodyPreview(scale.keyNotes);
+                        }}
+                      >
+                        {renderPlayGlyph()}
+                        试听
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </div>
         </div>

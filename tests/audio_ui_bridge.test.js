@@ -116,6 +116,28 @@ test('createUiAudioDispatcher connects transport commands and drums preview audi
   ]);
 });
 
+test('createUiAudioDispatcher preserves existing audio position observers', async () => {
+  const store = createMockStore();
+  const observedPositions = [];
+  let playOptions = null;
+  const audio = {
+    onPositionChange: (bar, step) => observedPositions.push(['tutorial', bar, step]),
+    play: (options) => {
+      playOptions = options;
+    },
+  };
+  const dispatch = createUiAudioDispatcher({ store, audio });
+
+  await dispatch({ type: 'transport.togglePlay' });
+  playOptions.onPositionChange(2, 8);
+
+  assert.deepEqual(store.calls, [
+    ['play'],
+    ['seek', 2, 8],
+  ]);
+  assert.deepEqual(observedPositions, [['tutorial', 2, 8]]);
+});
+
 test('createUiAudioDispatcher previews melody key presses without recording notes', async () => {
   const store = createMockStore({
     activeTrackId: 'melody',

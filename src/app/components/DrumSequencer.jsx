@@ -13,6 +13,7 @@ import {
   DRUM_SEQUENCER_ROWS,
   isDrumsStepActive,
 } from '../drumSequencerData.js';
+import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
 import { ClipNameInput } from './ClipNameInput.jsx';
 import { renderIcon } from './icons.js';
 import { TrackBarPager } from './TrackBarPager.jsx';
@@ -27,6 +28,18 @@ const STEP_GROUPS = Array.from(
   ),
 );
 const DRAG_THRESHOLD_PX = 6;
+const TUTORIAL_CELL_COLOR_CLASSES = Object.freeze({
+  completed: Object.freeze({
+    blue: 'tutorial-cell-completed-blue',
+    green: 'tutorial-cell-completed-green',
+    yellow: 'tutorial-cell-completed-yellow',
+  }),
+  target: Object.freeze({
+    blue: 'tutorial-cell-target-blue',
+    green: 'tutorial-cell-target-green',
+    yellow: 'tutorial-cell-target-yellow',
+  }),
+});
 
 function renderStepGroups(renderStep) {
   return (
@@ -69,6 +82,29 @@ function getTutorialCellRole(tutorialTargets, bar, instrument, step) {
   return target?.role ?? null;
 }
 
+function getTutorialCellClasses(tutorialRole) {
+  if (!tutorialRole) return [];
+
+  if (tutorialRole.startsWith('target')) {
+    return [
+      'tutorial-cell-target',
+      tutorialRole.endsWith('-blue') ? TUTORIAL_CELL_COLOR_CLASSES.target.blue : '',
+      tutorialRole.endsWith('-green') ? TUTORIAL_CELL_COLOR_CLASSES.target.green : '',
+      tutorialRole.endsWith('-yellow') ? TUTORIAL_CELL_COLOR_CLASSES.target.yellow : '',
+    ];
+  }
+  if (tutorialRole.startsWith('completed')) {
+    return [
+      'tutorial-cell-completed',
+      tutorialRole.endsWith('-blue') ? TUTORIAL_CELL_COLOR_CLASSES.completed.blue : '',
+      tutorialRole.endsWith('-green') ? TUTORIAL_CELL_COLOR_CLASSES.completed.green : '',
+      tutorialRole.endsWith('-yellow') ? TUTORIAL_CELL_COLOR_CLASSES.completed.yellow : '',
+    ];
+  }
+  if (tutorialRole === 'source') return ['tutorial-cell-source'];
+  return [];
+}
+
 function DrumSequencer({
   matrix,
   canPageBars = false,
@@ -91,6 +127,20 @@ function DrumSequencer({
   const [dragOverStep, setDragOverStep] = useState(null);
   const [suppressNextClick, setSuppressNextClick] = useState(false);
   const dragSessionRef = useRef(null);
+  const generateCurrentRole = getTutorialControlRole(tutorialTargets, 'generate-current-drums-bar');
+  const generateAllRole = getTutorialControlRole(tutorialTargets, 'generate-all-drums-bars');
+  const generateCurrentLocked = tutorialLocked && generateCurrentRole !== 'target';
+  const generateAllLocked = tutorialLocked && generateAllRole !== 'target';
+  const generateCurrentClassName = [
+    'btn-template',
+    'drum-action',
+    generateCurrentRole === 'target' ? 'tutorial-control-target' : '',
+  ].filter(Boolean).join(' ');
+  const generateAllClassName = [
+    'btn-template',
+    'drum-action',
+    generateAllRole === 'target' ? 'tutorial-control-target' : '',
+  ].filter(Boolean).join(' ');
 
   const handleMouseDownStep = (event, instrument, step, canDrag) => {
     if (!canDrag || event.button !== 0) return;
@@ -162,10 +212,20 @@ function DrumSequencer({
         </div>
 
         <div className="tools">
-          <button className="btn-template drum-action" type="button" onClick={onGenerateCurrentBar}>
+          <button
+            className={generateCurrentClassName}
+            type="button"
+            onClick={onGenerateCurrentBar}
+            disabled={generateCurrentLocked}
+          >
             为本小节生成基础律动
           </button>
-          <button className="btn-template drum-action" type="button" onClick={onGenerateAllBars}>
+          <button
+            className={generateAllClassName}
+            type="button"
+            onClick={onGenerateAllBars}
+            disabled={generateAllLocked}
+          >
             全局生成基础律动
           </button>
           <button className="btn-template drum-clear-action" type="button" onClick={onClearCurrentBar}>
@@ -222,7 +282,8 @@ function DrumSequencer({
                     row.id,
                     stepIndex,
                   );
-                  const interactiveTutorialCell = tutorialRole === 'target' || tutorialRole === 'source';
+                  const interactiveTutorialCell = tutorialRole?.startsWith('target')
+                    || tutorialRole === 'source';
                   const locked = tutorialLocked && !interactiveTutorialCell;
                   const canDrag = active && !locked;
                   const dragOver = dragOverStep?.instrument === row.id
@@ -236,9 +297,7 @@ function DrumSequencer({
                         dragOver ? 'drag-over' : '',
                         stepNumber % 4 === 0 ? 'beat-end' : '',
                         locked ? 'tutorial-locked' : '',
-                        tutorialRole === 'target' ? 'tutorial-cell-target' : '',
-                        tutorialRole === 'source' ? 'tutorial-cell-source' : '',
-                        tutorialRole === 'completed' ? 'tutorial-cell-completed' : '',
+                        ...getTutorialCellClasses(tutorialRole),
                       ].filter(Boolean).join(' ')}
                       data-instrument={row.id}
                       data-step={stepIndex}

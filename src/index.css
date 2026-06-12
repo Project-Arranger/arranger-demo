@@ -31,8 +31,48 @@
   --app-topbar-height: clamp(52px, 7vh, 64px);
   --app-editor-height: clamp(260px, 39vh, 330px);
   --timeline-min-width: min(640px, 100%);
+  --timeline-clip-y-inset: 6px;
+  --timeline-bar-x-inset: 4px;
   --track-row-size: minmax(clamp(48px, 7.5vh, 74px), 1fr);
   --track-footer-height: 48px;
+  --tutorial-breathe-duration: 1.25s;
+  --tutorial-breathe-ease: cubic-bezier(0.37, 0, 0.63, 1);
+  --tutorial-spotlight-z: 50;
+  --tutorial-target-z: 60;
+  --tutorial-floating-ui-z: 110;
+  --tutorial-highlight-accent: var(--c-drums);
+  --tutorial-highlight-ink: var(--c-drums-ink);
+  --tutorial-target-surface: color-mix(in oklab, var(--surface) 74%, var(--tutorial-highlight-accent));
+  --tutorial-target-ink: var(--tutorial-highlight-ink);
+  --tutorial-target-surface-border: color-mix(in oklab, var(--tutorial-highlight-ink) 18%, transparent);
+  --tutorial-target-rim: var(--tutorial-target-surface-border);
+  --tutorial-highlight-rest-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--tutorial-highlight-ink) 44%, white),
+    inset 0 0 12px color-mix(in oklab, white 10%, transparent),
+    0 0 0 2px color-mix(in oklab, white 42%, transparent),
+    0 0 0 6px color-mix(in oklab, var(--tutorial-highlight-accent) 18%, transparent),
+    0 10px 24px color-mix(in oklab, black 18%, transparent);
+  --tutorial-highlight-peak-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--tutorial-highlight-ink) 54%, white),
+    inset 0 0 16px color-mix(in oklab, white 14%, transparent),
+    0 0 0 2px color-mix(in oklab, white 52%, transparent),
+    0 0 0 8px color-mix(in oklab, var(--tutorial-highlight-accent) 24%, transparent),
+    0 14px 30px color-mix(in oklab, black 24%, transparent);
+  --tutorial-target-contained-rest-shadow:
+    inset 0 0 0 2px color-mix(in oklab, white 52%, transparent),
+    inset 0 0 0 4px color-mix(in oklab, var(--tutorial-highlight-accent) 18%, transparent),
+    inset 0 0 14px color-mix(in oklab, white 10%, transparent),
+    0 0 0 2px color-mix(in oklab, white 36%, transparent),
+    0 8px 20px color-mix(in oklab, black 18%, transparent);
+  --tutorial-target-contained-peak-shadow:
+    inset 0 0 0 2px color-mix(in oklab, white 60%, transparent),
+    inset 0 0 0 5px color-mix(in oklab, var(--tutorial-highlight-accent) 22%, transparent),
+    inset 0 0 18px color-mix(in oklab, white 13%, transparent),
+    0 0 0 3px color-mix(in oklab, white 44%, transparent),
+    0 10px 24px color-mix(in oklab, black 22%, transparent);
+  --tutorial-highlight-complete-shadow:
+    inset 0 0 0 2px color-mix(in oklab, var(--play) 72%, white),
+    0 0 0 4px color-mix(in oklab, var(--play) 30%, transparent);
   --radius-sm: 8px;
   --radius: 12px;
   --shadow-1:
@@ -81,77 +121,122 @@ button {
 }
 
 .tutorial-panel {
-  position: fixed;
+  position: relative;
   z-index: 90;
   display: grid;
-  grid-template-rows: auto auto;
-  width: min(360px, calc(100vw - 32px));
-  height: auto;
-  max-height: calc(100dvh - 32px);
-  padding: 16px;
+  grid-template-rows: 48px minmax(0, 1fr) var(--track-footer-height);
+  align-self: stretch;
+  width: 100%;
+  height: 100%;
+  padding: 0;
   overflow: hidden;
   color: var(--ink);
-  background: oklch(98% 0.012 165 / 0.84);
-  border: 1px solid color-mix(in oklab, var(--c-drums-ink) 14%, transparent);
-  border-radius: 8px;
+  background: color-mix(in oklab, var(--surface) 58%, var(--bg));
+  border: 0;
+  border-left: 1px solid var(--border);
+  border-radius: 0;
   font-family: "Baloo 2", "Nunito", "Arial Rounded MT Bold", "Avenir Next Rounded", "Trebuchet MS", "PingFang SC", "Microsoft YaHei", sans-serif;
   text-align: center;
-  box-shadow:
-    0 14px 36px color-mix(in oklab, black 14%, transparent),
-    0 1px 0 color-mix(in oklab, white 68%, transparent) inset;
-  backdrop-filter: blur(12px);
+  box-shadow: inset 1px 0 0 color-mix(in oklab, white 34%, transparent);
 }
 
-.tutorial-panel[data-placement="center"] {
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+.tutorial-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 14px 0 16px;
+  border-bottom: 1px solid var(--border-soft);
 }
 
-.tutorial-panel[data-placement="top"] {
-  top: calc(var(--app-topbar-height) + 14px);
-  left: 50%;
-  transform: translateX(-50%);
+.tutorial-panel-header::before {
+  width: 3px;
+  height: 18px;
+  flex: 0 0 3px;
+  content: "";
+  background: color-mix(in oklab, var(--c-drums-ink) 66%, var(--ink-3));
+  border-radius: 999px;
+  box-shadow: none;
+  animation: tutorial-panel-rail-breathe var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
 }
 
-.tutorial-panel[data-placement="middle"] {
-  top: 50%;
-  right: clamp(16px, 3vw, 32px);
-  transform: translateY(-50%);
-}
-
-.tutorial-panel[data-placement="editor"] {
-  bottom: calc(var(--app-editor-height) + 14px);
-  left: 50%;
-  transform: translateX(-50%);
+.tutorial-panel-label {
+  color: var(--c-drums-ink);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  line-height: 1;
 }
 
 .tutorial-panel-body {
   display: grid;
-  align-content: start;
+  align-content: center;
   justify-items: center;
   gap: 8px;
   min-width: 0;
+  min-height: 0;
+  padding: 18px;
+  overflow: auto;
 }
 
-.tutorial-panel p {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 800;
-  line-height: 1.48;
+.tutorial-copy {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  width: min(100%, 28rem);
+}
+
+.tutorial-copy-title-group,
+.tutorial-copy-body-group {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+
+.tutorial-copy-title,
+.tutorial-copy-subtitle,
+.tutorial-copy-body {
+  display: block;
   text-align: center;
   text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.tutorial-copy-title {
+  max-width: 14em;
+  color: var(--ink);
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1.18;
+}
+
+.tutorial-copy-subtitle {
+  max-width: 16em;
+  color: var(--c-drums-ink);
+  font-size: 18px;
+  font-weight: 850;
+  line-height: 1.28;
+}
+
+.tutorial-copy-body {
+  max-width: 26em;
+  color: var(--ink-2);
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.62;
 }
 
 .tutorial-target-active {
+  --tutorial-highlight-accent: var(--c-drums);
+  --tutorial-highlight-ink: var(--c-drums-ink);
+
   position: relative;
-  z-index: 55;
-  outline: 0;
-  box-shadow:
-    inset 0 0 0 2px color-mix(in oklab, var(--c-drums-ink) 76%, white),
-    inset 0 0 24px color-mix(in oklab, var(--c-drums) 20%, transparent),
-    0 0 18px color-mix(in oklab, var(--c-drums-ink) 16%, transparent);
-  animation: tutorial-target-pulse 1.35s ease-in-out infinite;
+  z-index: var(--tutorial-target-z);
+  outline: 2px solid color-mix(in oklab, white 58%, transparent);
+  outline-offset: 3px;
+  box-shadow: var(--tutorial-highlight-rest-shadow);
+  animation: tutorial-highlight-breathe var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
 }
 
 .tutorial-target-active::after {
@@ -173,20 +258,42 @@ button {
   box-shadow: 0 6px 18px color-mix(in oklab, black 24%, transparent);
 }
 
-@keyframes tutorial-target-pulse {
+@keyframes tutorial-panel-rail-breathe {
   0%,
   100% {
-    box-shadow:
-      inset 0 0 0 2px color-mix(in oklab, var(--c-drums-ink) 76%, white),
-      inset 0 0 24px color-mix(in oklab, var(--c-drums) 20%, transparent),
-      0 0 18px color-mix(in oklab, var(--c-drums-ink) 16%, transparent);
+    opacity: 0.72;
   }
 
   50% {
-    box-shadow:
-      inset 0 0 0 3px color-mix(in oklab, var(--c-drums-ink) 84%, white),
-      inset 0 0 32px color-mix(in oklab, var(--c-drums) 26%, transparent),
-      0 0 24px color-mix(in oklab, var(--c-drums-ink) 20%, transparent);
+    opacity: 1;
+  }
+}
+
+@keyframes tutorial-highlight-breathe {
+  0%,
+  100% {
+    box-shadow: var(--tutorial-highlight-rest-shadow);
+  }
+
+  50% {
+    box-shadow: var(--tutorial-highlight-peak-shadow);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tutorial-target-active,
+  .tutorial-cell-target,
+  .tutorial-cell-source,
+  .tutorial-bar-target,
+  .tutorial-control-target,
+  .playhead.tutorial-playhead-target,
+  .ruler-playhead.tutorial-playhead-target::after {
+    animation: none;
+    box-shadow: var(--tutorial-highlight-rest-shadow);
+  }
+
+  .tutorial-panel-header::before {
+    animation: none;
   }
 }
 
@@ -201,13 +308,18 @@ button {
 .tutorial-panel-actions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
   gap: 6px;
-  margin-top: 12px;
+  height: var(--track-footer-height);
+  min-height: 0;
+  padding: 5px 12px;
+  border-top: 1px solid var(--border-soft);
 }
 
 .tutorial-primary,
 .tutorial-secondary,
 .tutorial-link {
+  height: 36px;
   min-height: 36px;
   padding: 0 12px;
   border: 1px solid color-mix(in oklab, var(--c-drums-ink) 16%, transparent);
@@ -238,38 +350,59 @@ button {
 }
 
 @media (max-width: 760px), (max-height: 620px) {
-  .tutorial-panel,
-  .tutorial-panel[data-placement] {
+  .tutorial-panel {
+    position: fixed;
     top: auto;
     right: 16px;
     bottom: 16px;
     left: 16px;
     width: auto;
+    height: auto;
     max-height: min(68dvh, calc(100dvh - 32px));
-    transform: none;
+    border: 1px solid color-mix(in oklab, var(--c-drums-ink) 14%, transparent);
+    border-radius: 8px;
+    box-shadow:
+      0 1px 0 color-mix(in oklab, white 52%, transparent) inset,
+      0 8px 20px color-mix(in oklab, black 10%, transparent);
   }
 }
 
 .app {
   position: relative;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.app-main {
+  position: relative;
+  display: grid;
   grid-template-rows: var(--app-topbar-height) minmax(0, 1fr) var(--app-editor-height);
   height: 100dvh;
+  min-width: 0;
   min-height: 0;
   overflow: hidden;
 }
 
-.app:has(.tutorial-target-active)::before {
-  position: fixed;
+.app-main:has(.tutorial-target-active)::before,
+.app-main:has(.tutorial-bar-target)::before,
+.app-main:has(.tutorial-control-target)::before,
+.app-main:has(.tutorial-cell-target)::before,
+.app-main:has(.tutorial-cell-source)::before,
+.app-main:has(.tutorial-playhead-target)::before {
+  position: absolute;
   inset: 0;
-  z-index: 50;
+  z-index: var(--tutorial-spotlight-z);
   pointer-events: none;
   content: "";
-  background: color-mix(in oklab, black 34%, transparent);
+  background: color-mix(in oklab, black 46%, transparent);
 }
 
 .app .tutorial-target-active {
-  z-index: 55;
+  z-index: var(--tutorial-target-z);
 }
 
 .app.editor-resizing {
@@ -363,6 +496,19 @@ button {
   padding: 0 18px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
+}
+
+.topbar:has(.tutorial-transport-target) {
+  z-index: calc(var(--tutorial-target-z) + 2);
+}
+
+.topbar:has(.tutorial-transport-target)::after {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  content: "";
+  background: color-mix(in oklab, black 46%, transparent);
 }
 
 .brand {
@@ -622,12 +768,39 @@ button {
   border-radius: 10px;
 }
 
+.tutorial-topbar-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 36px;
+  flex: 0 0 58px;
+  padding: 0 12px;
+  color: var(--c-drums-ink);
+  border: 1px solid color-mix(in oklab, var(--c-drums-ink) 12%, transparent);
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--c-drums) 38%, white);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .workspace {
   display: grid;
   grid-template-columns: clamp(188px, 18vw, 246px) minmax(0, 1fr);
   min-height: 0;
   overflow: hidden;
   background: var(--bg);
+}
+
+.workspace.tutorial-sidebar-open {
+  grid-template-columns: clamp(188px, 18vw, 246px) minmax(0, 1fr) clamp(300px, 24vw, 360px);
+}
+
+.workspace.tutorial-sidebar-collapsed {
+  grid-template-columns: clamp(188px, 18vw, 246px) minmax(0, 1fr);
 }
 
 .tracks-col {
@@ -920,6 +1093,7 @@ button {
   position: relative;
   display: grid;
   align-items: center;
+  height: var(--track-footer-height);
   min-width: 0;
   padding: 0 14px;
 }
@@ -1045,6 +1219,7 @@ button {
 
 .timeline-footer-spacer {
   min-width: var(--timeline-min-width);
+  height: var(--track-footer-height);
   min-height: var(--track-footer-height);
   background: color-mix(in oklab, var(--surface) 58%, var(--bg));
   border-top: 1px solid var(--border-soft);
@@ -1078,8 +1253,8 @@ button {
   appearance: none;
   position: absolute;
   z-index: 2;
-  top: 6px;
-  bottom: 6px;
+  top: var(--timeline-clip-y-inset);
+  bottom: var(--timeline-clip-y-inset);
   left: 0;
   left: calc(var(--bar-index) * 100% / var(--bars));
   width: calc(100% / var(--bars));
@@ -1185,10 +1360,10 @@ button {
 .bar-drop-zone {
   position: absolute;
   z-index: 1;
-  top: 6px;
-  bottom: 6px;
-  left: calc(var(--bar-index) * 100% / var(--bars) + 4px);
-  width: calc(100% / var(--bars) - 8px);
+  top: var(--timeline-clip-y-inset);
+  bottom: var(--timeline-clip-y-inset);
+  left: calc(var(--bar-index) * 100% / var(--bars) + var(--timeline-bar-x-inset));
+  width: calc(100% / var(--bars) - var(--timeline-bar-x-inset) - var(--timeline-bar-x-inset));
   border: 1px solid transparent;
   border-radius: 12px;
 }
@@ -1213,19 +1388,97 @@ button {
 }
 
 .tutorial-bar-target {
-  animation: tutorial-bar-pulse 1.05s ease-in-out infinite;
-  outline: 3px solid color-mix(in oklab, var(--c-drums-ink) 78%, white);
-  outline-offset: -3px;
-  box-shadow:
-    inset 0 0 0 4px color-mix(in oklab, var(--c-drums-ink) 68%, transparent),
-    0 0 0 8px color-mix(in oklab, var(--c-drums) 72%, transparent),
-    0 10px 24px color-mix(in oklab, var(--c-drums-ink) 22%, transparent);
+  --tutorial-highlight-accent: var(--c-drums);
+  --tutorial-highlight-ink: var(--c-drums-ink);
+
+  position: relative;
+  z-index: var(--tutorial-target-z);
+  animation: tutorial-highlight-breathe var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
+  outline: 2px solid color-mix(in oklab, white 58%, transparent);
+  outline-offset: 3px;
+  box-shadow: var(--tutorial-highlight-rest-shadow);
 }
 
 .tutorial-bar-completed {
-  box-shadow:
-    inset 0 0 0 2px color-mix(in oklab, var(--play) 72%, white),
-    0 0 0 3px color-mix(in oklab, var(--play) 28%, transparent);
+  box-shadow: var(--tutorial-highlight-complete-shadow);
+}
+
+.tutorial-control-target {
+  --tutorial-highlight-accent: var(--c-drums);
+  --tutorial-highlight-ink: var(--c-drums-ink);
+
+  position: relative;
+  z-index: var(--tutorial-target-z);
+  animation: tutorial-highlight-breathe var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
+  outline: 2px solid color-mix(in oklab, white 58%, transparent);
+  outline-offset: 3px;
+  box-shadow: var(--tutorial-highlight-rest-shadow);
+}
+
+.fill-empty-clips.tutorial-control-target,
+.clip.tutorial-bar-target {
+  color: var(--tutorial-target-ink);
+  background: var(--tutorial-target-surface);
+  border: 1px solid var(--tutorial-target-surface-border);
+}
+
+.fill-empty-clips.tutorial-control-target:hover:not(:disabled),
+.fill-empty-clips.tutorial-control-target:focus-visible:not(:disabled) {
+  color: var(--tutorial-target-ink);
+  background: var(--tutorial-target-surface);
+  border-color: var(--tutorial-target-surface-border);
+}
+
+.clip.tutorial-bar-target {
+  --clip-bg: var(--tutorial-target-surface);
+  --clip-ink: var(--tutorial-target-ink);
+  --tutorial-highlight-rest-shadow: var(--tutorial-target-contained-rest-shadow);
+  --tutorial-highlight-peak-shadow: var(--tutorial-target-contained-peak-shadow);
+
+  position: absolute;
+  outline-offset: -3px;
+  box-shadow: var(--tutorial-highlight-rest-shadow);
+}
+
+.transport.tutorial-transport-target {
+  --tutorial-highlight-accent: var(--c-drums);
+  --tutorial-highlight-ink: var(--c-drums-ink);
+  --tutorial-highlight-rest-shadow: var(--tutorial-target-contained-rest-shadow);
+  --tutorial-highlight-peak-shadow: var(--tutorial-target-contained-peak-shadow);
+
+  color: var(--tutorial-target-ink);
+  background: var(--tutorial-target-surface);
+  border: 1px solid var(--tutorial-target-surface-border);
+  position: relative;
+  z-index: calc(var(--tutorial-target-z) + 3);
+  outline-offset: -3px;
+  box-shadow: var(--tutorial-highlight-rest-shadow);
+}
+
+.transport.tutorial-transport-target .t-btn {
+  color: color-mix(in oklab, var(--tutorial-target-ink) 58%, var(--ink-3));
+  background: transparent;
+  box-shadow: none;
+  opacity: 0.5;
+}
+
+.transport.tutorial-transport-target .t-btn.play {
+  position: relative;
+  z-index: calc(var(--tutorial-target-z) + 1);
+  color: var(--tutorial-target-ink);
+  background: color-mix(in oklab, white 86%, var(--tutorial-target-surface));
+  border: 1px solid var(--tutorial-target-surface-border);
+  outline: 2px solid color-mix(in oklab, white 64%, transparent);
+  outline-offset: -2px;
+  box-shadow: var(--tutorial-target-contained-rest-shadow);
+  opacity: 1;
+}
+
+.transport.tutorial-transport-target .t-btn.play.active {
+  color: var(--tutorial-target-ink);
+  background: color-mix(in oklab, white 86%, var(--tutorial-target-surface));
+  border-color: var(--tutorial-target-surface-border);
+  box-shadow: var(--tutorial-target-contained-rest-shadow);
 }
 
 .hover-row:hover .add-clip {
@@ -1269,19 +1522,6 @@ button {
   100% {
     opacity: 0;
     transform: scaleX(1);
-  }
-}
-
-@keyframes tutorial-bar-pulse {
-  0%,
-  100% {
-    opacity: 0.72;
-    transform: scaleX(1);
-  }
-
-  50% {
-    opacity: 1;
-    transform: scaleX(1.015);
   }
 }
 
@@ -1368,18 +1608,23 @@ button {
 }
 
 .ruler-playhead.tutorial-playhead-target {
-  z-index: 12;
+  --tutorial-highlight-accent: var(--c-drums);
+  --tutorial-highlight-ink: var(--c-drums-ink);
+
+  z-index: var(--tutorial-target-z);
   background: transparent;
   box-shadow: none;
   animation: none;
 }
 
 .playhead.tutorial-playhead-target {
+  --tutorial-highlight-accent: var(--c-drums);
+  --tutorial-highlight-ink: var(--c-drums-ink);
+
+  z-index: var(--tutorial-target-z);
   background: color-mix(in oklab, var(--c-drums-ink) 86%, white);
-  box-shadow:
-    0 0 0 2px color-mix(in oklab, white 72%, transparent),
-    0 0 12px color-mix(in oklab, var(--c-drums-ink) 46%, transparent);
-  animation: tutorial-playhead-pulse 0.95s ease-in-out infinite;
+  box-shadow: var(--tutorial-highlight-rest-shadow);
+  animation: tutorial-highlight-breathe var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
 }
 
 .ruler-playhead.tutorial-playhead-target::before,
@@ -1390,10 +1635,11 @@ button {
 
 .ruler-playhead.tutorial-playhead-target::after {
   background: color-mix(in oklab, var(--c-drums-ink) 88%, black);
-  border: 2px solid color-mix(in oklab, white 90%, transparent);
-  box-shadow:
-    0 0 0 2px color-mix(in oklab, var(--c-drums) 44%, transparent),
-    0 0 14px color-mix(in oklab, var(--c-drums) 74%, transparent);
+  border: 2px solid color-mix(in oklab, white 66%, transparent);
+  outline: 2px solid color-mix(in oklab, white 60%, transparent);
+  outline-offset: 2px;
+  box-shadow: var(--tutorial-highlight-rest-shadow);
+  animation: tutorial-highlight-breathe var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
 }
 
 .ruler-playhead.tutorial-playhead-completed {
@@ -1404,34 +1650,13 @@ button {
 
 .playhead.tutorial-playhead-completed {
   background: color-mix(in oklab, var(--play) 72%, white);
-  box-shadow:
-    0 0 0 2px color-mix(in oklab, white 70%, transparent),
-    0 0 10px color-mix(in oklab, var(--play) 42%, transparent);
+  box-shadow: var(--tutorial-highlight-complete-shadow);
 }
 
 .ruler-playhead.tutorial-playhead-completed::after {
   background: color-mix(in oklab, var(--play) 72%, black);
   border: 2px solid color-mix(in oklab, white 88%, transparent);
-  box-shadow:
-    0 0 0 2px color-mix(in oklab, var(--play) 32%, transparent),
-    0 0 12px color-mix(in oklab, var(--play) 56%, transparent);
-}
-
-@keyframes tutorial-playhead-pulse {
-  0%,
-  100% {
-    opacity: 0.88;
-    box-shadow:
-      0 0 0 2px color-mix(in oklab, white 78%, transparent),
-      0 0 13px color-mix(in oklab, var(--c-drums-ink) 48%, transparent);
-  }
-
-  50% {
-    opacity: 1;
-    box-shadow:
-      0 0 0 3px color-mix(in oklab, white 86%, transparent),
-      0 0 20px color-mix(in oklab, var(--c-drums-ink) 58%, transparent);
-  }
+  box-shadow: var(--tutorial-highlight-complete-shadow);
 }
 
 .editor {
@@ -1812,6 +2037,57 @@ button {
   color: var(--c-melody-ink);
 }
 
+.melody-example-keys {
+  --tutorial-highlight-accent: var(--c-melody);
+  --tutorial-highlight-ink: var(--c-melody-ink);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 54px;
+  padding: 9px 22px;
+  background: color-mix(in oklab, var(--c-melody) 9%, var(--surface));
+  border-bottom: 1px solid var(--border-soft);
+  overflow-x: auto;
+}
+
+.melody-example-keys.tutorial-control-target {
+  background: var(--tutorial-target-surface);
+  border: 1px solid var(--tutorial-target-rim);
+  border-color: var(--tutorial-target-rim);
+  border-right: 0;
+  border-left: 0;
+  outline-offset: -5px;
+  box-shadow: var(--tutorial-target-contained-rest-shadow);
+}
+
+.melody-example-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 9px;
+  color: var(--c-melody-ink);
+  background: color-mix(in oklab, white 82%, var(--c-melody));
+  border: 1px solid color-mix(in oklab, var(--c-melody-ink) 28%, var(--border));
+  border-radius: 8px;
+  box-shadow:
+    0 1px 0 color-mix(in oklab, white 78%, transparent) inset,
+    0 2px 8px color-mix(in oklab, black 10%, transparent);
+  font-family: "SFMono-Regular", "JetBrains Mono", ui-monospace, monospace;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.melody-example-gap {
+  flex: 0 0 8px;
+  height: 1px;
+}
+
 .seq-body {
   --chord-beat-head-height: 26px;
   --chord-beat-gap: 8px;
@@ -1964,8 +2240,23 @@ button {
   transform: translate(-50%, -50%);
 }
 
+.passing-anchor.tutorial-passing-anchor-target {
+  z-index: var(--tutorial-target-z);
+}
+
 .passing-btn {
   flex: 0 0 auto;
+}
+
+.passing-btn.tutorial-control-target {
+  color: var(--tutorial-target-ink);
+  background: color-mix(in oklab, white 82%, var(--tutorial-target-surface));
+  border: 1px solid var(--tutorial-target-surface-border);
+  outline-color: color-mix(in oklab, white 74%, transparent);
+  opacity: 1;
+  box-shadow:
+    var(--tutorial-target-contained-rest-shadow),
+    0 10px 24px color-mix(in oklab, black 16%, transparent);
 }
 
 .add-chord-btn {
@@ -2096,16 +2387,28 @@ button {
   --pitch-rail-head-height: 22px;
   --pitch-row-hover: var(--c-melody);
   --pitch-row-hover-ink: var(--c-melody-ink);
+  --melody-pitch-row-count: 13;
+  --melody-pitch-viewport-height: var(--chord-cell-grid-height);
   grid-template-columns: 64px 1fr;
 }
 
 .melody-scale-rail {
-  grid-template-rows: 22px var(--chord-cell-grid-height) 22px;
+  grid-template-rows: var(--pitch-rail-head-height) var(--melody-pitch-viewport-height) 22px;
 }
 
-.melody-scale-notes {
-  grid-template-rows: repeat(12, minmax(0, 1fr));
-  min-height: 0;
+.melody-seq-body .scale-notes-viewport,
+.melody-seq-body .beat-cells-viewport {
+  height: var(--melody-pitch-viewport-height);
+  overflow-y: hidden;
+}
+
+.melody-scale-notes,
+.melody-beat-cells {
+  grid-template-rows: repeat(var(--melody-pitch-row-count), minmax(0, 1fr));
+  gap: var(--chord-cell-gap);
+  height: var(--melody-pitch-viewport-height);
+  min-height: var(--melody-pitch-viewport-height);
+  padding: var(--chord-cell-padding);
 }
 
 .melody-note-key.root {
@@ -2147,42 +2450,10 @@ button {
   min-height: 0;
 }
 
-.melody-beat-cells {
-  grid-template-rows: repeat(12, minmax(0, 1fr));
-  min-height: var(--chord-cell-grid-height);
-}
-
-.melody-cell {
-  min-width: 0;
-  min-height: 0;
-  background: oklch(97% 0.003 270);
-  border: 1px solid color-mix(in oklab, var(--border) 35%, transparent);
-  border-radius: 4px;
-  cursor: pointer;
-  transition:
-    background 0.1s ease,
-    border-color 0.12s ease,
-    transform 0.08s ease;
-}
-
-.melody-cell.sharp {
-  background: color-mix(in oklab, var(--bg-deep) 70%, oklch(96% 0 0));
-}
-
-.melody-cell.downbeat {
-  box-shadow: inset 2px 0 0 color-mix(in oklab, var(--border) 70%, transparent);
-}
-
 .melody-cell.active {
   background: var(--c-melody);
   border-color: color-mix(in oklab, var(--c-melody-ink) 42%, var(--border));
   box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c-melody-ink) 24%, transparent);
-}
-
-.melody-cell:hover {
-  background: color-mix(in oklab, var(--c-melody) 60%, white);
-  border-color: color-mix(in oklab, var(--c-melody-ink) 30%, var(--border));
-  transform: translateY(-1px);
 }
 
 .bass-note-key {
@@ -2563,6 +2834,17 @@ button {
   border-color: color-mix(in oklab, var(--c-chord-ink) 35%, var(--border));
 }
 
+.tpl-card[aria-disabled="true"],
+.gtpl-card[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.tpl-card[aria-disabled="true"]:hover,
+.gtpl-card[aria-disabled="true"]:hover {
+  transform: none;
+}
+
 .tpl-name-row,
 .tpl-prog,
 .cv-head,
@@ -2683,6 +2965,11 @@ button {
   display: none;
 }
 
+.app-main:has(.tutorial-panel) .tpl-picker:not([hidden]),
+.app-main:has(.tutorial-panel) .gtpl-picker:not([hidden]) {
+  z-index: var(--tutorial-floating-ui-z);
+}
+
 .gtpl-card {
   display: flex;
   flex-direction: column;
@@ -2715,6 +3002,55 @@ button {
   box-shadow:
     0 0 0 2px color-mix(in oklab, var(--ink) 18%, transparent),
     var(--shadow-2);
+}
+
+.tpl-card.tutorial-control-target,
+.gtpl-card.tutorial-control-target {
+  --tutorial-highlight-rest-shadow: var(--tutorial-target-contained-rest-shadow);
+  --tutorial-highlight-peak-shadow: var(--tutorial-target-contained-peak-shadow);
+
+  color: var(--tutorial-target-ink);
+  background: color-mix(in oklab, white 78%, var(--tutorial-target-surface));
+  border: 1px solid var(--tutorial-target-surface-border);
+  outline-offset: -4px;
+  opacity: 1;
+  box-shadow: var(--tutorial-highlight-rest-shadow);
+}
+
+.sctpl-card.tutorial-control-target {
+  --tutorial-highlight-accent: var(--c-melody);
+  --tutorial-highlight-ink: var(--c-melody-ink);
+  --tutorial-target-surface: color-mix(in oklab, white 82%, var(--c-melody));
+  --tutorial-target-rim: color-mix(in oklab, var(--c-melody-ink) 46%, white);
+  --tutorial-highlight-rest-shadow:
+    inset 0 0 0 2px color-mix(in oklab, white 78%, transparent),
+    inset 0 0 0 5px color-mix(in oklab, var(--c-melody-ink) 18%, transparent),
+    0 0 0 3px color-mix(in oklab, white 46%, transparent),
+    0 12px 28px color-mix(in oklab, black 22%, transparent);
+  --tutorial-highlight-peak-shadow:
+    inset 0 0 0 2px color-mix(in oklab, white 86%, transparent),
+    inset 0 0 0 6px color-mix(in oklab, var(--c-melody-ink) 24%, transparent),
+    0 0 0 4px color-mix(in oklab, white 56%, transparent),
+    0 14px 32px color-mix(in oklab, black 24%, transparent);
+
+  color: var(--tutorial-target-ink);
+  background: var(--tutorial-target-surface);
+  border: 1px solid var(--tutorial-target-rim);
+  border-color: var(--tutorial-target-rim);
+  outline-offset: -4px;
+  opacity: 1;
+  box-shadow: var(--tutorial-highlight-rest-shadow);
+}
+
+.sctpl-card.tutorial-control-target .sctpl-notes {
+  background: color-mix(in oklab, white 62%, var(--c-melody));
+  border-color: color-mix(in oklab, var(--c-melody-ink) 30%, var(--border-soft));
+}
+
+.sctpl-card.tutorial-control-target .sctpl-note:not(.gap) {
+  color: var(--c-melody-ink);
+  background: color-mix(in oklab, white 74%, var(--c-melody));
+  border-color: color-mix(in oklab, var(--c-melody-ink) 30%, transparent);
 }
 
 .gtpl-name-row {
@@ -3111,6 +3447,10 @@ button {
     0 4px 14px oklch(20% 0.02 270 / 0.08);
   transform-origin: var(--arrow-x, 50%) top;
   animation: cv-pop 0.18s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+
+.app-main:has(.tutorial-panel) .chord-variants {
+  z-index: var(--tutorial-floating-ui-z);
 }
 
 @keyframes cv-pop {
@@ -3577,32 +3917,98 @@ button {
 }
 
 .tutorial-cell-target {
-  animation: tutorial-cell-pulse 0.95s ease-in-out infinite;
-  outline: 3px solid color-mix(in oklab, var(--c-drums-ink) 82%, white);
+  --tutorial-cell-accent: var(--c-drums);
+  --tutorial-cell-ink: var(--tutorial-cell-accent);
+  --tutorial-cell-surface: color-mix(in oklab, white 46%, var(--tutorial-cell-accent));
+  --tutorial-cell-border: color-mix(in oklab, var(--tutorial-cell-accent) 82%, var(--tutorial-cell-ink));
+  --tutorial-highlight-accent: var(--tutorial-cell-accent);
+  --tutorial-highlight-ink: var(--tutorial-cell-ink);
+
+  position: relative;
+  z-index: var(--tutorial-target-z);
+  animation: tutorial-highlight-breathe var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
+  outline: 2px solid color-mix(in oklab, white 60%, transparent);
   outline-offset: 2px;
-  border-color: color-mix(in oklab, var(--c-drums-ink) 74%, white);
+  background: var(--tutorial-cell-surface);
+  border-color: var(--tutorial-cell-border);
+  box-shadow: var(--tutorial-highlight-rest-shadow);
+}
+
+.drum-step.active.tutorial-cell-target {
+  background: var(--tutorial-cell-surface);
+  border-color: var(--tutorial-cell-border);
+}
+
+.tutorial-cell-completed {
+  --tutorial-cell-accent: var(--c-drums);
+  --tutorial-cell-ink: var(--tutorial-cell-accent);
+  --tutorial-cell-surface: color-mix(in oklab, white 36%, var(--tutorial-cell-accent));
+  --tutorial-cell-border: color-mix(in oklab, var(--tutorial-cell-accent) 76%, var(--tutorial-cell-ink));
+  --tutorial-highlight-accent: var(--tutorial-cell-accent);
+  --tutorial-highlight-ink: var(--tutorial-cell-ink);
+
+  position: relative;
+  z-index: var(--tutorial-target-z);
+  opacity: 1;
+  background: var(--tutorial-cell-surface);
+  border-color: var(--tutorial-cell-border);
   box-shadow:
-    0 0 0 4px color-mix(in oklab, white 86%, transparent),
-    0 0 0 10px color-mix(in oklab, var(--c-drums) 82%, transparent),
-    0 8px 20px color-mix(in oklab, var(--c-drums-ink) 24%, transparent);
+    inset 0 0 0 2px color-mix(in oklab, white 58%, transparent),
+    inset 0 0 0 4px color-mix(in oklab, var(--tutorial-cell-accent) 18%, transparent),
+    0 0 0 2px color-mix(in oklab, white 34%, transparent);
+}
+
+.drum-step.active.tutorial-cell-completed {
+  background: var(--tutorial-cell-surface);
+  border-color: var(--tutorial-cell-border);
+}
+
+.tutorial-cell-target-blue {
+  --tutorial-cell-accent: oklch(70% 0.17 252);
+  --tutorial-cell-ink: oklch(36% 0.14 252);
+}
+
+.tutorial-cell-completed-blue {
+  --tutorial-cell-accent: oklch(70% 0.17 252);
+  --tutorial-cell-ink: oklch(36% 0.14 252);
+}
+
+.tutorial-cell-target-green {
+  --tutorial-cell-accent: oklch(72% 0.16 150);
+  --tutorial-cell-ink: oklch(35% 0.13 150);
+}
+
+.tutorial-cell-completed-green {
+  --tutorial-cell-accent: oklch(72% 0.16 150);
+  --tutorial-cell-ink: oklch(35% 0.13 150);
+}
+
+.tutorial-cell-target-yellow {
+  --tutorial-cell-accent: oklch(84% 0.18 88);
+  --tutorial-cell-ink: oklch(42% 0.13 82);
+}
+
+.tutorial-cell-completed-yellow {
+  --tutorial-cell-accent: oklch(84% 0.18 88);
+  --tutorial-cell-ink: oklch(42% 0.13 82);
 }
 
 .tutorial-cell-source {
+  --tutorial-highlight-accent: var(--brand);
+  --tutorial-highlight-ink: var(--brand);
+
+  position: relative;
+  z-index: var(--tutorial-target-z);
   cursor: grab;
-  border-color: color-mix(in oklab, var(--brand) 62%, white);
-  box-shadow:
-    0 0 0 3px color-mix(in oklab, white 80%, transparent),
-    0 0 0 7px color-mix(in oklab, var(--brand) 34%, transparent);
+  animation: tutorial-highlight-breathe var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
+  outline: 2px solid color-mix(in oklab, white 60%, transparent);
+  outline-offset: 2px;
+  border-color: color-mix(in oklab, var(--brand) 44%, white);
+  box-shadow: var(--tutorial-highlight-rest-shadow);
 }
 
 .tutorial-cell-source:active {
   cursor: grabbing;
-}
-
-.tutorial-cell-completed {
-  box-shadow:
-    inset 0 0 0 2px color-mix(in oklab, var(--play) 72%, white),
-    0 0 0 3px color-mix(in oklab, var(--play) 28%, transparent);
 }
 
 .drum-step.tutorial-locked:not(.active):not(.tutorial-cell-target):not(.tutorial-cell-source) {
@@ -3612,17 +4018,6 @@ button {
   border-color: color-mix(in oklab, var(--border) 42%, var(--ink-4));
   filter: grayscale(1) saturate(0.2);
   transform: none;
-}
-
-@keyframes tutorial-cell-pulse {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-
-  50% {
-    transform: scale(1.13);
-  }
 }
 
 .drum-bar-indicator {
@@ -3646,7 +4041,7 @@ button {
 }
 
 @media (max-width: 980px) {
-  .app {
+  .app-main {
     grid-template-rows: auto minmax(0, 1fr) var(--app-editor-height);
   }
 
@@ -3663,15 +4058,23 @@ button {
   }
 
   .btn-new,
-  .right-tools {
+  .right-tools .save-pill,
+  .right-tools .btn-export,
+  .right-tools .icon-btn:not(.tutorial-topbar-button) {
     display: none;
   }
 
   .topbar-center {
     grid-column: 1 / -1;
+    grid-row: 2;
     width: 100%;
     min-width: 0;
     overflow-x: auto;
+  }
+
+  .right-tools {
+    grid-column: 2;
+    grid-row: 1;
   }
 
   .stat:nth-child(4) {
@@ -3770,5 +4173,12 @@ button {
   .drum-step-group {
     grid-template-columns: repeat(4, minmax(16px, 26px));
     gap: 4px;
+  }
+}
+
+@media (max-width: 760px), (max-height: 620px) {
+  .workspace.tutorial-sidebar-open,
+  .workspace.tutorial-sidebar-collapsed {
+    grid-template-columns: 168px minmax(0, 1fr);
   }
 }

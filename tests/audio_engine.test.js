@@ -222,10 +222,17 @@ test('createDrumsSampleUrls maps drums instruments to v0.22 samples', () => {
 test('createMelodySampleUrls maps melody anchor samples for sampler playback', () => {
   const urls = createMelodySampleUrls('/arranger/');
 
+  assert.equal(urls.C2, versioned('/arranger/samples/Melody/Melody_C2_v0.22.wav'));
   assert.equal(urls.C3, versioned('/arranger/samples/Melody/Melody_C3_v0.22.wav'));
   assert.equal(urls.C4, versioned('/arranger/samples/Melody/Melody_C4_v0.22.wav'));
+  assert.equal(urls.A2, versioned('/arranger/samples/Melody/Melody_A2_v0.22.wav'));
+  assert.equal(urls.A3, versioned('/arranger/samples/Melody/Melody_A3_v0.22.wav'));
+  assert.equal(urls.A4, versioned('/arranger/samples/Melody/Melody_A4_v0.22.wav'));
   assert.equal(urls.G4, versioned('/arranger/samples/Melody/Melody_G4_v0.22.wav'));
+  assert.equal(urls.C5, undefined);
   assert.equal(urls['C#4'], undefined);
+  assert.ok(Object.values(urls).every((url) => url.includes('/samples/Melody/')));
+  assert.ok(Object.values(urls).every((url) => !url.includes('/lead-old/')));
 });
 
 test('createBassSampleUrls maps v0.22 bass anchor samples for sampler playback', () => {
@@ -238,12 +245,12 @@ test('createBassSampleUrls maps v0.22 bass anchor samples for sampler playback',
   assert.equal(urls['F#3'], undefined);
 });
 
-test('createChordSampleUrls maps v0.22 chord note anchor samples', () => {
+test('createChordSampleUrls maps v0.3 chord note anchor samples', () => {
   const urls = createChordSampleUrls('/arranger/');
 
-  assert.equal(urls.C4, versioned('/arranger/samples/Chords/Chord_C4_v0.22.wav'));
-  assert.equal(urls.E4, versioned('/arranger/samples/Chords/Chord_E4_v0.22.wav'));
-  assert.equal(urls.G4, versioned('/arranger/samples/Chords/Chord_G4_v0.22.wav'));
+  assert.equal(urls.C4, versioned('/arranger/samples/Chords/Chord_C4_v0.3.wav'));
+  assert.equal(urls.E4, versioned('/arranger/samples/Chords/Chord_E4_v0.3.wav'));
+  assert.equal(urls.G4, versioned('/arranger/samples/Chords/Chord_G4_v0.3.wav'));
   assert.equal(urls['F#4'], undefined);
 });
 
@@ -326,7 +333,7 @@ test('AudioEngine falls back to chord synth when chord sampler is unavailable', 
   ]);
 });
 
-test('AudioEngine starts audio and triggers melody sampler notes', async () => {
+test('AudioEngine starts audio and triggers melody sampler notes using UI note pitch', async () => {
   const tone = createFakeTone();
   const engine = new AudioEngine({
     tone,
@@ -335,13 +342,13 @@ test('AudioEngine starts audio and triggers melody sampler notes', async () => {
   });
 
   assert.equal(await engine.startAudio(), AUDIO_STATUSES.READY);
-  assert.equal(await engine.triggerMelodyNote('E5', '16n'), true);
+  assert.equal(await engine.triggerMelodyNote('G5', '16n'), true);
 
   assert.deepEqual(tone.calls.filter(([name]) => name.startsWith('sampler.')), [
     ['sampler.toDestination'],
     [
       'sampler.triggerAttackRelease',
-      'E5',
+      'G5',
       '2s',
       12.5,
       createMelodySampleUrls(),

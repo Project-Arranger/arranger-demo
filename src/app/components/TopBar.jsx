@@ -9,6 +9,7 @@ import {
   ROOT_KEY,
   SCALE,
 } from '../../store/useMusicStore.js';
+import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
 import { renderIcon } from './icons.js';
 
 function TopBar({
@@ -20,10 +21,25 @@ function TopBar({
   onBackToStart,
   onPlayToggle,
   onStop,
+  onTutorialToggle,
   rootKey,
   scale,
+  showTutorialToggle = false,
+  tutorialCollapsed = false,
+  tutorialTargets,
 }) {
   const active = activeTutorialTarget === 'top-bar';
+  const tutorialToggleLabel = tutorialCollapsed ? '展开教程' : '收起教程';
+  const playTutorialRole = getTutorialControlRole(tutorialTargets, 'transport-play');
+  const transportClassName = [
+    'transport',
+    playTutorialRole === 'target' ? 'tutorial-control-target tutorial-transport-target' : '',
+  ].filter(Boolean).join(' ');
+  const playClassName = [
+    't-btn',
+    'play',
+    isPlaying ? 'active' : '',
+  ].filter(Boolean).join(' ');
 
   return (
     <header
@@ -41,7 +57,7 @@ function TopBar({
       </button>
 
       <div className="topbar-center">
-        <div className="transport" role="toolbar" aria-label="Transport">
+        <div className={transportClassName} role="toolbar" aria-label="Transport">
           <button
             className="t-btn"
             aria-label="Back to start"
@@ -55,7 +71,7 @@ function TopBar({
             {renderIcon(Square)}
           </button>
           <button
-            className={`t-btn play${isPlaying ? ' active' : ''}`}
+            className={playClassName}
             aria-label={isPlaying ? 'Pause' : 'Play'}
             title={isPlaying ? 'Pause (Space)' : 'Play (Space)'}
             type="button"
@@ -92,6 +108,17 @@ function TopBar({
       </div>
 
       <div className="right-tools">
+        {showTutorialToggle ? (
+          <button
+            className="tutorial-topbar-button"
+            type="button"
+            aria-label={tutorialToggleLabel}
+            title={tutorialToggleLabel}
+            onClick={onTutorialToggle}
+          >
+            教程
+          </button>
+        ) : null}
         <div className="save-pill" title="All changes saved">
           <span className="dot" />
           Saved

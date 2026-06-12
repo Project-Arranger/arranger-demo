@@ -17,13 +17,17 @@ async function maybeCallMethod(target, methodName, ...args) {
   await fn.call(target, ...args);
 }
 
-function createAudioPlayOptions(store, state) {
+function createAudioPlayOptions(store, state, audio) {
+  const positionObserver = audio?.onPositionChange;
   return {
     bpm: state.bpm,
     bar: state.currentBar,
     step: state.currentStep,
     matrixSource: () => store.getState().matrix,
-    onPositionChange: (bar, step) => syncStoreTransportPosition(store, bar, step),
+    onPositionChange: (bar, step) => {
+      syncStoreTransportPosition(store, bar, step);
+      positionObserver?.(bar, step);
+    },
     volumeSource: () => store.getState().volumes,
   };
 }
@@ -50,7 +54,7 @@ async function dispatchTransportCommand(command, deps) {
         await maybeCallMethod(deps.audio, 'pause');
       } else {
         state.play?.();
-        await maybeCallMethod(deps.audio, 'play', createAudioPlayOptions(store, state));
+        await maybeCallMethod(deps.audio, 'play', createAudioPlayOptions(store, state, deps.audio));
       }
       return { ok: true };
 

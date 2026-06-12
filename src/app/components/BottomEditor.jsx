@@ -94,6 +94,8 @@ function BottomEditor({
       onRenameClip,
       selectedBar,
       trackId: activeTrackId,
+      tutorialLocked,
+      tutorialTargets,
     });
   } else if (activeTrackId === 'chord' && selectedClipId) {
     editor = createElement(ChordEditor, {
@@ -119,6 +121,8 @@ function BottomEditor({
       onRenameClip,
       selectedBar,
       trackId: activeTrackId,
+      tutorialLocked,
+      tutorialTargets,
     });
   } else if (activeTrackId === 'melody' && selectedClipId) {
     editor = createElement(MelodyEditor, {
@@ -137,6 +141,8 @@ function BottomEditor({
       onRenameClip,
       selectedBar,
       trackId: activeTrackId,
+      tutorialLocked,
+      tutorialTargets,
     });
   } else {
     editor = createElement(TrackEditorPlaceholder, {
