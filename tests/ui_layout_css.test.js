@@ -273,6 +273,11 @@ test('melody editor mirrors the reference keyboard strip and scale picker layout
   assert.match(css, /\.melody-note-key\.playing\s*\{[^}]*background:\s*var\(--c-melody\)/s);
   assert.match(css, /\.scale-picker\s*\{[^}]*position:\s*absolute;/s);
   assert.match(css, /\.sctpl-card\.selected\s*\{[^}]*background:\s*color-mix\(in oklab,\s*var\(--c-melody\) 20%,\s*var\(--surface\)\);/s);
+  assert.match(css, /\.sctpl-card\.tutorial-control-target\s*\{[^}]*background:\s*var\(--tutorial-target-surface\);[^}]*border-color:\s*var\(--tutorial-target-rim\);/s);
+  assert.match(css, /\.sctpl-card\.tutorial-control-target \.sctpl-notes\s*\{[^}]*background:\s*color-mix\(in oklab,\s*white 62%,\s*var\(--c-melody\)\);/s);
+  assert.match(css, /\.sctpl-card\.tutorial-control-target \.sctpl-note:not\(\.gap\)\s*\{[^}]*background:\s*color-mix\(in oklab,\s*white 74%,\s*var\(--c-melody\)\);/s);
+  assert.match(css, /\.melody-example-keys\.tutorial-control-target\s*\{[^}]*background:\s*var\(--tutorial-target-surface\);[^}]*border-color:\s*var\(--tutorial-target-rim\);/s);
+  assert.match(css, /\.melody-example-key\s*\{[^}]*display:\s*inline-flex;/s);
 });
 
 test('bass editor mirrors the reference piano-roll and groove picker layout', async () => {

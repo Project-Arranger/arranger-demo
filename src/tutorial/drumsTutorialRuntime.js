@@ -29,6 +29,9 @@ const STEP_COMPLETION_FIELDS = Object.freeze({
   [TUTORIAL_STEP_IDS.BASS_FILL_TRACK_CLIPS]: 'bassTrackClipsFilled',
   [TUTORIAL_STEP_IDS.BASS_SELECT_GROOVE_TEMPLATE]: 'bassGrooveSelected',
   [TUTORIAL_STEP_IDS.BASS_LISTEN_LOOP]: 'bassLoopPlaybackComplete',
+  [TUTORIAL_STEP_IDS.MELODY_FILL_TRACK_CLIPS]: 'melodyTrackClipsFilled',
+  [TUTORIAL_STEP_IDS.MELODY_SELECT_SCALE]: 'melodyScaleSelected',
+  [TUTORIAL_STEP_IDS.MELODY_FREE_CREATE]: 'melodyFreeCreateReady',
 });
 
 const LOCKED_STEP_IDS = new Set([
@@ -44,9 +47,28 @@ const LOCKED_STEP_IDS = new Set([
   TUTORIAL_STEP_IDS.BASS_FILL_TRACK_CLIPS,
   TUTORIAL_STEP_IDS.BASS_SELECT_GROOVE_TEMPLATE,
   TUTORIAL_STEP_IDS.BASS_LISTEN_LOOP,
+  TUTORIAL_STEP_IDS.MELODY_FILL_TRACK_CLIPS,
+  TUTORIAL_STEP_IDS.MELODY_SELECT_SCALE,
 ]);
 
 const CHORD_ENRICH_SPANS = Object.freeze([0, 1, 2, 3]);
+
+const MELODY_EXAMPLE_STEP_CONTROLS = Object.freeze({
+  [TUTORIAL_STEP_IDS.MELODY_EXAMPLE_INTRO_1]: `${TUTORIAL_CONTROL_TARGETS.MELODY_EXAMPLE_KEYS_PREFIX}:4477887`,
+  [TUTORIAL_STEP_IDS.MELODY_PLAY_EXAMPLE_1]: `${TUTORIAL_CONTROL_TARGETS.MELODY_EXAMPLE_KEYS_PREFIX}:4477887`,
+  [TUTORIAL_STEP_IDS.MELODY_EXAMPLE_INTRO_2]: `${TUTORIAL_CONTROL_TARGETS.MELODY_EXAMPLE_KEYS_PREFIX}:890--098-098`,
+  [TUTORIAL_STEP_IDS.MELODY_PLAY_EXAMPLE_2]: `${TUTORIAL_CONTROL_TARGETS.MELODY_EXAMPLE_KEYS_PREFIX}:890--098-098`,
+  [TUTORIAL_STEP_IDS.MELODY_PLAY_EXAMPLE_3]: `${TUTORIAL_CONTROL_TARGETS.MELODY_EXAMPLE_KEYS_PREFIX}:23623523434345455`,
+});
+
+const MELODY_PRIMARY_STEP_IDS = new Set([
+  TUTORIAL_STEP_IDS.MELODY_EXAMPLE_INTRO_1,
+  TUTORIAL_STEP_IDS.MELODY_PLAY_EXAMPLE_1,
+  TUTORIAL_STEP_IDS.MELODY_EXAMPLE_INTRO_2,
+  TUTORIAL_STEP_IDS.MELODY_PLAY_EXAMPLE_2,
+  TUTORIAL_STEP_IDS.MELODY_PLAY_EXAMPLE_3,
+  TUTORIAL_STEP_IDS.MELODY_FREE_CREATE,
+]);
 
 const KICK_RECOMMENDATION_GROUPS = Object.freeze([
   Object.freeze({ color: 'blue', steps: DRUMS_KICK_BLUE_STEPS }),
@@ -84,6 +106,11 @@ function createTutorialState() {
     bassLoopPlaybackStarted: false,
     bassLoopVisitedBars: [],
     bassLoopPlaybackComplete: false,
+    melodyTrackClipsFilled: false,
+    melodyScaleSelected: false,
+    melodyExampleStarted: false,
+    melodyExampleStep: 0,
+    melodyFreeCreateReady: false,
   };
 }
 
@@ -195,6 +222,14 @@ function getPrimaryState(step, progress) {
   if (step?.id === TUTORIAL_STEP_IDS.BASS_LISTEN_LOOP) {
     return {
       primaryDisabled: !progress.bassLoopPlaybackComplete,
+      primaryLabel: step.primaryLabel,
+      showCompleteButton: true,
+    };
+  }
+
+  if (MELODY_PRIMARY_STEP_IDS.has(step?.id)) {
+    return {
+      primaryDisabled: false,
       primaryLabel: step.primaryLabel,
       showCompleteButton: true,
     };
@@ -363,6 +398,27 @@ function getTutorialViewModel({
     targets.controls = [{ name: TUTORIAL_CONTROL_TARGETS.TRANSPORT_PLAY, role: 'target' }];
   }
 
+  if (step.id === TUTORIAL_STEP_IDS.MELODY_FILL_TRACK_CLIPS) {
+    targets.controls = [{
+      name: `${TUTORIAL_CONTROL_TARGETS.FILL_EMPTY_CLIPS_PREFIX}:melody`,
+      role: 'target',
+    }];
+  }
+
+  if (step.id === TUTORIAL_STEP_IDS.MELODY_SELECT_SCALE) {
+    targets.controls = [
+      { name: TUTORIAL_CONTROL_TARGETS.MELODY_SCALE_BUTTON, role: 'target' },
+      { name: `${TUTORIAL_CONTROL_TARGETS.MELODY_SCALE_CARD_PREFIX}:pentatonic`, role: 'target' },
+    ];
+  }
+
+  if (MELODY_EXAMPLE_STEP_CONTROLS[step.id]) {
+    targets.controls = [{
+      name: MELODY_EXAMPLE_STEP_CONTROLS[step.id],
+      role: 'target',
+    }];
+  }
+
   const primaryState = getPrimaryState(step, progress);
   const locked = LOCKED_STEP_IDS.has(step.id);
 
@@ -464,6 +520,13 @@ function handleTutorialControlAction({
     }, true);
   }
 
+  if (step.id === TUTORIAL_STEP_IDS.MELODY_FILL_TRACK_CLIPS) {
+    return createAllowedAction({
+      ...progress,
+      melodyTrackClipsFilled: true,
+    }, true);
+  }
+
   if (step.id === TUTORIAL_STEP_IDS.DRUMS_GENERATE_ALL_BARS) {
     return createAllowedAction({
       ...progress,
@@ -489,6 +552,13 @@ function handleTutorialControlAction({
     return createAllowedAction({
       ...progress,
       bassGrooveSelected: true,
+    }, true);
+  }
+
+  if (step.id === TUTORIAL_STEP_IDS.MELODY_SELECT_SCALE) {
+    return createAllowedAction({
+      ...progress,
+      melodyScaleSelected: true,
     }, true);
   }
 
@@ -689,6 +759,44 @@ function completeTutorialPrimaryAction({
 
   if (step?.id === TUTORIAL_STEP_IDS.BASS_LISTEN_LOOP) {
     if (!progress.bassLoopPlaybackComplete) return createRejectedAction(progress);
+    return createAllowedAction(progress, true);
+  }
+
+  if (step?.id === TUTORIAL_STEP_IDS.MELODY_EXAMPLE_INTRO_1) {
+    return createAllowedAction({
+      ...progress,
+      melodyExampleStarted: true,
+      melodyExampleStep: 1,
+    }, true);
+  }
+
+  if (step?.id === TUTORIAL_STEP_IDS.MELODY_PLAY_EXAMPLE_1) {
+    return createAllowedAction({
+      ...progress,
+      melodyExampleStep: 2,
+    }, true);
+  }
+
+  if (step?.id === TUTORIAL_STEP_IDS.MELODY_EXAMPLE_INTRO_2) {
+    return createAllowedAction(progress, true);
+  }
+
+  if (step?.id === TUTORIAL_STEP_IDS.MELODY_PLAY_EXAMPLE_2) {
+    return createAllowedAction({
+      ...progress,
+      melodyExampleStep: 3,
+    }, true);
+  }
+
+  if (step?.id === TUTORIAL_STEP_IDS.MELODY_PLAY_EXAMPLE_3) {
+    return createAllowedAction({
+      ...progress,
+      melodyFreeCreateReady: true,
+    }, true);
+  }
+
+  if (step?.id === TUTORIAL_STEP_IDS.MELODY_FREE_CREATE) {
+    if (!progress.melodyFreeCreateReady) return createRejectedAction(progress);
     return createAllowedAction(progress, false, { shouldEnd: true });
   }
 

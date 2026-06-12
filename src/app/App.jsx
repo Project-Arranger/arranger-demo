@@ -1072,8 +1072,26 @@ export default function App() {
   }, []);
 
   const handleMelodyScaleChange = useCallback((scaleId) => {
+    let tutorialAction = null;
+    if (tutorialVisible && currentTutorialStep?.id === TUTORIAL_STEP_IDS.MELODY_SELECT_SCALE) {
+      tutorialAction = handleTutorialControlAction({
+        control: `melody-scale-card:${scaleId}`,
+        progress: tutorialProgress,
+        selectedBar,
+        step: currentTutorialStep,
+      });
+      if (!tutorialAction.allowed) return;
+    }
+
     useMusicStore.getState().setMelodyScaleId(scaleId);
-  }, []);
+    if (tutorialAction) applyTutorialActionProgress(tutorialAction);
+  }, [
+    applyTutorialActionProgress,
+    currentTutorialStep,
+    selectedBar,
+    tutorialProgress,
+    tutorialVisible,
+  ]);
 
   const handleClearMelodyBar = useCallback(() => {
     const state = useMusicStore.getState();

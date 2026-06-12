@@ -25,10 +25,18 @@ test('drums tutorial exposes the priority step order', () => {
     TUTORIAL_STEP_IDS.BASS_FILL_TRACK_CLIPS,
     TUTORIAL_STEP_IDS.BASS_SELECT_GROOVE_TEMPLATE,
     TUTORIAL_STEP_IDS.BASS_LISTEN_LOOP,
+    TUTORIAL_STEP_IDS.MELODY_FILL_TRACK_CLIPS,
+    TUTORIAL_STEP_IDS.MELODY_SELECT_SCALE,
+    TUTORIAL_STEP_IDS.MELODY_EXAMPLE_INTRO_1,
+    TUTORIAL_STEP_IDS.MELODY_PLAY_EXAMPLE_1,
+    TUTORIAL_STEP_IDS.MELODY_EXAMPLE_INTRO_2,
+    TUTORIAL_STEP_IDS.MELODY_PLAY_EXAMPLE_2,
+    TUTORIAL_STEP_IDS.MELODY_PLAY_EXAMPLE_3,
+    TUTORIAL_STEP_IDS.MELODY_FREE_CREATE,
   ]);
 });
 
-test('drums tutorial v0.2 targets 1-5 keep exact table source columns', () => {
+test('drums tutorial v0.2 targets 1-6 keep exact table source columns', () => {
   assert.deepEqual(DRUMS_TUTORIAL_STEPS.map((step) => ({
     section: step.section,
     trigger: step.trigger,
@@ -155,6 +163,62 @@ test('drums tutorial v0.2 targets 1-5 keep exact table source columns', () => {
       copy: '创建完整的低音音轨\n\n选择一个你喜欢的低音律动\n低音虽存在感低，但不可或缺，它让你的音乐听起来更加丰满完整。现在，你可以简单地选择一个律动模板，系统会自动让低音旋律和你所选择的和弦进行相匹配。\n觉得满意后，点击[继续探索]以继续',
       primaryLabel: '继续探索',
     },
+    {
+      section: '目标6\n在Melody轨即兴弹奏',
+      trigger: '点击[继续探索]按钮',
+      uiEvent: 'Melody轨填充整轨按钮闪烁',
+      copy: '尝试弹奏你喜欢的旋律乐句\n\n选择一个弹奏音阶\n音阶指一系列特定顺序的音符，使用不同特色的音阶可以创作出你所喜欢的各种旋律。推荐你从五声音阶开始，因为它无论怎么弹都好听，也是中国音乐最常用的一个音阶。',
+      primaryLabel: '下一步',
+    },
+    {
+      section: '目标6\n在Melody轨即兴弹奏',
+      trigger: '点击Melody轨填充整轨按钮',
+      uiEvent: '选择音阶按钮闪烁，选择二级菜单后五声音阶卡片闪烁',
+      copy: '尝试弹奏你喜欢的旋律乐句\n\n选择一个弹奏音阶\n音阶指一系列特定顺序的音符，使用不同特色的音阶可以创作出你所喜欢的各种旋律。推荐你从五声音阶开始，因为它无论怎么弹都好听，也是中国音乐最常用的一个音阶。',
+      primaryLabel: '下一步',
+    },
+    {
+      section: '目标6\n在Melody轨即兴弹奏',
+      trigger: '用户选择五声音阶卡片',
+      uiEvent: '无',
+      copy: '尝试弹奏你喜欢的旋律乐句\n\n弹奏示例乐句\n任何时候，你的耳朵永远都是创造旋律最好的工具。现在，我们将给出一些基于五声音阶创作的经典旋律，你将尝试让你的手指找到弹奏的感觉。',
+      primaryLabel: '开始弹奏',
+    },
+    {
+      section: '目标6\n在Melody轨即兴弹奏',
+      trigger: '点击[开始弹奏]',
+      uiEvent: '出现示例旋律，示例旋律的按键指引在屏幕上比重最大',
+      copy: '尝试弹奏你喜欢的旋律乐句\n\n弹奏示例乐句\n跟着节奏，尝试让这段《小星星》的旋律乐句和你已有的乐曲配合在一起。当你想尝试下一个乐句时，点击[继续探索]\n示例乐句：\n4477887',
+      primaryLabel: '继续探索',
+    },
+    {
+      section: '目标6\n在Melody轨即兴弹奏',
+      trigger: '点击[继续探索]',
+      uiEvent: '无',
+      copy: '尝试弹奏你喜欢的旋律乐句\n\n让旋律变好听的秘诀\n把旋律想象成一根线条，它可以从低往高、从高往低，也可以曲折往返，并在它流淌的过程中偶有重复或中断；你将通过尝试弹奏两个经典例子来体会这一点。',
+      primaryLabel: '开始弹奏',
+    },
+    {
+      section: '目标6\n在Melody轨即兴弹奏',
+      trigger: '点击[开始弹奏]',
+      uiEvent: '出现示例旋律，示例旋律的按键指引在屏幕上比重最大',
+      copy: '尝试弹奏你喜欢的旋律乐句\n\n弹奏示例乐句\n跟着节奏，尝试让这段经典民歌《小河淌水》的旋律乐句和你已有的乐曲配合在一起。当你想尝试下一个乐句时，点击[继续探索]\n示例乐句：\n890- -098 -0 98',
+      primaryLabel: '继续探索',
+    },
+    {
+      section: '目标6\n在Melody轨即兴弹奏',
+      trigger: '点击继续探索',
+      uiEvent: '出现示例旋律，示例旋律的按键指引在屏幕上比重最大',
+      copy: '尝试弹奏你喜欢的旋律乐句\n\n弹奏示例乐句\n跟着节奏，尝试让这段陶喆《小镇姑娘》的旋律乐句和你已有的乐曲配合在一起。当你想尝试下一个乐句时，点击[继续探索]\n示例乐句：\n236 235 234 3434 5455',
+      primaryLabel: '继续探索',
+    },
+    {
+      section: '目标6\n在Melody轨即兴弹奏',
+      trigger: '点击继续探索',
+      uiEvent: '点击[开始创作]后，Tutorial窗口收起',
+      copy: '你已经掌握了如何创作一段完整的乐曲，现在可以开始自由创作了。\n你可以随时在这里回看之前的所有提示。',
+      primaryLabel: '开始创作',
+    },
   ]);
 });
 
@@ -176,8 +240,12 @@ test('drums tutorial v0.2 documents errata scope', () => {
       '目标5/行20：删除独立成行的 [继续探索]',
       '目标5/播放步骤：按确认改为前4小节后开放继续探索',
     ],
-    future: [
-      '目标6 待实现',
+    target6: [
+      '目标6/首行：Melody轨补齐空Clip按钮闪烁 已修正为 Melody轨填充整轨按钮闪烁',
+      '目标6/首行：点击Melody轨补齐Clip按钮 已按当前 UI 修正为 填充整轨',
+      '目标6/第二行：空 Tutorial 文案继承上一条 Melody 说明',
+      '目标6：删除独立成行的 [开始弹奏] / [继续探索] / [开始创作]',
+      '目标6/示例乐句：按确认采用按钮推进，不校验用户按键序列',
     ],
   });
 });

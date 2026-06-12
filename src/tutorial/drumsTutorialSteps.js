@@ -6,7 +6,11 @@ const SECTION_TARGET_2 = '目标2\n添加整轨的Clips，并全局添加基础�
 const SECTION_TARGET_3 = '目标3\n编辑所有Drums Clips，找到用户喜欢的律动感';
 const SECTION_TARGET_4 = '目标4\n编辑所有Chord Clips，对和弦进行概念建立感性认识，并得到一段自己觉得好听的和弦进行Loop';
 const SECTION_TARGET_5 = '目标5\n完成编辑Bass轨';
+const SECTION_TARGET_6 = '目标6\n在Melody轨即兴弹奏';
 const BASS_TARGET_COPY = '创建完整的低音音轨\n\n选择一个你喜欢的低音律动\n低音虽存在感低，但不可或缺，它让你的音乐听起来更加丰满完整。现在，你可以简单地选择一个律动模板，系统会自动让低音旋律和你所选择的和弦进行相匹配。\n觉得满意后，点击[继续探索]以继续';
+const MELODY_TARGET_COPY = '尝试弹奏你喜欢的旋律乐句\n\n选择一个弹奏音阶\n音阶指一系列特定顺序的音符，使用不同特色的音阶可以创作出你所喜欢的各种旋律。推荐你从五声音阶开始，因为它无论怎么弹都好听，也是中国音乐最常用的一个音阶。';
+const MELODY_EXAMPLE_INTRO_COPY = '尝试弹奏你喜欢的旋律乐句\n\n弹奏示例乐句\n任何时候，你的耳朵永远都是创造旋律最好的工具。现在，我们将给出一些基于五声音阶创作的经典旋律，你将尝试让你的手指找到弹奏的感觉。';
+const MELODY_EXAMPLE_TIP_COPY = '尝试弹奏你喜欢的旋律乐句\n\n让旋律变好听的秘诀\n把旋律想象成一根线条，它可以从低往高、从高往低，也可以曲折往返，并在它流淌的过程中偶有重复或中断；你将通过尝试弹奏两个经典例子来体会这一点。';
 
 const DRUMS_TUTORIAL_STEPS = [
   {
@@ -212,6 +216,103 @@ const DRUMS_TUTORIAL_STEPS = [
       control: TUTORIAL_CONTROL_TARGETS.TRANSPORT_PLAY,
       trackId: 'bass',
       bars: [0, 1, 2, 3],
+    },
+  },
+  {
+    id: TUTORIAL_STEP_IDS.MELODY_FILL_TRACK_CLIPS,
+    section: SECTION_TARGET_6,
+    trigger: '点击[继续探索]按钮',
+    uiEvent: 'Melody轨填充整轨按钮闪烁',
+    copy: MELODY_TARGET_COPY,
+    primaryLabel: '下一步',
+    completion: {
+      type: 'fill-track-clips',
+      control: `${TUTORIAL_CONTROL_TARGETS.FILL_EMPTY_CLIPS_PREFIX}:melody`,
+      trackId: 'melody',
+    },
+  },
+  {
+    id: TUTORIAL_STEP_IDS.MELODY_SELECT_SCALE,
+    section: SECTION_TARGET_6,
+    trigger: '点击Melody轨填充整轨按钮',
+    uiEvent: '选择音阶按钮闪烁，选择二级菜单后五声音阶卡片闪烁',
+    copy: MELODY_TARGET_COPY,
+    primaryLabel: '下一步',
+    completion: {
+      type: 'melody-scale',
+      control: `${TUTORIAL_CONTROL_TARGETS.MELODY_SCALE_CARD_PREFIX}:pentatonic`,
+      scaleId: 'pentatonic',
+    },
+  },
+  {
+    id: TUTORIAL_STEP_IDS.MELODY_EXAMPLE_INTRO_1,
+    section: SECTION_TARGET_6,
+    trigger: '用户选择五声音阶卡片',
+    uiEvent: '无',
+    copy: MELODY_EXAMPLE_INTRO_COPY,
+    primaryLabel: '开始弹奏',
+    completion: {
+      type: 'melody-example-intro',
+      control: `${TUTORIAL_CONTROL_TARGETS.MELODY_EXAMPLE_KEYS_PREFIX}:4477887`,
+    },
+  },
+  {
+    id: TUTORIAL_STEP_IDS.MELODY_PLAY_EXAMPLE_1,
+    section: SECTION_TARGET_6,
+    trigger: '点击[开始弹奏]',
+    uiEvent: '出现示例旋律，示例旋律的按键指引在屏幕上比重最大',
+    copy: '尝试弹奏你喜欢的旋律乐句\n\n弹奏示例乐句\n跟着节奏，尝试让这段《小星星》的旋律乐句和你已有的乐曲配合在一起。当你想尝试下一个乐句时，点击[继续探索]\n示例乐句：\n4477887',
+    primaryLabel: '继续探索',
+    completion: {
+      type: 'melody-example',
+      control: `${TUTORIAL_CONTROL_TARGETS.MELODY_EXAMPLE_KEYS_PREFIX}:4477887`,
+    },
+  },
+  {
+    id: TUTORIAL_STEP_IDS.MELODY_EXAMPLE_INTRO_2,
+    section: SECTION_TARGET_6,
+    trigger: '点击[继续探索]',
+    uiEvent: '无',
+    copy: MELODY_EXAMPLE_TIP_COPY,
+    primaryLabel: '开始弹奏',
+    completion: {
+      type: 'melody-example-intro',
+      control: `${TUTORIAL_CONTROL_TARGETS.MELODY_EXAMPLE_KEYS_PREFIX}:890--098-098`,
+    },
+  },
+  {
+    id: TUTORIAL_STEP_IDS.MELODY_PLAY_EXAMPLE_2,
+    section: SECTION_TARGET_6,
+    trigger: '点击[开始弹奏]',
+    uiEvent: '出现示例旋律，示例旋律的按键指引在屏幕上比重最大',
+    copy: '尝试弹奏你喜欢的旋律乐句\n\n弹奏示例乐句\n跟着节奏，尝试让这段经典民歌《小河淌水》的旋律乐句和你已有的乐曲配合在一起。当你想尝试下一个乐句时，点击[继续探索]\n示例乐句：\n890- -098 -0 98',
+    primaryLabel: '继续探索',
+    completion: {
+      type: 'melody-example',
+      control: `${TUTORIAL_CONTROL_TARGETS.MELODY_EXAMPLE_KEYS_PREFIX}:890--098-098`,
+    },
+  },
+  {
+    id: TUTORIAL_STEP_IDS.MELODY_PLAY_EXAMPLE_3,
+    section: SECTION_TARGET_6,
+    trigger: '点击继续探索',
+    uiEvent: '出现示例旋律，示例旋律的按键指引在屏幕上比重最大',
+    copy: '尝试弹奏你喜欢的旋律乐句\n\n弹奏示例乐句\n跟着节奏，尝试让这段陶喆《小镇姑娘》的旋律乐句和你已有的乐曲配合在一起。当你想尝试下一个乐句时，点击[继续探索]\n示例乐句：\n236 235 234 3434 5455',
+    primaryLabel: '继续探索',
+    completion: {
+      type: 'melody-example',
+      control: `${TUTORIAL_CONTROL_TARGETS.MELODY_EXAMPLE_KEYS_PREFIX}:23623523434345455`,
+    },
+  },
+  {
+    id: TUTORIAL_STEP_IDS.MELODY_FREE_CREATE,
+    section: SECTION_TARGET_6,
+    trigger: '点击继续探索',
+    uiEvent: '点击[开始创作]后，Tutorial窗口收起',
+    copy: '你已经掌握了如何创作一段完整的乐曲，现在可以开始自由创作了。\n你可以随时在这里回看之前的所有提示。',
+    primaryLabel: '开始创作',
+    completion: {
+      type: 'manual',
       endsTutorial: true,
     },
   },
@@ -234,8 +335,12 @@ DRUMS_TUTORIAL_STEPS.errata = Object.freeze({
     '目标5/行20：删除独立成行的 [继续探索]',
     '目标5/播放步骤：按确认改为前4小节后开放继续探索',
   ]),
-  future: Object.freeze([
-    '目标6 待实现',
+  target6: Object.freeze([
+    '目标6/首行：Melody轨补齐空Clip按钮闪烁 已修正为 Melody轨填充整轨按钮闪烁',
+    '目标6/首行：点击Melody轨补齐Clip按钮 已按当前 UI 修正为 填充整轨',
+    '目标6/第二行：空 Tutorial 文案继承上一条 Melody 说明',
+    '目标6：删除独立成行的 [开始弹奏] / [继续探索] / [开始创作]',
+    '目标6/示例乐句：按确认采用按钮推进，不校验用户按键序列',
   ]),
 });
 

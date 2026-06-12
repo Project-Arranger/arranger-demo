@@ -16,6 +16,14 @@ const TUTORIAL_STEP_IDS = Object.freeze({
   BASS_FILL_TRACK_CLIPS: 'bass-fill-track-clips',
   BASS_SELECT_GROOVE_TEMPLATE: 'bass-select-groove-template',
   BASS_LISTEN_LOOP: 'bass-listen-loop',
+  MELODY_FILL_TRACK_CLIPS: 'melody-fill-track-clips',
+  MELODY_SELECT_SCALE: 'melody-select-scale',
+  MELODY_EXAMPLE_INTRO_1: 'melody-example-intro-1',
+  MELODY_PLAY_EXAMPLE_1: 'melody-play-example-1',
+  MELODY_EXAMPLE_INTRO_2: 'melody-example-intro-2',
+  MELODY_PLAY_EXAMPLE_2: 'melody-play-example-2',
+  MELODY_PLAY_EXAMPLE_3: 'melody-play-example-3',
+  MELODY_FREE_CREATE: 'melody-free-create',
 });
 
 const TUTORIAL_STEP_ORDER = Object.freeze(Object.values(TUTORIAL_STEP_IDS));

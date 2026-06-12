@@ -17,6 +17,9 @@ const TUTORIAL_CONTROL_TARGETS = Object.freeze({
   FILL_EMPTY_CLIPS_PREFIX: 'fill-empty-clips',
   GENERATE_ALL_DRUMS_BARS: 'generate-all-drums-bars',
   GENERATE_CURRENT_DRUMS_BAR: 'generate-current-drums-bar',
+  MELODY_EXAMPLE_KEYS_PREFIX: 'melody-example-keys',
+  MELODY_SCALE_BUTTON: 'melody-scale-button',
+  MELODY_SCALE_CARD_PREFIX: 'melody-scale-card',
   TRANSPORT_PLAY: 'transport-play',
 });
 

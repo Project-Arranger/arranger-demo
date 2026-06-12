@@ -45,6 +45,7 @@
   --tutorial-target-surface: color-mix(in oklab, var(--surface) 74%, var(--tutorial-highlight-accent));
   --tutorial-target-ink: var(--tutorial-highlight-ink);
   --tutorial-target-surface-border: color-mix(in oklab, var(--tutorial-highlight-ink) 18%, transparent);
+  --tutorial-target-rim: var(--tutorial-target-surface-border);
   --tutorial-highlight-rest-shadow:
     inset 0 0 0 1px color-mix(in oklab, var(--tutorial-highlight-ink) 44%, white),
     inset 0 0 12px color-mix(in oklab, white 10%, transparent),
@@ -2036,6 +2037,57 @@ button {
   color: var(--c-melody-ink);
 }
 
+.melody-example-keys {
+  --tutorial-highlight-accent: var(--c-melody);
+  --tutorial-highlight-ink: var(--c-melody-ink);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 54px;
+  padding: 9px 22px;
+  background: color-mix(in oklab, var(--c-melody) 9%, var(--surface));
+  border-bottom: 1px solid var(--border-soft);
+  overflow-x: auto;
+}
+
+.melody-example-keys.tutorial-control-target {
+  background: var(--tutorial-target-surface);
+  border: 1px solid var(--tutorial-target-rim);
+  border-color: var(--tutorial-target-rim);
+  border-right: 0;
+  border-left: 0;
+  outline-offset: -5px;
+  box-shadow: var(--tutorial-target-contained-rest-shadow);
+}
+
+.melody-example-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 9px;
+  color: var(--c-melody-ink);
+  background: color-mix(in oklab, white 82%, var(--c-melody));
+  border: 1px solid color-mix(in oklab, var(--c-melody-ink) 28%, var(--border));
+  border-radius: 8px;
+  box-shadow:
+    0 1px 0 color-mix(in oklab, white 78%, transparent) inset,
+    0 2px 8px color-mix(in oklab, black 10%, transparent);
+  font-family: "SFMono-Regular", "JetBrains Mono", ui-monospace, monospace;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.melody-example-gap {
+  flex: 0 0 8px;
+  height: 1px;
+}
+
 .seq-body {
   --chord-beat-head-height: 26px;
   --chord-beat-gap: 8px;
@@ -2963,6 +3015,42 @@ button {
   outline-offset: -4px;
   opacity: 1;
   box-shadow: var(--tutorial-highlight-rest-shadow);
+}
+
+.sctpl-card.tutorial-control-target {
+  --tutorial-highlight-accent: var(--c-melody);
+  --tutorial-highlight-ink: var(--c-melody-ink);
+  --tutorial-target-surface: color-mix(in oklab, white 82%, var(--c-melody));
+  --tutorial-target-rim: color-mix(in oklab, var(--c-melody-ink) 46%, white);
+  --tutorial-highlight-rest-shadow:
+    inset 0 0 0 2px color-mix(in oklab, white 78%, transparent),
+    inset 0 0 0 5px color-mix(in oklab, var(--c-melody-ink) 18%, transparent),
+    0 0 0 3px color-mix(in oklab, white 46%, transparent),
+    0 12px 28px color-mix(in oklab, black 22%, transparent);
+  --tutorial-highlight-peak-shadow:
+    inset 0 0 0 2px color-mix(in oklab, white 86%, transparent),
+    inset 0 0 0 6px color-mix(in oklab, var(--c-melody-ink) 24%, transparent),
+    0 0 0 4px color-mix(in oklab, white 56%, transparent),
+    0 14px 32px color-mix(in oklab, black 24%, transparent);
+
+  color: var(--tutorial-target-ink);
+  background: var(--tutorial-target-surface);
+  border: 1px solid var(--tutorial-target-rim);
+  border-color: var(--tutorial-target-rim);
+  outline-offset: -4px;
+  opacity: 1;
+  box-shadow: var(--tutorial-highlight-rest-shadow);
+}
+
+.sctpl-card.tutorial-control-target .sctpl-notes {
+  background: color-mix(in oklab, white 62%, var(--c-melody));
+  border-color: color-mix(in oklab, var(--c-melody-ink) 30%, var(--border-soft));
+}
+
+.sctpl-card.tutorial-control-target .sctpl-note:not(.gap) {
+  color: var(--c-melody-ink);
+  background: color-mix(in oklab, white 74%, var(--c-melody));
+  border-color: color-mix(in oklab, var(--c-melody-ink) 30%, transparent);
 }
 
 .gtpl-name-row {

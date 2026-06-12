@@ -893,6 +893,193 @@ test('target 5 bass listen step enables continue after the first four bars', () 
     step,
   });
   assert.equal(finishTarget5.allowed, true);
-  assert.equal(finishTarget5.shouldAdvance, false);
-  assert.equal(finishTarget5.shouldEnd, true);
+  assert.equal(finishTarget5.shouldAdvance, true);
+  assert.equal(finishTarget5.shouldEnd, undefined);
+});
+
+test('target 6 starts by filling melody clips from the melody track control', () => {
+  const step = getStep(TUTORIAL_STEP_IDS.MELODY_FILL_TRACK_CLIPS);
+  assert.ok(step);
+  const progress = {
+    ...createTutorialState(),
+    bassLoopPlaybackComplete: true,
+  };
+  const viewModel = getTutorialViewModel({
+    matrix: createInitialMatrix(),
+    progress,
+    selectedBar: 0,
+    step,
+  });
+
+  assert.equal(viewModel.locked, true);
+  assert.deepEqual(viewModel.targets.controls, [
+    { name: 'fill-empty-clips:melody', role: 'target' },
+  ]);
+
+  const wrongTrack = handleTutorialControlAction({
+    control: 'fill-empty-clips:bass',
+    progress,
+    step,
+  });
+  assert.equal(wrongTrack.allowed, false);
+
+  const filled = handleTutorialControlAction({
+    control: 'fill-empty-clips:melody',
+    progress,
+    step,
+  });
+  assert.equal(filled.allowed, true);
+  assert.equal(filled.shouldAdvance, true);
+  assert.equal(filled.nextProgress.melodyTrackClipsFilled, true);
+});
+
+test('target 6 melody scale step only accepts the pentatonic card', () => {
+  const step = getStep(TUTORIAL_STEP_IDS.MELODY_SELECT_SCALE);
+  assert.ok(step);
+  const progress = {
+    ...createTutorialState(),
+    melodyTrackClipsFilled: true,
+  };
+  const viewModel = getTutorialViewModel({
+    matrix: createInitialMatrix(),
+    progress,
+    selectedBar: 0,
+    step,
+  });
+
+  assert.equal(viewModel.locked, true);
+  assert.deepEqual(viewModel.targets.controls, [
+    { name: 'melody-scale-button', role: 'target' },
+    { name: 'melody-scale-card:pentatonic', role: 'target' },
+  ]);
+
+  const wrongScale = handleTutorialControlAction({
+    control: 'melody-scale-card:major',
+    progress,
+    step,
+  });
+  assert.equal(wrongScale.allowed, false);
+
+  const selected = handleTutorialControlAction({
+    control: 'melody-scale-card:pentatonic',
+    progress,
+    step,
+  });
+  assert.equal(selected.allowed, true);
+  assert.equal(selected.shouldAdvance, true);
+  assert.equal(selected.nextProgress.melodyScaleSelected, true);
+});
+
+test('target 6 melody examples advance by primary buttons and then end tutorial', () => {
+  const intro1Step = getStep(TUTORIAL_STEP_IDS.MELODY_EXAMPLE_INTRO_1);
+  const play1Step = getStep(TUTORIAL_STEP_IDS.MELODY_PLAY_EXAMPLE_1);
+  const intro2Step = getStep(TUTORIAL_STEP_IDS.MELODY_EXAMPLE_INTRO_2);
+  const play2Step = getStep(TUTORIAL_STEP_IDS.MELODY_PLAY_EXAMPLE_2);
+  const play3Step = getStep(TUTORIAL_STEP_IDS.MELODY_PLAY_EXAMPLE_3);
+  const freeStep = getStep(TUTORIAL_STEP_IDS.MELODY_FREE_CREATE);
+  assert.ok(intro1Step);
+  assert.ok(play1Step);
+  assert.ok(intro2Step);
+  assert.ok(play2Step);
+  assert.ok(play3Step);
+  assert.ok(freeStep);
+
+  let progress = {
+    ...createTutorialState(),
+    melodyScaleSelected: true,
+  };
+
+  const intro1ViewModel = getTutorialViewModel({
+    matrix: createInitialMatrix(),
+    progress,
+    selectedBar: 0,
+    step: intro1Step,
+  });
+  assert.equal(intro1ViewModel.locked, false);
+  assert.equal(intro1ViewModel.showCompleteButton, true);
+  assert.equal(intro1ViewModel.primaryLabel, '开始弹奏');
+  assert.deepEqual(intro1ViewModel.targets.controls, [
+    { name: 'melody-example-keys:4477887', role: 'target' },
+  ]);
+
+  const startExample = completeTutorialPrimaryAction({ progress, step: intro1Step });
+  assert.equal(startExample.allowed, true);
+  assert.equal(startExample.shouldAdvance, true);
+  assert.equal(startExample.nextProgress.melodyExampleStarted, true);
+  assert.equal(startExample.nextProgress.melodyExampleStep, 1);
+  progress = startExample.nextProgress;
+
+  const play1ViewModel = getTutorialViewModel({
+    matrix: createInitialMatrix(),
+    progress,
+    selectedBar: 0,
+    step: play1Step,
+  });
+  assert.equal(play1ViewModel.primaryLabel, '继续探索');
+  assert.deepEqual(play1ViewModel.targets.controls, [
+    { name: 'melody-example-keys:4477887', role: 'target' },
+  ]);
+  const nextToIntro2 = completeTutorialPrimaryAction({ progress, step: play1Step });
+  assert.equal(nextToIntro2.allowed, true);
+  assert.equal(nextToIntro2.shouldAdvance, true);
+  assert.equal(nextToIntro2.nextProgress.melodyExampleStep, 2);
+  progress = nextToIntro2.nextProgress;
+
+  const intro2ViewModel = getTutorialViewModel({
+    matrix: createInitialMatrix(),
+    progress,
+    selectedBar: 0,
+    step: intro2Step,
+  });
+  assert.equal(intro2ViewModel.primaryLabel, '开始弹奏');
+  assert.deepEqual(intro2ViewModel.targets.controls, [
+    { name: 'melody-example-keys:890--098-098', role: 'target' },
+  ]);
+  const startSecondExample = completeTutorialPrimaryAction({ progress, step: intro2Step });
+  assert.equal(startSecondExample.allowed, true);
+  assert.equal(startSecondExample.shouldAdvance, true);
+  progress = startSecondExample.nextProgress;
+
+  const play2ViewModel = getTutorialViewModel({
+    matrix: createInitialMatrix(),
+    progress,
+    selectedBar: 0,
+    step: play2Step,
+  });
+  assert.deepEqual(play2ViewModel.targets.controls, [
+    { name: 'melody-example-keys:890--098-098', role: 'target' },
+  ]);
+  const nextToThird = completeTutorialPrimaryAction({ progress, step: play2Step });
+  assert.equal(nextToThird.allowed, true);
+  assert.equal(nextToThird.shouldAdvance, true);
+  assert.equal(nextToThird.nextProgress.melodyExampleStep, 3);
+  progress = nextToThird.nextProgress;
+
+  const play3ViewModel = getTutorialViewModel({
+    matrix: createInitialMatrix(),
+    progress,
+    selectedBar: 0,
+    step: play3Step,
+  });
+  assert.deepEqual(play3ViewModel.targets.controls, [
+    { name: 'melody-example-keys:23623523434345455', role: 'target' },
+  ]);
+  const nextToFree = completeTutorialPrimaryAction({ progress, step: play3Step });
+  assert.equal(nextToFree.allowed, true);
+  assert.equal(nextToFree.shouldAdvance, true);
+  assert.equal(nextToFree.nextProgress.melodyFreeCreateReady, true);
+  progress = nextToFree.nextProgress;
+
+  const freeViewModel = getTutorialViewModel({
+    matrix: createInitialMatrix(),
+    progress,
+    selectedBar: 0,
+    step: freeStep,
+  });
+  assert.equal(freeViewModel.showCompleteButton, true);
+  assert.equal(freeViewModel.primaryLabel, '开始创作');
+  const finishTutorial = completeTutorialPrimaryAction({ progress, step: freeStep });
+  assert.equal(finishTutorial.allowed, true);
+  assert.equal(finishTutorial.shouldAdvance, false);
+  assert.equal(finishTutorial.shouldEnd, true);
 });
