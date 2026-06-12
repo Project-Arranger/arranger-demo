@@ -235,8 +235,6 @@ export default function App() {
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
   }, [dispatchAppCommand]);
 
-  useKeyboardCommands({ dispatch: dispatchAppCommand });
-
   useEffect(() => {
     if (!melodyEditorIsOpen) return;
     void audioEngine.startAudio();
@@ -666,6 +664,17 @@ export default function App() {
     tutorialProgress,
     tutorialVisible,
   ]);
+
+  const dispatchKeyboardCommand = useCallback((command) => {
+    if (command?.type === APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY) {
+      handlePlayToggle();
+      return;
+    }
+
+    void dispatchAppCommand(command);
+  }, [dispatchAppCommand, handlePlayToggle]);
+
+  useKeyboardCommands({ dispatch: dispatchKeyboardCommand });
 
   useEffect(() => {
     audioEngine.onPositionChange = (bar, step) => {

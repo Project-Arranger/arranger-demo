@@ -869,6 +869,9 @@ test('tutorial navigation buttons interrupt preview playback', async () => {
   assert.match(source, /onPositionChange[\s\S]*handleTutorialPlaybackPosition/);
   assert.match(source, /setTutorialProgress\(\(progress\) => \{[\s\S]*handleTutorialPlaybackPosition\(\{[\s\S]*progress,[\s\S]*step: currentTutorialStep/);
   assert.doesNotMatch(source, /handleTutorialPlaybackPosition\(\{[\s\S]*progress: tutorialProgress,[\s\S]*trackId: 'chord'/);
+  assert.match(source, /const dispatchKeyboardCommand = useCallback\(\(command\) => \{[\s\S]*command\?\.type === APP_COMMAND_TYPES\.TRANSPORT_TOGGLE_PLAY[\s\S]*handlePlayToggle\(\);[\s\S]*return;[\s\S]*void dispatchAppCommand\(command\);/);
+  assert.match(source, /useKeyboardCommands\(\{ dispatch: dispatchKeyboardCommand \}\)/);
+  assert.doesNotMatch(source, /useKeyboardCommands\(\{ dispatch: dispatchAppCommand \}\)/);
   assert.match(source, /applyTutorialActionProgress,[\s\S]*currentTutorialStep,[\s\S]*tutorialProgress,[\s\S]*tutorialVisible/);
   assert.match(source, /const tutorialDirectoryItems = useMemo/);
   assert.match(source, /TUTORIAL_DIRECTORY_ITEMS\.map/);

@@ -464,6 +464,7 @@ function handleTutorialControlAction({
 
   if (!allowedControls.length) {
     if (step?.id === TUTORIAL_STEP_IDS.CHORD_ENRICH_HARMONY) {
+      if (control === TUTORIAL_CONTROL_TARGETS.TRANSPORT_PLAY) return createAllowedAction(progress);
       const validPrefix = `${TUTORIAL_CONTROL_TARGETS.CHORD_ENRICH_BUTTON_PREFIX}:`;
       if (!control?.startsWith(validPrefix)) return createRejectedAction(progress);
       return createAllowedAction({
@@ -473,6 +474,7 @@ function handleTutorialControlAction({
     }
 
     if (step?.id === TUTORIAL_STEP_IDS.CHORD_ADD_PASSING) {
+      if (control === TUTORIAL_CONTROL_TARGETS.TRANSPORT_PLAY) return createAllowedAction(progress);
       if (control !== TUTORIAL_CONTROL_TARGETS.CHORD_PASSING_BUTTON) return createRejectedAction(progress);
       return createAllowedAction({
         ...progress,

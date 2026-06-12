@@ -680,6 +680,16 @@ test('target 4 enrich and passing steps enable continue only after their chord e
     { name: 'chord-enrich-button:3', role: 'target' },
   ]);
 
+  const enrichPlay = handleTutorialControlAction({
+    control: 'transport-play',
+    progress,
+    step: enrichStep,
+  });
+  assert.equal(enrichPlay.allowed, true);
+  assert.equal(enrichPlay.shouldAdvance, false);
+  assert.equal(enrichPlay.nextProgress, progress);
+  assert.equal(enrichPlay.nextProgress.chordEnriched, false);
+
   const enriched = handleTutorialControlAction({
     control: 'chord-enrich-button:0',
     progress,
@@ -710,6 +720,16 @@ test('target 4 enrich and passing steps enable continue only after their chord e
   assert.deepEqual(passingViewModel.targets.controls, [
     { name: 'chord-passing-button', role: 'target' },
   ]);
+
+  const passingPlay = handleTutorialControlAction({
+    control: 'transport-play',
+    progress,
+    step: passingStep,
+  });
+  assert.equal(passingPlay.allowed, true);
+  assert.equal(passingPlay.shouldAdvance, false);
+  assert.equal(passingPlay.nextProgress, progress);
+  assert.equal(passingPlay.nextProgress.chordPassingAdded, false);
 
   const passingAdded = handleTutorialControlAction({
     control: 'chord-passing-button',
