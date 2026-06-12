@@ -319,10 +319,14 @@ function getTutorialViewModel({
   }
 
   if (step.id === TUTORIAL_STEP_IDS.DRUMS_ADD_KICK_VARIATION) {
+    targets.controls = [{ name: TUTORIAL_CONTROL_TARGETS.TRANSPORT_PLAY, role: 'target' }];
     targets.drumCells = createKickVariationTargets({ matrix, progress, selectedBar });
   }
 
   if (step.id === TUTORIAL_STEP_IDS.DRUMS_DRAG_KICK) {
+    if (progress.kickDragMoved) {
+      targets.controls = [{ name: TUTORIAL_CONTROL_TARGETS.TRANSPORT_PLAY, role: 'target' }];
+    }
     targets.drumCells = [
       {
         bar: selectedBar,

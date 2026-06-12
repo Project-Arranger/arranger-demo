@@ -196,11 +196,24 @@ test('kick variation highlights blue green and yellow target classes until compl
   assert.equal(viewModel.locked, false);
   assert.equal(viewModel.primaryLabel, '完成添加');
   assert.equal(viewModel.primaryDisabled, true);
+  assert.deepEqual(viewModel.targets.controls, [
+    { name: 'transport-play', role: 'target' },
+  ]);
   assert.deepEqual(viewModel.targets.drumCells, [
     { bar: 0, instrument: 'kick', role: 'target-blue', steps: [4, 12] },
     { bar: 0, instrument: 'kick', role: 'target-green', steps: [2, 6, 10, 14] },
     { bar: 0, instrument: 'kick', role: 'target-yellow', steps: [1, 3, 5, 7, 9, 11, 13, 15] },
   ]);
+
+  const playAction = handleTutorialControlAction({
+    control: 'transport-play',
+    progress,
+    selectedBar: 0,
+    step,
+  });
+  assert.equal(playAction.allowed, true);
+  assert.equal(playAction.shouldAdvance, false);
+  assert.equal(playAction.nextProgress, progress);
 
   const wrongInstrument = handleTutorialDrumToggle({
     instrument: 'snare',
@@ -359,6 +372,7 @@ test('kick drag step prepares source and target cells and completes by primary a
   assert.equal(viewModel.locked, false);
   assert.equal(viewModel.primaryLabel, '完成拖拽');
   assert.equal(viewModel.primaryDisabled, true);
+  assert.deepEqual(viewModel.targets.controls, []);
   assert.deepEqual(viewModel.targets.drumCells, [
     { bar: 0, instrument: 'kick', role: 'source', steps: [0] },
     { bar: 0, instrument: 'kick', role: 'target', steps: [2] },
@@ -390,6 +404,16 @@ test('kick drag step prepares source and target cells and completes by primary a
   assert.deepEqual(moved.nextMatrixPatch, [
     { bar: 0, cell: { instruments: ['hihat'] }, step: 0 },
     { bar: 0, cell: { instruments: ['kick'] }, step: 2 },
+  ]);
+
+  const movedViewModel = getTutorialViewModel({
+    matrix,
+    progress: moved.nextProgress,
+    selectedBar: 0,
+    step,
+  });
+  assert.deepEqual(movedViewModel.targets.controls, [
+    { name: 'transport-play', role: 'target' },
   ]);
 
   const complete = completeTutorialPrimaryAction({
