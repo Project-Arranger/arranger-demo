@@ -15,7 +15,10 @@ import {
   isTutorialStepComplete,
 } from '../src/tutorial/drumsTutorialRuntime.js';
 import { DRUMS_TUTORIAL_STEPS } from '../src/tutorial/drumsTutorialSteps.js';
-import { TUTORIAL_STEP_IDS } from '../src/tutorial/tutorialStepIds.js';
+import {
+  TUTORIAL_DIRECTORY_ITEMS,
+  TUTORIAL_STEP_IDS,
+} from '../src/tutorial/tutorialStepIds.js';
 
 function getStep(stepId) {
   return DRUMS_TUTORIAL_STEPS.find((step) => step.id === stepId);
@@ -193,11 +196,24 @@ test('kick variation highlights blue green and yellow target classes until compl
   assert.equal(viewModel.locked, false);
   assert.equal(viewModel.primaryLabel, '完成添加');
   assert.equal(viewModel.primaryDisabled, true);
+  assert.deepEqual(viewModel.targets.controls, [
+    { name: 'transport-play', role: 'target' },
+  ]);
   assert.deepEqual(viewModel.targets.drumCells, [
     { bar: 0, instrument: 'kick', role: 'target-blue', steps: [4, 12] },
     { bar: 0, instrument: 'kick', role: 'target-green', steps: [2, 6, 10, 14] },
     { bar: 0, instrument: 'kick', role: 'target-yellow', steps: [1, 3, 5, 7, 9, 11, 13, 15] },
   ]);
+
+  const playAction = handleTutorialControlAction({
+    control: 'transport-play',
+    progress,
+    selectedBar: 0,
+    step,
+  });
+  assert.equal(playAction.allowed, true);
+  assert.equal(playAction.shouldAdvance, false);
+  assert.equal(playAction.nextProgress, progress);
 
   const wrongInstrument = handleTutorialDrumToggle({
     instrument: 'snare',
@@ -356,6 +372,7 @@ test('kick drag step prepares source and target cells and completes by primary a
   assert.equal(viewModel.locked, false);
   assert.equal(viewModel.primaryLabel, '完成拖拽');
   assert.equal(viewModel.primaryDisabled, true);
+  assert.deepEqual(viewModel.targets.controls, []);
   assert.deepEqual(viewModel.targets.drumCells, [
     { bar: 0, instrument: 'kick', role: 'source', steps: [0] },
     { bar: 0, instrument: 'kick', role: 'target', steps: [2] },
@@ -387,6 +404,16 @@ test('kick drag step prepares source and target cells and completes by primary a
   assert.deepEqual(moved.nextMatrixPatch, [
     { bar: 0, cell: { instruments: ['hihat'] }, step: 0 },
     { bar: 0, cell: { instruments: ['kick'] }, step: 2 },
+  ]);
+
+  const movedViewModel = getTutorialViewModel({
+    matrix,
+    progress: moved.nextProgress,
+    selectedBar: 0,
+    step,
+  });
+  assert.deepEqual(movedViewModel.targets.controls, [
+    { name: 'transport-play', role: 'target' },
   ]);
 
   const complete = completeTutorialPrimaryAction({
@@ -550,6 +577,9 @@ test('target 4 chord listen step enables next after the first four bars', () => 
   assert.equal(viewModel.primaryDisabled, true);
   assert.deepEqual(viewModel.targets.controls, [
     { name: 'transport-play', role: 'target' },
+    { name: 'chord-groove-button', role: 'target' },
+    { name: 'chord-groove-card:block-basic', role: 'target' },
+    { name: 'chord-groove-card:block-syncopated', role: 'target' },
   ]);
 
   const blockedNext = completeTutorialPrimaryAction({
@@ -677,6 +707,16 @@ test('target 4 enrich and passing steps enable continue only after their chord e
     { name: 'chord-enrich-button:3', role: 'target' },
   ]);
 
+  const enrichPlay = handleTutorialControlAction({
+    control: 'transport-play',
+    progress,
+    step: enrichStep,
+  });
+  assert.equal(enrichPlay.allowed, true);
+  assert.equal(enrichPlay.shouldAdvance, false);
+  assert.equal(enrichPlay.nextProgress, progress);
+  assert.equal(enrichPlay.nextProgress.chordEnriched, false);
+
   const enriched = handleTutorialControlAction({
     control: 'chord-enrich-button:0',
     progress,
@@ -707,6 +747,16 @@ test('target 4 enrich and passing steps enable continue only after their chord e
   assert.deepEqual(passingViewModel.targets.controls, [
     { name: 'chord-passing-button', role: 'target' },
   ]);
+
+  const passingPlay = handleTutorialControlAction({
+    control: 'transport-play',
+    progress,
+    step: passingStep,
+  });
+  assert.equal(passingPlay.allowed, true);
+  assert.equal(passingPlay.shouldAdvance, false);
+  assert.equal(passingPlay.nextProgress, progress);
+  assert.equal(passingPlay.nextProgress.chordPassingAdded, false);
 
   const passingAdded = handleTutorialControlAction({
     control: 'chord-passing-button',
@@ -817,6 +867,10 @@ test('target 5 bass listen step enables continue after the first four bars', () 
   assert.equal(viewModel.primaryDisabled, true);
   assert.deepEqual(viewModel.targets.controls, [
     { name: 'transport-play', role: 'target' },
+    { name: 'bass-groove-button', role: 'target' },
+    { name: 'bass-groove-card:bass-8th-basic', role: 'target' },
+    { name: 'bass-groove-card:bass-8th-swing', role: 'target' },
+    { name: 'bass-groove-card:bass-16th-swing', role: 'target' },
   ]);
 
   const blockedNext = completeTutorialPrimaryAction({
@@ -1005,6 +1059,7 @@ test('target 6 melody examples advance by primary buttons and then end tutorial'
   const startExample = completeTutorialPrimaryAction({ progress, step: intro1Step });
   assert.equal(startExample.allowed, true);
   assert.equal(startExample.shouldAdvance, true);
+  assert.equal(startExample.shouldStartPlaybackAfterAdvance, true);
   assert.equal(startExample.nextProgress.melodyExampleStarted, true);
   assert.equal(startExample.nextProgress.melodyExampleStep, 1);
   progress = startExample.nextProgress;
@@ -1022,6 +1077,7 @@ test('target 6 melody examples advance by primary buttons and then end tutorial'
   const nextToIntro2 = completeTutorialPrimaryAction({ progress, step: play1Step });
   assert.equal(nextToIntro2.allowed, true);
   assert.equal(nextToIntro2.shouldAdvance, true);
+  assert.equal(nextToIntro2.shouldStartPlaybackAfterAdvance, undefined);
   assert.equal(nextToIntro2.nextProgress.melodyExampleStep, 2);
   progress = nextToIntro2.nextProgress;
 
@@ -1038,6 +1094,7 @@ test('target 6 melody examples advance by primary buttons and then end tutorial'
   const startSecondExample = completeTutorialPrimaryAction({ progress, step: intro2Step });
   assert.equal(startSecondExample.allowed, true);
   assert.equal(startSecondExample.shouldAdvance, true);
+  assert.equal(startSecondExample.shouldStartPlaybackAfterAdvance, true);
   progress = startSecondExample.nextProgress;
 
   const play2ViewModel = getTutorialViewModel({
@@ -1052,6 +1109,7 @@ test('target 6 melody examples advance by primary buttons and then end tutorial'
   const nextToThird = completeTutorialPrimaryAction({ progress, step: play2Step });
   assert.equal(nextToThird.allowed, true);
   assert.equal(nextToThird.shouldAdvance, true);
+  assert.equal(nextToThird.shouldStartPlaybackAfterAdvance, true);
   assert.equal(nextToThird.nextProgress.melodyExampleStep, 3);
   progress = nextToThird.nextProgress;
 
@@ -1062,11 +1120,12 @@ test('target 6 melody examples advance by primary buttons and then end tutorial'
     step: play3Step,
   });
   assert.deepEqual(play3ViewModel.targets.controls, [
-    { name: 'melody-example-keys:23623523434345455', role: 'target' },
+    { name: 'melody-example-keys:236235234343454', role: 'target' },
   ]);
   const nextToFree = completeTutorialPrimaryAction({ progress, step: play3Step });
   assert.equal(nextToFree.allowed, true);
   assert.equal(nextToFree.shouldAdvance, true);
+  assert.equal(nextToFree.shouldStartPlaybackAfterAdvance, undefined);
   assert.equal(nextToFree.nextProgress.melodyFreeCreateReady, true);
   progress = nextToFree.nextProgress;
 
@@ -1081,5 +1140,15 @@ test('target 6 melody examples advance by primary buttons and then end tutorial'
   const finishTutorial = completeTutorialPrimaryAction({ progress, step: freeStep });
   assert.equal(finishTutorial.allowed, true);
   assert.equal(finishTutorial.shouldAdvance, false);
-  assert.equal(finishTutorial.shouldEnd, true);
+  assert.equal(finishTutorial.shouldEnd, undefined);
+  assert.equal(finishTutorial.shouldCompleteTutorial, true);
+});
+
+test('tutorial directory points to each track teaching start', () => {
+  assert.deepEqual(TUTORIAL_DIRECTORY_ITEMS, [
+    { id: 'drums', label: 'Drums', stepId: TUTORIAL_STEP_IDS.DRUMS_OPEN_FIRST_CLIP },
+    { id: 'chord', label: 'Chord', stepId: TUTORIAL_STEP_IDS.CHORD_FILL_TRACK_CLIPS },
+    { id: 'bass', label: 'Bass', stepId: TUTORIAL_STEP_IDS.BASS_FILL_TRACK_CLIPS },
+    { id: 'melody', label: 'Melody', stepId: TUTORIAL_STEP_IDS.MELODY_FILL_TRACK_CLIPS },
+  ]);
 });

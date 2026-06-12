@@ -635,6 +635,8 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(melodyEditorSource, /清空本小节/);
   assert.match(melodyEditorSource, /清空整轨/);
   assert.doesNotMatch(melodyEditorSource, /清空 Melody/);
+  assert.match(melodyEditorSource, /createElement\(TrackBarPager,\s*\{[\s\S]*className:\s*'melody-editor-pager-shell'/);
+  assert.match(melodyEditorSource, /createElement\(TrackBarPager,\s*\{[\s\S]*contentClassName:\s*'melody-editor-scroll'/);
   assert.match(melodyEditorSource, /MELODY_KEY_SEQUENCE/);
   assert.match(melodyEditorSource, /melodyRailNotes/);
   assert.match(melodyEditorSource, /isMelodyCellActive/);
@@ -779,6 +781,8 @@ test('app mounts the drums tutorial right sidebar', async () => {
   assert.match(source, /<main className=\{workspaceClassName\}>[\s\S]*createElement\(TracksColumn[\s\S]*createElement\(Timeline[\s\S]*createElement\(TutorialOverlay[\s\S]*<\/main>/);
   assert.match(source, /tutorialSidebarCollapsed/);
   assert.match(source, /setTutorialSidebarCollapsed/);
+  assert.match(source, /tutorialModeActive/);
+  assert.match(source, /const tutorialActive = tutorialVisible && tutorialModeActive;/);
   assert.match(source, /showTutorialToggle:\s*tutorialVisible/);
   assert.match(source, /onTutorialToggle:\s*handleTutorialSidebarToggle/);
   assert.match(source, /tutorialCollapsed:\s*tutorialSidebarCollapsed/);
@@ -787,14 +791,22 @@ test('app mounts the drums tutorial right sidebar', async () => {
   assert.match(source, /DRUMS_TUTORIAL_STEPS/);
   assert.match(source, /currentTutorialStepIndex/);
   assert.match(source, /getTutorialViewModel/);
-  assert.match(source, /const activeTutorialTarget = tutorialVisible \? currentTutorialStep\?\.target\?\.name \?\? null : null;/);
-  assert.match(source, /const activeTutorialTargets = tutorialVisible \? tutorialViewModel\.targets : undefined;/);
-  assert.match(source, /const activeTutorialLocked = tutorialVisible && tutorialViewModel\.locked;/);
+  assert.match(source, /const activeTutorialTarget = tutorialActive \? currentTutorialStep\?\.target\?\.name \?\? null : null;/);
+  assert.match(source, /const activeTutorialTargets = tutorialActive \? tutorialViewModel\.targets : undefined;/);
+  assert.match(source, /const activeTutorialLocked = tutorialActive && tutorialViewModel\.locked;/);
   assert.match(source, /tutorialViewModel\.displayCopy/);
   assert.match(source, /APP_COMMAND_TYPES\.TRANSPORT_STOP/);
   assert.match(source, /stopTutorialPreviewPlayback/);
   assert.match(overlaySource, /tutorial-panel/);
   assert.match(overlaySource, /collapsed/);
+  assert.match(overlaySource, /directoryItems/);
+  assert.match(overlaySource, /onDirectorySelect/);
+  assert.match(overlaySource, /<div className="tutorial-panel-header">\s*\n\s*<div className="tutorial-panel-label">教程<\/div>[\s\S]*className="tutorial-directory"[\s\S]*<\/div>\s*\n\s*<div className="tutorial-panel-body">/);
+  assert.doesNotMatch(overlaySource, /tutorial-panel-title-row/);
+  assert.doesNotMatch(overlaySource, /<div className="tutorial-panel-body">[\s\S]*className="tutorial-directory"[\s\S]*renderTutorialCopy/);
+  assert.match(overlaySource, /className="tutorial-directory"/);
+  assert.match(overlaySource, /className=\{directoryButtonClassName\}/);
+  assert.match(overlaySource, /onClick=\{\(\) => onDirectorySelect\(item\.stepIndex\)\}/);
   assert.doesNotMatch(overlaySource, /onToggleCollapsed/);
   assert.doesNotMatch(overlaySource, /\bonClose\b/);
   assert.match(overlaySource, /if \(collapsed\) return null;/);
@@ -849,7 +861,7 @@ test('tutorial navigation buttons interrupt preview playback', async () => {
 
   assert.match(source, /const stopTutorialPreviewPlayback = useCallback/);
   assert.match(source, /const resetTutorialTransportToStart = useCallback/);
-  assert.match(source, /resetTutorialTransportToStart = useCallback\(\(\) => \{[\s\S]*APP_COMMAND_TYPES\.TRANSPORT_STOP[\s\S]*APP_COMMAND_TYPES\.TRANSPORT_SEEK,\s*bar:\s*0,\s*step:\s*0/);
+  assert.match(source, /resetTutorialTransportToStart = useCallback\(async \(\) => \{[\s\S]*APP_COMMAND_TYPES\.TRANSPORT_STOP[\s\S]*APP_COMMAND_TYPES\.TRANSPORT_SEEK,\s*bar:\s*0,\s*step:\s*0/);
   assert.doesNotMatch(source, /tutorialPlaybackStateRef/);
   assert.match(source, /let tutorialAutoAdvanceTimerId = null/);
   assert.match(source, /function clearTutorialAutoAdvanceTimer\(\)/);
@@ -861,7 +873,17 @@ test('tutorial navigation buttons interrupt preview playback', async () => {
   assert.match(source, /onPositionChange[\s\S]*handleTutorialPlaybackPosition/);
   assert.match(source, /setTutorialProgress\(\(progress\) => \{[\s\S]*handleTutorialPlaybackPosition\(\{[\s\S]*progress,[\s\S]*step: currentTutorialStep/);
   assert.doesNotMatch(source, /handleTutorialPlaybackPosition\(\{[\s\S]*progress: tutorialProgress,[\s\S]*trackId: 'chord'/);
-  assert.match(source, /applyTutorialActionProgress,[\s\S]*currentTutorialStep,[\s\S]*tutorialProgress,[\s\S]*tutorialVisible/);
+  assert.match(source, /const dispatchKeyboardCommand = useCallback\(\(command\) => \{[\s\S]*command\?\.type === APP_COMMAND_TYPES\.TRANSPORT_TOGGLE_PLAY[\s\S]*handlePlayToggle\(\);[\s\S]*return;[\s\S]*void dispatchAppCommand\(command\);/);
+  assert.match(source, /useKeyboardCommands\(\{ dispatch: dispatchKeyboardCommand \}\)/);
+  assert.doesNotMatch(source, /useKeyboardCommands\(\{ dispatch: dispatchAppCommand \}\)/);
+  assert.match(source, /applyTutorialActionProgress,[\s\S]*currentTutorialStep,[\s\S]*tutorialProgress,[\s\S]*tutorialActive/);
+  assert.match(source, /const tutorialDirectoryItems = useMemo/);
+  assert.match(source, /TUTORIAL_DIRECTORY_ITEMS\.map/);
+  assert.match(source, /DRUMS_TUTORIAL_STEPS\.findIndex\(\(step\) => step\.id === item\.stepId\)/);
+  assert.doesNotMatch(source, /disabled:\s*!tutorialStepCheckpoints\[stepIndex\]/);
+  assert.match(source, /disabled:\s*false/);
+  assert.match(source, /active:\s*stepIndex <= currentTutorialStepIndex && nextDirectoryStepIndex > currentTutorialStepIndex/);
+  assert.match(source, /ensureTutorialStepCheckpoint = useCallback/);
   assert.match(source, /stopTutorialPreviewPlayback\(\);[\s\S]*setCurrentTutorialStepIndex/);
   assert.match(source, /handleTutorialBack = useCallback\(\(\) => \{[\s\S]*stopTutorialPreviewPlayback\(\);/);
   assert.match(source, /handleTutorialBack = useCallback\(\(\) => \{[\s\S]*clearTutorialAutoAdvanceTimer\(\);[\s\S]*stopTutorialPreviewPlayback\(\);/);
@@ -873,21 +895,26 @@ test('tutorial navigation buttons interrupt preview playback', async () => {
   assert.match(source, /const nextStepCheckpoint = createTutorialCheckpoint\(\{[\s\S]*appState: useMusicStore\.getState\(\)/);
   assert.match(source, /setTutorialStepCheckpoints\(\(checkpoints\) => \(\{[\s\S]*\[nextStepIndex\]: nextStepCheckpoint/);
   assert.match(source, /setTutorialStepCheckpoints\(\(checkpoints\) => \(\{[\s\S]*applyTutorialStepSetup\(nextStep\)/);
-  assert.match(source, /advanceTutorialToNextStep\(tutorialAction\.nextProgress\)/);
-  assert.match(source, /const advanceTutorialToNextStep = useCallback\(\(checkpointProgress = tutorialProgress\) => \{[\s\S]*resetTutorialTransportToStart\(\);[\s\S]*enterTutorialStepIndex\(currentTutorialStepIndex \+ 1,\s*checkpointProgress\)/);
+  assert.match(source, /advanceTutorialToNextStep\([\s\S]*tutorialAction\.nextProgress,\s*\{[\s\S]*startPlaybackAfterAdvance:\s*tutorialAction\.shouldStartPlaybackAfterAdvance/);
+  assert.match(source, /const advanceTutorialToNextStep = useCallback\(\([\s\S]*checkpointProgress = tutorialProgress,[\s\S]*options = \{\},[\s\S]*\) => \{[\s\S]*await resetTutorialTransportToStart\(\);[\s\S]*enterTutorialStepIndex\(currentTutorialStepIndex \+ 1,\s*checkpointProgress\);[\s\S]*if \(options\.startPlaybackAfterAdvance\)[\s\S]*APP_COMMAND_TYPES\.TRANSPORT_TOGGLE_PLAY/);
   assert.match(source, /const targetStepIndex = Math\.max\(currentTutorialStepIndex - 1, 0\);/);
-  assert.match(source, /const targetCheckpoint = tutorialStepCheckpoints\[targetStepIndex\];/);
+  assert.match(source, /const targetCheckpoint = ensureTutorialStepCheckpoint\(targetStepIndex\);/);
   assert.match(source, /restoreTutorialCheckpoint\(\{[\s\S]*checkpoint:\s*targetCheckpoint/);
   assert.match(source, /applyTutorialStepSetup\([\s\S]*DRUMS_TUTORIAL_STEPS\[targetStepIndex\],[\s\S]*targetCheckpoint\?\.appliedTutorialSetups/);
   assert.match(source, /pruneTutorialCheckpoints\([\s\S]*targetStepIndex \+ 1/);
   assert.match(source, /setCurrentTutorialStepIndex\(targetStepIndex\)/);
+  assert.match(source, /handleTutorialJumpToSection = useCallback\(\(targetStepIndex\) => \{[\s\S]*clearTutorialAutoAdvanceTimer\(\);[\s\S]*stopTutorialPreviewPlayback\(\);[\s\S]*const targetCheckpoint = ensureTutorialStepCheckpoint\(targetStepIndex\);[\s\S]*restoreTutorialCheckpoint\(\{[\s\S]*checkpoint:\s*targetCheckpoint/);
+  assert.match(source, /handleTutorialJumpToSection = useCallback\(\(targetStepIndex\) => \{[\s\S]*applyTutorialStepSetup\([\s\S]*DRUMS_TUTORIAL_STEPS\[targetStepIndex\],[\s\S]*targetCheckpoint\?\.appliedTutorialSetups/);
+  assert.match(source, /handleTutorialJumpToSection = useCallback\(\(targetStepIndex\) => \{[\s\S]*setCurrentTutorialStepIndex\(targetStepIndex\);[\s\S]*setTutorialModeActive\(true\);[\s\S]*setTutorialSidebarCollapsed\(false\);/);
   assert.doesNotMatch(source, /tutorialStepCheckpoints\[currentTutorialStepIndex\]/);
   assert.doesNotMatch(source, /TUTORIAL_BACK_TARGET_RESET_STEP_IDS/);
   assert.doesNotMatch(source, /resetTutorialStepsForBack/);
   assert.doesNotMatch(source, /resetTutorialStepForRetry/);
   assert.match(source, /handleTutorialNext = useCallback\(\(\) => \{[\s\S]*clearTutorialAutoAdvanceTimer\(\);[\s\S]*advanceTutorialToNextStep\(tutorialProgress\);/);
   assert.match(source, /handleTutorialOpenClip = useCallback\(\(clip\) => \{[\s\S]*advanceTutorialToNextStep\(tutorialAction\.nextProgress\);/);
-  assert.match(source, /handleTutorialSkip = useCallback\(\(\) => \{[\s\S]*clearTutorialAutoAdvanceTimer\(\);[\s\S]*stopTutorialPreviewPlayback\(\);[\s\S]*useMusicStore\.setState\(useMusicStore\.getInitialState\(\), true\);[\s\S]*setCurrentTutorialStepIndex\(0\);[\s\S]*setTutorialProgress\(createTutorialState\(\)\);[\s\S]*setAppliedTutorialSetups\(\(\) => new Set\(\)\);[\s\S]*setTutorialStepCheckpoints\(\(\) => \(\{[\s\S]*0: createTutorialCheckpoint\(\{[\s\S]*appState: useMusicStore\.getInitialState\(\),[\s\S]*appliedTutorialSetups: new Set\(\),[\s\S]*tutorialProgress: createTutorialState\(\),[\s\S]*\}\),[\s\S]*\}\)\);[\s\S]*setTutorialSidebarCollapsed\(false\);[\s\S]*setTutorialVisible\(false\);/);
+  assert.match(source, /if \(tutorialAction\.shouldCompleteTutorial\)[\s\S]*clearTutorialAutoAdvanceTimer\(\);[\s\S]*stopTutorialPreviewPlayback\(\);[\s\S]*resetTutorialTransportToStart\(\);[\s\S]*setTutorialModeActive\(false\);[\s\S]*setTutorialSidebarCollapsed\(true\);[\s\S]*return;/);
+  assert.match(source, /handleTutorialSkip = useCallback\(\(\) => \{[\s\S]*clearTutorialAutoAdvanceTimer\(\);[\s\S]*stopTutorialPreviewPlayback\(\);[\s\S]*useMusicStore\.setState\(useMusicStore\.getInitialState\(\), true\);[\s\S]*setCurrentTutorialStepIndex\(0\);[\s\S]*setTutorialProgress\(createTutorialState\(\)\);[\s\S]*setAppliedTutorialSetups\(\(\) => new Set\(\)\);[\s\S]*setTutorialStepCheckpoints\(\(\) => \(\{[\s\S]*0: createTutorialCheckpoint\(\{[\s\S]*appState: useMusicStore\.getInitialState\(\),[\s\S]*appliedTutorialSetups: new Set\(\),[\s\S]*tutorialProgress: createTutorialState\(\),[\s\S]*\}\),[\s\S]*\}\)\);[\s\S]*setTutorialModeActive\(false\);[\s\S]*setTutorialSidebarCollapsed\(true\);[\s\S]*setTutorialVisible\(true\);/);
+  assert.doesNotMatch(source, /handleTutorialSkip = useCallback\(\(\) => \{[\s\S]*setTutorialVisible\(false\);/);
   assert.doesNotMatch(source, /handleTutorialSkip = useCallback\(\(\) => \{[\s\S]*restoreTutorialCheckpoint/);
   assert.match(source, /tutorialTargets:\s*activeTutorialTargets/);
   assert.match(source, /tutorialLocked:\s*activeTutorialLocked/);
@@ -895,6 +922,8 @@ test('tutorial navigation buttons interrupt preview playback', async () => {
   assert.doesNotMatch(source, /tutorialLocked:\s*tutorialViewModel\.locked/);
   assert.doesNotMatch(source, /tutorialLocked:\s*tutorialVisible && tutorialViewModel\.locked/);
   assert.match(source, /onSkip:\s*handleTutorialSkip/);
+  assert.match(source, /directoryItems:\s*tutorialDirectoryItems/);
+  assert.match(source, /onDirectorySelect:\s*handleTutorialJumpToSection/);
   assert.doesNotMatch(source, /onClose:\s*handleTutorialSkip/);
 });
 
@@ -944,6 +973,10 @@ test('app routes drums tutorial tasks through guards and target props', async ()
     'utf8',
   );
   const topBarSource = await readFile(new URL('../src/app/components/TopBar.jsx', import.meta.url), 'utf8');
+  const tutorialRuntimeSource = await readFile(
+    new URL('../src/tutorial/drumsTutorialRuntime.js', import.meta.url),
+    'utf8',
+  );
 
   assert.match(source, /handleTutorialDrumToggle/);
   assert.match(source, /handleTutorialDrumMove/);
@@ -955,6 +988,7 @@ test('app routes drums tutorial tasks through guards and target props', async ()
   assert.match(source, /handleTransportSeek/);
   assert.match(source, /if \(!tutorialAction\.allowed\) return false;\n\n {4}setTutorialProgress\(tutorialAction\.nextProgress\);\n\n {4}if \(tutorialAction\.shouldAdvance\)/);
   assert.match(source, /if \(tutorialAction\.shouldEnd\)[\s\S]*setTutorialVisible\(false\)/);
+  assert.match(source, /if \(tutorialAction\.shouldCompleteTutorial\)[\s\S]*setTutorialSidebarCollapsed\(true\)/);
   assert.match(source, /handleTutorialOpenClip/);
   assert.match(source, /createDrumsStepMovePatch/);
   assert.match(source, /completeTutorialPrimaryAction/);
@@ -1004,6 +1038,8 @@ test('app routes drums tutorial tasks through guards and target props', async ()
   assert.match(chordEditorSource, /tutorial-control-target/);
   assert.match(source, /handleChordTemplateApply = useCallback\(\(templateId\) => \{[\s\S]*handleTutorialControlAction\(\{[\s\S]*`chord-template-card:\$\{templateId\}`/);
   assert.match(source, /handleChordGrooveTemplateApply = useCallback\(\(templateId\) => \{[\s\S]*handleTutorialControlAction\(\{[\s\S]*`chord-groove-card:\$\{templateId\}`/);
+  assert.match(tutorialRuntimeSource, /CHORD_LISTEN_LOOP[\s\S]*CHORD_GROOVE_BUTTON[\s\S]*CHORD_GROOVE_CARD_PREFIX/);
+  assert.match(tutorialRuntimeSource, /BASS_LISTEN_LOOP[\s\S]*BASS_GROOVE_BUTTON[\s\S]*BASS_GROOVE_CARD_PREFIX/);
   assert.match(source, /handleChordPick = useCallback\(\(spanIndex,\s*root\) => \{[\s\S]*handleTutorialControlAction\(\{[\s\S]*`chord-enrich-button:\$\{spanIndex\}`/);
   assert.match(source, /handlePassingChordPick = useCallback\(\(stepIndex,\s*chordName\) => \{[\s\S]*handleTutorialControlAction\(\{[\s\S]*'chord-passing-button'/);
   assert.match(drumSequencerSource, /onStepMove/);

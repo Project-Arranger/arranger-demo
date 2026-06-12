@@ -28,4 +28,15 @@ const TUTORIAL_STEP_IDS = Object.freeze({
 
 const TUTORIAL_STEP_ORDER = Object.freeze(Object.values(TUTORIAL_STEP_IDS));
 
-export { TUTORIAL_STEP_IDS, TUTORIAL_STEP_ORDER };
+const TUTORIAL_DIRECTORY_ITEMS = Object.freeze([
+  Object.freeze({ id: 'drums', label: 'Drums', stepId: TUTORIAL_STEP_IDS.DRUMS_OPEN_FIRST_CLIP }),
+  Object.freeze({ id: 'chord', label: 'Chord', stepId: TUTORIAL_STEP_IDS.CHORD_FILL_TRACK_CLIPS }),
+  Object.freeze({ id: 'bass', label: 'Bass', stepId: TUTORIAL_STEP_IDS.BASS_FILL_TRACK_CLIPS }),
+  Object.freeze({ id: 'melody', label: 'Melody', stepId: TUTORIAL_STEP_IDS.MELODY_FILL_TRACK_CLIPS }),
+]);
+
+export {
+  TUTORIAL_DIRECTORY_ITEMS,
+  TUTORIAL_STEP_IDS,
+  TUTORIAL_STEP_ORDER,
+};

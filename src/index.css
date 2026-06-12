@@ -144,9 +144,9 @@ button {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 12px;
+  gap: 8px;
   min-height: 48px;
-  padding: 0 14px 0 16px;
+  padding: 0 12px 0 16px;
   border-bottom: 1px solid var(--border-soft);
 }
 
@@ -167,6 +167,41 @@ button {
   font-weight: 900;
   letter-spacing: 0.16em;
   line-height: 1;
+}
+
+.tutorial-directory {
+  display: flex;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  gap: 4px;
+  min-width: 0;
+}
+
+.tutorial-directory-button {
+  min-width: 0;
+  min-height: 24px;
+  padding: 0 6px;
+  color: var(--ink-2);
+  background: color-mix(in oklab, white 58%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--c-drums-ink) 12%, var(--border-soft));
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 10.5px;
+  font-weight: 850;
+  line-height: 1;
+  text-align: center;
+}
+
+.tutorial-directory-button.active {
+  color: var(--c-drums-ink);
+  background: color-mix(in oklab, var(--c-drums) 26%, white);
+  border-color: color-mix(in oklab, var(--c-drums-ink) 30%, var(--border-soft));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, white 42%, transparent);
+}
+
+.tutorial-directory-button:disabled {
+  cursor: default;
+  opacity: 0.36;
 }
 
 .tutorial-panel-body {
@@ -1839,7 +1874,7 @@ button {
 }
 
 .editor[data-screen-label="Melody Editor"] {
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
 }
 
 .editor[data-screen-label="Melody Editor"] .clip-chip {
@@ -2442,6 +2477,30 @@ button {
   overflow-y: hidden;
 }
 
+.melody-editor-pager-shell {
+  align-items: stretch;
+  min-height: 0;
+  height: 100%;
+}
+
+.melody-editor-pager-shell .track-page-btn {
+  align-self: center;
+}
+
+.melody-editor-scroll {
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.melody-editor-scroll > .keyboard-strip,
+.melody-editor-scroll > .melody-example-keys,
+.melody-editor-scroll > .melody-seq-body {
+  flex: 0 0 auto;
+}
+
 .melody-beat-group {
   display: flex;
   flex-direction: column;
@@ -2625,6 +2684,10 @@ button {
   display: grid;
   grid-template-rows: 48px 1fr;
   background: var(--bg);
+}
+
+.app-main:has(.tutorial-panel) .scale-picker:has(.sctpl-card.tutorial-control-target) {
+  z-index: calc(var(--tutorial-target-z) + 1);
 }
 
 .scale-picker[hidden] {
@@ -3020,19 +3083,23 @@ button {
 .sctpl-card.tutorial-control-target {
   --tutorial-highlight-accent: var(--c-melody);
   --tutorial-highlight-ink: var(--c-melody-ink);
-  --tutorial-target-surface: color-mix(in oklab, white 82%, var(--c-melody));
-  --tutorial-target-rim: color-mix(in oklab, var(--c-melody-ink) 46%, white);
+  --tutorial-target-surface: color-mix(in oklab, white 92%, var(--c-melody));
+  --tutorial-target-rim: color-mix(in oklab, var(--c-melody-ink) 58%, white);
   --tutorial-highlight-rest-shadow:
-    inset 0 0 0 2px color-mix(in oklab, white 78%, transparent),
-    inset 0 0 0 5px color-mix(in oklab, var(--c-melody-ink) 18%, transparent),
-    0 0 0 3px color-mix(in oklab, white 46%, transparent),
-    0 12px 28px color-mix(in oklab, black 22%, transparent);
-  --tutorial-highlight-peak-shadow:
-    inset 0 0 0 2px color-mix(in oklab, white 86%, transparent),
+    inset 0 0 0 2px color-mix(in oklab, white 92%, transparent),
     inset 0 0 0 6px color-mix(in oklab, var(--c-melody-ink) 24%, transparent),
-    0 0 0 4px color-mix(in oklab, white 56%, transparent),
-    0 14px 32px color-mix(in oklab, black 24%, transparent);
+    0 0 0 3px color-mix(in oklab, white 58%, transparent),
+    0 0 0 8px color-mix(in oklab, var(--c-melody) 18%, transparent),
+    0 16px 34px color-mix(in oklab, black 28%, transparent);
+  --tutorial-highlight-peak-shadow:
+    inset 0 0 0 2px color-mix(in oklab, white 96%, transparent),
+    inset 0 0 0 7px color-mix(in oklab, var(--c-melody-ink) 30%, transparent),
+    0 0 0 4px color-mix(in oklab, white 68%, transparent),
+    0 0 0 10px color-mix(in oklab, var(--c-melody) 24%, transparent),
+    0 18px 38px color-mix(in oklab, black 30%, transparent);
 
+  position: relative;
+  z-index: calc(var(--tutorial-target-z) + 2);
   color: var(--tutorial-target-ink);
   background: var(--tutorial-target-surface);
   border: 1px solid var(--tutorial-target-rim);
@@ -3043,14 +3110,18 @@ button {
 }
 
 .sctpl-card.tutorial-control-target .sctpl-notes {
-  background: color-mix(in oklab, white 62%, var(--c-melody));
-  border-color: color-mix(in oklab, var(--c-melody-ink) 30%, var(--border-soft));
+  background: color-mix(in oklab, white 78%, var(--c-melody));
+  border-color: color-mix(in oklab, var(--c-melody-ink) 42%, var(--border-soft));
 }
 
 .sctpl-card.tutorial-control-target .sctpl-note:not(.gap) {
   color: var(--c-melody-ink);
-  background: color-mix(in oklab, white 74%, var(--c-melody));
-  border-color: color-mix(in oklab, var(--c-melody-ink) 30%, transparent);
+  background: color-mix(in oklab, white 86%, var(--c-melody));
+  border-color: color-mix(in oklab, var(--c-melody-ink) 42%, transparent);
+}
+
+.scale-picker:has(.sctpl-card.tutorial-control-target) .sctpl-card:not(.tutorial-control-target) {
+  opacity: 0.44;
 }
 
 .gtpl-name-row {

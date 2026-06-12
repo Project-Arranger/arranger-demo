@@ -95,7 +95,7 @@ function createChordCellWithPreviousNotes(root, previousCell) {
 
 function mergeChordManualNotes(cell, previousCell) {
   const addedNotes = getChordCellNotes(previousCell);
-  const tonePitches = createChordTonePitches(cell.root, cell.toneRoots);
+  const tonePitches = createChordTonePitches(cell.root, cell.toneRoots, cell.tonePitches);
   const removedTonePitches = getChordRemovedTonePitches(previousCell)
     .filter((pitch) => tonePitches.includes(pitch));
 
@@ -168,7 +168,7 @@ function setChordStepChord(matrix, barIndex, stepIndex, chordName) {
 
 function getChordTonePitches(chordName) {
   const cell = createChordCell(chordName);
-  return cell ? createChordTonePitches(cell.root, cell.toneRoots) : [];
+  return cell ? createChordTonePitches(cell.root, cell.toneRoots, cell.tonePitches) : [];
 }
 
 function octaveUp(note) {

@@ -32,7 +32,7 @@ import { TrackBarPager } from './TrackBarPager.jsx';
 const MELODY_EXAMPLE_DISPLAY_BY_TARGET = Object.freeze({
   '4477887': '4477887',
   '890--098-098': '890- -098 -0 98',
-  '23623523434345455': '236 235 234 3434 5455',
+  '236235234343454': '236 235 234 3434 54',
 });
 
 function addSetValue(set, value) {
@@ -197,6 +197,8 @@ function MelodyEditor({
 
       {createElement(TrackBarPager, {
         canPageBars,
+        className: 'melody-editor-pager-shell',
+        contentClassName: 'melody-editor-scroll',
         onNextBar,
         onPreviousBar,
         trackId,

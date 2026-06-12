@@ -39,7 +39,7 @@ function createChordNotes(chordName) {
   const definition = getChordDefinition(chordName);
   if (!definition) return [];
 
-  return createChordTonePitches(definition.root, definition.toneRoots);
+  return createChordTonePitches(definition.root, definition.toneRoots, definition.tonePitches);
 }
 
 function octaveUp(note) {

@@ -30,7 +30,7 @@ test('setChordCell writes only the selected chord span in the selected bar', () 
   assert.notEqual(nextMatrix, matrix);
   assert.notEqual(nextMatrix.chord, matrix.chord);
   assert.notEqual(nextMatrix.chord[2], matrix.chord[2]);
-  assert.deepEqual(nextMatrix.chord[2][0], { type: 'chord', root: 'G', chordRoot: 'G', quality: 'maj', label: 'G', toneRoots: ['G', 'B', 'D'] });
+  assert.deepEqual(nextMatrix.chord[2][0], { type: 'chord', root: 'G', chordRoot: 'G', quality: 'maj', label: 'G', toneRoots: ['G', 'B', 'D'], tonePitches: ['G3', 'B3', 'D4'] });
   assert.equal(nextMatrix.chord[2][1], null);
   assert.equal(nextMatrix.chord[2][2], null);
   assert.deepEqual(nextMatrix.chord[0][0], { type: 'chord', root: 'C', chordRoot: 'C', quality: 'maj', label: 'C', toneRoots: ['C', 'E', 'G'] });
@@ -110,8 +110,8 @@ test('chord display labels ignore removed tones and keep explicit replacements',
     quality: 'maj',
     label: 'C',
     toneRoots: ['C', 'E', 'G'],
-    removedTonePitches: ['C4'],
-    addedNotes: ['C5'],
+    tonePitches: ['C3', 'E3', 'G3'],
+    addedNotes: ['C4', 'C5'],
   });
   assert.equal(getChordSpanDisplayLabel(matrix, 0, 0), 'C');
   assert.equal(getChordBarDisplayLabel(matrix, 0), 'C');
@@ -132,8 +132,8 @@ test('rich chord replacement preserves valid removed tones and drops invalid rem
     quality: 'maj7',
     label: 'Cmaj7',
     toneRoots: ['C', 'E', 'G', 'B'],
-    addedNotes: ['C5'],
-    removedTonePitches: ['C4'],
+    tonePitches: ['C3', 'E3', 'G3', 'B3'],
+    addedNotes: ['C4', 'C5'],
   });
 
   const changedRootMatrix = setChordEnrichTarget(richMatrix, 0, 0, 'G7');
@@ -145,7 +145,8 @@ test('rich chord replacement preserves valid removed tones and drops invalid rem
     quality: '7',
     label: 'G7',
     toneRoots: ['G', 'B', 'D', 'F'],
-    addedNotes: ['C5'],
+    tonePitches: ['G3', 'B3', 'D4', 'F3'],
+    addedNotes: ['C4', 'C5'],
   });
 });
 
@@ -168,21 +169,22 @@ test('chord display labels use groove source chord labels and merge arpeggio spa
 
 test('passing chord shortcut labels stay separate from beat header labels', () => {
   let matrix = createInitialMatrix();
-  matrix = setChordStepChord(matrix, 2, 14, 'C/B');
+  matrix = setChordStepChord(matrix, 2, 14, 'E7');
 
   assert.deepEqual(matrix.chord[2][14], {
     type: 'chord',
-    root: 'B',
-    chordRoot: 'C',
-    quality: 'slash',
-    label: 'C/B',
-    toneRoots: ['B', 'C', 'E', 'G'],
+    root: 'E',
+    chordRoot: 'E',
+    quality: '7',
+    label: 'E7',
+    toneRoots: ['E', 'B', 'D', 'G#'],
+    tonePitches: ['E3', 'B2', 'D3', 'G#3'],
     duration: '16n',
     grooveTemplateId: 'passing-shortcut',
-    sourceChordLabel: 'C/B',
+    sourceChordLabel: 'E7',
   });
   assert.equal(getChordSpanDisplayLabel(matrix, 2, 3), null);
-  assert.equal(getPassingChordDisplayLabel(matrix, 2, 14), 'C/B');
+  assert.equal(getPassingChordDisplayLabel(matrix, 2, 14), 'E7');
   assert.deepEqual(getChordBeatDisplaySegments(matrix, 2)[3], {
     startBeat: 3,
     span: 1,
@@ -194,7 +196,7 @@ test('passing chord shortcut labels stay separate from beat header labels', () =
 
   matrix = setChordCell(matrix, 2, 3, 'G');
   assert.equal(getChordSpanDisplayLabel(matrix, 2, 3), 'G');
-  assert.equal(getPassingChordDisplayLabel(matrix, 2, 14), 'C/B');
+  assert.equal(getPassingChordDisplayLabel(matrix, 2, 14), 'E7');
 });
 
 test('chord enrich target labels cover manual and groove sourced chords', () => {
@@ -241,7 +243,7 @@ test('setChordEnrichTarget replaces block groove chords while preserving hit sha
     grooveTemplateId: 'block-syncopated',
     sourceChordLabel: 'G',
   };
-  matrix = setChordStepChord(matrix, 2, 14, 'C/B');
+  matrix = setChordStepChord(matrix, 2, 14, 'E7');
 
   const nextMatrix = setChordEnrichTarget(matrix, 2, 3, 'G7');
 
@@ -252,6 +254,7 @@ test('setChordEnrichTarget replaces block groove chords while preserving hit sha
     quality: '7',
     label: 'G7',
     toneRoots: ['G', 'B', 'D', 'F'],
+    tonePitches: ['G3', 'B3', 'D4', 'F3'],
     duration: '16n',
     grooveTemplateId: 'block-syncopated',
     sourceChordLabel: 'G7',
@@ -281,8 +284,8 @@ test('setChordEnrichTarget replaces arpeggio source labels while preserving hit 
   });
   assert.deepEqual(nextMatrix.chord[1][6], {
     type: 'notes',
-    notes: ['E4'],
-    label: 'E4',
+    notes: ['E3'],
+    label: 'E3',
     grooveTemplateId: 'arp-basic',
     sourceChordLabel: 'Fmaj7',
   });
@@ -302,7 +305,7 @@ test('clearChordCell clears only one chord span', () => {
 
   assert.equal(nextMatrix.chord[1][0], null);
   assert.equal(nextMatrix.chord[1][1], null);
-  assert.deepEqual(nextMatrix.chord[1][8], { type: 'chord', root: 'F', chordRoot: 'F', quality: 'maj', label: 'F', toneRoots: ['F', 'A', 'C'] });
+  assert.deepEqual(nextMatrix.chord[1][8], { type: 'chord', root: 'F', chordRoot: 'F', quality: 'maj', label: 'F', toneRoots: ['F', 'A', 'C'], tonePitches: ['F3', 'A3', 'C3'] });
   assert.deepEqual(nextMatrix.bass[1][8], { note: 'C2' });
 });
 
@@ -328,7 +331,7 @@ test('setChordNoteCell stores multi-note cells inside one step and preserves oth
   const movedNoteMatrix = setChordNoteCell(matrix, 1, 2, 1, 'F');
 
   assert.deepEqual(getChordStepCell(matrix, 1, 2, 3), { type: 'notes', notes: ['A#'], label: 'A#' });
-  assert.deepEqual(movedNoteMatrix.chord[1][0], { type: 'chord', root: 'C', chordRoot: 'C', quality: 'maj', label: 'C', toneRoots: ['C', 'E', 'G'] });
+  assert.deepEqual(movedNoteMatrix.chord[1][0], { type: 'chord', root: 'C', chordRoot: 'C', quality: 'maj', label: 'C', toneRoots: ['C', 'E', 'G'], tonePitches: ['C3', 'E3', 'G3'] });
   assert.equal(movedNoteMatrix.chord[1][1], null);
   assert.equal(movedNoteMatrix.chord[1][10], null);
   assert.deepEqual(getChordStepCell(movedNoteMatrix, 1, 2, 3), { type: 'notes', notes: ['A#'], label: 'A#' });
@@ -356,20 +359,21 @@ test('setChordStepChord writes a passing chord to one exact step only', () => {
   matrix = setChordCell(matrix, 2, 3, 'G');
   matrix = setChordNoteCell(matrix, 2, 3, 1, 'D');
 
-  const nextMatrix = setChordStepChord(matrix, 2, 14, 'C/B');
+  const nextMatrix = setChordStepChord(matrix, 2, 14, 'bA');
 
   assert.notEqual(nextMatrix, matrix);
   assert.notEqual(nextMatrix.chord[2], matrix.chord[2]);
   assert.deepEqual(nextMatrix.chord[2][14], {
     type: 'chord',
-    root: 'B',
-    chordRoot: 'C',
-    quality: 'slash',
-    label: 'C/B',
-    toneRoots: ['B', 'C', 'E', 'G'],
+    root: 'G#',
+    chordRoot: 'bA',
+    quality: 'maj',
+    label: 'bA',
+    toneRoots: ['G#', 'C', 'D#'],
+    tonePitches: ['G#3', 'C4', 'D#3'],
     duration: '16n',
     grooveTemplateId: 'passing-shortcut',
-    sourceChordLabel: 'C/B',
+    sourceChordLabel: 'bA',
   });
   assert.deepEqual(nextMatrix.chord[2][12], matrix.chord[2][12]);
   assert.deepEqual(nextMatrix.chord[2][13], matrix.chord[2][13]);
@@ -412,6 +416,7 @@ test('applyChordTemplateToExistingClips overwrites existing chord clips with fre
     quality: 'maj',
     label: 'C',
     toneRoots: ['C', 'E', 'G'],
+    tonePitches: ['C3', 'E3', 'G3'],
   });
   assert.equal(nextMatrix.chord[0][1], null);
   assert.deepEqual(nextMatrix.chord[3][0].label, 'Am');
