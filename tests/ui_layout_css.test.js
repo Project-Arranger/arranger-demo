@@ -370,6 +370,19 @@ test('active chord template button aligns icon and label on one baseline', async
   assert.match(css, /\.btn-template-active svg\s*\{[^}]*flex:\s*0 0 auto;/s);
 });
 
+test('global undo button keeps transport sizing and disabled feedback', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.t-btn\.undo\s*\{[^}]*flex:\s*0 0 32px;/s);
+  assert.match(css, /\.t-btn\.undo\s*\{[^}]*width:\s*32px;/s);
+  assert.match(css, /\.t-btn\.undo\s*\{[^}]*height:\s*32px;/s);
+  assert.match(css, /\.t-btn:disabled\s*\{[^}]*opacity:\s*0\.38;/s);
+  assert.match(css, /\.t-btn:disabled\s*\{[^}]*cursor:\s*not-allowed;/s);
+  assert.match(css, /\.t-btn:disabled:hover\s*\{[^}]*background:\s*transparent;/s);
+  assert.match(css, /\.t-btn:disabled:hover\s*\{[^}]*box-shadow:\s*none;/s);
+  assert.doesNotMatch(css, /@media \(max-width:\s*980px\)[\s\S]*\.t-btn\.undo\s*\{[^}]*display:\s*none;/);
+});
+
 test('tutorial sidebar is embedded as a workbench column and reopens from the topbar', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 

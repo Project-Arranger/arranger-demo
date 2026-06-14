@@ -93,6 +93,12 @@ import { syncEditorToPlaybackBar } from './playbackEditorSync.js';
 import { syncTrackScrollContainers } from './syncTrackScroll.js';
 import { syncEditorToTutorialSuggestedBar } from './tutorialEditorSync.js';
 import {
+  createUndoSnapshot,
+  hasUndoSnapshotChanged,
+  pushUndoSnapshot,
+  restoreUndoSnapshot,
+} from './undoHistory.js';
+import {
   BAR_NUMBERS,
   getTrackUiByIds,
   OPTIONAL_TRACK_UI,
@@ -181,6 +187,7 @@ export default function App() {
       tutorialProgress: createTutorialState(),
     }),
   }));
+  const [undoHistory, setUndoHistory] = useState(() => []);
   const [editorHeightPx, setEditorHeightPx] = useState(null);
   const [editorResizeMaxHeight, setEditorResizeMaxHeight] = useState(EDITOR_RESIZE_DEFAULT_HEIGHT);
   const [currentEditorResizeValue, setCurrentEditorResizeValue] = useState(EDITOR_RESIZE_DEFAULT_HEIGHT);
@@ -189,6 +196,7 @@ export default function App() {
   const timelineScrollRef = useRef(null);
   const editorResizeDragRef = useRef(null);
   const editorResizeCleanupRef = useRef(null);
+  const volumeUndoSnapshotRef = useRef(null);
   const currentTutorialStep = DRUMS_TUTORIAL_STEPS[currentTutorialStepIndex];
   const tutorialViewModel = useMemo(() => getTutorialViewModel({
     clips,
@@ -225,6 +233,63 @@ export default function App() {
     () => createUiAudioDispatcher({ store: useMusicStore, audio: audioEngine }),
     [],
   );
+
+  const createCurrentUndoSnapshot = useCallback(() => createUndoSnapshot({
+    appState: useMusicStore.getState(),
+    tutorialState: {
+      appliedTutorialSetups,
+      currentTutorialStepIndex,
+      tutorialModeActive,
+      tutorialProgress,
+      tutorialSidebarCollapsed,
+      tutorialStepCheckpoints,
+      tutorialVisible,
+    },
+  }), [
+    appliedTutorialSetups,
+    currentTutorialStepIndex,
+    tutorialModeActive,
+    tutorialProgress,
+    tutorialSidebarCollapsed,
+    tutorialStepCheckpoints,
+    tutorialVisible,
+  ]);
+
+  const recordUndoSnapshot = useCallback((snapshot) => {
+    setUndoHistory((history) => pushUndoSnapshot(history, snapshot));
+  }, []);
+
+  const withUndoCheckpoint = useCallback((action, options = {}) => {
+    const beforeSnapshot = createCurrentUndoSnapshot();
+    const result = action();
+    const shouldRecord = options.force === true
+      || hasUndoSnapshotChanged(beforeSnapshot, createCurrentUndoSnapshot());
+
+    if (shouldRecord) recordUndoSnapshot(beforeSnapshot);
+    return result;
+  }, [createCurrentUndoSnapshot, recordUndoSnapshot]);
+
+  const handleUndo = useCallback(() => {
+    const snapshot = undoHistory.at(-1);
+    if (!snapshot) return;
+
+    setUndoHistory((history) => history.slice(0, -1));
+    clearTutorialAutoAdvanceTimer();
+    void (async () => {
+      await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
+      restoreUndoSnapshot({
+        setAppliedTutorialSetups,
+        setCurrentTutorialStepIndex,
+        setTutorialModeActive,
+        setTutorialProgress,
+        setTutorialSidebarCollapsed,
+        setTutorialStepCheckpoints,
+        setTutorialVisible,
+        snapshot,
+        store: useMusicStore,
+      });
+    })();
+  }, [dispatchAppCommand, undoHistory]);
 
   const resetTutorialTransportToStart = useCallback(async () => {
     await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
@@ -395,8 +460,16 @@ export default function App() {
   }, [selectedBar]);
 
   const handleAddClip = useCallback((trackId, barIndex) => {
-    useMusicStore.getState().createClip(trackId, barIndex);
-  }, []);
+    const state = useMusicStore.getState();
+    if (state.getClipForTrackBar(trackId, barIndex)) {
+      state.createClip(trackId, barIndex);
+      return;
+    }
+
+    withUndoCheckpoint(() => {
+      state.createClip(trackId, barIndex);
+    });
+  }, [withUndoCheckpoint]);
 
   const applyTutorialStepSetup = useCallback((step, knownAppliedSetups = appliedTutorialSetups) => {
     const setupType = step?.setup?.type;
@@ -523,27 +596,64 @@ export default function App() {
       if (!tutorialAction.allowed) return;
     }
 
-    useMusicStore.getState().createEmptyClipsForTrack(trackId);
-    if (tutorialAction) applyTutorialActionProgress(tutorialAction);
+    const state = useMusicStore.getState();
+    const hasEmptyClipSlot = BAR_NUMBERS.some((_, barIndex) => (
+      !state.getClipForTrackBar(trackId, barIndex)
+    ));
+    if (!hasEmptyClipSlot && !tutorialAction) {
+      state.createEmptyClipsForTrack(trackId);
+      return;
+    }
+
+    withUndoCheckpoint(() => {
+      state.createEmptyClipsForTrack(trackId);
+      if (tutorialAction) applyTutorialActionProgress(tutorialAction);
+    }, { force: Boolean(tutorialAction) });
   }, [
     applyTutorialActionProgress,
     currentTutorialStep,
     selectedBar,
     tutorialActive,
     tutorialProgress,
+    withUndoCheckpoint,
   ]);
 
   const handleAddTrack = useCallback((trackId) => {
-    useMusicStore.getState().addVisibleTrack(trackId);
-  }, []);
+    withUndoCheckpoint(() => {
+      useMusicStore.getState().addVisibleTrack(trackId);
+    });
+  }, [withUndoCheckpoint]);
 
   const handleTrackVolumeChange = useCallback((trackId, volume) => {
     useMusicStore.getState().setTrackVolume(trackId, volume);
   }, []);
 
+  const handleTrackVolumeChangeStart = useCallback(() => {
+    if (volumeUndoSnapshotRef.current) return;
+    volumeUndoSnapshotRef.current = createCurrentUndoSnapshot();
+  }, [createCurrentUndoSnapshot]);
+
+  const handleTrackVolumeChangeEnd = useCallback(() => {
+    const beforeSnapshot = volumeUndoSnapshotRef.current;
+    volumeUndoSnapshotRef.current = null;
+    if (!beforeSnapshot) return;
+    if (hasUndoSnapshotChanged(beforeSnapshot, createCurrentUndoSnapshot())) {
+      recordUndoSnapshot(beforeSnapshot);
+    }
+  }, [createCurrentUndoSnapshot, recordUndoSnapshot]);
+
   const handleMoveClip = useCallback((clipId, targetBar) => {
-    useMusicStore.getState().moveClipToBar(clipId, targetBar);
-  }, []);
+    const state = useMusicStore.getState();
+    const sourceClip = state.clips.byId[clipId];
+    if (!sourceClip || sourceClip.bar === targetBar) {
+      state.moveClipToBar(clipId, targetBar);
+      return;
+    }
+
+    withUndoCheckpoint(() => {
+      state.moveClipToBar(clipId, targetBar);
+    });
+  }, [withUndoCheckpoint]);
 
   const handleOpenClip = useCallback((clipId) => {
     useMusicStore.getState().selectClip(clipId);
@@ -555,8 +665,14 @@ export default function App() {
 
   const handleRenameClip = useCallback((name) => {
     if (!selectedClipId) return;
-    useMusicStore.getState().renameClip(selectedClipId, name);
-  }, [selectedClipId]);
+    const state = useMusicStore.getState();
+    const clip = state.clips.byId[selectedClipId];
+    if (!clip || clip.name === name) return;
+
+    withUndoCheckpoint(() => {
+      state.renameClip(selectedClipId, name);
+    });
+  }, [selectedClipId, withUndoCheckpoint]);
 
   const writeDrumsBars = useCallback((nextMatrix, barIndexes) => {
     const state = useMusicStore.getState();
@@ -579,16 +695,19 @@ export default function App() {
       if (!tutorialAction.allowed) return;
     }
 
-    const state = useMusicStore.getState();
-    const nextMatrix = applyBasicDrumsBar(state.matrix, selectedBar);
-    writeDrumsBars(nextMatrix, [selectedBar]);
-    if (tutorialAction) applyTutorialActionProgress(tutorialAction);
+    withUndoCheckpoint(() => {
+      const state = useMusicStore.getState();
+      const nextMatrix = applyBasicDrumsBar(state.matrix, selectedBar);
+      writeDrumsBars(nextMatrix, [selectedBar]);
+      if (tutorialAction) applyTutorialActionProgress(tutorialAction);
+    }, { force: Boolean(tutorialAction) });
   }, [
     applyTutorialActionProgress,
     currentTutorialStep,
     selectedBar,
     tutorialActive,
     tutorialProgress,
+    withUndoCheckpoint,
     writeDrumsBars,
   ]);
 
@@ -604,29 +723,36 @@ export default function App() {
       if (!tutorialAction.allowed) return;
     }
 
-    const state = useMusicStore.getState();
-    const drumsClipBars = getDrumsClipBarIndexes(state.clips);
-    const nextMatrix = applyBasicDrumsAllBars(state.matrix, drumsClipBars);
-    writeDrumsBars(nextMatrix, BAR_NUMBERS.map((_, barIndex) => barIndex));
-    if (tutorialAction) applyTutorialActionProgress(tutorialAction);
+    withUndoCheckpoint(() => {
+      const state = useMusicStore.getState();
+      const drumsClipBars = getDrumsClipBarIndexes(state.clips);
+      const nextMatrix = applyBasicDrumsAllBars(state.matrix, drumsClipBars);
+      writeDrumsBars(nextMatrix, BAR_NUMBERS.map((_, barIndex) => barIndex));
+      if (tutorialAction) applyTutorialActionProgress(tutorialAction);
+    }, { force: Boolean(tutorialAction) });
   }, [
     applyTutorialActionProgress,
     currentTutorialStep,
     selectedBar,
     tutorialActive,
     tutorialProgress,
+    withUndoCheckpoint,
     writeDrumsBars,
   ]);
 
   const handleClearCurrentDrumsBar = useCallback(() => {
-    const state = useMusicStore.getState();
-    const nextMatrix = clearDrumsBar(state.matrix, selectedBar);
-    writeDrumsBars(nextMatrix, [selectedBar]);
-  }, [selectedBar, writeDrumsBars]);
+    withUndoCheckpoint(() => {
+      const state = useMusicStore.getState();
+      const nextMatrix = clearDrumsBar(state.matrix, selectedBar);
+      writeDrumsBars(nextMatrix, [selectedBar]);
+    });
+  }, [selectedBar, withUndoCheckpoint, writeDrumsBars]);
 
   const handleClearDrums = useCallback(() => {
-    useMusicStore.getState().clearTrack('drums');
-  }, []);
+    withUndoCheckpoint(() => {
+      useMusicStore.getState().clearTrack('drums');
+    });
+  }, [withUndoCheckpoint]);
 
   const handlePageTrackBar = useCallback((direction) => {
     const state = useMusicStore.getState();
@@ -679,13 +805,25 @@ export default function App() {
   ]);
 
   const dispatchKeyboardCommand = useCallback((command) => {
+    if (command?.type === APP_COMMAND_TYPES.APP_UNDO) {
+      handleUndo();
+      return;
+    }
+
     if (command?.type === APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY) {
       handlePlayToggle();
       return;
     }
 
+    if (command?.type === APP_COMMAND_TYPES.CLIP_DELETE_SELECTED) {
+      withUndoCheckpoint(() => {
+        useMusicStore.getState().deleteSelectedClip();
+      });
+      return;
+    }
+
     void dispatchAppCommand(command);
-  }, [dispatchAppCommand, handlePlayToggle]);
+  }, [dispatchAppCommand, handlePlayToggle, handleUndo, withUndoCheckpoint]);
 
   useKeyboardCommands({ dispatch: dispatchKeyboardCommand });
 
@@ -778,18 +916,20 @@ export default function App() {
 
     if (!tutorialAction.allowed) return;
 
-    const currentCell = state.matrix.drums[selectedBar]?.[step] ?? null;
-    const nextCell = toggleInstrumentInCell(currentCell, instrument);
-    state.setCell('drums', selectedBar, step, nextCell);
-    void dispatchAppCommand({
-      type: APP_COMMAND_TYPES.DRUMS_TOGGLE,
-      bar: selectedBar,
-      step,
-      instrument,
-      previewInstruments: getDrumsCellInstruments(nextCell),
-    });
+    withUndoCheckpoint(() => {
+      const currentCell = state.matrix.drums[selectedBar]?.[step] ?? null;
+      const nextCell = toggleInstrumentInCell(currentCell, instrument);
+      state.setCell('drums', selectedBar, step, nextCell);
+      void dispatchAppCommand({
+        type: APP_COMMAND_TYPES.DRUMS_TOGGLE,
+        bar: selectedBar,
+        step,
+        instrument,
+        previewInstruments: getDrumsCellInstruments(nextCell),
+      });
 
-    applyTutorialActionProgress(tutorialAction);
+      applyTutorialActionProgress(tutorialAction);
+    }, { force: tutorialActive });
   }, [
     applyTutorialActionProgress,
     currentTutorialStep,
@@ -797,6 +937,7 @@ export default function App() {
     selectedBar,
     tutorialActive,
     tutorialProgress,
+    withUndoCheckpoint,
   ]);
 
   const handleDrumsStepMove = useCallback((instrument, fromStep, toStep) => {
@@ -822,23 +963,25 @@ export default function App() {
 
     if (!moveAction.allowed) return;
 
-    moveAction.nextMatrixPatch.forEach((patch) => {
-      state.setCell('drums', patch.bar, patch.step, patch.cell);
-    });
-    const targetPatch = moveAction.nextMatrixPatch.find((patch) => (
-      patch.bar === selectedBar && patch.step === toStep
-    ));
-    void dispatchAppCommand({
-      type: APP_COMMAND_TYPES.DRUMS_TOGGLE,
-      bar: selectedBar,
-      step: toStep,
-      instrument,
-      previewInstruments: getDrumsCellInstruments(targetPatch?.cell ?? null),
-    });
+    withUndoCheckpoint(() => {
+      moveAction.nextMatrixPatch.forEach((patch) => {
+        state.setCell('drums', patch.bar, patch.step, patch.cell);
+      });
+      const targetPatch = moveAction.nextMatrixPatch.find((patch) => (
+        patch.bar === selectedBar && patch.step === toStep
+      ));
+      void dispatchAppCommand({
+        type: APP_COMMAND_TYPES.DRUMS_TOGGLE,
+        bar: selectedBar,
+        step: toStep,
+        instrument,
+        previewInstruments: getDrumsCellInstruments(targetPatch?.cell ?? null),
+      });
 
-    if (tutorialAction) {
-      applyTutorialActionProgress(tutorialAction);
-    }
+      if (tutorialAction) {
+        applyTutorialActionProgress(tutorialAction);
+      }
+    }, { force: Boolean(tutorialAction) });
   }, [
     applyTutorialActionProgress,
     currentTutorialStep,
@@ -846,6 +989,7 @@ export default function App() {
     selectedBar,
     tutorialActive,
     tutorialProgress,
+    withUndoCheckpoint,
   ]);
 
   const handleChordCellSelect = useCallback((spanIndex, root) => {
@@ -857,29 +1001,33 @@ export default function App() {
     const nextCell = toggleChordCell(currentCell, root);
 
     if (nextCell) {
-      const nextMatrix = setChordCell(state.matrix, selectedBar, spanIndex, root);
-      for (let offset = 0; offset < 2; offset += 1) {
-        state.setCell('chord', selectedBar, step + offset, nextMatrix.chord[selectedBar][step + offset]);
-      }
-      void dispatchAppCommand({
-        type: APP_COMMAND_TYPES.CHORD_SET_CELL,
-        bar: selectedBar,
-        span: spanIndex,
-        root,
+      withUndoCheckpoint(() => {
+        const nextMatrix = setChordCell(state.matrix, selectedBar, spanIndex, root);
+        for (let offset = 0; offset < 2; offset += 1) {
+          state.setCell('chord', selectedBar, step + offset, nextMatrix.chord[selectedBar][step + offset]);
+        }
+        void dispatchAppCommand({
+          type: APP_COMMAND_TYPES.CHORD_SET_CELL,
+          bar: selectedBar,
+          span: spanIndex,
+          root,
+        });
       });
       return;
     }
 
-    const nextMatrix = clearChordCell(state.matrix, selectedBar, spanIndex);
-    for (let offset = 0; offset < 4; offset += 1) {
-      state.setCell('chord', selectedBar, step + offset, nextMatrix.chord[selectedBar][step + offset]);
-    }
-    void dispatchAppCommand({
-      type: APP_COMMAND_TYPES.CHORD_CLEAR_CELL,
-      bar: selectedBar,
-      span: spanIndex,
+    withUndoCheckpoint(() => {
+      const nextMatrix = clearChordCell(state.matrix, selectedBar, spanIndex);
+      for (let offset = 0; offset < 4; offset += 1) {
+        state.setCell('chord', selectedBar, step + offset, nextMatrix.chord[selectedBar][step + offset]);
+      }
+      void dispatchAppCommand({
+        type: APP_COMMAND_TYPES.CHORD_CLEAR_CELL,
+        bar: selectedBar,
+        span: spanIndex,
+      });
     });
-  }, [dispatchAppCommand, selectedBar]);
+  }, [dispatchAppCommand, selectedBar, withUndoCheckpoint]);
 
   const handleChordPick = useCallback((spanIndex, root) => {
     const state = useMusicStore.getState();
@@ -906,17 +1054,19 @@ export default function App() {
       : null;
     if (tutorialAction && !tutorialAction.allowed) return;
 
-    changedOffsets.forEach((offset) => {
-      const nextCell = nextMatrix.chord[selectedBar][step + offset];
-      state.setCell('chord', selectedBar, step + offset, nextCell);
-    });
-    void dispatchAppCommand({
-      type: APP_COMMAND_TYPES.CHORD_SET_CELL,
-      bar: selectedBar,
-      span: spanIndex,
-      root,
-    });
-    if (tutorialAction) applyTutorialActionProgress(tutorialAction);
+    withUndoCheckpoint(() => {
+      changedOffsets.forEach((offset) => {
+        const nextCell = nextMatrix.chord[selectedBar][step + offset];
+        state.setCell('chord', selectedBar, step + offset, nextCell);
+      });
+      void dispatchAppCommand({
+        type: APP_COMMAND_TYPES.CHORD_SET_CELL,
+        bar: selectedBar,
+        span: spanIndex,
+        root,
+      });
+      if (tutorialAction) applyTutorialActionProgress(tutorialAction);
+    }, { force: Boolean(tutorialAction) });
   }, [
     applyTutorialActionProgress,
     currentTutorialStep,
@@ -924,6 +1074,7 @@ export default function App() {
     selectedBar,
     tutorialActive,
     tutorialProgress,
+    withUndoCheckpoint,
   ]);
 
   const handlePassingChordPick = useCallback((stepIndex, chordName) => {
@@ -941,14 +1092,17 @@ export default function App() {
       : null;
     if (tutorialAction && !tutorialAction.allowed) return;
 
-    state.setCell('chord', selectedBar, stepIndex, nextMatrix.chord[selectedBar][stepIndex]);
-    if (tutorialAction) applyTutorialActionProgress(tutorialAction);
+    withUndoCheckpoint(() => {
+      state.setCell('chord', selectedBar, stepIndex, nextMatrix.chord[selectedBar][stepIndex]);
+      if (tutorialAction) applyTutorialActionProgress(tutorialAction);
+    }, { force: Boolean(tutorialAction) });
   }, [
     applyTutorialActionProgress,
     currentTutorialStep,
     selectedBar,
     tutorialActive,
     tutorialProgress,
+    withUndoCheckpoint,
   ]);
 
   const previewChordNames = useCallback((chordNames) => {
@@ -987,8 +1141,10 @@ export default function App() {
     const step = getChordSpanStep(spanIndex);
     if (step === null) return;
 
-    state.setCell('chord', selectedBar, step + columnIndex, nextMatrix.chord[selectedBar][step + columnIndex]);
-  }, [selectedBar]);
+    withUndoCheckpoint(() => {
+      state.setCell('chord', selectedBar, step + columnIndex, nextMatrix.chord[selectedBar][step + columnIndex]);
+    });
+  }, [selectedBar, withUndoCheckpoint]);
 
   const handleChordTemplateApply = useCallback((templateId) => {
     let tutorialAction = null;
@@ -1005,20 +1161,23 @@ export default function App() {
     const state = useMusicStore.getState();
     const nextMatrix = applyChordTemplateToExistingClips(state.matrix, state.clips, templateId);
 
-    state.clips.ids
-      .map((id) => state.clips.byId[id])
-      .filter((clip) => clip?.trackId === 'chord')
-      .forEach((clip) => {
-        state.setCell('chord', clip.bar, 0, nextMatrix.chord[clip.bar][0]);
-        state.setCell('chord', clip.bar, 1, nextMatrix.chord[clip.bar][1]);
-      });
-    if (tutorialAction) applyTutorialActionProgress(tutorialAction);
+    withUndoCheckpoint(() => {
+      state.clips.ids
+        .map((id) => state.clips.byId[id])
+        .filter((clip) => clip?.trackId === 'chord')
+        .forEach((clip) => {
+          state.setCell('chord', clip.bar, 0, nextMatrix.chord[clip.bar][0]);
+          state.setCell('chord', clip.bar, 1, nextMatrix.chord[clip.bar][1]);
+        });
+      if (tutorialAction) applyTutorialActionProgress(tutorialAction);
+    }, { force: Boolean(tutorialAction) });
   }, [
     applyTutorialActionProgress,
     currentTutorialStep,
     selectedBar,
     tutorialActive,
     tutorialProgress,
+    withUndoCheckpoint,
   ]);
 
   const handleChordGrooveTemplateApply = useCallback((templateId) => {
@@ -1036,42 +1195,51 @@ export default function App() {
     const state = useMusicStore.getState();
     const nextMatrix = applyChordGrooveTemplateToExistingClips(state.matrix, state.clips, templateId);
 
-    state.clips.ids
-      .map((id) => state.clips.byId[id])
-      .filter((clip) => clip?.trackId === 'chord')
-      .forEach((clip) => {
-        nextMatrix.chord[clip.bar].forEach((cell, step) => {
-          state.setCell('chord', clip.bar, step, cell);
+    withUndoCheckpoint(() => {
+      state.clips.ids
+        .map((id) => state.clips.byId[id])
+        .filter((clip) => clip?.trackId === 'chord')
+        .forEach((clip) => {
+          nextMatrix.chord[clip.bar].forEach((cell, step) => {
+            state.setCell('chord', clip.bar, step, cell);
+          });
         });
-      });
-    if (tutorialAction) applyTutorialActionProgress(tutorialAction);
+      if (tutorialAction) applyTutorialActionProgress(tutorialAction);
+    }, { force: Boolean(tutorialAction) });
   }, [
     applyTutorialActionProgress,
     currentTutorialStep,
     selectedBar,
     tutorialActive,
     tutorialProgress,
+    withUndoCheckpoint,
   ]);
 
   const handleClearChordBar = useCallback(() => {
-    const state = useMusicStore.getState();
-    const nextMatrix = clearChordBar(state.matrix, selectedBar);
+    withUndoCheckpoint(() => {
+      const state = useMusicStore.getState();
+      const nextMatrix = clearChordBar(state.matrix, selectedBar);
 
-    nextMatrix.chord[selectedBar].forEach((cell, step) => {
-      state.setCell('chord', selectedBar, step, cell);
+      nextMatrix.chord[selectedBar].forEach((cell, step) => {
+        state.setCell('chord', selectedBar, step, cell);
+      });
     });
-  }, [selectedBar]);
+  }, [selectedBar, withUndoCheckpoint]);
 
   const handleClearChord = useCallback(() => {
-    useMusicStore.getState().clearTrack('chord');
-  }, []);
+    withUndoCheckpoint(() => {
+      useMusicStore.getState().clearTrack('chord');
+    });
+  }, [withUndoCheckpoint]);
 
   const handleBassStepToggle = useCallback((step, note) => {
-    const state = useMusicStore.getState();
-    const nextMatrix = toggleBassCell(state.matrix, selectedBar, step, note);
-    state.setCell('bass', selectedBar, step, nextMatrix.bass[selectedBar][step]);
-    void audioEngine.triggerBassNote(note, '16n');
-  }, [selectedBar]);
+    withUndoCheckpoint(() => {
+      const state = useMusicStore.getState();
+      const nextMatrix = toggleBassCell(state.matrix, selectedBar, step, note);
+      state.setCell('bass', selectedBar, step, nextMatrix.bass[selectedBar][step]);
+      void audioEngine.triggerBassNote(note, '16n');
+    });
+  }, [selectedBar, withUndoCheckpoint]);
 
   const handleBassPreview = useCallback((note) => {
     void audioEngine.triggerBassNote(note, '16n');
@@ -1101,42 +1269,51 @@ export default function App() {
     const nextMatrix = applyBassGrooveTemplateToExistingClips(state.matrix, state.clips, templateId);
     if (nextMatrix === state.matrix) return;
 
-    state.clips.ids
-      .map((id) => state.clips.byId[id])
-      .filter((clip) => clip?.trackId === 'bass')
-      .forEach((clip) => {
-        nextMatrix.bass[clip.bar].forEach((cell, step) => {
-          state.setCell('bass', clip.bar, step, cell);
+    withUndoCheckpoint(() => {
+      state.clips.ids
+        .map((id) => state.clips.byId[id])
+        .filter((clip) => clip?.trackId === 'bass')
+        .forEach((clip) => {
+          nextMatrix.bass[clip.bar].forEach((cell, step) => {
+            state.setCell('bass', clip.bar, step, cell);
+          });
         });
-      });
-    if (tutorialAction) applyTutorialActionProgress(tutorialAction);
+      if (tutorialAction) applyTutorialActionProgress(tutorialAction);
+    }, { force: Boolean(tutorialAction) });
   }, [
     applyTutorialActionProgress,
     currentTutorialStep,
     selectedBar,
     tutorialActive,
     tutorialProgress,
+    withUndoCheckpoint,
   ]);
 
   const handleClearBassBar = useCallback(() => {
-    const state = useMusicStore.getState();
-    const nextMatrix = clearBassBar(state.matrix, selectedBar);
+    withUndoCheckpoint(() => {
+      const state = useMusicStore.getState();
+      const nextMatrix = clearBassBar(state.matrix, selectedBar);
 
-    nextMatrix.bass[selectedBar].forEach((cell, step) => {
-      state.setCell('bass', selectedBar, step, cell);
+      nextMatrix.bass[selectedBar].forEach((cell, step) => {
+        state.setCell('bass', selectedBar, step, cell);
+      });
     });
-  }, [selectedBar]);
+  }, [selectedBar, withUndoCheckpoint]);
 
   const handleClearBass = useCallback(() => {
-    useMusicStore.getState().clearTrack('bass');
-  }, []);
+    withUndoCheckpoint(() => {
+      useMusicStore.getState().clearTrack('bass');
+    });
+  }, [withUndoCheckpoint]);
 
   const handleMelodyStepToggle = useCallback((step, note) => {
-    const state = useMusicStore.getState();
-    const nextMatrix = toggleMelodyCell(state.matrix, selectedBar, step, note);
-    state.setCell('melody', selectedBar, step, nextMatrix.melody[selectedBar][step]);
-    void audioEngine.triggerMelodyNote(note, '16n');
-  }, [selectedBar]);
+    withUndoCheckpoint(() => {
+      const state = useMusicStore.getState();
+      const nextMatrix = toggleMelodyCell(state.matrix, selectedBar, step, note);
+      state.setCell('melody', selectedBar, step, nextMatrix.melody[selectedBar][step]);
+      void audioEngine.triggerMelodyNote(note, '16n');
+    });
+  }, [selectedBar, withUndoCheckpoint]);
 
   const handleMelodyPreview = useCallback((noteOrNotes) => {
     if (Array.isArray(noteOrNotes)) {
@@ -1159,37 +1336,47 @@ export default function App() {
       if (!tutorialAction.allowed) return;
     }
 
-    useMusicStore.getState().setMelodyScaleId(scaleId);
-    if (tutorialAction) applyTutorialActionProgress(tutorialAction);
+    withUndoCheckpoint(() => {
+      useMusicStore.getState().setMelodyScaleId(scaleId);
+      if (tutorialAction) applyTutorialActionProgress(tutorialAction);
+    }, { force: Boolean(tutorialAction) });
   }, [
     applyTutorialActionProgress,
     currentTutorialStep,
     selectedBar,
     tutorialActive,
     tutorialProgress,
+    withUndoCheckpoint,
   ]);
 
   const handleClearMelodyBar = useCallback(() => {
-    const state = useMusicStore.getState();
-    const nextMatrix = clearMelodyBar(state.matrix, selectedBar);
+    withUndoCheckpoint(() => {
+      const state = useMusicStore.getState();
+      const nextMatrix = clearMelodyBar(state.matrix, selectedBar);
 
-    nextMatrix.melody[selectedBar].forEach((cell, step) => {
-      state.setCell('melody', selectedBar, step, cell);
+      nextMatrix.melody[selectedBar].forEach((cell, step) => {
+        state.setCell('melody', selectedBar, step, cell);
+      });
     });
-  }, [selectedBar]);
+  }, [selectedBar, withUndoCheckpoint]);
 
   const handleClearMelody = useCallback(() => {
-    useMusicStore.getState().clearTrack('melody');
-  }, []);
+    withUndoCheckpoint(() => {
+      useMusicStore.getState().clearTrack('melody');
+    });
+  }, [withUndoCheckpoint]);
 
   const handleTutorialNext = useCallback(() => {
     if (!tutorialViewModel.canManualNext) return;
-    clearTutorialAutoAdvanceTimer();
-    advanceTutorialToNextStep(tutorialProgress);
+    withUndoCheckpoint(() => {
+      clearTutorialAutoAdvanceTimer();
+      advanceTutorialToNextStep(tutorialProgress);
+    }, { force: true });
   }, [
     advanceTutorialToNextStep,
     tutorialProgress,
     tutorialViewModel.canManualNext,
+    withUndoCheckpoint,
   ]);
 
   const handleTutorialOpenClip = useCallback((clip) => {
@@ -1203,12 +1390,14 @@ export default function App() {
     });
     if (!tutorialAction.allowed) return false;
 
-    setTutorialProgress(tutorialAction.nextProgress);
+    withUndoCheckpoint(() => {
+      setTutorialProgress(tutorialAction.nextProgress);
 
-    if (tutorialAction.shouldAdvance) {
-      if (clip?.id) useMusicStore.getState().selectClip(clip.id);
-      advanceTutorialToNextStep(tutorialAction.nextProgress);
-    }
+      if (tutorialAction.shouldAdvance) {
+        if (clip?.id) useMusicStore.getState().selectClip(clip.id);
+        advanceTutorialToNextStep(tutorialAction.nextProgress);
+      }
+    }, { force: true });
 
     return true;
   }, [
@@ -1216,6 +1405,7 @@ export default function App() {
     currentTutorialStep,
     tutorialActive,
     tutorialProgress,
+    withUndoCheckpoint,
   ]);
 
   const handleTutorialBack = useCallback(() => {
@@ -1274,23 +1464,25 @@ export default function App() {
   ]);
 
   const handleTutorialSkip = useCallback(() => {
-    clearTutorialAutoAdvanceTimer();
-    stopTutorialPreviewPlayback();
-    useMusicStore.setState(useMusicStore.getInitialState(), true);
-    setCurrentTutorialStepIndex(0);
-    setTutorialProgress(createTutorialState());
-    setAppliedTutorialSetups(() => new Set());
-    setTutorialStepCheckpoints(() => ({
-      0: createTutorialCheckpoint({
-        appState: useMusicStore.getInitialState(),
-        appliedTutorialSetups: new Set(),
-        tutorialProgress: createTutorialState(),
-      }),
-    }));
-    setTutorialModeActive(false);
-    setTutorialSidebarCollapsed(true);
-    setTutorialVisible(true);
-  }, [stopTutorialPreviewPlayback]);
+    withUndoCheckpoint(() => {
+      clearTutorialAutoAdvanceTimer();
+      stopTutorialPreviewPlayback();
+      useMusicStore.setState(useMusicStore.getInitialState(), true);
+      setCurrentTutorialStepIndex(0);
+      setTutorialProgress(createTutorialState());
+      setAppliedTutorialSetups(() => new Set());
+      setTutorialStepCheckpoints(() => ({
+        0: createTutorialCheckpoint({
+          appState: useMusicStore.getInitialState(),
+          appliedTutorialSetups: new Set(),
+          tutorialProgress: createTutorialState(),
+        }),
+      }));
+      setTutorialModeActive(false);
+      setTutorialSidebarCollapsed(true);
+      setTutorialVisible(true);
+    }, { force: true });
+  }, [stopTutorialPreviewPlayback, withUndoCheckpoint]);
 
   const handleTutorialSidebarToggle = useCallback(() => {
     setTutorialSidebarCollapsed((collapsed) => {
@@ -1305,8 +1497,10 @@ export default function App() {
       step: currentTutorialStep,
     });
     if (!tutorialAction.allowed) return;
-    applyTutorialActionProgress(tutorialAction);
-  }, [applyTutorialActionProgress, currentTutorialStep, tutorialProgress]);
+    withUndoCheckpoint(() => {
+      applyTutorialActionProgress(tutorialAction);
+    }, { force: true });
+  }, [applyTutorialActionProgress, currentTutorialStep, tutorialProgress, withUndoCheckpoint]);
 
   const appClassName = [
     'app',
@@ -1322,6 +1516,7 @@ export default function App() {
   const appStyle = editorHeightPx === null ? undefined : {
     '--app-editor-height': `${editorHeightPx}px`,
   };
+  const canUndo = undoHistory.length > 0;
 
   return (
     <div
@@ -1334,6 +1529,7 @@ export default function App() {
         {createElement(TopBar, {
           activeTutorialTarget,
           bpm,
+          canUndo,
           currentBar,
           currentStep,
           isPlaying,
@@ -1341,6 +1537,7 @@ export default function App() {
           onPlayToggle: handlePlayToggle,
           onStop: handleStop,
           onTutorialToggle: handleTutorialSidebarToggle,
+          onUndo: handleUndo,
           rootKey,
           scale,
           showTutorialToggle: tutorialVisible,
@@ -1355,6 +1552,8 @@ export default function App() {
             onFillEmptyTrackClips: handleFillEmptyTrackClips,
             onTrackSelect: handleTrackSelect,
             onVolumeChange: handleTrackVolumeChange,
+            onVolumeChangeEnd: handleTrackVolumeChangeEnd,
+            onVolumeChangeStart: handleTrackVolumeChangeStart,
             ref: tracksScrollRef,
             tutorialLocked: activeTutorialLocked,
             tutorialTargets: activeTutorialTargets,

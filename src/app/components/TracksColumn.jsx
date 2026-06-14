@@ -22,6 +22,8 @@ function TrackRow({
   onFillEmptyTrackClips = () => {},
   onSelect,
   onVolumeChange = () => {},
+  onVolumeChangeEnd = () => {},
+  onVolumeChangeStart = () => {},
   tutorialLocked = false,
   tutorialTargets,
   track,
@@ -34,7 +36,9 @@ function TrackRow({
     track.hasClip ? 'has-phrase' : '',
   ].filter(Boolean).join(' ');
   const handleVolumeChange = (event) => {
+    onVolumeChangeStart(track.id);
     onVolumeChange(track.id, Number(event.target.value));
+    onVolumeChangeEnd(track.id);
   };
   const updateVolumeFromPointer = (event) => {
     onVolumeChange(
@@ -48,6 +52,7 @@ function TrackRow({
     event.stopPropagation();
     event.currentTarget.setPointerCapture?.(event.pointerId);
     volumeInputRef.current?.focus();
+    onVolumeChangeStart(track.id);
     updateVolumeFromPointer(event);
   };
   const handleVolumePointerMove = (event) => {
@@ -60,6 +65,12 @@ function TrackRow({
   const handleVolumePointerUp = (event) => {
     event.stopPropagation();
     event.currentTarget.releasePointerCapture?.(event.pointerId);
+    onVolumeChangeEnd(track.id);
+  };
+  const commitKeyboardVolumeChange = (volume) => {
+    onVolumeChangeStart(track.id);
+    onVolumeChange(track.id, volume);
+    onVolumeChangeEnd(track.id);
   };
   const handleVolumeKeyDown = (event) => {
     const keyDeltas = {
@@ -73,19 +84,19 @@ function TrackRow({
 
     if (event.key === 'Home') {
       event.preventDefault();
-      onVolumeChange(track.id, MIN_TRACK_VOLUME_DB);
+      commitKeyboardVolumeChange(MIN_TRACK_VOLUME_DB);
       return;
     }
 
     if (event.key === 'End') {
       event.preventDefault();
-      onVolumeChange(track.id, MAX_TRACK_VOLUME_DB);
+      commitKeyboardVolumeChange(MAX_TRACK_VOLUME_DB);
       return;
     }
 
     if (!Object.hasOwn(keyDeltas, event.key)) return;
     event.preventDefault();
-    onVolumeChange(track.id, track.volume.value + keyDeltas[event.key]);
+    commitKeyboardVolumeChange(track.volume.value + keyDeltas[event.key]);
   };
   const stopVolumeEventPropagation = (event) => {
     event.stopPropagation();
@@ -183,6 +194,8 @@ const TracksColumn = forwardRef(function TracksColumn(
     onFillEmptyTrackClips,
     onTrackSelect,
     onVolumeChange,
+    onVolumeChangeEnd,
+    onVolumeChangeStart,
     tutorialLocked = false,
     tutorialTargets,
     tracks,
@@ -216,6 +229,8 @@ const TracksColumn = forwardRef(function TracksColumn(
           onFillEmptyTrackClips,
           onSelect: onTrackSelect,
           onVolumeChange,
+          onVolumeChangeEnd,
+          onVolumeChangeStart,
           tutorialLocked,
           tutorialTargets,
           track,

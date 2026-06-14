@@ -663,6 +663,12 @@ button {
   border-radius: 8px;
 }
 
+.t-btn.undo {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+}
+
 .t-btn:hover,
 .icon-btn:hover,
 .edit-btn:hover,
@@ -673,6 +679,17 @@ button {
   color: var(--ink);
   background: var(--surface);
   box-shadow: var(--shadow-1);
+}
+
+.t-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+.t-btn:disabled:hover {
+  color: var(--ink-2);
+  background: transparent;
+  box-shadow: none;
 }
 
 .t-btn.play {

@@ -10,11 +10,13 @@ import { isValidAppCommand } from '../src/input/commandGuards.js';
 import { TOTAL_BARS, STEPS_PER_BAR } from '../src/domain/musicConstants.js';
 
 test('app command constants use drums naming', () => {
+  assert.equal(APP_COMMAND_TYPES.APP_UNDO, 'app.undo');
   assert.equal(APP_COMMAND_TYPES.DRUMS_TOGGLE, 'drums.toggle');
   assert.equal(APP_COMMAND_TYPES.CHORD_SET_CELL, 'chord.setCell');
   assert.equal(APP_COMMAND_TYPES.CHORD_CLEAR_CELL, 'chord.clearCell');
   assert.equal(APP_COMMAND_TYPES.CLIP_DELETE_SELECTED, 'clip.deleteSelected');
   assert.equal(Object.values(APP_COMMAND_TYPES).includes('unknown.toggle'), false);
+  assert.equal(COMMAND_GROUPS.app.includes(APP_COMMAND_TYPES.APP_UNDO), true);
   assert.equal(COMMAND_GROUPS.clip.includes(APP_COMMAND_TYPES.CLIP_DELETE_SELECTED), true);
   assert.equal(COMMAND_GROUPS.drums.includes(APP_COMMAND_TYPES.DRUMS_TOGGLE), true);
   assert.equal(COMMAND_GROUPS.chord.includes(APP_COMMAND_TYPES.CHORD_SET_CELL), true);
@@ -38,6 +40,11 @@ test('transport commands validate exact payloads', () => {
   assert.equal(isValidAppCommand({ type: 'transport.seek', bar: TOTAL_BARS - 1, step: STEPS_PER_BAR - 1 }), true);
   assert.equal(isValidAppCommand({ type: 'transport.seek', bar: TOTAL_BARS, step: 0 }), false);
   assert.equal(isValidAppCommand({ type: 'transport.seek', bar: 0, step: STEPS_PER_BAR }), false);
+});
+
+test('app commands validate exact payloads', () => {
+  assert.equal(isValidAppCommand({ type: 'app.undo' }), true);
+  assert.equal(isValidAppCommand({ type: 'app.undo', steps: 2 }), false);
 });
 
 test('tutorial and chord commands validate exact payloads', () => {

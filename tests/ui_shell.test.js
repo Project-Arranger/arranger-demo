@@ -17,6 +17,38 @@ import {
   TRACK_UI,
 } from '../src/app/uiShellData.js';
 
+test('topbar exposes global undo next to transport and App wires undo history', async () => {
+  const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
+  const topBarSource = await readFile(new URL('../src/app/components/TopBar.jsx', import.meta.url), 'utf8');
+
+  assert.match(topBarSource, /Undo2/);
+  assert.match(topBarSource, /canUndo\s*=\s*false/);
+  assert.match(topBarSource, /onUndo/);
+  assert.match(topBarSource, /className="t-btn undo"/);
+  assert.match(topBarSource, /aria-label="撤销上一步"/);
+  assert.match(topBarSource, /title="撤销上一步 \(Ctrl\+Z\)"/);
+  assert.match(topBarSource, /disabled=\{!canUndo\}/);
+  assert.match(topBarSource, /onClick=\{onUndo\}/);
+  assert.match(topBarSource, /renderIcon\(Undo2\)/);
+  assert.match(topBarSource, /<div className=\{transportClassName\} role="toolbar" aria-label="Transport">[\s\S]*className="t-btn undo"[\s\S]*className="t-btn"[\s\S]*Back to start/);
+
+  assert.match(source, /createUndoSnapshot/);
+  assert.match(source, /pushUndoSnapshot/);
+  assert.match(source, /restoreUndoSnapshot/);
+  assert.match(source, /const \[undoHistory,\s*setUndoHistory\] = useState\(\(\) => \[\]\);/);
+  assert.match(source, /const canUndo = undoHistory\.length > 0;/);
+  assert.match(source, /const withUndoCheckpoint = useCallback/);
+  assert.match(source, /const handleUndo = useCallback/);
+  assert.match(source, /APP_COMMAND_TYPES\.APP_UNDO/);
+  assert.match(source, /command\?\.type === APP_COMMAND_TYPES\.APP_UNDO[\s\S]*handleUndo\(\);[\s\S]*return;/);
+  assert.match(source, /canUndo,\s*\n\s*currentBar/);
+  assert.match(source, /onUndo:\s*handleUndo/);
+  assert.match(source, /withUndoCheckpoint\(\(\) => \{[\s\S]*createClip\(trackId,\s*barIndex\)/);
+  assert.match(source, /withUndoCheckpoint\(\(\) => \{[\s\S]*handleTutorialControlAction/);
+  assert.match(source, /withUndoCheckpoint\(\(\) => \{[\s\S]*state\.setCell\('drums'/);
+  assert.match(source, /withUndoCheckpoint\(\(\) => \{[\s\S]*setTutorialProgress/);
+});
+
 test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async () => {
   const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
   const timelineSource = await readFile(new URL('../src/app/components/Timeline.jsx', import.meta.url), 'utf8');
@@ -991,7 +1023,7 @@ test('app routes drums tutorial tasks through guards and target props', async ()
   assert.match(source, /handleTutorialPlaybackPosition/);
   assert.doesNotMatch(source, /handleTutorialPlayheadDrag/);
   assert.match(source, /handleTransportSeek/);
-  assert.match(source, /if \(!tutorialAction\.allowed\) return false;\n\n {4}setTutorialProgress\(tutorialAction\.nextProgress\);\n\n {4}if \(tutorialAction\.shouldAdvance\)/);
+  assert.match(source, /if \(!tutorialAction\.allowed\) return false;\n\n {4}withUndoCheckpoint\(\(\) => \{\n {6}setTutorialProgress\(tutorialAction\.nextProgress\);\n\n {6}if \(tutorialAction\.shouldAdvance\)/);
   assert.match(source, /if \(tutorialAction\.shouldEnd\)[\s\S]*setTutorialVisible\(false\)/);
   assert.match(source, /if \(tutorialAction\.shouldCompleteTutorial\)[\s\S]*setTutorialSidebarCollapsed\(true\)/);
   assert.match(source, /handleTutorialOpenClip/);

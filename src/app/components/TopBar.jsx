@@ -3,6 +3,7 @@ import {
   Settings,
   SkipBack,
   Square,
+  Undo2,
 } from 'lucide-react';
 import {
   BEATS_PER_BAR,
@@ -15,6 +16,7 @@ import { renderIcon } from './icons.js';
 function TopBar({
   activeTutorialTarget,
   bpm,
+  canUndo = false,
   currentBar,
   currentStep,
   isPlaying,
@@ -22,6 +24,7 @@ function TopBar({
   onPlayToggle,
   onStop,
   onTutorialToggle,
+  onUndo = () => {},
   rootKey,
   scale,
   showTutorialToggle = false,
@@ -58,6 +61,16 @@ function TopBar({
 
       <div className="topbar-center">
         <div className={transportClassName} role="toolbar" aria-label="Transport">
+          <button
+            className="t-btn undo"
+            aria-label="撤销上一步"
+            title="撤销上一步 (Ctrl+Z)"
+            type="button"
+            disabled={!canUndo}
+            onClick={onUndo}
+          >
+            {renderIcon(Undo2)}
+          </button>
           <button
             className="t-btn"
             aria-label="Back to start"

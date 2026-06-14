@@ -62,6 +62,16 @@ function mapKeyboardEventToCommand(event, state = {}) {
   if (event.repeat) return null;
   if (isEditableKeyboardTarget(event.target)) return null;
 
+  if (
+    eventType === 'keydown'
+    && key.toLowerCase() === 'z'
+    && (event.ctrlKey || event.metaKey)
+    && !event.shiftKey
+    && !event.altKey
+  ) {
+    return { type: APP_COMMAND_TYPES.APP_UNDO };
+  }
+
   if (eventType === 'keydown' && key === ' ') {
     return { type: APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY };
   }

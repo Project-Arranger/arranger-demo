@@ -1,6 +1,7 @@
 import { MELODY_NOTE_IDS as CONFIGURED_MELODY_NOTE_IDS } from '../data/melodyScales.js';
 
 const APP_COMMAND_TYPES = Object.freeze({
+  APP_UNDO: 'app.undo',
   TRANSPORT_TOGGLE_PLAY: 'transport.togglePlay',
   TRANSPORT_STOP: 'transport.stop',
   TRANSPORT_SEEK: 'transport.seek',
@@ -20,6 +21,9 @@ const CHORD_OPTION_COUNT = 8;
 const MELODY_NOTE_IDS = CONFIGURED_MELODY_NOTE_IDS;
 
 const COMMAND_GROUPS = Object.freeze({
+  app: Object.freeze([
+    APP_COMMAND_TYPES.APP_UNDO,
+  ]),
   transport: Object.freeze([
     APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY,
     APP_COMMAND_TYPES.TRANSPORT_STOP,
@@ -48,13 +52,14 @@ const COMMAND_GROUPS = Object.freeze({
 });
 
 /**
+ * @typedef {{ type: 'app.undo' }} AppUiCommand
  * @typedef {{ type: 'transport.togglePlay' } | { type: 'transport.stop' } | { type: 'transport.seek', bar: number, step: number }} TransportCommand
  * @typedef {{ type: 'clip.deleteSelected' }} ClipCommand
  * @typedef {{ type: 'tutorial.next' } | { type: 'tutorial.completeTask' }} TutorialCommand
  * @typedef {{ type: 'drums.toggle', bar: number, step: number, instrument: 'kick' | 'snare' | 'hihat', previewInstruments?: Array<'kick' | 'snare' | 'hihat'> }} DrumsCommand
  * @typedef {{ type: 'chord.selectOption', optionIndex: number } | { type: 'chord.confirm' } | { type: 'chord.setCell', bar: number, span: number, root: string } | { type: 'chord.clearCell', bar: number, span: number }} ChordCommand
  * @typedef {{ type: 'melody.noteOn', note: string } | { type: 'melody.noteOff', note: string }} MelodyCommand
- * @typedef {TransportCommand | ClipCommand | TutorialCommand | DrumsCommand | ChordCommand | MelodyCommand} AppCommand
+ * @typedef {AppUiCommand | TransportCommand | ClipCommand | TutorialCommand | DrumsCommand | ChordCommand | MelodyCommand} AppCommand
  */
 
 export {

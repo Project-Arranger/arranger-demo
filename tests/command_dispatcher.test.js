@@ -126,6 +126,9 @@ test('domain commands dispatch to injected handlers with drums naming', async ()
       next: () => calls.push(['tutorial.next']),
       completeTask: () => calls.push(['tutorial.completeTask']),
     },
+    app: {
+      undo: () => calls.push(['app.undo']),
+    },
     drums: {
       toggle: (command) => calls.push(['drums.toggle', command.bar, command.step, command.instrument]),
     },
@@ -144,6 +147,7 @@ test('domain commands dispatch to injected handlers with drums naming', async ()
     triggerDrumsStep: (instrument) => audioCalls.push(['audio.triggerDrumsStep', instrument]),
   };
 
+  await dispatchCommand({ type: 'app.undo' }, { handlers });
   await dispatchCommand({ type: 'tutorial.next' }, { handlers });
   await dispatchCommand({ type: 'tutorial.completeTask' }, { handlers });
   await dispatchCommand({
@@ -161,6 +165,7 @@ test('domain commands dispatch to injected handlers with drums naming', async ()
   await dispatchCommand({ type: 'melody.noteOff', note: 'D3' }, { handlers });
 
   assert.deepEqual(calls, [
+    ['app.undo'],
     ['tutorial.next'],
     ['tutorial.completeTask'],
     ['drums.toggle', 0, 4, 'kick'],
@@ -222,6 +227,16 @@ test('clip commands dispatch to the selected clip store action', async () => {
 });
 
 test('keyboard map turns common keys into app commands', () => {
+  assert.deepEqual(mapKeyboardEventToCommand({ type: 'keydown', key: 'z', ctrlKey: true }), { type: 'app.undo' });
+  assert.deepEqual(mapKeyboardEventToCommand({ type: 'keydown', key: 'z', metaKey: true }), { type: 'app.undo' });
+  assert.equal(mapKeyboardEventToCommand({ type: 'keyup', key: 'z', ctrlKey: true }), null);
+  assert.equal(mapKeyboardEventToCommand({ type: 'keydown', key: 'z', ctrlKey: true, shiftKey: true }), null);
+  assert.equal(
+    mapKeyboardEventToCommand(
+      { type: 'keydown', key: 'z', ctrlKey: true, target: { tagName: 'INPUT', isContentEditable: false } },
+    ),
+    null,
+  );
   assert.deepEqual(mapKeyboardEventToCommand({ type: 'keydown', key: ' ' }), { type: 'transport.togglePlay' });
   assert.deepEqual(mapKeyboardEventToCommand({ type: 'keydown', code: 'Space' }), { type: 'transport.togglePlay' });
   assert.deepEqual(mapKeyboardEventToCommand({ type: 'keydown', key: 'Escape' }), { type: 'transport.stop' });
