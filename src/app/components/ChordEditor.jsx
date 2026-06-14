@@ -21,15 +21,14 @@ import {
 } from '../uiShellData.js';
 import {
   getChordBarDisplayLabel,
-  getChordCell,
   getChordEnrichTargetLabel,
+  getPassingChordContext,
   getPassingChordDisplayLabel,
   getChordSpanDisplayLabel,
   getChordStepCell,
 } from '../chordActions.js';
 import {
   CHORD_TEMPLATES,
-  getDoowopPassingTargetChord,
   getChordRootName,
   getPassingChordOptions,
   getChordVariantOptions,
@@ -346,6 +345,7 @@ function getGrooveStepStyle(template, step) {
 
 function ChordEditor({
   canPageBars = false,
+  clips,
   clipName,
   matrix,
   onChordNoteSelect,
@@ -387,8 +387,9 @@ function ChordEditor({
   );
   const pendingTemplate = pendingTemplateId ? CHORD_TEMPLATES[pendingTemplateId] : null;
   const primaryChordLabel = getChordBarDisplayLabel(matrix, selectedBar);
-  const passingSourceChord = getChordCell(matrix, selectedBar, 0)?.label ?? primaryChordLabel;
-  const passingTargetChord = getDoowopPassingTargetChord(passingSourceChord);
+  const passingChordContext = getPassingChordContext(matrix, clips, selectedBar);
+  const passingSourceChord = passingChordContext.currentChord;
+  const passingTargetChord = passingChordContext.targetChord;
   const passingChordDisplayLabel = getPassingChordDisplayLabel(matrix, selectedBar, PASSING_CHORD_STEP_INDEX);
   const passingRole = getTutorialControlRole(tutorialTargets, 'chord-passing-button');
   const passingAnchorClassName = [

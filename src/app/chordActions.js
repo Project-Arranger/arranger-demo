@@ -9,12 +9,15 @@ import {
   createChordNotesCell,
   createChordTonePitches,
   createPassingChordCell,
+  getDoowopPassingTargetChord,
   getChordCellNotes,
   getChordRemovedTonePitches,
   getChordSpanStep,
   isPassingChordCell,
   toggleChordNoteCell,
 } from '../domain/chordCells.js';
+
+const PASSING_CHORD_SOURCE_SPAN_INDEX = BEATS_PER_BAR - 1;
 
 function getChordCell(matrix, barIndex, spanIndex) {
   const step = getChordSpanStep(spanIndex);
@@ -271,9 +274,31 @@ function clearChordBar(matrix, barIndex) {
 function getExistingChordClipBars(clips) {
   return (clips?.ids ?? [])
     .map((id) => clips.byId?.[id])
-    .filter((clip) => clip?.trackId === 'chord')
+    .filter((clip) => clip?.trackId === 'chord' && Number.isInteger(clip.bar))
     .map((clip) => clip.bar)
     .sort((a, b) => a - b);
+}
+
+function getNextChordClipBar(clips, selectedBar) {
+  const bars = getExistingChordClipBars(clips);
+  if (bars.length < 2 || !Number.isInteger(selectedBar)) return null;
+
+  const currentIndex = bars.indexOf(selectedBar);
+  if (currentIndex === -1) return null;
+
+  return bars[(currentIndex + 1) % bars.length] ?? null;
+}
+
+function getPassingChordContext(matrix, clips, selectedBar) {
+  const currentChord = getChordSpanDisplayLabel(matrix, selectedBar, PASSING_CHORD_SOURCE_SPAN_INDEX)
+    ?? getChordBarDisplayLabel(matrix, selectedBar);
+  const nextBar = getNextChordClipBar(clips, selectedBar);
+  const nextChord = nextBar === null ? null : getChordBarDisplayLabel(matrix, nextBar);
+
+  return {
+    currentChord,
+    targetChord: nextChord ?? getDoowopPassingTargetChord(currentChord),
+  };
 }
 
 function hasExistingChordClipContent(matrix, clips) {
@@ -409,6 +434,7 @@ export {
   getChordCell,
   getChordBarDisplayLabel,
   getChordEnrichTargetLabel,
+  getPassingChordContext,
   getChordSpanDisplayLabel,
   getPassingChordDisplayLabel,
   hasExistingChordClipContent,

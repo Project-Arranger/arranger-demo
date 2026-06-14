@@ -13,6 +13,7 @@ function BottomEditor({
   tutorialTargets,
   selectedClipName = '',
   matrix,
+  clips,
   melodyScaleId,
   onChordCellSelect,
   onChordNoteSelect,
@@ -100,6 +101,7 @@ function BottomEditor({
   } else if (activeTrackId === 'chord' && selectedClipId) {
     editor = createElement(ChordEditor, {
       matrix,
+      clips,
       clipName: selectedClipName,
       onChordCellSelect,
       onChordNoteSelect,

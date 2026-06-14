@@ -5,6 +5,7 @@ import {
   clearChordBar,
   clearChordCell,
   getChordEnrichTargetLabel,
+  getPassingChordContext,
   getChordStepCell,
   getChordCell,
   getChordBeatDisplaySegments,
@@ -19,6 +20,17 @@ import {
   setChordStepChord,
 } from '../src/app/chordActions.js';
 import createInitialMatrix from '../src/store/createInitialMatrix.js';
+
+function createChordClips(...bars) {
+  const ids = bars.map((bar) => `chord-bar-${bar}`);
+  return {
+    ids,
+    byId: Object.fromEntries(ids.map((id, index) => [
+      id,
+      { id, trackId: 'chord', bar: bars[index] },
+    ])),
+  };
+}
 
 test('setChordCell writes only the selected chord span in the selected bar', () => {
   const matrix = createInitialMatrix();
@@ -228,6 +240,74 @@ test('chord enrich target labels cover manual and groove sourced chords', () => 
     sourceChordLabel: 'Am',
   };
   assert.equal(getChordEnrichTargetLabel(matrix, 0, 1), 'Am');
+});
+
+test('passing chord context follows enriched current and next chord clips', () => {
+  let matrix = createInitialMatrix();
+  const clips = createChordClips(0, 1);
+
+  matrix = setChordCell(matrix, 0, 0, 'C');
+  matrix = setChordEnrichTarget(matrix, 0, 0, 'Cmaj7');
+  matrix = setChordCell(matrix, 1, 0, 'Am');
+  matrix = setChordEnrichTarget(matrix, 1, 0, 'Am7');
+
+  assert.deepEqual(getPassingChordContext(matrix, clips, 0), {
+    currentChord: 'Cmaj7',
+    targetChord: 'Am7',
+  });
+});
+
+test('passing chord context uses the chord beside the passing shortcut as source', () => {
+  let matrix = createInitialMatrix();
+  const clips = createChordClips(0, 1);
+
+  matrix = setChordCell(matrix, 0, 0, 'C');
+  matrix = setChordCell(matrix, 0, 3, 'C');
+  matrix = setChordEnrichTarget(matrix, 0, 3, 'Csus4');
+  matrix = setChordCell(matrix, 1, 0, 'Am');
+
+  assert.deepEqual(getPassingChordContext(matrix, clips, 0), {
+    currentChord: 'Csus4',
+    targetChord: 'Am',
+  });
+});
+
+test('passing chord context uses groove source labels and preserves fallback targets', () => {
+  const matrix = createInitialMatrix();
+  const clips = createChordClips(0, 2);
+
+  matrix.chord[0][0] = {
+    type: 'notes',
+    notes: ['C4'],
+    label: 'C4',
+    grooveTemplateId: 'arp-basic',
+    sourceChordLabel: 'Cmaj7',
+  };
+  matrix.chord[2][0] = {
+    type: 'chord',
+    root: 'A',
+    chordRoot: 'Am',
+    quality: 'm7',
+    label: 'Am7',
+    toneRoots: ['A', 'C', 'E', 'G'],
+    sourceChordLabel: 'Am7',
+  };
+
+  assert.deepEqual(getPassingChordContext(matrix, clips, 0), {
+    currentChord: 'Cmaj7',
+    targetChord: 'Am7',
+  });
+
+  matrix.chord[2][0] = null;
+  assert.deepEqual(getPassingChordContext(matrix, clips, 0), {
+    currentChord: 'Cmaj7',
+    targetChord: 'Am',
+  });
+
+  assert.deepEqual(getPassingChordContext(matrix, createChordClips(0), 0), {
+    currentChord: 'Cmaj7',
+    targetChord: 'Am',
+  });
 });
 
 test('setChordEnrichTarget replaces block groove chords while preserving hit shape', () => {

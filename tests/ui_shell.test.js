@@ -288,9 +288,10 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(chordEditorSource, /AddChordPopover/);
   assert.doesNotMatch(chordEditorSource, /DIATONIC_CHORD_OPTIONS/);
   assert.doesNotMatch(chordEditorSource, /cvPanelDiatonic/);
-  assert.match(chordEditorSource, /getDoowopPassingTargetChord/);
+  assert.doesNotMatch(chordEditorSource, /getDoowopPassingTargetChord/);
   assert.match(chordEditorSource, /getChordVariantOptions/);
   assert.match(chordEditorSource, /getPassingChordOptions/);
+  assert.match(chordEditorSource, /getPassingChordContext/);
   assert.match(chordEditorSource, /getChordEnrichTargetLabel/);
   assert.doesNotMatch(chordEditorSource, /if \(!hasChord\) return;/);
   assert.doesNotMatch(chordEditorSource, /activeChordTab/);
@@ -334,6 +335,9 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.doesNotMatch(chordEditorSource, /className="beat-num mono"/);
   assert.match(chordEditorSource, /getChordSpanDisplayLabel/);
   assert.match(chordEditorSource, /getPassingChordDisplayLabel/);
+  assert.match(chordEditorSource, /const passingChordContext = getPassingChordContext\(matrix,\s*clips,\s*selectedBar\);/);
+  assert.match(chordEditorSource, /const passingSourceChord = passingChordContext\.currentChord;/);
+  assert.match(chordEditorSource, /const passingTargetChord = passingChordContext\.targetChord;/);
   assert.match(chordEditorSource, /const passingChordDisplayLabel = getPassingChordDisplayLabel\(matrix,\s*selectedBar,\s*PASSING_CHORD_STEP_INDEX\);/);
   assert.match(chordEditorSource, /\{passingChordDisplayLabel \? null : renderIcon\(Plus\)\}/);
   assert.match(chordEditorSource, /\{passingChordDisplayLabel \?\? '经过和弦'\}/);
@@ -351,7 +355,7 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.doesNotMatch(chordEditorSource, /colIndex >= 2 \? 'extension' : ''/);
   assert.doesNotMatch(chordEditorSource, /Beat \$\{beatNumber\} 单音/);
   assert.doesNotMatch(chordEditorSource, /disabled=\{!canOpenChordPanel\}/);
-  assert.match(chordEditorSource, /getChordCell/);
+  assert.doesNotMatch(chordEditorSource, /getChordCell/);
   assert.match(chordEditorSource, /getChordStepCell/);
   assert.match(chordEditorSource, /getChordBarDisplayLabel/);
   assert.match(chordEditorSource, /isChordCellActive/);
@@ -394,9 +398,13 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(source, /renameClip\(selectedClipId,\s*name\)/);
   assert.match(source, /setSelectedClipId\(null\)/);
   assert.match(source, /selectedClipId/);
+  assert.match(source, /clips/);
+  assert.match(source, /clips,\s*\n\s*melodyScaleId/);
   assert.match(source, /onCloseEditor:\s*handleCloseEditor/);
   assert.match(bottomEditorSource, /selectedClipId/);
   assert.match(bottomEditorSource, /selectedClipName/);
+  assert.match(bottomEditorSource, /clips/);
+  assert.match(bottomEditorSource, /clips,\s*\n\s*clipName:\s*selectedClipName/);
   assert.match(bottomEditorSource, /onRenameClip/);
   assert.match(bottomEditorSource, /activeTrackId === 'chord' && selectedClipId/);
   assert.match(bottomEditorSource, /onClose:\s*onCloseEditor/);

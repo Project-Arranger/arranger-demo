@@ -1613,6 +1613,7 @@ export default function App() {
           tutorialLocked: activeTutorialLocked,
           tutorialTargets: activeTutorialTargets,
           matrix,
+          clips,
           melodyScaleId,
           selectedClipName: selectedClip?.name ?? '',
           onChordCellSelect: handleChordCellSelect,
