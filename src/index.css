@@ -3596,12 +3596,25 @@ button {
   font-weight: 600;
 }
 
+.cv-context.enrich {
+  gap: 8px;
+}
+
+.cv-context.enrich .cv-ctx-chord {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
 .cv-ctx-chord {
   padding: 2px 8px;
   color: var(--ink-2);
   background: var(--bg-deep);
   border-radius: 6px;
   font-weight: 800;
+}
+
+.current-chord-preview {
+  flex: 0 0 auto;
 }
 
 .cv-ctx-arrow {

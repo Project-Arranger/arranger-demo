@@ -663,6 +663,9 @@ test('add chord panels keep enrich and passing picker layout without diatonic UI
   assert.doesNotMatch(css, /\.cv-grid\.diatonic/);
   assert.match(css, /\.cv-grid\.enrich\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\);/s);
   assert.match(css, /\.cv-context\s*\{[^}]*display:\s*flex;/s);
+  assert.match(css, /\.cv-context\.enrich\s*\{[^}]*gap:\s*8px;/s);
+  assert.match(css, /\.cv-context\.enrich \.cv-ctx-chord\s*\{[^}]*flex:\s*0 1 auto;[^}]*min-width:\s*0;/s);
+  assert.match(css, /\.current-chord-preview\s*\{[^}]*flex:\s*0 0 auto;/s);
   assert.match(css, /\.cv-empty\s*\{[^}]*border:\s*1px dashed var\(--border\);/s);
   assert.match(css, /\.cv-preview\s*\{[^}]*width:\s*28px;[^}]*height:\s*28px;/s);
   assert.match(css, /\.cv-grid\.passing\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\);/s);

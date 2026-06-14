@@ -270,6 +270,11 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(addChordPopoverSource, /className="cv-title"[\s\S]*丰富和弦/);
   assert.doesNotMatch(addChordPopoverSource, /className="cv-tab"/);
   assert.doesNotMatch(addChordPopoverSource, /className="cv-custom"/);
+  assert.match(addChordPopoverSource, /className=\{currentChordPreviewClassName\}/);
+  assert.match(addChordPopoverSource, /aria-label=\{`试听当前和弦 \$\{currentChord\}`\}/);
+  assert.match(addChordPopoverSource, /onClick=\{\(event\) => handlePreview\(event,\s*currentChord\)\}/);
+  assert.match(addChordPopoverSource, /playingChord === currentChord \? 'playing' : ''/);
+  assert.doesNotMatch(addChordPopoverSource, /onCurrentChordPreview/);
   assert.match(addChordPopoverSource, /data-action="preview"/);
   assert.match(chordEditorSource, /CHORD_GRID_PITCHES\.flatMap/);
   assert.match(chordEditorSource, /const \[hoveredPitchRow,\s*setHoveredPitchRow\] = useState\(null\);/);

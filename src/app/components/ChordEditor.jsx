@@ -97,6 +97,11 @@ function AddChordPopover({
   const currentChordRoot = getChordRootName(currentChord);
   const variantOptions = getChordVariantOptions(currentChord);
   const position = getPopoverPosition(anchorRect);
+  const currentChordPreviewClassName = [
+    'cv-preview',
+    'current-chord-preview',
+    playingChord === currentChord ? 'playing' : '',
+  ].filter(Boolean).join(' ');
 
   const handlePreview = (event, chordName) => {
     event.stopPropagation();
@@ -173,6 +178,15 @@ function AddChordPopover({
         <div className="cv-context enrich">
           <span>丰富和弦色彩</span>
           <span className="cv-ctx-chord">{currentChordRoot ?? currentChord}</span>
+          <button
+            className={currentChordPreviewClassName}
+            type="button"
+            aria-label={`试听当前和弦 ${currentChord}`}
+            data-action="preview"
+            onClick={(event) => handlePreview(event, currentChord)}
+          >
+            <span className="play-glyph" aria-hidden="true" />
+          </button>
         </div>
         {variantOptions.length ? (
           <div className="cv-grid enrich">
