@@ -4070,36 +4070,7 @@ button {
   border-color: var(--tutorial-cell-border);
 }
 
-.tutorial-cell-completed {
-  --tutorial-cell-accent: var(--c-drums);
-  --tutorial-cell-ink: var(--tutorial-cell-accent);
-  --tutorial-cell-surface: color-mix(in oklab, white 36%, var(--tutorial-cell-accent));
-  --tutorial-cell-border: color-mix(in oklab, var(--tutorial-cell-accent) 76%, var(--tutorial-cell-ink));
-  --tutorial-highlight-accent: var(--tutorial-cell-accent);
-  --tutorial-highlight-ink: var(--tutorial-cell-ink);
-
-  position: relative;
-  z-index: var(--tutorial-target-z);
-  opacity: 1;
-  background: var(--tutorial-cell-surface);
-  border-color: var(--tutorial-cell-border);
-  box-shadow:
-    inset 0 0 0 2px color-mix(in oklab, white 58%, transparent),
-    inset 0 0 0 4px color-mix(in oklab, var(--tutorial-cell-accent) 18%, transparent),
-    0 0 0 2px color-mix(in oklab, white 34%, transparent);
-}
-
-.drum-step.active.tutorial-cell-completed {
-  background: var(--tutorial-cell-surface);
-  border-color: var(--tutorial-cell-border);
-}
-
 .tutorial-cell-target-blue {
-  --tutorial-cell-accent: oklch(70% 0.17 252);
-  --tutorial-cell-ink: oklch(36% 0.14 252);
-}
-
-.tutorial-cell-completed-blue {
   --tutorial-cell-accent: oklch(70% 0.17 252);
   --tutorial-cell-ink: oklch(36% 0.14 252);
 }
@@ -4109,17 +4080,7 @@ button {
   --tutorial-cell-ink: oklch(35% 0.13 150);
 }
 
-.tutorial-cell-completed-green {
-  --tutorial-cell-accent: oklch(72% 0.16 150);
-  --tutorial-cell-ink: oklch(35% 0.13 150);
-}
-
 .tutorial-cell-target-yellow {
-  --tutorial-cell-accent: oklch(84% 0.18 88);
-  --tutorial-cell-ink: oklch(42% 0.13 82);
-}
-
-.tutorial-cell-completed-yellow {
   --tutorial-cell-accent: oklch(84% 0.18 88);
   --tutorial-cell-ink: oklch(42% 0.13 82);
 }

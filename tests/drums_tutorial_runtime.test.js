@@ -290,7 +290,6 @@ test('kick variation highlights blue green and yellow target classes until compl
   assert.equal(readyViewModel.primaryDisabled, false);
   assert.deepEqual(readyViewModel.targets.drumCells, [
     { bar: 0, instrument: 'kick', role: 'target-blue', steps: [4, 12] },
-    { bar: 0, instrument: 'kick', role: 'completed-green', steps: [2] },
     { bar: 0, instrument: 'kick', role: 'target-green', steps: [6, 10, 14] },
     { bar: 0, instrument: 'kick', role: 'target-yellow', steps: [1, 3, 5, 7, 9, 11, 13, 15] },
   ]);

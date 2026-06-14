@@ -245,21 +245,19 @@ function getPrimaryState(step, progress) {
 
 function createKickVariationTargets({ matrix, progress, selectedBar }) {
   const targets = [];
-  const editedCells = new Set(progress?.kickVariationEditedCells ?? []);
   const originalRemovedCells = new Set(progress?.kickVariationOriginalRemovedCells ?? []);
 
   for (const group of KICK_RECOMMENDATION_GROUPS) {
     for (const step of group.steps) {
       const cellKey = createCellKey(selectedBar, step);
       const hasKick = hasInstrument(matrix, selectedBar, step, 'kick');
-      const edited = editedCells.has(cellKey);
       const originalRemoved = originalRemovedCells.has(cellKey);
-      if (hasKick && !edited) continue;
+      if (hasKick) continue;
       if (!hasKick && originalRemoved) continue;
 
       addDrumCellTarget(targets, {
         bar: selectedBar,
-        role: `${hasKick ? 'completed' : 'target'}-${group.color}`,
+        role: `target-${group.color}`,
         step,
       });
     }

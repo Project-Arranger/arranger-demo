@@ -1099,14 +1099,10 @@ test('app routes drums tutorial tasks through guards and target props', async ()
   assert.doesNotMatch(drumSequencerSource, /tutorial-cell-existing-blue/);
   assert.doesNotMatch(drumSequencerSource, /tutorial-cell-existing-green/);
   assert.doesNotMatch(drumSequencerSource, /tutorial-cell-existing-yellow/);
-  assert.match(drumSequencerSource, /tutorial-cell-completed/);
-  assert.match(drumSequencerSource, /tutorial-cell-completed-blue/);
-  assert.match(drumSequencerSource, /tutorial-cell-completed-green/);
-  assert.match(drumSequencerSource, /tutorial-cell-completed-yellow/);
+  assert.doesNotMatch(drumSequencerSource, /tutorial-cell-completed/);
   assert.doesNotMatch(drumSequencerSource, /tutorialRole\.startsWith\('existing'\)/);
-  assert.match(drumSequencerSource, /tutorialRole\.startsWith\('completed'\)/);
+  assert.doesNotMatch(drumSequencerSource, /tutorialRole\.startsWith\('completed'\)/);
   assert.match(drumSequencerSource, /getTutorialControlRole\(tutorialTargets,\s*'generate-current-drums-bar'\)/);
   assert.match(drumSequencerSource, /getTutorialControlRole\(tutorialTargets,\s*'generate-all-drums-bars'\)/);
   assert.match(drumSequencerSource, /tutorial-cell-source/);
-  assert.match(drumSequencerSource, /tutorial-cell-completed/);
 });

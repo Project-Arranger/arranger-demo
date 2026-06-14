@@ -29,11 +29,6 @@ const STEP_GROUPS = Array.from(
 );
 const DRAG_THRESHOLD_PX = 6;
 const TUTORIAL_CELL_COLOR_CLASSES = Object.freeze({
-  completed: Object.freeze({
-    blue: 'tutorial-cell-completed-blue',
-    green: 'tutorial-cell-completed-green',
-    yellow: 'tutorial-cell-completed-yellow',
-  }),
   target: Object.freeze({
     blue: 'tutorial-cell-target-blue',
     green: 'tutorial-cell-target-green',
@@ -91,14 +86,6 @@ function getTutorialCellClasses(tutorialRole) {
       tutorialRole.endsWith('-blue') ? TUTORIAL_CELL_COLOR_CLASSES.target.blue : '',
       tutorialRole.endsWith('-green') ? TUTORIAL_CELL_COLOR_CLASSES.target.green : '',
       tutorialRole.endsWith('-yellow') ? TUTORIAL_CELL_COLOR_CLASSES.target.yellow : '',
-    ];
-  }
-  if (tutorialRole.startsWith('completed')) {
-    return [
-      'tutorial-cell-completed',
-      tutorialRole.endsWith('-blue') ? TUTORIAL_CELL_COLOR_CLASSES.completed.blue : '',
-      tutorialRole.endsWith('-green') ? TUTORIAL_CELL_COLOR_CLASSES.completed.green : '',
-      tutorialRole.endsWith('-yellow') ? TUTORIAL_CELL_COLOR_CLASSES.completed.yellow : '',
     ];
   }
   if (tutorialRole === 'source') return ['tutorial-cell-source'];
