@@ -83,6 +83,61 @@ function pushUndoSnapshot(history = [], snapshot, limit = UNDO_HISTORY_LIMIT) {
   return [...history, cloneValue(snapshot)].slice(-limit);
 }
 
+function pushHistoryCheckpoint({
+  undoHistory = [],
+  snapshot,
+  limit = UNDO_HISTORY_LIMIT,
+} = {}) {
+  return {
+    undoHistory: pushUndoSnapshot(undoHistory, snapshot, limit),
+    redoHistory: [],
+  };
+}
+
+function createUndoTransition({
+  currentSnapshot,
+  redoHistory = [],
+  undoHistory = [],
+  limit = UNDO_HISTORY_LIMIT,
+} = {}) {
+  const snapshot = undoHistory.at(-1);
+  if (!snapshot) {
+    return {
+      redoHistory,
+      snapshot: null,
+      undoHistory,
+    };
+  }
+
+  return {
+    redoHistory: pushUndoSnapshot(redoHistory, currentSnapshot, limit),
+    snapshot: cloneValue(snapshot),
+    undoHistory: undoHistory.slice(0, -1).map(cloneValue),
+  };
+}
+
+function createRedoTransition({
+  currentSnapshot,
+  redoHistory = [],
+  undoHistory = [],
+  limit = UNDO_HISTORY_LIMIT,
+} = {}) {
+  const snapshot = redoHistory.at(-1);
+  if (!snapshot) {
+    return {
+      redoHistory,
+      snapshot: null,
+      undoHistory,
+    };
+  }
+
+  return {
+    redoHistory: redoHistory.slice(0, -1).map(cloneValue),
+    snapshot: cloneValue(snapshot),
+    undoHistory: pushUndoSnapshot(undoHistory, currentSnapshot, limit),
+  };
+}
+
 function restoreUndoSnapshot({
   setAppliedTutorialSetups,
   setCurrentTutorialStepIndex,
@@ -109,8 +164,11 @@ function restoreUndoSnapshot({
 
 export {
   UNDO_HISTORY_LIMIT,
+  createRedoTransition,
   createUndoSnapshot,
+  createUndoTransition,
   hasUndoSnapshotChanged,
+  pushHistoryCheckpoint,
   pushUndoSnapshot,
   restoreUndoSnapshot,
 };

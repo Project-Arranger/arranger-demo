@@ -1,5 +1,6 @@
 import {
   Plus,
+  Redo2,
   Settings,
   SkipBack,
   Square,
@@ -16,6 +17,7 @@ import { renderIcon } from './icons.js';
 function TopBar({
   activeTutorialTarget,
   bpm,
+  canRedo = false,
   canUndo = false,
   currentBar,
   currentStep,
@@ -24,6 +26,7 @@ function TopBar({
   onPlayToggle,
   onStop,
   onTutorialToggle,
+  onRedo = () => {},
   onUndo = () => {},
   rootKey,
   scale,
@@ -60,17 +63,30 @@ function TopBar({
       </button>
 
       <div className="topbar-center">
-        <div className={transportClassName} role="toolbar" aria-label="Transport">
+        <div className="history-controls" role="toolbar" aria-label="History">
           <button
             className="t-btn undo"
-            aria-label="撤销上一步"
-            title="撤销上一步 (Ctrl+Z)"
+            aria-label="向前一步"
+            title="向前一步 (Ctrl+Z)"
             type="button"
             disabled={!canUndo}
             onClick={onUndo}
           >
             {renderIcon(Undo2)}
           </button>
+          <button
+            className="t-btn redo"
+            aria-label="向后一步"
+            title="向后一步"
+            type="button"
+            disabled={!canRedo}
+            onClick={onRedo}
+          >
+            {renderIcon(Redo2)}
+          </button>
+        </div>
+
+        <div className={transportClassName} role="toolbar" aria-label="Transport">
           <button
             className="t-btn"
             aria-label="Back to start"

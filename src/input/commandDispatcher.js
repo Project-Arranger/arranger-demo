@@ -91,6 +91,10 @@ async function dispatchHandlerCommand(command, deps) {
   const { handlers = {} } = deps;
 
   switch (command.type) {
+    case APP_COMMAND_TYPES.APP_REDO:
+      await maybeCall(handlers.app?.redo, command);
+      return { ok: true };
+
     case APP_COMMAND_TYPES.APP_UNDO:
       await maybeCall(handlers.app?.undo, command);
       return { ok: true };

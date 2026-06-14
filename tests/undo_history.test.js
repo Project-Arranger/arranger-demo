@@ -6,7 +6,10 @@ import { createTutorialState } from '../src/tutorial/drumsTutorialRuntime.js';
 import {
   UNDO_HISTORY_LIMIT,
   createUndoSnapshot,
+  createRedoTransition,
+  createUndoTransition,
   hasUndoSnapshotChanged,
+  pushHistoryCheckpoint,
   pushUndoSnapshot,
   restoreUndoSnapshot,
 } from '../src/app/undoHistory.js';
@@ -114,6 +117,68 @@ test('pushUndoSnapshot skips duplicate snapshots and enforces the history limit'
   assert.equal(history.length, UNDO_HISTORY_LIMIT);
   assert.equal(history[0].appState.selectedBar, 4);
   assert.equal(history.at(-1).appState.selectedBar, UNDO_HISTORY_LIMIT + 3);
+});
+
+test('undo and redo transitions move snapshots between history stacks', () => {
+  const beforeEditState = createAppState();
+  beforeEditState.selectedBar = 0;
+  const afterEditState = createAppState();
+  afterEditState.selectedBar = 3;
+  const beforeEdit = createUndoSnapshot({
+    appState: beforeEditState,
+    tutorialState: createTutorialSnapshotState(),
+  });
+  const afterEdit = createUndoSnapshot({
+    appState: afterEditState,
+    tutorialState: createTutorialSnapshotState(),
+  });
+
+  const undoTransition = createUndoTransition({
+    currentSnapshot: afterEdit,
+    redoHistory: [],
+    undoHistory: [beforeEdit],
+  });
+
+  assert.equal(undoTransition.snapshot.appState.selectedBar, 0);
+  assert.equal(undoTransition.undoHistory.length, 0);
+  assert.equal(undoTransition.redoHistory.length, 1);
+  assert.equal(undoTransition.redoHistory[0].appState.selectedBar, 3);
+
+  afterEdit.appState.selectedBar = 7;
+  assert.equal(undoTransition.redoHistory[0].appState.selectedBar, 3);
+
+  const redoTransition = createRedoTransition({
+    currentSnapshot: undoTransition.snapshot,
+    redoHistory: undoTransition.redoHistory,
+    undoHistory: undoTransition.undoHistory,
+  });
+
+  assert.equal(redoTransition.snapshot.appState.selectedBar, 3);
+  assert.equal(redoTransition.redoHistory.length, 0);
+  assert.equal(redoTransition.undoHistory.length, 1);
+  assert.equal(redoTransition.undoHistory[0].appState.selectedBar, 0);
+});
+
+test('new undo checkpoints clear redo history', () => {
+  const beforeEdit = createUndoSnapshot({
+    appState: createAppState(),
+    tutorialState: createTutorialSnapshotState(),
+  });
+  const redoState = createAppState();
+  redoState.selectedBar = 2;
+  const redoSnapshot = createUndoSnapshot({
+    appState: redoState,
+    tutorialState: createTutorialSnapshotState(),
+  });
+
+  const nextHistory = pushHistoryCheckpoint({
+    redoHistory: [redoSnapshot],
+    snapshot: beforeEdit,
+    undoHistory: [],
+  });
+
+  assert.equal(nextHistory.undoHistory.length, 1);
+  assert.equal(nextHistory.redoHistory.length, 0);
 });
 
 test('hasUndoSnapshotChanged compares normalized nested state', () => {

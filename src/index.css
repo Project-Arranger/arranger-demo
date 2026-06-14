@@ -657,6 +657,16 @@ button {
   min-width: 0;
 }
 
+.history-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+}
+
 .transport {
   display: flex;
   align-items: center;
@@ -691,7 +701,8 @@ button {
   border-radius: 8px;
 }
 
-.t-btn.undo {
+.t-btn.undo,
+.t-btn.redo {
   width: 32px;
   height: 32px;
   flex: 0 0 32px;

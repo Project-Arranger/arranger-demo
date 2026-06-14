@@ -93,9 +93,11 @@ import { syncEditorToPlaybackBar } from './playbackEditorSync.js';
 import { syncTrackScrollContainers } from './syncTrackScroll.js';
 import { syncEditorToTutorialSuggestedBar } from './tutorialEditorSync.js';
 import {
+  createRedoTransition,
   createUndoSnapshot,
+  createUndoTransition,
   hasUndoSnapshotChanged,
-  pushUndoSnapshot,
+  pushHistoryCheckpoint,
   restoreUndoSnapshot,
 } from './undoHistory.js';
 import {
@@ -188,6 +190,7 @@ export default function App() {
     }),
   }));
   const [undoHistory, setUndoHistory] = useState(() => []);
+  const [redoHistory, setRedoHistory] = useState(() => []);
   const [editorHeightPx, setEditorHeightPx] = useState(null);
   const [editorResizeMaxHeight, setEditorResizeMaxHeight] = useState(EDITOR_RESIZE_DEFAULT_HEIGHT);
   const [currentEditorResizeValue, setCurrentEditorResizeValue] = useState(EDITOR_RESIZE_DEFAULT_HEIGHT);
@@ -256,7 +259,8 @@ export default function App() {
   ]);
 
   const recordUndoSnapshot = useCallback((snapshot) => {
-    setUndoHistory((history) => pushUndoSnapshot(history, snapshot));
+    setUndoHistory((history) => pushHistoryCheckpoint({ undoHistory: history, snapshot }).undoHistory);
+    setRedoHistory(() => []);
   }, []);
 
   const withUndoCheckpoint = useCallback((action, options = {}) => {
@@ -269,11 +273,9 @@ export default function App() {
     return result;
   }, [createCurrentUndoSnapshot, recordUndoSnapshot]);
 
-  const handleUndo = useCallback(() => {
-    const snapshot = undoHistory.at(-1);
+  const restoreHistorySnapshot = useCallback((snapshot) => {
     if (!snapshot) return;
 
-    setUndoHistory((history) => history.slice(0, -1));
     clearTutorialAutoAdvanceTimer();
     void (async () => {
       await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
@@ -289,7 +291,33 @@ export default function App() {
         store: useMusicStore,
       });
     })();
-  }, [dispatchAppCommand, undoHistory]);
+  }, [dispatchAppCommand]);
+
+  const handleUndo = useCallback(() => {
+    const transition = createUndoTransition({
+      currentSnapshot: createCurrentUndoSnapshot(),
+      redoHistory,
+      undoHistory,
+    });
+    if (!transition.snapshot) return;
+
+    setUndoHistory(transition.undoHistory);
+    setRedoHistory(transition.redoHistory);
+    restoreHistorySnapshot(transition.snapshot);
+  }, [createCurrentUndoSnapshot, redoHistory, restoreHistorySnapshot, undoHistory]);
+
+  const handleRedo = useCallback(() => {
+    const transition = createRedoTransition({
+      currentSnapshot: createCurrentUndoSnapshot(),
+      redoHistory,
+      undoHistory,
+    });
+    if (!transition.snapshot) return;
+
+    setUndoHistory(transition.undoHistory);
+    setRedoHistory(transition.redoHistory);
+    restoreHistorySnapshot(transition.snapshot);
+  }, [createCurrentUndoSnapshot, redoHistory, restoreHistorySnapshot, undoHistory]);
 
   const resetTutorialTransportToStart = useCallback(async () => {
     await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
@@ -810,6 +838,11 @@ export default function App() {
       return;
     }
 
+    if (command?.type === APP_COMMAND_TYPES.APP_REDO) {
+      handleRedo();
+      return;
+    }
+
     if (command?.type === APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY) {
       handlePlayToggle();
       return;
@@ -823,7 +856,7 @@ export default function App() {
     }
 
     void dispatchAppCommand(command);
-  }, [dispatchAppCommand, handlePlayToggle, handleUndo, withUndoCheckpoint]);
+  }, [dispatchAppCommand, handlePlayToggle, handleRedo, handleUndo, withUndoCheckpoint]);
 
   useKeyboardCommands({ dispatch: dispatchKeyboardCommand });
 
@@ -1516,6 +1549,7 @@ export default function App() {
   const appStyle = editorHeightPx === null ? undefined : {
     '--app-editor-height': `${editorHeightPx}px`,
   };
+  const canRedo = redoHistory.length > 0;
   const canUndo = undoHistory.length > 0;
 
   return (
@@ -1529,6 +1563,7 @@ export default function App() {
         {createElement(TopBar, {
           activeTutorialTarget,
           bpm,
+          canRedo,
           canUndo,
           currentBar,
           currentStep,
@@ -1537,6 +1572,7 @@ export default function App() {
           onPlayToggle: handlePlayToggle,
           onStop: handleStop,
           onTutorialToggle: handleTutorialSidebarToggle,
+          onRedo: handleRedo,
           onUndo: handleUndo,
           rootKey,
           scale,

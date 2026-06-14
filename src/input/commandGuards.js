@@ -74,6 +74,7 @@ function isValidAppCommand(command) {
   if (!isPlainObject(command) || typeof command.type !== 'string') return false;
 
   switch (command.type) {
+    case APP_COMMAND_TYPES.APP_REDO:
     case APP_COMMAND_TYPES.APP_UNDO:
     case APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY:
     case APP_COMMAND_TYPES.TRANSPORT_STOP:

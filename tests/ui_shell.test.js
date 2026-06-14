@@ -17,31 +17,53 @@ import {
   TRACK_UI,
 } from '../src/app/uiShellData.js';
 
-test('topbar exposes global undo next to transport and App wires undo history', async () => {
+test('topbar exposes independent undo redo controls and App wires history', async () => {
   const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
   const topBarSource = await readFile(new URL('../src/app/components/TopBar.jsx', import.meta.url), 'utf8');
 
   assert.match(topBarSource, /Undo2/);
+  assert.match(topBarSource, /Redo2/);
   assert.match(topBarSource, /canUndo\s*=\s*false/);
+  assert.match(topBarSource, /canRedo\s*=\s*false/);
   assert.match(topBarSource, /onUndo/);
+  assert.match(topBarSource, /onRedo/);
+  assert.match(topBarSource, /className="history-controls"/);
+  assert.match(topBarSource, /role="toolbar" aria-label="History"/);
   assert.match(topBarSource, /className="t-btn undo"/);
-  assert.match(topBarSource, /aria-label="撤销上一步"/);
-  assert.match(topBarSource, /title="撤销上一步 \(Ctrl\+Z\)"/);
+  assert.match(topBarSource, /className="t-btn redo"/);
+  assert.match(topBarSource, /aria-label="向前一步"/);
+  assert.match(topBarSource, /title="向前一步 \(Ctrl\+Z\)"/);
+  assert.match(topBarSource, /aria-label="向后一步"/);
+  assert.match(topBarSource, /title="向后一步"/);
   assert.match(topBarSource, /disabled=\{!canUndo\}/);
+  assert.match(topBarSource, /disabled=\{!canRedo\}/);
   assert.match(topBarSource, /onClick=\{onUndo\}/);
+  assert.match(topBarSource, /onClick=\{onRedo\}/);
   assert.match(topBarSource, /renderIcon\(Undo2\)/);
-  assert.match(topBarSource, /<div className=\{transportClassName\} role="toolbar" aria-label="Transport">[\s\S]*className="t-btn undo"[\s\S]*className="t-btn"[\s\S]*Back to start/);
+  assert.match(topBarSource, /renderIcon\(Redo2\)/);
+  assert.match(topBarSource, /className="history-controls"[\s\S]*className="t-btn undo"[\s\S]*className="t-btn redo"[\s\S]*<div className=\{transportClassName\} role="toolbar" aria-label="Transport">/);
+  assert.doesNotMatch(topBarSource, /<div className=\{transportClassName\} role="toolbar" aria-label="Transport">[\s\S]*className="t-btn undo"[\s\S]*Back to start/);
+  assert.doesNotMatch(topBarSource, /<div className=\{transportClassName\} role="toolbar" aria-label="Transport">[\s\S]*className="t-btn redo"[\s\S]*Back to start/);
 
   assert.match(source, /createUndoSnapshot/);
-  assert.match(source, /pushUndoSnapshot/);
+  assert.match(source, /createUndoTransition/);
+  assert.match(source, /createRedoTransition/);
+  assert.match(source, /pushHistoryCheckpoint/);
   assert.match(source, /restoreUndoSnapshot/);
   assert.match(source, /const \[undoHistory,\s*setUndoHistory\] = useState\(\(\) => \[\]\);/);
+  assert.match(source, /const \[redoHistory,\s*setRedoHistory\] = useState\(\(\) => \[\]\);/);
   assert.match(source, /const canUndo = undoHistory\.length > 0;/);
+  assert.match(source, /const canRedo = redoHistory\.length > 0;/);
   assert.match(source, /const withUndoCheckpoint = useCallback/);
   assert.match(source, /const handleUndo = useCallback/);
+  assert.match(source, /const handleRedo = useCallback/);
   assert.match(source, /APP_COMMAND_TYPES\.APP_UNDO/);
+  assert.match(source, /APP_COMMAND_TYPES\.APP_REDO/);
   assert.match(source, /command\?\.type === APP_COMMAND_TYPES\.APP_UNDO[\s\S]*handleUndo\(\);[\s\S]*return;/);
-  assert.match(source, /canUndo,\s*\n\s*currentBar/);
+  assert.match(source, /command\?\.type === APP_COMMAND_TYPES\.APP_REDO[\s\S]*handleRedo\(\);[\s\S]*return;/);
+  assert.match(source, /setRedoHistory\(\(\) => \[\]\)/);
+  assert.match(source, /canRedo,\s*\n\s*canUndo,\s*\n\s*currentBar/);
+  assert.match(source, /onRedo:\s*handleRedo/);
   assert.match(source, /onUndo:\s*handleUndo/);
   assert.match(source, /withUndoCheckpoint\(\(\) => \{[\s\S]*createClip\(trackId,\s*barIndex\)/);
   assert.match(source, /withUndoCheckpoint\(\(\) => \{[\s\S]*handleTutorialControlAction/);
