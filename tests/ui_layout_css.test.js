@@ -174,7 +174,9 @@ test('drum sequencer uses three fixed rows and sixteen stable step columns', asy
   assert.match(css, /\.drum-step-groups\s*\{[^}]*--drum-step-group-gap:\s*clamp\(12px,\s*2\.4vw,\s*22px\);/s);
   assert.match(css, /\.drum-step-groups\s*\{[^}]*--drum-step-group-gap-half:\s*clamp\(6px,\s*1\.2vw,\s*11px\);/s);
   assert.match(css, /\.drum-step-groups\s*\{[^}]*column-gap:\s*var\(--drum-step-group-gap\);/s);
+  assert.match(css, /\.drum-step-group\s*\{[^}]*--drum-step-gap:\s*5px;/s);
   assert.match(css, /\.drum-step-group\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(18px,\s*32px\)\);/s);
+  assert.match(css, /\.drum-step-group\s*\{[^}]*gap:\s*var\(--drum-step-gap\);/s);
   assert.doesNotMatch(css, /\.drum-step(?:-number)?\.beat-end\s*\{[^}]*margin-right:/s);
   assert.match(css, /\.track-page-btn\s*\{[^}]*width:\s*36px;/s);
   assert.match(css, /\.track-page-btn\s*\{[^}]*height:\s*64px;/s);
@@ -188,6 +190,7 @@ test('drum sequencer uses three fixed rows and sixteen stable step columns', asy
   assert.match(css, /\.drum-step\.active\[data-instrument="kick"\]/);
   assert.match(css, /\.drum-step\.active\[data-instrument="snare"\]/);
   assert.match(css, /\.drum-step\.active\[data-instrument="hihat"\]/);
+  assert.match(css, /@media\s*\(max-width:\s*980px\)\s*\{[\s\S]*\.drum-step-group\s*\{[^}]*--drum-step-gap:\s*4px;[^}]*gap:\s*var\(--drum-step-gap\);/s);
 });
 
 test('chord pitch rail rows align with chord grid rows', async () => {
@@ -561,6 +564,8 @@ test('tutorial task targets make allowed cells and bars obvious', async () => {
   assert.match(css, /\.tutorial-cell-source\s*\{[^}]*z-index:\s*var\(--tutorial-target-z\);/s);
   assert.match(css, /\.tutorial-cell-source\s*\{[^}]*outline:\s*2px solid color-mix\(in oklab,\s*white 60%,\s*transparent\);/s);
   assert.match(css, /\.tutorial-cell-source\s*\{[^}]*animation:\s*tutorial-highlight-breathe var\(--tutorial-breathe-duration\) var\(--tutorial-breathe-ease\) infinite;/s);
+  assert.match(css, /\.drum-step\.tutorial-cell-source::before\s*\{[^}]*pointer-events:\s*none;[^}]*animation:\s*tutorial-kick-drag-ghost 2\.4s cubic-bezier\(0\.37,\s*0,\s*0\.24,\s*1\) infinite;/s);
+  assert.match(css, /@keyframes tutorial-kick-drag-ghost\s*\{[\s\S]*transform:\s*translateX\(calc\(\(100% \+ var\(--drum-step-gap\)\) \* 2\)\) scale\(1\.08\);/s);
   assert.match(css, /\.tutorial-cell-completed\s*\{[^}]*box-shadow:[^}]*inset 0 0 0 2px color-mix\(in oklab,\s*white 58%,\s*transparent\)/s);
   assert.doesNotMatch(css, /\.tutorial-cell-completed\s*\{[^}]*box-shadow:\s*var\(--tutorial-highlight-complete-shadow\);/s);
   assert.match(css, /\.drum-step\.tutorial-locked:not\(\.active\):not\(\.tutorial-cell-target\):not\(\.tutorial-cell-source\)\s*\{[^}]*opacity:\s*0\.18;/s);
@@ -648,6 +653,7 @@ test('tutorial task targets make allowed cells and bars obvious', async () => {
   assert.doesNotMatch(css, /\.playhead\.tutorial-playhead-target::after/);
   assert.doesNotMatch(css, /@keyframes tutorial-playhead-pulse/);
   assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*\.tutorial-target-active,[\s\S]*\.tutorial-cell-target,[\s\S]*\.tutorial-cell-source,[\s\S]*\.tutorial-bar-target,[\s\S]*\.tutorial-control-target,[\s\S]*\.playhead\.tutorial-playhead-target,[\s\S]*\.ruler-playhead\.tutorial-playhead-target::after[\s\S]*animation:\s*none;/s);
+  assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*\.drum-step\.tutorial-cell-source::before\s*\{[^}]*animation:\s*none;/s);
   assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*box-shadow:\s*var\(--tutorial-highlight-rest-shadow\);/s);
   assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*\.tutorial-panel-header::before[\s\S]*animation:\s*none;/s);
 });
