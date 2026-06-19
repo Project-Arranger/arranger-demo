@@ -24,6 +24,20 @@ test('ui shell keeps the editor usable and confines mobile overflow to panels', 
   assert.match(css, /\.stat:nth-child\(4\)\s*\{[^}]*display:\s*none;/s);
 });
 
+test('genre gate fills the viewport and visually locks unavailable styles', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.genre-gate\s*\{[^}]*min-height:\s*100dvh;/s);
+  assert.match(css, /\.genre-gate\s*\{[^}]*overflow:\s*auto;/s);
+  assert.match(css, /\.genre-gate-inner\s*\{[^}]*width:\s*min\(1120px,\s*100%\);/s);
+  assert.match(css, /\.genre-grid\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\);/s);
+  assert.match(css, /\.genre-card\.current\s*\{[^}]*border-color:\s*color-mix\(in oklab,\s*var\(--c-chord-ink\)/s);
+  assert.match(css, /\.genre-card\.locked\s*\{[^}]*opacity:\s*0\.56;/s);
+  assert.match(css, /\.genre-card-select:disabled,\s*\n\.genre-audition:disabled\s*\{[^}]*cursor:\s*not-allowed;/s);
+  assert.match(css, /@media\s*\(max-width:\s*860px\)\s*\{[\s\S]*\.genre-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/s);
+  assert.match(css, /@media\s*\(max-width:\s*560px\)\s*\{[\s\S]*\.genre-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\);/s);
+});
+
 test('timeline clips fill exactly one bar grid cell', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
