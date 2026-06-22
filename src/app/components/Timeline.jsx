@@ -338,6 +338,7 @@ const Timeline = forwardRef(function Timeline(
       ref={scrollRef}
       style={{ '--bars': TOTAL_BARS, '--track-count': tracks.length }}
     >
+      <div className="timeline-bezel" aria-hidden="true" />
       <div className="ruler" aria-label="Timeline bars" ref={rulerRef}>
         {BAR_NUMBERS.map((barNumber) => (
           <div
@@ -362,6 +363,7 @@ const Timeline = forwardRef(function Timeline(
       </div>
 
       <div className="grid">
+        <div className="grid-glass" aria-hidden="true" />
         <div className="grid-rows" aria-hidden="true">
           {tracks.map((track) => (
             <div className="row" key={track.id} />

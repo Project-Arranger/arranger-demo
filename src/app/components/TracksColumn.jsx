@@ -122,6 +122,7 @@ function TrackRow({
       data-type={track.id}
       onClick={() => onSelect(track.id)}
     >
+      <span className="track-material-layer" aria-hidden="true" />
       <div className="track-main-row">
         <button
           className="track-select"
@@ -142,6 +143,7 @@ function TrackRow({
           disabled={fillButtonDisabled}
           onClick={handleFillEmptyClips}
         >
+          <span className="fill-gem" aria-hidden="true" />
           <span className="fill-empty-clips-icon" aria-hidden="true">
             <span />
             <span />
@@ -162,6 +164,7 @@ function TrackRow({
           onPointerMove={handleVolumePointerMove}
           onPointerUp={handleVolumePointerUp}
         >
+          <span className="volume-knob" aria-hidden="true" style={{ left: `${track.volume.level}%` }} />
           <span className="bar" aria-hidden="true">
             <span className="fill" style={{ width: `${track.volume.level}%` }} />
             <span className="knob" style={{ left: `${track.volume.level}%` }} />

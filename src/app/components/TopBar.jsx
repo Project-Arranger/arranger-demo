@@ -58,6 +58,7 @@ function TopBar({
       </div>
 
       <button className="btn-new" aria-label="New song">
+        <span className="power-gem" aria-hidden="true" />
         {renderIcon(Plus)}
         New Song
       </button>
@@ -110,28 +111,30 @@ function TopBar({
           </button>
         </div>
 
-        <div className="stats" role="group" aria-label="Project info">
-          <div className="stat">
-            <div className="lbl">Position</div>
-            <div className="val mono">
-              {currentBar + 1}
-              <span className="sep">.</span>
-              {Math.floor(currentStep / BEATS_PER_BAR) + 1}
-              <span className="sep">.</span>
-              {(currentStep % BEATS_PER_BAR) + 1}
+        <div className="hardware-status-display">
+          <div className="stats" role="group" aria-label="Project info">
+            <div className="stat">
+              <div className="lbl">Position</div>
+              <div className="val mono">
+                {currentBar + 1}
+                <span className="sep">.</span>
+                {Math.floor(currentStep / BEATS_PER_BAR) + 1}
+                <span className="sep">.</span>
+                {(currentStep % BEATS_PER_BAR) + 1}
+              </div>
             </div>
-          </div>
-          <div className="stat">
-            <div className="lbl">BPM</div>
-            <div className="val mono">{bpm}</div>
-          </div>
-          <div className="stat">
-            <div className="lbl">Key</div>
-            <div className="val mono">{rootKey} maj</div>
-          </div>
-          <div className="stat">
-            <div className="lbl">Scale</div>
-            <div className="val mono">{scale === SCALE ? ROOT_KEY : scale}</div>
+            <div className="stat">
+              <div className="lbl">BPM</div>
+              <div className="val mono">{bpm}</div>
+            </div>
+            <div className="stat">
+              <div className="lbl">Key</div>
+              <div className="val mono">{rootKey} maj</div>
+            </div>
+            <div className="stat">
+              <div className="lbl">Scale</div>
+              <div className="val mono">{scale === SCALE ? ROOT_KEY : scale}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -139,7 +142,7 @@ function TopBar({
       <div className="right-tools">
         {showTutorialToggle ? (
           <button
-            className="tutorial-topbar-button"
+            className="key-switch tutorial-switch"
             type="button"
             aria-label={tutorialToggleLabel}
             title={tutorialToggleLabel}
@@ -148,11 +151,11 @@ function TopBar({
             教程
           </button>
         ) : null}
-        <div className="save-pill" title="All changes saved">
+        <div className="key-switch save-switch" title="All changes saved">
           <span className="dot" />
           Saved
         </div>
-        <button className="btn-export">Export</button>
+        <button className="hardware-export">Export</button>
         <button className="icon-btn" aria-label="Settings" title="Settings">
           {renderIcon(Settings)}
         </button>

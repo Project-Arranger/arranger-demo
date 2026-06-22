@@ -1,8 +1,39 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 
 const TRACK_IDS = ['drums', 'chord', 'bass', 'melody', 'pad', 'vocal', 'sample'];
+
+const SKEUO_ASSETS = [
+  '../public/assets/skeuo/wall-texture.png',
+  '../public/assets/skeuo/brushed-gunmetal-panel.png',
+  '../public/assets/skeuo/dark-grid-panel.png',
+  '../public/assets/skeuo/wood-panel.png',
+  '../public/assets/skeuo/brass-panel.png',
+  '../public/assets/skeuo/carbon-track-panel.png',
+  '../public/assets/skeuo/gem-green.png',
+  '../public/assets/skeuo/gem-amber.png',
+];
+
+test('skeuomorphic theme provides project-local texture assets and material tokens', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  for (const assetPath of SKEUO_ASSETS) {
+    await access(new URL(assetPath, import.meta.url));
+  }
+
+  assert.match(css, /--asset-wall:\s*url\("\/assets\/skeuo\/wall-texture\.png"\);/);
+  assert.match(css, /--asset-metal:\s*url\("\/assets\/skeuo\/brushed-gunmetal-panel\.png"\);/);
+  assert.match(css, /--asset-grid-panel:\s*url\("\/assets\/skeuo\/dark-grid-panel\.png"\);/);
+  assert.match(css, /--asset-wood:\s*url\("\/assets\/skeuo\/wood-panel\.png"\);/);
+  assert.match(css, /--asset-brass:\s*url\("\/assets\/skeuo\/brass-panel\.png"\);/);
+  assert.match(css, /--asset-carbon:\s*url\("\/assets\/skeuo\/carbon-track-panel\.png"\);/);
+  assert.match(css, /--asset-gem-green:\s*url\("\/assets\/skeuo\/gem-green\.png"\);/);
+  assert.match(css, /--asset-gem-amber:\s*url\("\/assets\/skeuo\/gem-amber\.png"\);/);
+  assert.match(css, /--hardware-copper:/);
+  assert.match(css, /--hardware-gold:/);
+  assert.match(css, /--hardware-shadow-deep:/);
+});
 
 test('ui shell keeps the editor usable and confines mobile overflow to panels', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');

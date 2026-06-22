@@ -71,6 +71,34 @@ test('topbar exposes independent undo redo controls and App wires history', asyn
   assert.match(source, /withUndoCheckpoint\(\(\) => \{[\s\S]*setTutorialProgress/);
 });
 
+test('skeuomorphic workbench structure exposes hardware shell affordances', async () => {
+  const topBarSource = await readFile(new URL('../src/app/components/TopBar.jsx', import.meta.url), 'utf8');
+  const tracksColumnSource = await readFile(
+    new URL('../src/app/components/TracksColumn.jsx', import.meta.url),
+    'utf8',
+  );
+  const timelineSource = await readFile(new URL('../src/app/components/Timeline.jsx', import.meta.url), 'utf8');
+  const bottomEditorSource = await readFile(
+    new URL('../src/app/components/BottomEditor.jsx', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(topBarSource, /className="power-gem"/);
+  assert.match(topBarSource, /className="hardware-status-display"/);
+  assert.match(topBarSource, /className="key-switch tutorial-switch"/);
+  assert.match(topBarSource, /className="key-switch save-switch"/);
+  assert.match(topBarSource, /className="hardware-export"/);
+
+  assert.match(tracksColumnSource, /className="track-material-layer"/);
+  assert.match(tracksColumnSource, /className="volume-knob"/);
+  assert.match(tracksColumnSource, /className="fill-gem"/);
+
+  assert.match(timelineSource, /className="timeline-bezel"/);
+  assert.match(timelineSource, /className="grid-glass"/);
+
+  assert.match(bottomEditorSource, /className="editor-hardware-shell"/);
+});
+
 test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async () => {
   const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
   const timelineSource = await readFile(new URL('../src/app/components/Timeline.jsx', import.meta.url), 'utf8');
@@ -889,7 +917,7 @@ test('app mounts the drums tutorial right sidebar', async () => {
   assert.match(topBarSource, /tutorialCollapsed/);
   assert.match(topBarSource, /const tutorialToggleLabel = tutorialCollapsed \? '展开教程' : '收起教程';/);
   assert.doesNotMatch(topBarSource, /TutorialToggleIcon/);
-  assert.match(topBarSource, /className="tutorial-topbar-button"/);
+  assert.match(topBarSource, /className="key-switch tutorial-switch"/);
   assert.doesNotMatch(topBarSource, /className="tutorial-topbar-button icon-btn"/);
   assert.match(topBarSource, /aria-label=\{tutorialToggleLabel\}/);
   assert.match(topBarSource, /title=\{tutorialToggleLabel\}/);

@@ -159,7 +159,9 @@ function BottomEditor({
 
   return (
     <div className={editorTargetClass} data-tutorial-target="track-editor">
-      {editor}
+      <div className="editor-hardware-shell">
+        {editor}
+      </div>
     </div>
   );
 }
