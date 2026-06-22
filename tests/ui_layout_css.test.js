@@ -55,16 +55,39 @@ test('ui shell keeps the editor usable and confines mobile overflow to panels', 
   assert.match(css, /\.stat:nth-child\(4\)\s*\{[^}]*display:\s*none;/s);
 });
 
-test('genre gate fills the viewport and visually locks unavailable styles', async () => {
+test('genre gate uses a hardware cabinet with responsive neon style cards', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
   assert.match(css, /\.genre-gate\s*\{[^}]*min-height:\s*100dvh;/s);
   assert.match(css, /\.genre-gate\s*\{[^}]*overflow:\s*auto;/s);
-  assert.match(css, /\.genre-gate-inner\s*\{[^}]*width:\s*min\(1120px,\s*100%\);/s);
-  assert.match(css, /\.genre-grid\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\);/s);
-  assert.match(css, /\.genre-card\.current\s*\{[^}]*border-color:\s*color-mix\(in oklab,\s*var\(--c-chord-ink\)/s);
-  assert.match(css, /\.genre-card\.locked\s*\{[^}]*opacity:\s*0\.56;/s);
-  assert.match(css, /\.genre-card-select:disabled,\s*\n\.genre-audition:disabled\s*\{[^}]*cursor:\s*not-allowed;/s);
+  assert.match(css, /\.genre-hardware\s*\{[^}]*var\(--asset-wood\)/s);
+  assert.match(css, /\.genre-hardware\s*\{[^}]*grid-template-columns:\s*clamp\(116px,\s*11vw,\s*172px\) minmax\(0,\s*1fr\) clamp\(116px,\s*11vw,\s*172px\);/s);
+  assert.match(css, /\.genre-screen\s*\{[^}]*var\(--asset-grid-panel\)/s);
+  assert.match(css, /\.genre-screen\s*\{[^}]*border:\s*2px solid var\(--hardware-gold\);/s);
+  assert.match(css, /\.genre-side-rail\s*\{[^}]*display:\s*grid;/s);
+  assert.match(css, /\.genre-knob\s*\{[^}]*border-radius:\s*50%;/s);
+  assert.match(css, /\.genre-control-button\s*\{[^}]*pointer-events:\s*none;/s);
+  assert.match(css, /\.genre-grid\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\);/s);
+  assert.match(css, /\.genre-card-shell\s*\{[^}]*grid-template-rows:\s*minmax\(0,\s*auto\) auto;/s);
+  assert.match(css, /\.genre-card-shell\s*\{[^}]*gap:\s*10px;/s);
+  assert.match(css, /\.genre-card-shell\s*\{[^}]*padding-bottom:\s*0;/s);
+  assert.match(css, /\.genre-card\s*\{[^}]*--genre-neon:/s);
+  assert.match(css, /\.genre-card\s*\{[^}]*grid-template-rows:\s*minmax\(92px,\s*1fr\) auto;/s);
+  assert.match(css, /\.genre-card\s*\{[^}]*border:\s*2px solid color-mix\(in oklab,\s*var\(--genre-neon\)/s);
+  assert.match(css, /\.genre-card\[data-selected="true"\]\s*\{/s);
+  assert.match(css, /\.genre-card\[data-enabled="false"\]\s*\{/s);
+  assert.match(css, /\.genre-label\s*\{[^}]*grid-row:\s*1;/s);
+  assert.match(css, /\.genre-label\s*\{[^}]*place-self:\s*center;/s);
+  assert.match(css, /\.genre-status\s*\{[^}]*grid-row:\s*2;/s);
+  assert.match(css, /\.genre-gem-button\s*\{[^}]*display:\s*grid;/s);
+  assert.match(css, /\.genre-gem-button\s*\{[^}]*cursor:\s*pointer;/s);
+  assert.match(css, /\.genre-gem\s*\{[^}]*var\(--asset-gem-amber\)/s);
+  assert.match(css, /\.genre-gem-button:hover \.genre-gem,/s);
+  assert.match(css, /\.genre-gem-label\s*\{[^}]*font-size:/s);
+  assert.doesNotMatch(css, /\.genre-card-shell\s*\{[^}]*position:\s*relative;/s);
+  assert.doesNotMatch(css, /\.genre-gem\s*\{[^}]*position:\s*absolute;/s);
+  assert.doesNotMatch(css, /\.genre-art(?:\s|[.#:{])/);
+  assert.doesNotMatch(css, /\.genre-subtitle(?:\s|[.#:{])/);
   assert.match(css, /@media\s*\(max-width:\s*860px\)\s*\{[\s\S]*\.genre-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/s);
   assert.match(css, /@media\s*\(max-width:\s*560px\)\s*\{[\s\S]*\.genre-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\);/s);
 });
@@ -193,6 +216,13 @@ test('track fill-empty clip button is compact and inherits track color', async (
   assert.match(css, /\.fill-empty-clips:hover:not\(:disabled\),\s*\n\.fill-empty-clips:focus-visible:not\(:disabled\)\s*\{/s);
   assert.match(css, /\.fill-empty-clips-icon\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*4px\);/s);
   assert.match(css, /\.fill-empty-clips-icon span\s*\{[^}]*background:\s*currentColor;/s);
+});
+
+test('bass and melody fill track gems use their track colors', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.track\[data-type="bass"\] \.fill-gem\s*\{[^}]*var\(--c-bass\)[^}]*var\(--c-bass-ink\)/s);
+  assert.match(css, /\.track\[data-type="melody"\] \.fill-gem\s*\{[^}]*var\(--c-melody\)[^}]*var\(--c-melody-ink\)/s);
 });
 
 test('timeline drag and swap feedback is visually prominent', async () => {
