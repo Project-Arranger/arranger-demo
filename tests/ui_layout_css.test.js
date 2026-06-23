@@ -350,6 +350,7 @@ test('track fill-empty clip button is compact and inherits track color', async (
   assert.match(css, /\.fill-empty-clips:hover:not\(:disabled\),\s*\n\.fill-empty-clips:focus-visible:not\(:disabled\)\s*\{/s);
   assert.match(css, /\.fill-empty-clips-icon\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*4px\);/s);
   assert.match(css, /\.fill-empty-clips-icon span\s*\{[^}]*background:\s*currentColor;/s);
+  assert.match(css, /\.fill-gem\s*\{[^}]*box-shadow:[^}]*0 0 5px color-mix\(in oklab,\s*var\(--track-color\) 36%,\s*transparent\),[^}]*0 2px 4px rgb\(0 0 0 \/ 0\.46\);/s);
 });
 
 test('bass and melody fill track gems use their track colors', async () => {
