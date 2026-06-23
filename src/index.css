@@ -5848,6 +5848,8 @@ body {
   width: calc(100% - 16px);
   height: calc(100% - 10px);
   padding: 10px 12px;
+  grid-template-rows: 36px 18px;
+  gap: 4px;
   overflow: hidden;
   background:
     linear-gradient(135deg, rgb(255 235 188 / 0.08), transparent 32%, rgb(0 0 0 / 0.38)),
@@ -5904,12 +5906,14 @@ body {
 }
 
 .track-main-row {
-  grid-template-columns: minmax(118px, 1fr) minmax(0, auto);
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) 54px;
+  gap: 8px;
+  min-width: 0;
 }
 
 .track-select {
   grid-template-columns: 48px minmax(0, 1fr);
+  min-width: 0;
 }
 
 .ic {
@@ -5930,6 +5934,8 @@ body {
 }
 
 .track-name {
+  min-width: 0;
+  max-width: 100%;
   color: #ead0ae;
   font-size: clamp(15px, 1.4vw, 22px);
   text-shadow: 0 2px 4px rgb(0 0 0 / 0.55);
@@ -6758,9 +6764,14 @@ body {
   }
 
   .track {
-    grid-template-columns: 32px 1fr;
+    grid-template-columns: minmax(0, 1fr);
     min-height: 0;
     padding: 0 10px;
+  }
+
+  .track-main-row,
+  .vol {
+    grid-column: 1;
   }
 
   .ic {

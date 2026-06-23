@@ -340,6 +340,12 @@ test('track fill-empty clip button is compact and inherits track color', async (
   assert.match(css, /\.track-select\s*\{[^}]*min-width:\s*76px;/s);
   assert.match(css, /\.ic\s*\{[^}]*min-width:\s*32px;/s);
   assert.match(css, /\.ic\s*\{[^}]*flex:\s*0 0 32px;/s);
+  assert.match(css, /\.track\s*\{[^}]*grid-template-rows:\s*36px 18px;[^}]*gap:\s*4px;/s);
+  assert.match(css, /\.track-main-row\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) 54px;/s);
+  assert.match(css, /\.track-select\s*\{[^}]*min-width:\s*0;/s);
+  assert.match(css, /\.track-name\s*\{[^}]*min-width:\s*0;/s);
+  assert.match(css, /@media\s*\(max-width:\s*980px\)\s*\{[\s\S]*\.track\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\);/s);
+  assert.match(css, /@media\s*\(max-width:\s*980px\)\s*\{[\s\S]*\.track-main-row,\s*\n\s*\.vol\s*\{[^}]*grid-column:\s*1;/s);
   assert.match(css, /\.fill-empty-clips\s*\{[^}]*height:\s*28px;/s);
   assert.match(css, /\.fill-empty-clips\s*\{[^}]*min-width:\s*0;/s);
   assert.match(css, /\.fill-empty-clips\s*\{[^}]*max-width:\s*96px;/s);
