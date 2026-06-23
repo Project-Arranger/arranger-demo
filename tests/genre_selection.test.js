@@ -30,6 +30,14 @@ test('genre options expose six styles with Pop as the only enabled current genre
     '/assets/genre-art/rock-neon.png',
     '/assets/genre-art/jazz-neon.png',
   ]);
+  assert.deepEqual(GENRE_OPTIONS.map((genre) => genre.gemTone), [
+    'blue',
+    'purple',
+    'amber',
+    'green',
+    'amber',
+    'blue',
+  ]);
   assert.equal(new Set(GENRE_OPTIONS.map((genre) => genre.id)).size, 6);
   assert.equal(GENRE_OPTIONS.find((genre) => genre.id === CURRENT_GENRE_ID)?.enabled, true);
   assert.deepEqual(
@@ -83,13 +91,17 @@ test('genre selection screen renders previewable hardware cards and only enters 
   assert.match(source, /alt=""/);
   assert.match(source, /className="genre-gem-button"/);
   assert.match(source, /type="button"[\s\S]*aria-label=\{`试听 \$\{genre\.label\}`\}/);
+  assert.match(source, /data-gem-tone=\{genre\.gemTone \?\? 'amber'\}/);
   assert.match(source, /onClick=\{\(\) => handleGenreAudition\(genre\)\}/);
+  assert.match(source, /className="genre-gem-socket"/);
   assert.match(source, /className="genre-gem-label"[\s\S]*试听/);
   assert.doesNotMatch(source, /genre-subtitle/);
   assert.doesNotMatch(source, /genre\.subtitle/);
   assert.match(source, /genre-side-rail/);
+  assert.match(source, /aria-hidden="true"/);
   assert.match(source, /genre-knob/);
   assert.match(source, /genre-control-button/);
+  assert.match(source, /className=\{`genre-hardware-control \$\{control\.type\}`\}/);
   assert.match(source, /Volume2/);
   assert.doesNotMatch(source, /GENRE_ART_ICONS/);
   assert.doesNotMatch(source, /renderGenreArt/);

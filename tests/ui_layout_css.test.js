@@ -13,6 +13,8 @@ const SKEUO_ASSETS = [
   '../public/assets/skeuo/carbon-track-panel.png',
   '../public/assets/skeuo/gem-green.png',
   '../public/assets/skeuo/gem-amber.png',
+  '../public/assets/skeuo/gem-blue.png',
+  '../public/assets/skeuo/gem-purple.png',
 ];
 
 const GENRE_ART_ASSETS = [
@@ -39,6 +41,8 @@ test('skeuomorphic theme provides project-local texture assets and material toke
   assert.match(css, /--asset-carbon:\s*url\("\/assets\/skeuo\/carbon-track-panel\.png"\);/);
   assert.match(css, /--asset-gem-green:\s*url\("\/assets\/skeuo\/gem-green\.png"\);/);
   assert.match(css, /--asset-gem-amber:\s*url\("\/assets\/skeuo\/gem-amber\.png"\);/);
+  assert.match(css, /--asset-gem-blue:\s*url\("\/assets\/skeuo\/gem-blue\.png"\);/);
+  assert.match(css, /--asset-gem-purple:\s*url\("\/assets\/skeuo\/gem-purple\.png"\);/);
   assert.match(css, /--hardware-copper:/);
   assert.match(css, /--hardware-gold:/);
   assert.match(css, /--hardware-shadow-deep:/);
@@ -97,9 +101,29 @@ test('genre gate uses a hardware cabinet with responsive neon style cards', asyn
   assert.match(css, /\.genre-status\s*\{[^}]*grid-row:\s*3;/s);
   assert.match(css, /\.genre-gem-button\s*\{[^}]*display:\s*grid;/s);
   assert.match(css, /\.genre-gem-button\s*\{[^}]*cursor:\s*pointer;/s);
-  assert.match(css, /\.genre-gem\s*\{[^}]*var\(--asset-gem-amber\)/s);
+  assert.match(css, /\.genre-gem-button\s*\{[^}]*touch-action:\s*manipulation;/s);
+  assert.match(css, /\.genre-card-shell\[data-gem-tone="blue"\]\s*\{[^}]*--genre-gem-asset:\s*var\(--asset-gem-blue\);/s);
+  assert.match(css, /\.genre-card-shell\[data-gem-tone="purple"\]\s*\{[^}]*--genre-gem-asset:\s*var\(--asset-gem-purple\);/s);
+  assert.match(css, /\.genre-card-shell\[data-gem-tone="green"\]\s*\{[^}]*--genre-gem-asset:\s*var\(--asset-gem-green\);/s);
+  assert.match(css, /\.genre-card-shell\[data-gem-tone="amber"\]\s*\{[^}]*--genre-gem-asset:\s*var\(--asset-gem-amber\);/s);
+  assert.match(css, /\.genre-gem-socket\s*\{[^}]*display:\s*grid;[^}]*place-items:\s*center;/s);
+  assert.match(css, /\.genre-gem-socket\s*\{[^}]*var\(--asset-brass\)/s);
+  assert.match(css, /\.genre-gem-socket\s*\{[^}]*box-shadow:[^}]*inset/s);
+  assert.match(css, /\.genre-gem-socket::before\s*\{[^}]*content:\s*"";/s);
+  assert.match(css, /\.genre-gem-socket::after\s*\{[^}]*content:\s*"";/s);
+  assert.match(css, /\.genre-gem\s*\{[^}]*var\(--genre-gem-asset,\s*var\(--asset-gem-amber\)\)/s);
+  assert.match(css, /\.genre-gem-button:hover \.genre-gem-socket,/s);
   assert.match(css, /\.genre-gem-button:hover \.genre-gem,/s);
   assert.match(css, /\.genre-gem-label\s*\{[^}]*font-size:/s);
+  assert.match(css, /\.genre-hardware-control\s*\{[^}]*position:\s*relative;/s);
+  assert.match(css, /\.genre-hardware-control\.knob::before\s*\{[^}]*radial-gradient/s);
+  assert.match(css, /\.genre-knob::before\s*\{[^}]*content:\s*"";/s);
+  assert.match(css, /\.genre-knob::after\s*\{[^}]*transform-origin:\s*50% 24px;/s);
+  assert.match(css, /\.genre-control-button\s*\{[^}]*background:[^}]*linear-gradient\(180deg,\s*rgb\(255 255 255 \/ 0\.18\)/s);
+  assert.match(css, /\.genre-control-button::before\s*\{[^}]*content:\s*"";/s);
+  assert.match(css, /\.genre-control-button::after\s*\{[^}]*content:\s*"";/s);
+  assert.match(css, /\.genre-control-light\s*\{[^}]*z-index:\s*1;/s);
+  assert.match(css, /\.genre-control-button\.dot \.genre-control-light\s*\{[^}]*border-radius:\s*50%;/s);
   assert.doesNotMatch(css, /\.genre-card-shell\s*\{[^}]*position:\s*relative;/s);
   assert.doesNotMatch(css, /\.genre-gem\s*\{[^}]*position:\s*absolute;/s);
   assert.doesNotMatch(css, /\.genre-art-icon(?:\s|[.#:{])/);

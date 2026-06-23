@@ -22,7 +22,7 @@ const RIGHT_CONTROLS = [
 
 function renderHardwareControl(control, key) {
   return (
-    <div className="genre-hardware-control" key={key}>
+    <div className={`genre-hardware-control ${control.type}`} key={key}>
       {control.type === 'knob' ? (
         <span className="genre-knob" aria-hidden="true" />
       ) : (
@@ -87,6 +87,7 @@ function GenreSelectScreen({
                 return (
                   <div
                     className="genre-card-shell"
+                    data-gem-tone={genre.gemTone ?? 'amber'}
                     key={genre.id}
                     role="listitem"
                     style={genreStyle}
@@ -120,9 +121,12 @@ function GenreSelectScreen({
                       className="genre-gem-button"
                       type="button"
                       aria-label={`试听 ${genre.label}`}
+                      data-gem-tone={genre.gemTone ?? 'amber'}
                       onClick={() => handleGenreAudition(genre)}
                     >
-                      <span className="genre-gem" aria-hidden="true" />
+                      <span className="genre-gem-socket" aria-hidden="true">
+                        <span className="genre-gem" />
+                      </span>
                       <span className="genre-gem-label" aria-hidden="true">试听</span>
                     </button>
                   </div>

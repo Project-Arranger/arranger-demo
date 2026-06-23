@@ -12,6 +12,7 @@ const GENRE_OPTIONS = Object.freeze([
     ink: 'var(--c-chord-ink)',
     neon: '#53c7ff',
     artImage: genreArt('pop-neon.png'),
+    gemTone: 'blue',
     note: 'Doo-wop / I-vi-IV-V',
   }),
   Object.freeze({
@@ -23,6 +24,7 @@ const GENRE_OPTIONS = Object.freeze([
     ink: 'var(--c-bass-ink)',
     neon: '#ff50f0',
     artImage: genreArt('hip-hop-neon.png'),
+    gemTone: 'purple',
     note: 'Locked',
   }),
   Object.freeze({
@@ -34,6 +36,7 @@ const GENRE_OPTIONS = Object.freeze([
     ink: 'var(--c-melody-ink)',
     neon: '#ff9a45',
     artImage: genreArt('rnb-neon.png'),
+    gemTone: 'amber',
     note: 'Locked',
   }),
   Object.freeze({
@@ -45,6 +48,7 @@ const GENRE_OPTIONS = Object.freeze([
     ink: 'var(--c-drums-ink)',
     neon: '#5cff76',
     artImage: genreArt('electronic-neon.png'),
+    gemTone: 'green',
     note: 'Locked',
   }),
   Object.freeze({
@@ -56,6 +60,7 @@ const GENRE_OPTIONS = Object.freeze([
     ink: 'var(--c-vocal-ink)',
     neon: '#fff15b',
     artImage: genreArt('rock-neon.png'),
+    gemTone: 'amber',
     note: 'Locked',
   }),
   Object.freeze({
@@ -67,6 +72,7 @@ const GENRE_OPTIONS = Object.freeze([
     ink: 'var(--c-bass-ink)',
     neon: '#63f1ff',
     artImage: genreArt('jazz-neon.png'),
+    gemTone: 'blue',
     note: 'Locked',
   }),
 ]);
