@@ -15,6 +15,13 @@ const SKEUO_ASSETS = [
   '../public/assets/skeuo/gem-amber.png',
   '../public/assets/skeuo/gem-blue.png',
   '../public/assets/skeuo/gem-purple.png',
+  '../public/assets/skeuo/clip-drums.png',
+  '../public/assets/skeuo/clip-chord.png',
+  '../public/assets/skeuo/clip-bass.png',
+  '../public/assets/skeuo/clip-melody.png',
+  '../public/assets/skeuo/clip-pad.png',
+  '../public/assets/skeuo/clip-vocal.png',
+  '../public/assets/skeuo/clip-sample.png',
 ];
 
 const GENRE_ART_ASSETS = [
@@ -43,6 +50,13 @@ test('skeuomorphic theme provides project-local texture assets and material toke
   assert.match(css, /--asset-gem-amber:\s*url\("\/assets\/skeuo\/gem-amber\.png"\);/);
   assert.match(css, /--asset-gem-blue:\s*url\("\/assets\/skeuo\/gem-blue\.png"\);/);
   assert.match(css, /--asset-gem-purple:\s*url\("\/assets\/skeuo\/gem-purple\.png"\);/);
+  assert.match(css, /--asset-clip-drums:\s*url\("\/assets\/skeuo\/clip-drums\.png"\);/);
+  assert.match(css, /--asset-clip-chord:\s*url\("\/assets\/skeuo\/clip-chord\.png"\);/);
+  assert.match(css, /--asset-clip-bass:\s*url\("\/assets\/skeuo\/clip-bass\.png"\);/);
+  assert.match(css, /--asset-clip-melody:\s*url\("\/assets\/skeuo\/clip-melody\.png"\);/);
+  assert.match(css, /--asset-clip-pad:\s*url\("\/assets\/skeuo\/clip-pad\.png"\);/);
+  assert.match(css, /--asset-clip-vocal:\s*url\("\/assets\/skeuo\/clip-vocal\.png"\);/);
+  assert.match(css, /--asset-clip-sample:\s*url\("\/assets\/skeuo\/clip-sample\.png"\);/);
   assert.match(css, /--hardware-copper:/);
   assert.match(css, /--hardware-gold:/);
   assert.match(css, /--hardware-shadow-deep:/);
@@ -78,28 +92,78 @@ test('genre gate uses a hardware cabinet with responsive neon style cards', asyn
   assert.match(css, /\.genre-gate\s*\{[^}]*min-height:\s*100dvh;/s);
   assert.match(css, /\.genre-gate\s*\{[^}]*overflow:\s*auto;/s);
   assert.match(css, /\.genre-hardware\s*\{[^}]*var\(--asset-wood\)/s);
-  assert.match(css, /\.genre-hardware\s*\{[^}]*grid-template-columns:\s*clamp\(116px,\s*11vw,\s*172px\) minmax\(0,\s*1fr\) clamp\(116px,\s*11vw,\s*172px\);/s);
+  assert.match(css, /\.genre-hardware\s*\{[^}]*isolation:\s*isolate;/s);
+  assert.match(css, /\.genre-hardware\s*\{[^}]*var\(--asset-brass\)/s);
+  assert.match(css, /\.genre-hardware\s*\{[^}]*--genre-frame-depth:\s*clamp\(22px,\s*2\.2vw,\s*38px\);/s);
+  assert.match(css, /\.genre-hardware\s*\{[^}]*--genre-panel-recess:\s*clamp\(8px,\s*0\.8vw,\s*14px\);/s);
+  assert.match(css, /\.genre-hardware\s*\{[^}]*--genre-panel-top-inset:\s*clamp\(10px,\s*1vw,\s*18px\);/s);
+  assert.match(css, /\.genre-hardware\s*\{[^}]*--genre-panel-bottom-inset:\s*clamp\(2px,\s*0\.35vw,\s*7px\);/s);
+  assert.match(css, /\.genre-hardware\s*\{[^}]*--genre-side-cheek-width:\s*clamp\(54px,\s*5\.2vw,\s*86px\);/s);
+  assert.match(css, /\.genre-hardware\s*\{[^}]*--genre-side-rail-inset:\s*clamp\(38px,\s*3vw,\s*56px\);/s);
+  assert.match(css, /\.genre-hardware\s*\{[^}]*grid-template-columns:\s*clamp\(146px,\s*13vw,\s*208px\) minmax\(0,\s*1fr\) clamp\(146px,\s*13vw,\s*208px\);/s);
+  assert.match(css, /\.genre-hardware\s*\{[^}]*clip-path:\s*polygon\(var\(--genre-panel-top-inset\) 0/s);
+  assert.match(css, /\.genre-hardware\s*\{[^}]*background:[^}]*var\(--genre-frame-depth\)[^}]*var\(--genre-panel-recess\)/s);
+  assert.match(css, /\.genre-hardware\s*\{[^}]*background:[^}]*var\(--genre-panel-top-inset\)[^}]*var\(--genre-panel-bottom-inset\)/s);
+  assert.match(css, /\.genre-hardware\s*\{[^}]*box-shadow:[^}]*inset 0 0 0 2px/s);
+  assert.match(css, /\.genre-hardware\s*\{[^}]*box-shadow:[^}]*inset 0 0 0 var\(--genre-panel-recess\)/s);
+  assert.match(css, /\.genre-hardware::before,\s*\n\.genre-hardware::after\s*\{[^}]*content:\s*"";/s);
+  assert.match(css, /\.genre-hardware::before,\s*\n\.genre-hardware::after\s*\{[^}]*pointer-events:\s*none;/s);
+  assert.match(css, /\.genre-hardware::before,\s*\n\.genre-hardware::after\s*\{[^}]*var\(--asset-wood\)/s);
+  assert.match(css, /\.genre-hardware::before,\s*\n\.genre-hardware::after\s*\{[^}]*clip-path:\s*polygon\(/s);
+  assert.match(css, /\.genre-hardware::before,\s*\n\.genre-hardware::after\s*\{[^}]*filter:\s*drop-shadow/s);
+  assert.match(css, /\.genre-hardware::before\s*\{[^}]*left:\s*-2px;/s);
+  assert.match(css, /\.genre-hardware::before\s*\{[^}]*border-radius:\s*12px 4px 4px 12px;/s);
+  assert.match(css, /\.genre-hardware::before\s*\{[^}]*clip-path:\s*polygon\(0 0,\s*100% 0,\s*92% 100%,\s*0 100%\);/s);
+  assert.match(css, /\.genre-hardware::after\s*\{[^}]*right:\s*-2px;/s);
+  assert.match(css, /\.genre-hardware::after\s*\{[^}]*border-radius:\s*4px 12px 12px 4px;/s);
+  assert.match(css, /\.genre-hardware::after\s*\{[^}]*clip-path:\s*polygon\(8% 0,\s*100% 0,\s*100% 100%,\s*0 100%\);/s);
+  assert.doesNotMatch(css, /\.genre-hardware::(?:before|after)\s*\{[^}]*rotateY/s);
+  assert.match(css, /\.genre-console,\s*\n\.genre-side-rail\s*\{[^}]*z-index:\s*1;/s);
+  assert.match(css, /\.genre-console\s*\{[^}]*grid-template-rows:\s*auto auto;/s);
+  assert.match(css, /\.genre-console\s*\{[^}]*align-content:\s*center;/s);
+  assert.match(css, /\.genre-console\s*\{[^}]*width:\s*min\(100%,\s*1040px\);/s);
+  assert.match(css, /\.genre-console\s*\{[^}]*justify-self:\s*center;/s);
+  assert.doesNotMatch(css, /\.genre-console\s*\{[^}]*grid-template-rows:\s*minmax\(0,\s*1fr\) auto;/s);
   assert.match(css, /\.genre-screen\s*\{[^}]*var\(--asset-grid-panel\)/s);
   assert.match(css, /\.genre-screen\s*\{[^}]*border:\s*2px solid var\(--hardware-gold\);/s);
+  assert.match(css, /\.genre-screen\s*\{[^}]*gap:\s*14px;/s);
+  assert.match(css, /\.genre-screen\s*\{[^}]*padding:\s*18px;/s);
+  assert.match(css, /\.genre-screen\s*\{[^}]*box-shadow:[^}]*0 0 0 8px/s);
+  assert.match(css, /\.genre-screen::before\s*\{[^}]*z-index:\s*0;/s);
+  assert.match(css, /\.genre-screen::after\s*\{[^}]*content:\s*"";/s);
+  assert.match(css, /\.genre-screen::after\s*\{[^}]*pointer-events:\s*none;/s);
+  assert.match(css, /\.genre-screen::after\s*\{[^}]*box-shadow:[^}]*inset/s);
+  assert.match(css, /\.genre-gate-head,\s*\n\.genre-grid\s*\{[^}]*z-index:\s*2;/s);
   assert.match(css, /\.genre-side-rail\s*\{[^}]*display:\s*grid;/s);
+  assert.match(css, /\.genre-side-rail\.left\s*\{[^}]*transform:\s*translateX\(var\(--genre-side-rail-inset\)\);/s);
+  assert.match(css, /\.genre-side-rail\.right\s*\{[^}]*transform:\s*translateX\(calc\(var\(--genre-side-rail-inset\) \* -1\)\);/s);
   assert.match(css, /\.genre-knob\s*\{[^}]*border-radius:\s*50%;/s);
   assert.match(css, /\.genre-control-button\s*\{[^}]*pointer-events:\s*none;/s);
   assert.match(css, /\.genre-grid\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\);/s);
+  assert.match(css, /\.genre-grid\s*\{[^}]*gap:\s*16px 18px;/s);
   assert.match(css, /\.genre-card-shell\s*\{[^}]*grid-template-rows:\s*minmax\(0,\s*auto\) auto;/s);
-  assert.match(css, /\.genre-card-shell\s*\{[^}]*gap:\s*10px;/s);
+  assert.match(css, /\.genre-card-shell\s*\{[^}]*gap:\s*6px;/s);
   assert.match(css, /\.genre-card-shell\s*\{[^}]*padding-bottom:\s*0;/s);
   assert.match(css, /\.genre-card\s*\{[^}]*--genre-neon:/s);
-  assert.match(css, /\.genre-card\s*\{[^}]*grid-template-rows:\s*auto minmax\(86px,\s*1fr\) auto;/s);
+  assert.match(css, /\.genre-card\s*\{[^}]*grid-template-rows:\s*auto minmax\(76px,\s*1fr\) auto;/s);
+  assert.match(css, /\.genre-card\s*\{[^}]*min-height:\s*188px;/s);
   assert.match(css, /\.genre-card\s*\{[^}]*border:\s*2px solid color-mix\(in oklab,\s*var\(--genre-neon\)/s);
   assert.match(css, /\.genre-card\[data-selected="true"\]\s*\{/s);
   assert.match(css, /\.genre-card\[data-enabled="false"\]\s*\{/s);
   assert.match(css, /\.genre-label\s*\{[^}]*grid-row:\s*1;/s);
+  assert.match(css, /\.genre-label\s*\{[^}]*font-size:\s*clamp\(25px,\s*2\.1vw,\s*29px\);/s);
   assert.match(css, /\.genre-art-frame\s*\{[^}]*grid-row:\s*2;/s);
   assert.match(css, /\.genre-art-frame\s*\{[^}]*pointer-events:\s*none;/s);
   assert.match(css, /\.genre-art-image\s*\{[^}]*object-fit:\s*contain;/s);
+  assert.match(css, /\.genre-art-frame\s*\{[^}]*min-height:\s*76px;/s);
+  assert.match(css, /\.genre-art-image\s*\{[^}]*height:\s*clamp\(70px,\s*6\.2vw,\s*96px\);/s);
   assert.match(css, /\.genre-art-image\s*\{[^}]*filter:\s*drop-shadow/s);
   assert.match(css, /\.genre-status\s*\{[^}]*grid-row:\s*3;/s);
+  assert.match(css, /\.genre-status\s*\{[^}]*max-width:\s*100%;/s);
+  assert.match(css, /\.genre-status\s*\{[^}]*overflow:\s*hidden;/s);
   assert.match(css, /\.genre-gem-button\s*\{[^}]*display:\s*grid;/s);
+  assert.match(css, /\.genre-gem-button\s*\{[^}]*width:\s*min\(98px,\s*100%\);/s);
+  assert.match(css, /\.genre-gem-button\s*\{[^}]*min-height:\s*48px;/s);
   assert.match(css, /\.genre-gem-button\s*\{[^}]*cursor:\s*pointer;/s);
   assert.match(css, /\.genre-gem-button\s*\{[^}]*touch-action:\s*manipulation;/s);
   assert.match(css, /\.genre-card-shell\[data-gem-tone="blue"\]\s*\{[^}]*--genre-gem-asset:\s*var\(--asset-gem-blue\);/s);
@@ -107,6 +171,7 @@ test('genre gate uses a hardware cabinet with responsive neon style cards', asyn
   assert.match(css, /\.genre-card-shell\[data-gem-tone="green"\]\s*\{[^}]*--genre-gem-asset:\s*var\(--asset-gem-green\);/s);
   assert.match(css, /\.genre-card-shell\[data-gem-tone="amber"\]\s*\{[^}]*--genre-gem-asset:\s*var\(--asset-gem-amber\);/s);
   assert.match(css, /\.genre-gem-socket\s*\{[^}]*display:\s*grid;[^}]*place-items:\s*center;/s);
+  assert.match(css, /\.genre-gem-socket\s*\{[^}]*height:\s*36px;/s);
   assert.match(css, /\.genre-gem-socket\s*\{[^}]*var\(--asset-brass\)/s);
   assert.match(css, /\.genre-gem-socket\s*\{[^}]*box-shadow:[^}]*inset/s);
   assert.match(css, /\.genre-gem-socket::before\s*\{[^}]*content:\s*"";/s);
@@ -115,6 +180,8 @@ test('genre gate uses a hardware cabinet with responsive neon style cards', asyn
   assert.match(css, /\.genre-gem-button:hover \.genre-gem-socket,/s);
   assert.match(css, /\.genre-gem-button:hover \.genre-gem,/s);
   assert.match(css, /\.genre-gem-label\s*\{[^}]*font-size:/s);
+  assert.match(css, /\.genre-control-label\s*\{[^}]*width:\s*min\(118px,\s*100%\);/s);
+  assert.match(css, /\.genre-control-label\s*\{[^}]*overflow-wrap:\s*anywhere;/s);
   assert.match(css, /\.genre-hardware-control\s*\{[^}]*position:\s*relative;/s);
   assert.match(css, /\.genre-hardware-control\.knob::before\s*\{[^}]*radial-gradient/s);
   assert.match(css, /\.genre-knob::before\s*\{[^}]*content:\s*"";/s);
@@ -130,9 +197,12 @@ test('genre gate uses a hardware cabinet with responsive neon style cards', asyn
   assert.doesNotMatch(css, /\.genre-art-line(?:\s|[.#:{])/);
   assert.doesNotMatch(css, /\.genre-subtitle(?:\s|[.#:{])/);
   assert.match(css, /@media\s*\(max-width:\s*860px\)\s*\{[\s\S]*\.genre-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/s);
+  assert.match(css, /@media\s*\(max-width:\s*860px\)\s*\{[\s\S]*\.genre-side-rail\.left,\s*\n\s*\.genre-side-rail\.right\s*\{[^}]*transform:\s*none;/s);
+  assert.match(css, /@media\s*\(max-width:\s*860px\)\s*\{[\s\S]*\.genre-hardware::before,\s*\n\s*\.genre-hardware::after\s*\{[^}]*width:\s*18px;/s);
   assert.match(css, /@media\s*\(max-width:\s*560px\)\s*\{[\s\S]*\.genre-gate\s*\{[^}]*justify-items:\s*center;/s);
   assert.match(css, /@media\s*\(max-width:\s*560px\)\s*\{[\s\S]*\.genre-hardware\s*\{[^}]*width:\s*100%;/s);
   assert.match(css, /@media\s*\(max-width:\s*560px\)\s*\{[\s\S]*\.genre-hardware\s*\{[^}]*max-width:\s*100%;/s);
+  assert.match(css, /@media\s*\(max-width:\s*560px\)\s*\{[\s\S]*\.genre-hardware::before,\s*\n\s*\.genre-hardware::after\s*\{[^}]*width:\s*10px;/s);
   assert.match(css, /@media\s*\(max-width:\s*560px\)\s*\{[\s\S]*\.genre-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\);/s);
 });
 
@@ -242,6 +312,26 @@ test('timeline clips and add controls inherit the left track color map', async (
   assert.match(css, /\.add-clip\s*\{[^}]*background:\s*color-mix\(in oklab,\s*var\(--track-color,\s*var\(--surface\)\)/s);
 });
 
+test('timeline clips render with generated nine-slice skin assets', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  for (const trackId of TRACK_IDS) {
+    assert.match(css, new RegExp(`\\.clip\\[data-type="${trackId}"\\]\\s*\\{[^}]*--clip-skin:\\s*var\\(--asset-clip-${trackId}\\);`, 's'));
+  }
+
+  assert.match(css, /\.clip\s*\{[^}]*isolation:\s*isolate;/s);
+  assert.match(css, /\.clip\s*\{[^}]*overflow:\s*hidden;/s);
+  assert.match(css, /\.clip\s*\{[^}]*background:[^}]*var\(--clip-bg\)/s);
+  assert.match(css, /\.clip::before\s*\{[^}]*content:\s*"";/s);
+  assert.match(css, /\.clip::before\s*\{[^}]*border-image-source:\s*var\(--clip-skin\);/s);
+  assert.match(css, /\.clip::before\s*\{[^}]*border-image-slice:\s*128 fill;/s);
+  assert.match(css, /\.clip::before\s*\{[^}]*border-image-width:\s*18px;/s);
+  assert.match(css, /\.clip::before\s*\{[^}]*filter:\s*drop-shadow/s);
+  assert.match(css, /\.clip::after\s*\{[^}]*content:\s*"";/s);
+  assert.match(css, /\.clip::after\s*\{[^}]*box-shadow:\s*inset 0 0 0 1px/s);
+  assert.match(css, /\.clip-name,\s*\n\.clip-idx,\s*\n\.clip-chord-name,\s*\n\.clip-empty-tag\s*\{[^}]*z-index:\s*1;/s);
+});
+
 test('track fill-empty clip button is compact and inherits track color', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
@@ -265,8 +355,8 @@ test('track fill-empty clip button is compact and inherits track color', async (
 test('bass and melody fill track gems use their track colors', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
-  assert.match(css, /\.track\[data-type="bass"\] \.fill-gem\s*\{[^}]*var\(--c-bass\)[^}]*var\(--c-bass-ink\)/s);
-  assert.match(css, /\.track\[data-type="melody"\] \.fill-gem\s*\{[^}]*var\(--c-melody\)[^}]*var\(--c-melody-ink\)/s);
+  assert.match(css, /\.track\[data-type="bass"\] \.fill-gem\s*\{[^}]*var\(--asset-gem-blue\)[^}]*var\(--c-bass\)[^}]*var\(--c-bass-ink\)/s);
+  assert.match(css, /\.track\[data-type="melody"\] \.fill-gem\s*\{[^}]*var\(--asset-gem-purple\)[^}]*var\(--c-melody\)[^}]*var\(--c-melody-ink\)/s);
 });
 
 test('timeline drag and swap feedback is visually prominent', async () => {
