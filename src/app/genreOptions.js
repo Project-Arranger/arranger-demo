@@ -1,4 +1,6 @@
 const CURRENT_GENRE_ID = 'pop';
+const ASSET_BASE_URL = (import.meta.env?.BASE_URL ?? '/').replace(/\/?$/, '/');
+const genreArt = (filename) => `${ASSET_BASE_URL}assets/genre-art/${filename}`;
 
 const GENRE_OPTIONS = Object.freeze([
   Object.freeze({
@@ -9,7 +11,7 @@ const GENRE_OPTIONS = Object.freeze([
     tone: 'var(--c-chord)',
     ink: 'var(--c-chord-ink)',
     neon: '#53c7ff',
-    artKey: 'pop',
+    artImage: genreArt('pop-neon.png'),
     note: 'Doo-wop / I-vi-IV-V',
   }),
   Object.freeze({
@@ -20,7 +22,7 @@ const GENRE_OPTIONS = Object.freeze([
     tone: 'var(--c-bass)',
     ink: 'var(--c-bass-ink)',
     neon: '#ff50f0',
-    artKey: 'hipHop',
+    artImage: genreArt('hip-hop-neon.png'),
     note: 'Locked',
   }),
   Object.freeze({
@@ -31,7 +33,7 @@ const GENRE_OPTIONS = Object.freeze([
     tone: 'var(--c-melody)',
     ink: 'var(--c-melody-ink)',
     neon: '#ff9a45',
-    artKey: 'rnb',
+    artImage: genreArt('rnb-neon.png'),
     note: 'Locked',
   }),
   Object.freeze({
@@ -42,7 +44,7 @@ const GENRE_OPTIONS = Object.freeze([
     tone: 'var(--c-drums)',
     ink: 'var(--c-drums-ink)',
     neon: '#5cff76',
-    artKey: 'electronic',
+    artImage: genreArt('electronic-neon.png'),
     note: 'Locked',
   }),
   Object.freeze({
@@ -53,7 +55,7 @@ const GENRE_OPTIONS = Object.freeze([
     tone: 'var(--c-vocal)',
     ink: 'var(--c-vocal-ink)',
     neon: '#fff15b',
-    artKey: 'rock',
+    artImage: genreArt('rock-neon.png'),
     note: 'Locked',
   }),
   Object.freeze({
@@ -64,7 +66,7 @@ const GENRE_OPTIONS = Object.freeze([
     tone: 'var(--c-bass)',
     ink: 'var(--c-bass-ink)',
     neon: '#63f1ff',
-    artKey: 'jazz',
+    artImage: genreArt('jazz-neon.png'),
     note: 'Locked',
   }),
 ]);

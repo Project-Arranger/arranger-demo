@@ -22,6 +22,14 @@ test('genre options expose six styles with Pop as the only enabled current genre
     'ROCK',
     'JAZZ',
   ]);
+  assert.deepEqual(GENRE_OPTIONS.map((genre) => genre.artImage), [
+    '/assets/genre-art/pop-neon.png',
+    '/assets/genre-art/hip-hop-neon.png',
+    '/assets/genre-art/rnb-neon.png',
+    '/assets/genre-art/electronic-neon.png',
+    '/assets/genre-art/rock-neon.png',
+    '/assets/genre-art/jazz-neon.png',
+  ]);
   assert.equal(new Set(GENRE_OPTIONS.map((genre) => genre.id)).size, 6);
   assert.equal(GENRE_OPTIONS.find((genre) => genre.id === CURRENT_GENRE_ID)?.enabled, true);
   assert.deepEqual(
@@ -30,7 +38,8 @@ test('genre options expose six styles with Pop as the only enabled current genre
       .map((genre) => genre.enabled),
     [false, false, false, false, false],
   );
-  assert.equal(GENRE_OPTIONS.every((genre) => genre.neon && genre.artKey), true);
+  assert.equal(GENRE_OPTIONS.every((genre) => genre.neon && genre.artImage), true);
+  assert.equal(GENRE_OPTIONS.every((genre) => !('artKey' in genre)), true);
   assert.equal(GENRE_OPTIONS.every((genre) => !('subtitle' in genre)), true);
 });
 
@@ -68,6 +77,10 @@ test('genre selection screen renders previewable hardware cards and only enters 
   assert.match(source, /data-selected=\{selected \? 'true' : undefined\}/);
   assert.match(source, /data-enabled=\{genre\.enabled \? 'true' : 'false'\}/);
   assert.match(source, /onClick=\{\(\) => handleGenreSelect\(genre\)\}/);
+  assert.match(source, /className="genre-art-frame"/);
+  assert.match(source, /className="genre-art-image"/);
+  assert.match(source, /src=\{genre\.artImage\}/);
+  assert.match(source, /alt=""/);
   assert.match(source, /className="genre-gem-button"/);
   assert.match(source, /type="button"[\s\S]*aria-label=\{`试听 \$\{genre\.label\}`\}/);
   assert.match(source, /onClick=\{\(\) => handleGenreAudition\(genre\)\}/);
@@ -80,7 +93,7 @@ test('genre selection screen renders previewable hardware cards and only enters 
   assert.match(source, /Volume2/);
   assert.doesNotMatch(source, /GENRE_ART_ICONS/);
   assert.doesNotMatch(source, /renderGenreArt/);
-  assert.doesNotMatch(source, /genre-art/);
+  assert.doesNotMatch(source, /genre-art-icon|genre-art-line/);
   assert.doesNotMatch(source, /\b(AudioWaveform|Building2|CircuitBoard|Disc3|Guitar|Mic2|Music2|SprayCan|Zap)\b/);
   assert.doesNotMatch(source, /LockKeyhole/);
   assert.doesNotMatch(source, /disabled=\{/);

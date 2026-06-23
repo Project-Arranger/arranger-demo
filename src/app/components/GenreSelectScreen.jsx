@@ -103,6 +103,15 @@ function GenreSelectScreen({
                       onClick={() => handleGenreSelect(genre)}
                     >
                       <span className="genre-label">{genre.shortLabel}</span>
+                      <span className="genre-art-frame" aria-hidden="true">
+                        <img
+                          className="genre-art-image"
+                          src={genre.artImage}
+                          alt=""
+                          draggable="false"
+                          decoding="async"
+                        />
+                      </span>
                       <span className="genre-status mono">
                         {genre.enabled ? 'ENTER' : 'PREVIEW'}
                       </span>

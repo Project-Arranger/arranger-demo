@@ -15,6 +15,15 @@ const SKEUO_ASSETS = [
   '../public/assets/skeuo/gem-amber.png',
 ];
 
+const GENRE_ART_ASSETS = [
+  '../public/assets/genre-art/pop-neon.png',
+  '../public/assets/genre-art/hip-hop-neon.png',
+  '../public/assets/genre-art/rnb-neon.png',
+  '../public/assets/genre-art/electronic-neon.png',
+  '../public/assets/genre-art/rock-neon.png',
+  '../public/assets/genre-art/jazz-neon.png',
+];
+
 test('skeuomorphic theme provides project-local texture assets and material tokens', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
@@ -58,6 +67,10 @@ test('ui shell keeps the editor usable and confines mobile overflow to panels', 
 test('genre gate uses a hardware cabinet with responsive neon style cards', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
+  for (const assetPath of GENRE_ART_ASSETS) {
+    await access(new URL(assetPath, import.meta.url));
+  }
+
   assert.match(css, /\.genre-gate\s*\{[^}]*min-height:\s*100dvh;/s);
   assert.match(css, /\.genre-gate\s*\{[^}]*overflow:\s*auto;/s);
   assert.match(css, /\.genre-hardware\s*\{[^}]*var\(--asset-wood\)/s);
@@ -72,13 +85,16 @@ test('genre gate uses a hardware cabinet with responsive neon style cards', asyn
   assert.match(css, /\.genre-card-shell\s*\{[^}]*gap:\s*10px;/s);
   assert.match(css, /\.genre-card-shell\s*\{[^}]*padding-bottom:\s*0;/s);
   assert.match(css, /\.genre-card\s*\{[^}]*--genre-neon:/s);
-  assert.match(css, /\.genre-card\s*\{[^}]*grid-template-rows:\s*minmax\(92px,\s*1fr\) auto;/s);
+  assert.match(css, /\.genre-card\s*\{[^}]*grid-template-rows:\s*auto minmax\(86px,\s*1fr\) auto;/s);
   assert.match(css, /\.genre-card\s*\{[^}]*border:\s*2px solid color-mix\(in oklab,\s*var\(--genre-neon\)/s);
   assert.match(css, /\.genre-card\[data-selected="true"\]\s*\{/s);
   assert.match(css, /\.genre-card\[data-enabled="false"\]\s*\{/s);
   assert.match(css, /\.genre-label\s*\{[^}]*grid-row:\s*1;/s);
-  assert.match(css, /\.genre-label\s*\{[^}]*place-self:\s*center;/s);
-  assert.match(css, /\.genre-status\s*\{[^}]*grid-row:\s*2;/s);
+  assert.match(css, /\.genre-art-frame\s*\{[^}]*grid-row:\s*2;/s);
+  assert.match(css, /\.genre-art-frame\s*\{[^}]*pointer-events:\s*none;/s);
+  assert.match(css, /\.genre-art-image\s*\{[^}]*object-fit:\s*contain;/s);
+  assert.match(css, /\.genre-art-image\s*\{[^}]*filter:\s*drop-shadow/s);
+  assert.match(css, /\.genre-status\s*\{[^}]*grid-row:\s*3;/s);
   assert.match(css, /\.genre-gem-button\s*\{[^}]*display:\s*grid;/s);
   assert.match(css, /\.genre-gem-button\s*\{[^}]*cursor:\s*pointer;/s);
   assert.match(css, /\.genre-gem\s*\{[^}]*var\(--asset-gem-amber\)/s);
@@ -86,9 +102,13 @@ test('genre gate uses a hardware cabinet with responsive neon style cards', asyn
   assert.match(css, /\.genre-gem-label\s*\{[^}]*font-size:/s);
   assert.doesNotMatch(css, /\.genre-card-shell\s*\{[^}]*position:\s*relative;/s);
   assert.doesNotMatch(css, /\.genre-gem\s*\{[^}]*position:\s*absolute;/s);
-  assert.doesNotMatch(css, /\.genre-art(?:\s|[.#:{])/);
+  assert.doesNotMatch(css, /\.genre-art-icon(?:\s|[.#:{])/);
+  assert.doesNotMatch(css, /\.genre-art-line(?:\s|[.#:{])/);
   assert.doesNotMatch(css, /\.genre-subtitle(?:\s|[.#:{])/);
   assert.match(css, /@media\s*\(max-width:\s*860px\)\s*\{[\s\S]*\.genre-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/s);
+  assert.match(css, /@media\s*\(max-width:\s*560px\)\s*\{[\s\S]*\.genre-gate\s*\{[^}]*justify-items:\s*center;/s);
+  assert.match(css, /@media\s*\(max-width:\s*560px\)\s*\{[\s\S]*\.genre-hardware\s*\{[^}]*width:\s*100%;/s);
+  assert.match(css, /@media\s*\(max-width:\s*560px\)\s*\{[\s\S]*\.genre-hardware\s*\{[^}]*max-width:\s*100%;/s);
   assert.match(css, /@media\s*\(max-width:\s*560px\)\s*\{[\s\S]*\.genre-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\);/s);
 });
 
