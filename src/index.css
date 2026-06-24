@@ -3305,9 +3305,12 @@ button {
 
 .tpl-prog {
   padding: 12px;
-  background: color-mix(in oklab, var(--c-chord) 18%, var(--surface));
-  border: 1px solid color-mix(in oklab, var(--c-chord-ink) 12%, transparent);
+  background:
+    linear-gradient(180deg, rgb(255 220 159 / 0.12), rgb(18 11 7 / 0.64)),
+    rgb(42 24 14 / 0.72);
+  border: 1px solid var(--hardware-control-border);
   border-radius: 12px;
+  box-shadow: inset 0 1px 0 rgb(255 246 218 / 0.1);
 }
 
 .tpl-chords,
@@ -3326,10 +3329,20 @@ button {
   justify-content: center;
   min-width: 34px;
   padding: 6px 8px;
-  color: var(--c-chord-ink);
-  background: var(--surface);
+  color: var(--hardware-chord-ink-strong);
+  background:
+    linear-gradient(180deg, rgb(255 220 159 / 0.18), rgb(28 15 9 / 0.86)),
+    rgb(45 25 14 / 0.82);
+  border: 1px solid rgb(255 219 164 / 0.24);
   border-radius: 8px;
+  box-shadow: inset 0 1px 0 rgb(255 246 218 / 0.14);
   font-weight: 800;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.7);
+}
+
+.tpl-chord-sep {
+  color: var(--hardware-control-ink);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.62);
 }
 
 .tpl-play,
@@ -3338,10 +3351,16 @@ button {
   place-items: center;
   width: 30px;
   height: 30px;
-  color: var(--c-chord-ink);
-  background: var(--surface);
-  border: 1px solid color-mix(in oklab, var(--c-chord-ink) 18%, transparent);
+  color: var(--hardware-control-ink);
+  background:
+    linear-gradient(180deg, rgb(255 220 159 / 0.18), rgb(18 11 7 / 0.62)),
+    var(--hardware-control-bg);
+  border: 1px solid var(--hardware-control-border);
   border-radius: 50%;
+  box-shadow:
+    inset 0 1px 0 rgb(255 246 218 / 0.16),
+    0 1px 4px rgb(0 0 0 / 0.34);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.58);
 }
 
 .tpl-play .play-glyph,
@@ -4480,6 +4499,15 @@ button {
   --asset-clip-pad: url("/assets/skeuo/clip-pad.png");
   --asset-clip-vocal: url("/assets/skeuo/clip-vocal.png");
   --asset-clip-sample: url("/assets/skeuo/clip-sample.png");
+  --asset-drum-step-off: url("/assets/skeuo/drum-step-off.png");
+  --asset-drum-step-kick-on: url("/assets/skeuo/drum-step-kick-on.png");
+  --asset-drum-step-snare-on: url("/assets/skeuo/drum-step-snare-on.png");
+  --asset-drum-step-hihat-on: url("/assets/skeuo/drum-step-hihat-on.png");
+  --asset-drum-control-button: url("/assets/skeuo/drum-control-button.png");
+  --asset-drum-control-button-pressed: url("/assets/skeuo/drum-control-button-pressed.png");
+  --asset-drum-control-button-disabled: url("/assets/skeuo/drum-control-button-disabled.png");
+  --asset-drum-page-button: url("/assets/skeuo/drum-page-button.png");
+  --asset-drum-close-button: url("/assets/skeuo/drum-close-button.png");
   --bg: #2b211c;
   --bg-deep: #15110f;
   --surface: #3f3a36;
@@ -4497,6 +4525,11 @@ button {
   --hardware-amber: #f1bd72;
   --hardware-green: #54d67d;
   --hardware-black: #100d0b;
+  --hardware-control-ink: #f4d9ad;
+  --hardware-control-muted: #a98b68;
+  --hardware-control-bg: rgb(18 11 7 / 0.44);
+  --hardware-control-border: rgb(255 219 164 / 0.34);
+  --hardware-chord-ink-strong: #ffe2b6;
   --hardware-shadow-deep:
     0 24px 60px rgb(0 0 0 / 0.55),
     0 8px 24px rgb(0 0 0 / 0.38);
@@ -5681,32 +5714,72 @@ body {
   padding: 0;
 }
 
-.t-btn {
-  color: #1b1512;
-  background: transparent;
-  border: 1px solid transparent;
+.t-btn,
+.topbar .icon-btn {
+  color: var(--hardware-control-ink);
+  background: var(--hardware-control-bg);
+  border: 1px solid var(--hardware-control-border);
   border-radius: 8px;
-  text-shadow: 0 1px 0 rgb(255 255 255 / 0.18);
+  box-shadow:
+    inset 0 1px 0 rgb(255 246 218 / 0.16),
+    0 1px 2px rgb(0 0 0 / 0.22);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.58);
 }
 
 .t-btn:hover,
-.t-btn:focus-visible {
-  color: #f2d7ac;
-  background: rgb(0 0 0 / 0.28);
-  box-shadow: inset 0 0 0 1px rgb(255 220 166 / 0.18);
+.t-btn:focus-visible,
+.topbar .icon-btn:hover,
+.topbar .icon-btn:focus-visible {
+  color: #fff1cf;
+  background: rgb(23 14 9 / 0.68);
+  border-color: rgb(255 229 177 / 0.52);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 229 177 / 0.22),
+    inset 0 1px 0 rgb(255 246 218 / 0.18),
+    0 0 10px rgb(255 196 112 / 0.16);
 }
 
 .t-btn.play {
-  color: #1a130d;
+  color: var(--hardware-control-ink);
   background:
-    linear-gradient(180deg, rgb(244 220 176 / 0.66), rgb(105 77 48 / 0.35));
-  border-color: rgb(0 0 0 / 0.22);
-  box-shadow: none;
+    linear-gradient(180deg, rgb(255 220 159 / 0.22), rgb(18 11 7 / 0.5)),
+    var(--hardware-control-bg);
+  border-color: var(--hardware-control-border);
+  box-shadow:
+    inset 0 1px 0 rgb(255 246 218 / 0.18),
+    0 0 10px rgb(255 186 96 / 0.16);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.6);
+}
+
+.t-btn.play:hover,
+.t-btn.play:focus-visible {
+  color: #fff1cf;
+  background:
+    linear-gradient(180deg, rgb(255 229 177 / 0.3), rgb(23 14 9 / 0.64)),
+    rgb(23 14 9 / 0.68);
+  border-color: rgb(255 229 177 / 0.52);
 }
 
 .t-btn.play.active {
-  color: #69d98b;
-  background: rgb(0 0 0 / 0.36);
+  color: #9dffb8;
+  background: rgb(12 24 15 / 0.64);
+  border-color: rgb(127 255 174 / 0.42);
+}
+
+.t-btn:disabled {
+  color: var(--hardware-control-muted);
+  background: rgb(18 11 7 / 0.28);
+  border-color: rgb(255 219 164 / 0.18);
+  box-shadow: inset 0 1px 0 rgb(255 246 218 / 0.08);
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.t-btn:disabled:hover {
+  color: var(--hardware-control-muted);
+  background: rgb(18 11 7 / 0.28);
+  border-color: rgb(255 219 164 / 0.18);
+  box-shadow: inset 0 1px 0 rgb(255 246 218 / 0.08);
 }
 
 .hardware-status-display {
@@ -6402,12 +6475,13 @@ body {
   min-height: 62px;
   padding: 0 clamp(14px, 1.2vw, 24px);
   background:
-    linear-gradient(180deg, rgb(255 246 209 / 0.55), rgb(171 122 59 / 0.32)),
-    var(--asset-brass) center / cover,
+    linear-gradient(180deg, rgb(255 255 255 / 0.12), transparent 24%, rgb(47 22 9 / 0.18) 100%),
+    var(--asset-brass) center 50% / cover no-repeat,
     #b88b53;
-  border-bottom: 2px solid rgb(63 31 12 / 0.52);
+  border-bottom: 2px solid rgb(48 24 10 / 0.62);
   box-shadow:
-    inset 0 1px 0 rgb(255 249 222 / 0.48),
+    inset 0 1px 0 rgb(255 249 222 / 0.42),
+    inset 0 -8px 14px rgb(47 22 9 / 0.24),
     0 4px 12px rgb(0 0 0 / 0.24);
 }
 
@@ -6445,14 +6519,18 @@ body {
 .btn-template-groove-active,
 .btn-template-scale-active {
   min-height: 36px;
-  color: #20130b;
+  color: var(--hardware-control-ink);
   background:
-    linear-gradient(180deg, rgb(255 237 189 / 0.68), rgb(121 74 36 / 0.44)),
+    linear-gradient(180deg, rgb(255 220 159 / 0.24), rgb(18 11 7 / 0.58)),
+    var(--hardware-control-bg),
     var(--asset-brass) center / cover,
-    #b8864f;
-  border: 1px solid rgb(85 45 18 / 0.42);
+    #2a170d;
+  border: 1px solid var(--hardware-control-border);
   border-radius: 12px;
-  box-shadow: var(--hardware-button-shadow);
+  box-shadow:
+    inset 0 1px 0 rgb(255 246 218 / 0.18),
+    0 2px 5px rgb(0 0 0 / 0.32);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.62);
 }
 
 .drum-action {
@@ -6467,6 +6545,45 @@ body {
     0 5px 12px rgb(0 0 0 / 0.36);
 }
 
+.drum-editor .btn-template,
+.drum-editor .drum-clear-action {
+  color: #2a170d;
+  background:
+    linear-gradient(180deg, rgb(255 245 214 / 0.22), rgb(40 18 7 / 0.16)),
+    var(--asset-drum-control-button) center / 100% 100% no-repeat;
+  border: 1px solid rgb(72 38 15 / 0.48);
+  border-radius: 12px;
+  box-shadow:
+    0 1px 0 rgb(255 244 213 / 0.18),
+    0 5px 12px rgb(0 0 0 / 0.36);
+  text-shadow: 0 1px 0 rgb(255 241 203 / 0.36);
+}
+
+.drum-editor .drum-action {
+  color: #fff2cf;
+  text-shadow: 0 1px 3px rgb(45 21 7 / 0.74);
+}
+
+.drum-editor .btn-template:hover:not(:disabled),
+.drum-editor .drum-action:hover:not(:disabled) {
+  background:
+    linear-gradient(180deg, rgb(255 244 209 / 0.2), rgb(39 17 7 / 0.2)),
+    var(--asset-drum-control-button-pressed) center / 100% 100% no-repeat;
+  box-shadow:
+    0 0 14px rgb(255 169 83 / 0.35),
+    0 5px 12px rgb(0 0 0 / 0.36);
+}
+
+.drum-editor .btn-template:disabled,
+.drum-editor .drum-action:disabled {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.08), rgb(0 0 0 / 0.18)),
+    var(--asset-drum-control-button-disabled) center / 100% 100% no-repeat;
+  cursor: not-allowed;
+  opacity: 0.58;
+  box-shadow: none;
+}
+
 .editor-close,
 .track-page-btn,
 .tool-icon {
@@ -6475,6 +6592,42 @@ body {
     linear-gradient(180deg, rgb(255 230 172 / 0.68), rgb(117 74 35 / 0.48)),
     var(--asset-brass) center / cover,
     #a4733e;
+  border-color: rgb(72 38 15 / 0.5);
+  box-shadow: var(--hardware-button-shadow);
+}
+
+.drum-editor .track-page-btn {
+  color: #28170d;
+  background:
+    linear-gradient(180deg, rgb(255 244 208 / 0.14), rgb(40 18 7 / 0.16)),
+    var(--asset-drum-page-button) center / 100% 100% no-repeat;
+  border-color: rgb(72 38 15 / 0.46);
+  box-shadow: var(--hardware-button-shadow);
+}
+
+.drum-editor .track-page-btn:hover:not(:disabled) {
+  color: #fff3d7;
+  background:
+    linear-gradient(180deg, rgb(255 244 209 / 0.18), rgb(36 16 7 / 0.22)),
+    var(--asset-drum-control-button-pressed) center / 100% 100% no-repeat;
+  box-shadow:
+    0 0 14px rgb(255 169 83 / 0.35),
+    0 5px 12px rgb(0 0 0 / 0.36);
+}
+
+.drum-editor .track-page-btn:disabled {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.06), rgb(0 0 0 / 0.2)),
+    var(--asset-drum-control-button-disabled) center / 100% 100% no-repeat;
+  opacity: 0.42;
+  box-shadow: none;
+}
+
+.drum-editor .editor-close {
+  color: #2a170d;
+  background:
+    linear-gradient(180deg, rgb(255 239 196 / 0.14), rgb(47 18 9 / 0.22)),
+    var(--asset-drum-close-button) center / 100% 100% no-repeat;
   border-color: rgb(72 38 15 / 0.5);
   box-shadow: var(--hardware-button-shadow);
 }
@@ -6515,60 +6668,62 @@ body {
 .drum-step {
   min-height: 24px;
   background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.38), rgb(88 55 31 / 0.12)),
-    #b8a38d;
-  border-color: rgb(80 42 16 / 0.28);
+    linear-gradient(180deg, rgb(255 255 255 / 0.1), rgb(0 0 0 / 0.08)),
+    var(--asset-drum-step-off) center / 100% 100% no-repeat;
+  border-color: rgb(80 42 16 / 0.32);
   border-radius: 7px;
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.52),
-    inset 0 -8px 10px rgb(0 0 0 / 0.16),
     0 3px 5px rgb(78 39 14 / 0.38);
 }
 
+.drum-step:hover {
+  filter: brightness(1.08) saturate(1.08);
+  transform: translateY(-1px);
+}
+
+.drum-step:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--track-ink, var(--c-drums-ink)) 64%, white);
+  outline-offset: 2px;
+}
+
 .drum-step[data-instrument="kick"] {
-  background:
-    linear-gradient(180deg, rgb(230 247 255 / 0.4), rgb(61 96 126 / 0.16)),
-    color-mix(in oklab, var(--drum-kick) 42%, #c3b39e);
+  border-color: color-mix(in oklab, var(--drum-kick) 22%, rgb(80 42 16 / 0.32));
 }
 
 .drum-step[data-instrument="snare"] {
-  background:
-    linear-gradient(180deg, rgb(255 228 222 / 0.36), rgb(120 52 43 / 0.14)),
-    color-mix(in oklab, var(--drum-snare) 44%, #c3aa98);
+  border-color: color-mix(in oklab, var(--drum-snare) 24%, rgb(80 42 16 / 0.32));
 }
 
 .drum-step[data-instrument="hihat"] {
-  background:
-    linear-gradient(180deg, rgb(255 239 203 / 0.4), rgb(126 81 24 / 0.14)),
-    color-mix(in oklab, var(--drum-hihat) 46%, #c6ad8a);
+  border-color: color-mix(in oklab, var(--drum-hihat) 24%, rgb(80 42 16 / 0.32));
 }
 
 .drum-step.active[data-instrument="kick"] {
   background:
-    linear-gradient(180deg, rgb(220 243 255 / 0.54), rgb(52 98 142 / 0.24)),
-    var(--drum-kick);
+    linear-gradient(180deg, rgb(220 243 255 / 0.12), rgb(52 98 142 / 0.12)),
+    var(--asset-drum-step-kick-on) center / 100% 100% no-repeat;
+  border-color: color-mix(in oklab, var(--drum-kick) 70%, black);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.58),
     0 0 12px rgb(109 177 229 / 0.52),
     0 4px 7px rgb(72 35 12 / 0.42);
 }
 
 .drum-step.active[data-instrument="snare"] {
   background:
-    linear-gradient(180deg, rgb(255 220 214 / 0.5), rgb(137 39 32 / 0.24)),
-    var(--drum-snare);
+    linear-gradient(180deg, rgb(255 220 214 / 0.12), rgb(137 39 32 / 0.12)),
+    var(--asset-drum-step-snare-on) center / 100% 100% no-repeat;
+  border-color: color-mix(in oklab, var(--drum-snare) 70%, black);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.52),
     0 0 12px rgb(227 88 75 / 0.5),
     0 4px 7px rgb(72 35 12 / 0.42);
 }
 
 .drum-step.active[data-instrument="hihat"] {
   background:
-    linear-gradient(180deg, rgb(255 235 194 / 0.54), rgb(136 75 20 / 0.2)),
-    var(--drum-hihat);
+    linear-gradient(180deg, rgb(255 235 194 / 0.12), rgb(136 75 20 / 0.12)),
+    var(--asset-drum-step-hihat-on) center / 100% 100% no-repeat;
+  border-color: color-mix(in oklab, var(--drum-hihat) 70%, black);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.54),
     0 0 12px rgb(225 151 62 / 0.5),
     0 4px 7px rgb(72 35 12 / 0.42);
 }

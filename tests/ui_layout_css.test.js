@@ -23,6 +23,15 @@ const SKEUO_ASSETS = [
   '../public/assets/skeuo/clip-pad.png',
   '../public/assets/skeuo/clip-vocal.png',
   '../public/assets/skeuo/clip-sample.png',
+  '../public/assets/skeuo/drum-step-off.png',
+  '../public/assets/skeuo/drum-step-kick-on.png',
+  '../public/assets/skeuo/drum-step-snare-on.png',
+  '../public/assets/skeuo/drum-step-hihat-on.png',
+  '../public/assets/skeuo/drum-control-button.png',
+  '../public/assets/skeuo/drum-control-button-pressed.png',
+  '../public/assets/skeuo/drum-control-button-disabled.png',
+  '../public/assets/skeuo/drum-page-button.png',
+  '../public/assets/skeuo/drum-close-button.png',
 ];
 
 const GENRE_ART_ASSETS = [
@@ -59,9 +68,23 @@ test('skeuomorphic theme provides project-local texture assets and material toke
   assert.match(css, /--asset-clip-pad:\s*url\("\/assets\/skeuo\/clip-pad\.png"\);/);
   assert.match(css, /--asset-clip-vocal:\s*url\("\/assets\/skeuo\/clip-vocal\.png"\);/);
   assert.match(css, /--asset-clip-sample:\s*url\("\/assets\/skeuo\/clip-sample\.png"\);/);
+  assert.match(css, /--asset-drum-step-off:\s*url\("\/assets\/skeuo\/drum-step-off\.png"\);/);
+  assert.match(css, /--asset-drum-step-kick-on:\s*url\("\/assets\/skeuo\/drum-step-kick-on\.png"\);/);
+  assert.match(css, /--asset-drum-step-snare-on:\s*url\("\/assets\/skeuo\/drum-step-snare-on\.png"\);/);
+  assert.match(css, /--asset-drum-step-hihat-on:\s*url\("\/assets\/skeuo\/drum-step-hihat-on\.png"\);/);
+  assert.match(css, /--asset-drum-control-button:\s*url\("\/assets\/skeuo\/drum-control-button\.png"\);/);
+  assert.match(css, /--asset-drum-control-button-pressed:\s*url\("\/assets\/skeuo\/drum-control-button-pressed\.png"\);/);
+  assert.match(css, /--asset-drum-control-button-disabled:\s*url\("\/assets\/skeuo\/drum-control-button-disabled\.png"\);/);
+  assert.match(css, /--asset-drum-page-button:\s*url\("\/assets\/skeuo\/drum-page-button\.png"\);/);
+  assert.match(css, /--asset-drum-close-button:\s*url\("\/assets\/skeuo\/drum-close-button\.png"\);/);
   assert.match(css, /--hardware-copper:/);
   assert.match(css, /--hardware-gold:/);
   assert.match(css, /--hardware-shadow-deep:/);
+  assert.match(css, /--hardware-control-ink:\s*#f4d9ad;/);
+  assert.match(css, /--hardware-control-muted:\s*#a98b68;/);
+  assert.match(css, /--hardware-control-bg:\s*rgb\(18 11 7 \/ 0\.44\);/);
+  assert.match(css, /--hardware-control-border:\s*rgb\(255 219 164 \/ 0\.34\);/);
+  assert.match(css, /--hardware-chord-ink-strong:\s*#ffe2b6;/);
 });
 
 test('ui shell keeps the editor usable and confines mobile overflow to panels', async () => {
@@ -413,13 +436,23 @@ test('drum sequencer uses three fixed rows and sixteen stable step columns', asy
   assert.match(css, /\.track-page-btn\s*\{[^}]*color:\s*var\(--track-ink,\s*var\(--c-drums-ink\)\);/s);
   assert.match(css, /\.track-page-btn:hover:not\(:disabled\)\s*\{[^}]*background:\s*var\(--track-ink,\s*var\(--c-drums-ink\)\);/s);
   assert.match(css, /\.track-page-btn:disabled\s*\{[^}]*opacity:\s*0\.32;/s);
+  assert.match(css, /\.drum-editor \.btn-template,\s*\n\.drum-editor \.drum-clear-action\s*\{[^}]*var\(--asset-drum-control-button\)/s);
+  assert.match(css, /\.drum-editor \.btn-template:hover:not\(:disabled\),\s*\n\.drum-editor \.drum-action:hover:not\(:disabled\)\s*\{[^}]*var\(--asset-drum-control-button-pressed\)/s);
+  assert.match(css, /\.drum-editor \.btn-template:disabled,\s*\n\.drum-editor \.drum-action:disabled\s*\{[^}]*var\(--asset-drum-control-button-disabled\)/s);
+  assert.match(css, /\.drum-editor \.track-page-btn\s*\{[^}]*var\(--asset-drum-page-button\)/s);
+  assert.match(css, /\.drum-editor \.track-page-btn:hover:not\(:disabled\)\s*\{[^}]*var\(--asset-drum-control-button-pressed\)/s);
+  assert.match(css, /\.drum-editor \.track-page-btn:disabled\s*\{[^}]*var\(--asset-drum-control-button-disabled\)/s);
+  assert.match(css, /\.drum-editor \.editor-close\s*\{[^}]*var\(--asset-drum-close-button\)/s);
   assert.doesNotMatch(css, /\.drum-page-btn\s*\{/);
   assert.match(css, /\.drum-step-number\s*\{[^}]*justify-content:\s*center;[^}]*height:\s*16px;/s);
   assert.match(css, /\.drum-step-number\.beat-end::after\s*\{[^}]*position:\s*absolute;[^}]*right:\s*calc\(-1 \* var\(--drum-step-group-gap-half\)\);[^}]*transform:\s*translateX\(50%\);/s);
   assert.match(css, /\.drum-step\.beat-end::after\s*\{[^}]*position:\s*absolute;[^}]*right:\s*calc\(-1 \* var\(--drum-step-group-gap-half\)\);[^}]*transform:\s*translateX\(50%\);/s);
-  assert.match(css, /\.drum-step\.active\[data-instrument="kick"\]/);
-  assert.match(css, /\.drum-step\.active\[data-instrument="snare"\]/);
-  assert.match(css, /\.drum-step\.active\[data-instrument="hihat"\]/);
+  assert.match(css, /\.drum-step\s*\{[^}]*var\(--asset-drum-step-off\)/s);
+  assert.match(css, /\.drum-step:hover\s*\{[^}]*filter:\s*brightness\(1\.08\) saturate\(1\.08\);/s);
+  assert.match(css, /\.drum-step:focus-visible\s*\{[^}]*outline:\s*2px solid color-mix\(in oklab,\s*var\(--track-ink,\s*var\(--c-drums-ink\)\) 64%,\s*white\);/s);
+  assert.match(css, /\.drum-step\.active\[data-instrument="kick"\]\s*\{[^}]*var\(--asset-drum-step-kick-on\)/s);
+  assert.match(css, /\.drum-step\.active\[data-instrument="snare"\]\s*\{[^}]*var\(--asset-drum-step-snare-on\)/s);
+  assert.match(css, /\.drum-step\.active\[data-instrument="hihat"\]\s*\{[^}]*var\(--asset-drum-step-hihat-on\)/s);
   assert.match(css, /@media\s*\(max-width:\s*980px\)\s*\{[\s\S]*\.drum-step-group\s*\{[^}]*--drum-step-gap:\s*4px;[^}]*gap:\s*var\(--drum-step-gap\);/s);
 });
 
@@ -603,6 +636,52 @@ test('active chord template button aligns icon and label on one baseline', async
   assert.match(css, /\.btn-template-active svg\s*\{[^}]*flex:\s*0 0 auto;/s);
 });
 
+test('skeuomorphic shared controls use high contrast dark state layers without resizing', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.t-btn,\s*\n\.topbar \.icon-btn\s*\{[^}]*color:\s*var\(--hardware-control-ink\);/s);
+  assert.match(css, /\.t-btn,\s*\n\.topbar \.icon-btn\s*\{[^}]*background:\s*var\(--hardware-control-bg\);/s);
+  assert.match(css, /\.t-btn,\s*\n\.topbar \.icon-btn\s*\{[^}]*border:\s*1px solid var\(--hardware-control-border\);/s);
+  assert.match(css, /\.t-btn,\s*\n\.topbar \.icon-btn\s*\{[^}]*inset 0 1px 0 rgb\(255 246 218 \/ 0\.16\)/s);
+  assert.match(css, /\.t-btn:hover,\s*\n\.t-btn:focus-visible,\s*\n\.topbar \.icon-btn:hover,\s*\n\.topbar \.icon-btn:focus-visible\s*\{[^}]*color:\s*#fff1cf;/s);
+  assert.match(css, /\.t-btn:hover,\s*\n\.t-btn:focus-visible,\s*\n\.topbar \.icon-btn:hover,\s*\n\.topbar \.icon-btn:focus-visible\s*\{[^}]*background:\s*rgb\(23 14 9 \/ 0\.68\);/s);
+  assert.match(css, /\.t-btn\.play\s*\{[^}]*color:\s*var\(--hardware-control-ink\);/s);
+  assert.match(css, /\.t-btn\.play\s*\{[^}]*var\(--hardware-control-bg\)/s);
+  assert.match(css, /\.t-btn:disabled\s*\{[^}]*color:\s*var\(--hardware-control-muted\);/s);
+  assert.match(css, /\.t-btn:disabled\s*\{[^}]*opacity:\s*0\.58;/s);
+  assert.match(css, /\.t-btn:disabled:hover\s*\{[^}]*color:\s*var\(--hardware-control-muted\);/s);
+  assert.match(css, /\.t-btn:disabled:hover\s*\{[^}]*background:\s*rgb\(18 11 7 \/ 0\.28\);/s);
+  assert.match(css, /\.btn-template,\s*\n\.btn-template-groove,\s*\n\.drum-clear-action,\s*\n\.btn-template-active,\s*\n\.btn-template-groove-active,\s*\n\.btn-template-scale-active\s*\{[^}]*min-height:\s*36px;/s);
+  assert.match(css, /\.btn-template,\s*\n\.btn-template-groove,\s*\n\.drum-clear-action,\s*\n\.btn-template-active,\s*\n\.btn-template-groove-active,\s*\n\.btn-template-scale-active\s*\{[^}]*color:\s*var\(--hardware-control-ink\);/s);
+  assert.match(css, /\.btn-template,\s*\n\.btn-template-groove,\s*\n\.drum-clear-action,\s*\n\.btn-template-active,\s*\n\.btn-template-groove-active,\s*\n\.btn-template-scale-active\s*\{[^}]*var\(--hardware-control-bg\)/s);
+});
+
+test('editor header uses the original brass panel center band without brushed streaks', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.editor-head\s*\{[^}]*background:[^}]*var\(--asset-brass\) center 50% \/ cover no-repeat/s);
+  assert.match(css, /\.editor-head\s*\{[^}]*border-bottom:\s*2px solid rgb\(48 24 10 \/ 0\.62\);/s);
+  assert.match(css, /\.editor-head\s*\{[^}]*box-shadow:[^}]*inset 0 -8px 14px rgb\(47 22 9 \/ 0\.24\)/s);
+  assert.doesNotMatch(css, /\.editor-head\s*\{[^}]*repeating-linear-gradient/s);
+  assert.doesNotMatch(css, /\.editor-head::before\s*\{/);
+  assert.doesNotMatch(css, /\.editor-head::after\s*\{/);
+});
+
+test('chord template preview uses high contrast hardware controls', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.tpl-prog\s*\{[^}]*rgb\(42 24 14 \/ 0\.72\)/s);
+  assert.match(css, /\.tpl-prog\s*\{[^}]*border:\s*1px solid var\(--hardware-control-border\);/s);
+  assert.match(css, /\.tpl-chord,\s*\n\.cv-notes \.n\s*\{[^}]*color:\s*var\(--hardware-chord-ink-strong\);/s);
+  assert.match(css, /\.tpl-chord,\s*\n\.cv-notes \.n\s*\{[^}]*rgb\(45 25 14 \/ 0\.82\)/s);
+  assert.match(css, /\.tpl-chord-sep\s*\{[^}]*color:\s*var\(--hardware-control-ink\);/s);
+  assert.match(css, /\.tpl-play,\s*\n\.cv-preview\s*\{[^}]*width:\s*30px;/s);
+  assert.match(css, /\.tpl-play,\s*\n\.cv-preview\s*\{[^}]*height:\s*30px;/s);
+  assert.match(css, /\.tpl-play,\s*\n\.cv-preview\s*\{[^}]*color:\s*var\(--hardware-control-ink\);/s);
+  assert.match(css, /\.tpl-play,\s*\n\.cv-preview\s*\{[^}]*var\(--hardware-control-bg\)/s);
+  assert.match(css, /\.tpl-play,\s*\n\.cv-preview\s*\{[^}]*border:\s*1px solid var\(--hardware-control-border\);/s);
+});
+
 test('global history buttons keep independent toolbar sizing and disabled feedback', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
@@ -614,10 +693,10 @@ test('global history buttons keep independent toolbar sizing and disabled feedba
   assert.match(css, /\.t-btn\.undo,\s*\.t-btn\.redo\s*\{[^}]*flex:\s*0 0 32px;/s);
   assert.match(css, /\.t-btn\.undo,\s*\.t-btn\.redo\s*\{[^}]*width:\s*32px;/s);
   assert.match(css, /\.t-btn\.undo,\s*\.t-btn\.redo\s*\{[^}]*height:\s*32px;/s);
-  assert.match(css, /\.t-btn:disabled\s*\{[^}]*opacity:\s*0\.38;/s);
+  assert.match(css, /\.t-btn:disabled\s*\{[^}]*opacity:\s*0\.58;/s);
   assert.match(css, /\.t-btn:disabled\s*\{[^}]*cursor:\s*not-allowed;/s);
-  assert.match(css, /\.t-btn:disabled:hover\s*\{[^}]*background:\s*transparent;/s);
-  assert.match(css, /\.t-btn:disabled:hover\s*\{[^}]*box-shadow:\s*none;/s);
+  assert.match(css, /\.t-btn:disabled:hover\s*\{[^}]*background:\s*rgb\(18 11 7 \/ 0\.28\);/s);
+  assert.match(css, /\.t-btn:disabled:hover\s*\{[^}]*inset 0 1px 0 rgb\(255 246 218 \/ 0\.08\)/s);
   assert.doesNotMatch(css, /@media \(max-width:\s*980px\)[\s\S]*\.history-controls\s*\{[^}]*display:\s*none;/);
   assert.doesNotMatch(css, /@media \(max-width:\s*980px\)[\s\S]*\.t-btn\.redo\s*\{[^}]*display:\s*none;/);
 });
@@ -783,7 +862,7 @@ test('tutorial task targets make allowed cells and bars obvious', async () => {
   assert.doesNotMatch(css, /\.tutorial-cell-target-yellow\s*\{[^}]*animation:/s);
   assert.doesNotMatch(css, /\.tutorial-cell-existing/);
   assert.doesNotMatch(css, /\.tutorial-cell-completed/);
-  assert.match(css, /\.drum-step\.active\[data-instrument="kick"\]\s*\{[^}]*background:\s*var\(--drum-kick\);/s);
+  assert.match(css, /\.drum-step\.active\[data-instrument="kick"\]\s*\{[^}]*background:[^}]*var\(--asset-drum-step-kick-on\)/s);
   assert.match(css, /\.drum-step\.active\[data-instrument="kick"\]\s*\{[^}]*border-color:\s*color-mix\(in oklab,\s*var\(--drum-kick\) 70%,\s*black\);/s);
   assert.match(css, /\.tutorial-cell-source\s*\{[^}]*cursor:\s*grab;/s);
   assert.match(css, /\.tutorial-cell-source\s*\{[^}]*position:\s*relative;/s);
