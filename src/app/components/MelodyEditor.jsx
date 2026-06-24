@@ -1,8 +1,6 @@
 import {
-  AudioLines,
   ChevronDown,
   ChevronUp,
-  Keyboard,
   MoreHorizontal,
   X,
 } from 'lucide-react';
@@ -25,7 +23,7 @@ import { BEAT_NUMBERS } from '../uiShellData.js';
 import { isMelodyCellActive } from '../melodyActions.js';
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
 import { ClipNameInput } from './ClipNameInput.jsx';
-import { renderIcon } from './icons.js';
+import { TRACK_ICONS, renderIcon } from './icons.js';
 import { TrackBarPager } from './TrackBarPager.jsx';
 
 const MELODY_EXAMPLE_DISPLAY_BY_TARGET = Object.freeze({
@@ -139,7 +137,7 @@ function MelodyEditor({
       <header className="editor-head">
         <div className="editor-left">
           <div className="clip-chip">
-            {renderIcon(AudioLines)}
+            {renderIcon(TRACK_ICONS.melody)}
           </div>
           <div className="clip-title">
             <div className="crumb">Melody · Phrase</div>
@@ -203,7 +201,7 @@ function MelodyEditor({
         <div className="keyboard-strip" role="group" aria-label="QWERTY ↔ 音阶 对应关系">
           <div className="ks-intro">
             <div className="ks-glyph">
-              {renderIcon(Keyboard)}
+              {renderIcon(TRACK_ICONS.melody)}
             </div>
             <div className="ks-copy">
               <span className="ks-eyebrow">Play · 试奏</span>

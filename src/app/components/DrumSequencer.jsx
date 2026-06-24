@@ -1,5 +1,4 @@
 import {
-  Drum,
   X,
 } from 'lucide-react';
 import {
@@ -15,7 +14,7 @@ import {
 } from '../drumSequencerData.js';
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
 import { ClipNameInput } from './ClipNameInput.jsx';
-import { renderIcon } from './icons.js';
+import { TRACK_ICONS, renderIcon } from './icons.js';
 import { TrackBarPager } from './TrackBarPager.jsx';
 
 const STEP_NUMBERS = Array.from({ length: STEPS_PER_BAR }, (_, index) => index + 1);
@@ -185,7 +184,7 @@ function DrumSequencer({
       <header className="editor-head">
         <div className="editor-left">
           <div className="clip-chip">
-            {renderIcon(Drum)}
+            {renderIcon(TRACK_ICONS.drums)}
           </div>
           <div className="clip-title">
             <div className="crumb">Drums · Phrase</div>

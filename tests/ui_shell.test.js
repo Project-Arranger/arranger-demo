@@ -684,6 +684,33 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(bottomEditorSource, /onChordGrooveTemplateApply/);
 });
 
+test('track editors reuse the track list icon map for header and intro icons', async () => {
+  const editorFiles = [
+    ['DrumSequencer.jsx', 'drums'],
+    ['ChordEditor.jsx', 'chord'],
+    ['BassEditor.jsx', 'bass'],
+    ['MelodyEditor.jsx', 'melody'],
+  ];
+
+  for (const [fileName, trackId] of editorFiles) {
+    const source = await readFile(
+      new URL(`../src/app/components/${fileName}`, import.meta.url),
+      'utf8',
+    );
+
+    assert.match(source, /import\s*\{[^}]*TRACK_ICONS[^}]*renderIcon[^}]*\}\s*from '\.\/icons\.js';/s);
+    assert.match(source, new RegExp(`renderIcon\\(TRACK_ICONS\\.${trackId}\\)`));
+  }
+
+  const melodyEditorSource = await readFile(
+    new URL('../src/app/components/MelodyEditor.jsx', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(melodyEditorSource, /className="ks-glyph"[\s\S]*renderIcon\(TRACK_ICONS\.melody\)/);
+  assert.doesNotMatch(melodyEditorSource, /renderIcon\(Keyboard\)/);
+});
+
 test('app exposes the melody editor and keeps melody as the internal track id', async () => {
   const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
   const bottomEditorSource = await readFile(

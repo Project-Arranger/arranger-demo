@@ -3,7 +3,6 @@ import {
   ChevronDown,
   ChevronUp,
   MoreHorizontal,
-  Music,
   Trash2,
   X,
 } from 'lucide-react';
@@ -23,7 +22,7 @@ import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
 import { BEAT_NUMBERS } from '../uiShellData.js';
 import { usePitchScrollSync } from '../usePitchScrollSync.js';
 import { ClipNameInput } from './ClipNameInput.jsx';
-import { renderIcon } from './icons.js';
+import { TRACK_ICONS, renderIcon } from './icons.js';
 import { TrackBarPager } from './TrackBarPager.jsx';
 
 function renderPlayGlyph() {
@@ -113,7 +112,7 @@ function BassEditor({
       <header className="editor-head">
         <div className="editor-left">
           <div className="clip-chip">
-            {renderIcon(Music)}
+            {renderIcon(TRACK_ICONS.bass)}
           </div>
           <div className="clip-title">
             <div className="crumb">Bass · Phrase</div>

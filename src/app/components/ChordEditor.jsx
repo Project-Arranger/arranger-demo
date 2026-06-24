@@ -4,7 +4,6 @@ import {
   ChevronUp,
   LayoutTemplate,
   MoreHorizontal,
-  Piano,
   Plus,
   X,
 } from 'lucide-react';
@@ -40,7 +39,7 @@ import { CHORD_GROOVE_TEMPLATES } from '../chordGrooveActions.js';
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
 import { usePitchScrollSync } from '../usePitchScrollSync.js';
 import { ClipNameInput } from './ClipNameInput.jsx';
-import { renderIcon } from './icons.js';
+import { TRACK_ICONS, renderIcon } from './icons.js';
 import { TrackBarPager } from './TrackBarPager.jsx';
 
 const TEMPLATE_PAGE_SIZE = 3;
@@ -537,7 +536,7 @@ function ChordEditor({
       <header className="editor-head">
         <div className="editor-left">
           <div className="clip-chip">
-            {renderIcon(Piano)}
+            {renderIcon(TRACK_ICONS.chord)}
           </div>
           <div className="clip-title">
             <div className="crumb">Chord · Phrase</div>
