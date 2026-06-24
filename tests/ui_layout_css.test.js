@@ -267,6 +267,17 @@ test('topbar new button is only a distinct gem without a brass frame', async () 
 test('topbar tutorial and save switches render as sculpted buttons without key shafts', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
+  assert.match(css, /\.topbar-center\s*\{[^}]*--topbar-center-side-balance:\s*clamp\(170px,\s*16vw,\s*208px\);/s);
+  assert.match(css, /\.topbar-center\s*\{[^}]*position:\s*absolute;/s);
+  assert.match(css, /\.topbar-center\s*\{[^}]*left:\s*50%;[^}]*top:\s*50%;/s);
+  assert.match(css, /\.topbar-center\s*\{[^}]*transform:\s*translate\(-50%,\s*-50%\);/s);
+  assert.match(css, /\.topbar-center\s*\{[^}]*grid-template-columns:\s*var\(--topbar-center-side-balance\) auto var\(--topbar-center-side-balance\);/s);
+  assert.match(css, /\.topbar-center::after\s*\{[^}]*grid-column:\s*3;[^}]*width:\s*var\(--topbar-center-side-balance\);/s);
+  assert.match(css, /\.topbar-center \.history-controls\s*\{[^}]*grid-column:\s*1;[^}]*justify-self:\s*start;/s);
+  assert.match(css, /\.topbar-center \.transport\s*\{[^}]*grid-column:\s*1;[^}]*justify-self:\s*end;/s);
+  assert.match(css, /\.hardware-status-display\s*\{[^}]*grid-column:\s*2;[^}]*justify-self:\s*center;/s);
+  assert.match(css, /@media \(max-width:\s*980px\)\s*\{[\s\S]*\.topbar-center\s*\{[^}]*position:\s*static;[^}]*transform:\s*none;/);
+  assert.match(css, /@media \(max-width:\s*980px\)\s*\{[\s\S]*\.topbar-center::after\s*\{[^}]*content:\s*none;/);
   assert.match(css, /\.key-switch\s*\{[^}]*align-items:\s*center;/s);
   assert.match(css, /\.key-switch\s*\{[^}]*height:\s*38px;/s);
   assert.match(css, /\.key-switch\s*\{[^}]*padding:\s*0 14px;/s);
