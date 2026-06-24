@@ -17,6 +17,21 @@ import {
   TRACK_UI,
 } from '../src/app/uiShellData.js';
 
+test('pitch row hover uses event delegation without React hover state', async () => {
+  const pitchRowHoverSource = await readFile(
+    new URL('../src/app/usePitchRowHover.js', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(pitchRowHoverSource, /useRef/);
+  assert.match(pitchRowHoverSource, /querySelectorAll/);
+  assert.match(pitchRowHoverSource, /ROW_HOVER_CLASS = 'row-hovered'/);
+  assert.match(pitchRowHoverSource, /classList\.toggle\(ROW_HOVER_CLASS/);
+  assert.match(pitchRowHoverSource, /handlePitchRowPointerOver/);
+  assert.match(pitchRowHoverSource, /handlePitchRowPointerOut/);
+  assert.doesNotMatch(pitchRowHoverSource, /useState/);
+});
+
 test('topbar exposes independent undo redo controls and App wires history', async () => {
   const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
   const topBarSource = await readFile(new URL('../src/app/components/TopBar.jsx', import.meta.url), 'utf8');
@@ -385,11 +400,15 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.doesNotMatch(addChordPopoverSource, /onCurrentChordPreview/);
   assert.match(addChordPopoverSource, /data-action="preview"/);
   assert.match(chordEditorSource, /CHORD_GRID_PITCHES\.flatMap/);
-  assert.match(chordEditorSource, /const \[hoveredPitchRow,\s*setHoveredPitchRow\] = useState\(null\);/);
+  assert.match(chordEditorSource, /usePitchRowHover/);
+  assert.match(chordEditorSource, /pitchRowHoverRef/);
+  assert.match(chordEditorSource, /handlePitchRowPointerOver/);
+  assert.match(chordEditorSource, /handlePitchRowPointerOut/);
+  assert.doesNotMatch(chordEditorSource, /setHoveredPitchRow/);
   assert.match(chordEditorSource, /CHORD_GRID_PITCHES\.map\(\(note,\s*rowIndex\)/);
-  assert.match(chordEditorSource, /'row-hovered'/);
-  assert.match(chordEditorSource, /onPointerEnter=\{\(\) => setHoveredPitchRow\(rowIndex\)\}/);
-  assert.match(chordEditorSource, /onPointerLeave=\{\(\) => setHoveredPitchRow\(null\)\}/);
+  assert.match(chordEditorSource, /ref=\{pitchRowHoverRef\}/);
+  assert.match(chordEditorSource, /onPointerOver=\{handlePitchRowPointerOver\}/);
+  assert.match(chordEditorSource, /onPointerOut=\{handlePitchRowPointerOut\}/);
   assert.match(chordEditorSource, /usePitchScrollSync/);
   assert.match(chordEditorSource, /scalePitchViewportRef/);
   assert.match(pitchScrollSyncSource, /beatCellsViewportRefs/);
@@ -684,31 +703,55 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(bottomEditorSource, /onChordGrooveTemplateApply/);
 });
 
-test('track editors reuse the track list icon map for header and intro icons', async () => {
+test('track editors reuse the full track-select identity style in editor-left headers', async () => {
+  const tracksColumnSource = await readFile(
+    new URL('../src/app/components/TracksColumn.jsx', import.meta.url),
+    'utf8',
+  );
+  const editorTrackIdentitySource = await readFile(
+    new URL('../src/app/components/EditorTrackIdentity.jsx', import.meta.url),
+    'utf8',
+  );
   const editorFiles = [
-    ['DrumSequencer.jsx', 'drums'],
-    ['ChordEditor.jsx', 'chord'],
-    ['BassEditor.jsx', 'bass'],
-    ['MelodyEditor.jsx', 'melody'],
+    ['DrumSequencer.jsx', 'drums', 'Drums'],
+    ['ChordEditor.jsx', 'chord', 'Chord'],
+    ['BassEditor.jsx', 'bass', 'Bass'],
+    ['MelodyEditor.jsx', 'melody', 'Melody'],
   ];
 
-  for (const [fileName, trackId] of editorFiles) {
+  assert.match(tracksColumnSource, /const Icon = TRACK_ICONS\[track\.id\];/);
+  assert.match(tracksColumnSource, /className="track-select"[\s\S]*renderIcon\(Icon\)/);
+  assert.match(editorTrackIdentitySource, /import\s*\{[^}]*TRACK_ICONS[^}]*renderIcon[^}]*\}\s*from '\.\/icons\.js';/s);
+  assert.match(editorTrackIdentitySource, /className=\{[^}]*editor-track-identity[^}]*track-select/s);
+  assert.match(editorTrackIdentitySource, /const Icon = TRACK_ICONS\[trackId\];/);
+  assert.match(editorTrackIdentitySource, /<span className="ic">[\s\S]*renderIcon\(Icon\)/);
+  assert.match(editorTrackIdentitySource, /<span className="track-name">\{label\}<\/span>/);
+
+  for (const [fileName, trackId, label] of editorFiles) {
     const source = await readFile(
       new URL(`../src/app/components/${fileName}`, import.meta.url),
       'utf8',
     );
 
-    assert.match(source, /import\s*\{[^}]*TRACK_ICONS[^}]*renderIcon[^}]*\}\s*from '\.\/icons\.js';/s);
-    assert.match(source, new RegExp(`renderIcon\\(TRACK_ICONS\\.${trackId}\\)`));
+    assert.match(
+      source,
+      /import\s*\{\s*EditorTrackIdentity\s*\}\s*from '\.\/EditorTrackIdentity\.jsx';/,
+    );
+    assert.match(
+      source,
+      new RegExp(`createElement\\(EditorTrackIdentity, \\{ trackId: '${trackId}', label: '${label}' \\}\\)`),
+    );
+    assert.doesNotMatch(source, /className="clip-chip"[\s\S]*TRACK_ICONS\./);
   }
 
   const melodyEditorSource = await readFile(
     new URL('../src/app/components/MelodyEditor.jsx', import.meta.url),
     'utf8',
   );
+  const keyboardIntro = melodyEditorSource.match(/className="ks-glyph"[\s\S]*?<\/div>/)?.[0] ?? '';
 
-  assert.match(melodyEditorSource, /className="ks-glyph"[\s\S]*renderIcon\(TRACK_ICONS\.melody\)/);
-  assert.doesNotMatch(melodyEditorSource, /renderIcon\(Keyboard\)/);
+  assert.match(keyboardIntro, /renderIcon\(Keyboard\)/);
+  assert.doesNotMatch(keyboardIntro, /TRACK_ICONS\.melody/);
 });
 
 test('app exposes the melody editor and keeps melody as the internal track id', async () => {
@@ -759,7 +802,11 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.doesNotMatch(melodyEditorSource, /const \[melodyRailOctave,\s*setMelodyRailOctave\]/);
   assert.doesNotMatch(melodyEditorSource, /clampMelodyRailOctave/);
   assert.doesNotMatch(melodyEditorSource, /DEFAULT_MELODY_RAIL_OCTAVE/);
-  assert.match(melodyEditorSource, /const \[hoveredPitchRow,\s*setHoveredPitchRow\] = useState\(null\);/);
+  assert.match(melodyEditorSource, /usePitchRowHover/);
+  assert.match(melodyEditorSource, /pitchRowHoverRef/);
+  assert.match(melodyEditorSource, /handlePitchRowPointerOver/);
+  assert.match(melodyEditorSource, /handlePitchRowPointerOut/);
+  assert.doesNotMatch(melodyEditorSource, /setHoveredPitchRow/);
   assert.match(melodyEditorSource, /getMelodyScaleRailNotes\(melodyScaleId\)/);
   assert.doesNotMatch(melodyEditorSource, /MELODY_RAIL_NOTES\.map\(\(note,\s*rowIndex\)/);
   assert.doesNotMatch(melodyEditorSource, /usePitchScrollSync/);
@@ -774,9 +821,9 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(melodyEditorSource, /aria-label="Scroll up an octave"[\s\S]{0,180}disabled/);
   assert.match(melodyEditorSource, /aria-label="Scroll down an octave"[\s\S]{0,180}disabled/);
   assert.match(melodyEditorSource, /className="pitch-grid-head-spacer"/);
-  assert.match(melodyEditorSource, /'row-hovered'/);
-  assert.match(melodyEditorSource, /onPointerEnter=\{\(\) => setHoveredPitchRow\(rowIndex\)\}/);
-  assert.match(melodyEditorSource, /onPointerLeave=\{\(\) => setHoveredPitchRow\(null\)\}/);
+  assert.match(melodyEditorSource, /ref=\{pitchRowHoverRef\}/);
+  assert.match(melodyEditorSource, /onPointerOver=\{handlePitchRowPointerOver\}/);
+  assert.match(melodyEditorSource, /onPointerOut=\{handlePitchRowPointerOut\}/);
   assert.match(melodyDataSource, /自然大调音阶/);
   assert.match(melodyDataSource, /五声音阶/);
   assert.match(melodyEditorSource, /清空本小节/);
@@ -840,12 +887,16 @@ test('app exposes the bass editor and existing-clip groove template workflow', a
   assert.match(bassEditorSource, /Bass · Phrase/);
   assert.match(bassEditorSource, /BASS EDITOR - BAR/);
   assert.match(bassEditorSource, /BASS_NOTES\.flatMap/);
-  assert.match(bassEditorSource, /const \[hoveredPitchRow,\s*setHoveredPitchRow\] = useState\(null\);/);
+  assert.match(bassEditorSource, /usePitchRowHover/);
+  assert.match(bassEditorSource, /pitchRowHoverRef/);
+  assert.match(bassEditorSource, /handlePitchRowPointerOver/);
+  assert.match(bassEditorSource, /handlePitchRowPointerOut/);
+  assert.doesNotMatch(bassEditorSource, /setHoveredPitchRow/);
   assert.match(bassEditorSource, /BASS_NOTES\.map\(\(note,\s*rowIndex\)/);
   assert.match(bassEditorSource, /className="pitch-grid-head-spacer"/);
-  assert.match(bassEditorSource, /'row-hovered'/);
-  assert.match(bassEditorSource, /onPointerEnter=\{\(\) => setHoveredPitchRow\(rowIndex\)\}/);
-  assert.match(bassEditorSource, /onPointerLeave=\{\(\) => setHoveredPitchRow\(null\)\}/);
+  assert.match(bassEditorSource, /ref=\{pitchRowHoverRef\}/);
+  assert.match(bassEditorSource, /onPointerOver=\{handlePitchRowPointerOver\}/);
+  assert.match(bassEditorSource, /onPointerOut=\{handlePitchRowPointerOut\}/);
   assert.match(bassEditorSource, /usePitchScrollSync/);
   assert.match(bassEditorSource, /scalePitchViewportRef/);
   assert.match(bassEditorSource, /setBeatCellsViewportRef/);

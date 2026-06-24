@@ -14,7 +14,8 @@ import {
 } from '../drumSequencerData.js';
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
 import { ClipNameInput } from './ClipNameInput.jsx';
-import { TRACK_ICONS, renderIcon } from './icons.js';
+import { EditorTrackIdentity } from './EditorTrackIdentity.jsx';
+import { renderIcon } from './icons.js';
 import { TrackBarPager } from './TrackBarPager.jsx';
 
 const STEP_NUMBERS = Array.from({ length: STEPS_PER_BAR }, (_, index) => index + 1);
@@ -183,9 +184,7 @@ function DrumSequencer({
     <section className="editor drum-editor" data-screen-label="Drum Sequencer">
       <header className="editor-head">
         <div className="editor-left">
-          <div className="clip-chip">
-            {renderIcon(TRACK_ICONS.drums)}
-          </div>
+          {createElement(EditorTrackIdentity, { trackId: 'drums', label: 'Drums' })}
           <div className="clip-title">
             <div className="crumb">Drums · Phrase</div>
             {createElement(ClipNameInput, { clipName, onRenameClip })}

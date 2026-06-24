@@ -20,9 +20,11 @@ import { getBassGroovePreviewSteps } from '../bassGroovePreview.js';
 import { BASS_NOTES } from '../../data/bassNotes.js';
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
 import { BEAT_NUMBERS } from '../uiShellData.js';
+import { usePitchRowHover } from '../usePitchRowHover.js';
 import { usePitchScrollSync } from '../usePitchScrollSync.js';
 import { ClipNameInput } from './ClipNameInput.jsx';
-import { TRACK_ICONS, renderIcon } from './icons.js';
+import { EditorTrackIdentity } from './EditorTrackIdentity.jsx';
+import { renderIcon } from './icons.js';
 import { TrackBarPager } from './TrackBarPager.jsx';
 
 function renderPlayGlyph() {
@@ -62,7 +64,11 @@ function BassEditor({
 }) {
   const [pickerMode, setPickerMode] = useState(null);
   const [selectedGrooveTemplateId, setSelectedGrooveTemplateId] = useState('bass-8th-basic');
-  const [hoveredPitchRow, setHoveredPitchRow] = useState(null);
+  const {
+    handlePitchRowPointerOut,
+    handlePitchRowPointerOver,
+    pitchRowHoverRef,
+  } = usePitchRowHover();
   const groovePickerOpen = pickerMode === 'groove';
   const closeBassPicker = useCallback(() => setPickerMode(null), []);
   const {
@@ -111,9 +117,7 @@ function BassEditor({
     <section className="editor bass-editor" data-screen-label="Bass Editor" data-picker={pickerMode ?? undefined}>
       <header className="editor-head">
         <div className="editor-left">
-          <div className="clip-chip">
-            {renderIcon(TRACK_ICONS.bass)}
-          </div>
+          {createElement(EditorTrackIdentity, { trackId: 'bass', label: 'Bass' })}
           <div className="clip-title">
             <div className="crumb">Bass · Phrase</div>
             {createElement(ClipNameInput, { clipName, onRenameClip })}
@@ -184,7 +188,13 @@ function BassEditor({
         onPreviousBar,
         trackId,
       }, (
-        <div className="seq-body bass-seq-body" onWheel={handlePitchWheel}>
+        <div
+          className="seq-body bass-seq-body"
+          ref={pitchRowHoverRef}
+          onPointerOut={handlePitchRowPointerOut}
+          onPointerOver={handlePitchRowPointerOver}
+          onWheel={handlePitchWheel}
+        >
           <aside className="scale-rail bass-scale-rail" aria-label="Bass note ruler">
             <button
               className="scale-arrow"
@@ -209,14 +219,11 @@ function BassEditor({
                       'bass-note-key',
                       note.sharp ? 'sharp' : '',
                       note.root ? 'root' : '',
-                      hoveredPitchRow === rowIndex ? 'row-hovered' : '',
                     ].filter(Boolean).join(' ')}
                     data-row={rowIndex}
                     key={note.note}
                     type="button"
                     disabled={tutorialLocked}
-                    onPointerEnter={() => setHoveredPitchRow(rowIndex)}
-                    onPointerLeave={() => setHoveredPitchRow(null)}
                     onClick={() => onBassPreview(note.note)}
                   >
                     {note.label}
@@ -265,7 +272,6 @@ function BassEditor({
                                 'bass-cell',
                                 note.sharp ? 'sharp' : '',
                                 active ? 'active' : '',
-                                hoveredPitchRow === rowIndex ? 'row-hovered' : '',
                               ].filter(Boolean).join(' ')}
                               data-row={rowIndex}
                               data-col={colIndex}
@@ -275,8 +281,6 @@ function BassEditor({
                               aria-label={`${note.note} beat ${beatNumber}.${stepNumber}`}
                               aria-pressed={active}
                               disabled={tutorialLocked}
-                              onPointerEnter={() => setHoveredPitchRow(rowIndex)}
-                              onPointerLeave={() => setHoveredPitchRow(null)}
                               onClick={() => onBassStepToggle(step, note.note)}
                             />
                           );

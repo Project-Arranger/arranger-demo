@@ -1,6 +1,7 @@
 import {
   ChevronDown,
   ChevronUp,
+  Keyboard,
   MoreHorizontal,
   X,
 } from 'lucide-react';
@@ -22,8 +23,10 @@ import {
 import { BEAT_NUMBERS } from '../uiShellData.js';
 import { isMelodyCellActive } from '../melodyActions.js';
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
+import { usePitchRowHover } from '../usePitchRowHover.js';
 import { ClipNameInput } from './ClipNameInput.jsx';
-import { TRACK_ICONS, renderIcon } from './icons.js';
+import { EditorTrackIdentity } from './EditorTrackIdentity.jsx';
+import { renderIcon } from './icons.js';
 import { TrackBarPager } from './TrackBarPager.jsx';
 
 const MELODY_EXAMPLE_DISPLAY_BY_TARGET = Object.freeze({
@@ -79,7 +82,11 @@ function MelodyEditor({
 }) {
   const [pickerMode, setPickerMode] = useState(null);
   const [playingKeys, setPlayingKeys] = useState(() => new Set());
-  const [hoveredPitchRow, setHoveredPitchRow] = useState(null);
+  const {
+    handlePitchRowPointerOut,
+    handlePitchRowPointerOver,
+    pitchRowHoverRef,
+  } = usePitchRowHover();
   const scaleButtonRole = getTutorialControlRole(tutorialTargets, 'melody-scale-button');
   const scaleButtonDisabled = tutorialLocked && scaleButtonRole !== 'target';
   const exampleKeysTarget = tutorialTargets?.controls?.find((target) => (
@@ -136,9 +143,7 @@ function MelodyEditor({
     <section className="editor" data-screen-label="Melody Editor" data-picker={pickerMode ?? undefined}>
       <header className="editor-head">
         <div className="editor-left">
-          <div className="clip-chip">
-            {renderIcon(TRACK_ICONS.melody)}
-          </div>
+          {createElement(EditorTrackIdentity, { trackId: 'melody', label: 'Melody' })}
           <div className="clip-title">
             <div className="crumb">Melody · Phrase</div>
             {createElement(ClipNameInput, { clipName, onRenameClip })}
@@ -201,7 +206,7 @@ function MelodyEditor({
         <div className="keyboard-strip" role="group" aria-label="QWERTY ↔ 音阶 对应关系">
           <div className="ks-intro">
             <div className="ks-glyph">
-              {renderIcon(TRACK_ICONS.melody)}
+              {renderIcon(Keyboard)}
             </div>
             <div className="ks-copy">
               <span className="ks-eyebrow">Play · 试奏</span>
@@ -261,7 +266,12 @@ function MelodyEditor({
           </div>
         ) : null}
 
-        <div className="seq-body melody-seq-body">
+        <div
+          className="seq-body melody-seq-body"
+          ref={pitchRowHoverRef}
+          onPointerOut={handlePitchRowPointerOut}
+          onPointerOver={handlePitchRowPointerOver}
+        >
           <aside className="scale-rail melody-scale-rail" aria-label="Scale ruler">
             <button
               className="scale-arrow"
@@ -282,13 +292,10 @@ function MelodyEditor({
                       note.sharp ? 'sharp' : '',
                       note.root ? 'root' : '',
                       activePlayedNotes.has(note.note) ? 'playing' : '',
-                      hoveredPitchRow === rowIndex ? 'row-hovered' : '',
                     ].filter(Boolean).join(' ')}
                     data-row={rowIndex}
                     key={note.note}
                     title={note.note}
-                    onPointerEnter={() => setHoveredPitchRow(rowIndex)}
-                    onPointerLeave={() => setHoveredPitchRow(null)}
                   >
                     {note.label}
                   </div>
@@ -329,7 +336,6 @@ function MelodyEditor({
                                 'melody-cell',
                                 note.sharp ? 'sharp' : '',
                                 active ? 'active' : '',
-                                hoveredPitchRow === rowIndex ? 'row-hovered' : '',
                               ].filter(Boolean).join(' ')}
                               data-row={rowIndex}
                               data-col={colIndex}
@@ -339,8 +345,6 @@ function MelodyEditor({
                               aria-label={`${note.note} beat ${beatNumber}.${stepNumber}`}
                               aria-pressed={active}
                               disabled={tutorialLocked}
-                              onPointerEnter={() => setHoveredPitchRow(rowIndex)}
-                              onPointerLeave={() => setHoveredPitchRow(null)}
                               onClick={() => onMelodyStepToggle(step, note.note)}
                             />
                           );

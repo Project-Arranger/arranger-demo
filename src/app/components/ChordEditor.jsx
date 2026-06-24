@@ -37,9 +37,11 @@ import {
 } from '../../domain/chordCells.js';
 import { CHORD_GROOVE_TEMPLATES } from '../chordGrooveActions.js';
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
+import { usePitchRowHover } from '../usePitchRowHover.js';
 import { usePitchScrollSync } from '../usePitchScrollSync.js';
 import { ClipNameInput } from './ClipNameInput.jsx';
-import { TRACK_ICONS, renderIcon } from './icons.js';
+import { EditorTrackIdentity } from './EditorTrackIdentity.jsx';
+import { renderIcon } from './icons.js';
 import { TrackBarPager } from './TrackBarPager.jsx';
 
 const TEMPLATE_PAGE_SIZE = 3;
@@ -375,7 +377,11 @@ function ChordEditor({
   const [selectedGrooveTemplateId, setSelectedGrooveTemplateId] = useState('block-basic');
   const [addChordPanel, setAddChordPanel] = useState(null);
   const [passingChordPanel, setPassingChordPanel] = useState(null);
-  const [hoveredPitchRow, setHoveredPitchRow] = useState(null);
+  const {
+    handlePitchRowPointerOut,
+    handlePitchRowPointerOver,
+    pitchRowHoverRef,
+  } = usePitchRowHover();
   const templates = useMemo(() => Object.values(CHORD_TEMPLATES), []);
   const pageCount = Math.ceil(templates.length / TEMPLATE_PAGE_SIZE);
   const chordPickerOpen = pickerMode === 'chord';
@@ -535,9 +541,7 @@ function ChordEditor({
     <section className="editor" data-screen-label="Chord Editor" data-picker={pickerMode ?? undefined}>
       <header className="editor-head">
         <div className="editor-left">
-          <div className="clip-chip">
-            {renderIcon(TRACK_ICONS.chord)}
-          </div>
+          {createElement(EditorTrackIdentity, { trackId: 'chord', label: 'Chord' })}
           <div className="clip-title">
             <div className="crumb">Chord · Phrase</div>
             {createElement(ClipNameInput, { clipName, onRenameClip })}
@@ -614,7 +618,13 @@ function ChordEditor({
         onPreviousBar,
         trackId,
       }, (
-        <div className="seq-body" onWheel={handlePitchWheel}>
+        <div
+          className="seq-body"
+          ref={pitchRowHoverRef}
+          onPointerOut={handlePitchRowPointerOut}
+          onPointerOver={handlePitchRowPointerOver}
+          onWheel={handlePitchWheel}
+        >
         <aside className="scale-rail" aria-label="Scale ruler">
           <button
             className="scale-arrow"
@@ -638,12 +648,9 @@ function ChordEditor({
                     'note-key',
                     note.sharp ? 'sharp' : '',
                     note.root ? 'root' : '',
-                    hoveredPitchRow === rowIndex ? 'row-hovered' : '',
                   ].filter(Boolean).join(' ')}
                   data-row={rowIndex}
                   key={note.label}
-                  onPointerEnter={() => setHoveredPitchRow(rowIndex)}
-                  onPointerLeave={() => setHoveredPitchRow(null)}
                 >
                   {note.label}
                 </div>
@@ -749,7 +756,6 @@ function ChordEditor({
                               active ? 'active' : '',
                               added ? 'added' : '',
                               note.sharp ? 'sharp' : '',
-                              hoveredPitchRow === rowIndex ? 'row-hovered' : '',
                             ].filter(Boolean).join(' ')}
                             data-row={rowIndex}
                             data-col={colIndex}
@@ -760,8 +766,6 @@ function ChordEditor({
                             aria-label={`${note.label} beat ${beatNumber}.${stepNumber}`}
                             aria-pressed={active || added}
                             disabled={tutorialLocked}
-                            onPointerEnter={() => setHoveredPitchRow(rowIndex)}
-                            onPointerLeave={() => setHoveredPitchRow(null)}
                             onClick={() => {
                               onChordNoteSelect(spanIndex, colIndex, note.label);
                               closeChordPanels();
