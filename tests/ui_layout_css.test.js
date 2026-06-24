@@ -300,7 +300,7 @@ test('topbar tutorial and save switches render as sculpted buttons without key s
   assert.doesNotMatch(css, /\.topbar-center \.history-controls/);
   assert.doesNotMatch(css, /\.topbar-center \.transport/);
   assert.match(css, /@media \(max-width:\s*1180px\)\s*\{[\s\S]*\.right-tools \.save-switch,\s*\n\s*\.right-tools \.hardware-export,\s*\n\s*\.right-tools \.icon-btn:not\(\.tutorial-topbar-button\)\s*\{[^}]*display:\s*none;/);
-  assert.match(css, /@media \(max-width:\s*980px\)\s*\{[\s\S]*\.topbar-left-controls\s*\{[^}]*grid-column:\s*1 \/ -1;[^}]*grid-row:\s*2;[^}]*overflow-x:\s*auto;/);
+  assert.match(css, /@media \(max-width:\s*1100px\)\s*\{[\s\S]*\.topbar-left-controls\s*\{[^}]*grid-column:\s*1 \/ -1;[^}]*grid-row:\s*2;[^}]*overflow-x:\s*auto;/);
   assert.match(css, /@media \(max-width:\s*980px\)\s*\{[\s\S]*\.topbar-center\s*\{[^}]*position:\s*absolute;[^}]*transform:\s*translate\(-50%,\s*-50%\);/);
   assert.match(css, /\.key-switch\s*\{[^}]*align-items:\s*center;/s);
   assert.match(css, /\.key-switch\s*\{[^}]*height:\s*38px;/s);
@@ -823,7 +823,7 @@ test('tutorial sidebar is embedded as a workbench column and reopens from the to
   assert.match(css, /\.tutorial-topbar-button\s*\{[^}]*font-weight:\s*800;/s);
   assert.match(css, /\.tutorial-topbar-button\s*\{[^}]*white-space:\s*nowrap;/s);
   assert.match(css, /--tutorial-floating-ui-z:\s*110;/);
-  assert.match(css, /@media \(max-width:\s*980px\)\s*\{[\s\S]*\.topbar-left-controls\s*\{[^}]*grid-row:\s*2;/);
+  assert.match(css, /@media \(max-width:\s*1100px\)\s*\{[\s\S]*\.topbar-left-controls\s*\{[^}]*grid-row:\s*2;/);
   assert.match(css, /@media \(max-width:\s*980px\)\s*\{[\s\S]*\.right-tools\s*\{[^}]*grid-column:\s*2;[^}]*grid-row:\s*1;/);
   assert.match(css, /\.tutorial-panel\s*\{[^}]*position:\s*relative;/s);
   assert.match(css, /\.tutorial-panel\s*\{[^}]*z-index:\s*90;/s);
