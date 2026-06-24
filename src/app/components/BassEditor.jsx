@@ -17,6 +17,7 @@ import {
   BASS_GROOVE_TEMPLATES,
   isBassCellActive,
 } from '../bassActions.js';
+import { getBassGroovePreviewSteps } from '../bassGroovePreview.js';
 import { BASS_NOTES } from '../../data/bassNotes.js';
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
 import { BEAT_NUMBERS } from '../uiShellData.js';
@@ -33,9 +34,7 @@ function getTemplateStepLength(template) {
   return template.duration === '8n' ? '8' : '16';
 }
 
-function getGrooveStepClass(template, step) {
-  const isHit = template.steps.includes(step);
-
+function getGrooveStepClass(isHit, step) {
   return [
     'gtpl-step',
     step % 4 === 0 ? 'downbeat' : '',
@@ -321,6 +320,7 @@ function BassEditor({
         <div className="tpl-body">
           <div className="tpl-list" id="bgtplList">
             {BASS_GROOVE_TEMPLATES.map((template) => {
+              const previewHitStepSet = new Set(getBassGroovePreviewSteps(template));
               const templateCardRole = getTutorialControlRole(
                 tutorialTargets,
                 `bass-groove-card:${template.id}`,
@@ -354,11 +354,11 @@ function BassEditor({
                         <div className="gtpl-beat" key={`${template.id}-beat-${beatNumber}`}>
                           {BEAT_NUMBERS.map((stepNumber) => {
                             const step = (beatNumber - 1) * 4 + stepNumber - 1;
-                            const isHit = template.steps.includes(step);
+                            const isHit = previewHitStepSet.has(step);
 
                             return (
                               <span
-                                className={getGrooveStepClass(template, step)}
+                                className={getGrooveStepClass(isHit, step)}
                                 data-len={isHit ? getTemplateStepLength(template) : undefined}
                                 key={`${template.id}-${step}`}
                               />

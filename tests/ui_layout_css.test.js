@@ -571,9 +571,14 @@ test('bass editor mirrors the reference piano-roll and groove picker layout', as
   assert.match(css, /\.bass-cell\.active\s*\{[^}]*background:\s*var\(--c-bass\);/s);
   assert.match(css, /\.bass-cell:hover\s*\{[^}]*background:\s*color-mix\(in oklab,\s*var\(--c-bass\) 60%,\s*white\);/s);
   assert.match(css, /\.gtpl-step\.hit-root\s*\{[^}]*overflow:\s*visible;/s);
-  assert.match(css, /\.gtpl-step\.hit-root::after\s*\{[^}]*bottom:\s*14%;/s);
-  assert.match(css, /\.gtpl-step\.hit-root::after\s*\{[^}]*height:\s*32%;/s);
-  assert.match(css, /\.gtpl-step\.hit-root\[data-len="8"\]::after\s*\{[^}]*width:\s*calc\(188% \+ 2px\);/s);
+  assert.match(css, /\.gtpl-step\.hit-root::after\s*\{[^}]*top:\s*0;[^}]*right:\s*0;[^}]*bottom:\s*0;[^}]*left:\s*0;/s);
+  assert.match(css, /\.gtpl-step\.hit-root::after\s*\{[^}]*height:\s*auto;/s);
+  assert.doesNotMatch(css, /\.gtpl-step\.hit-root::after\s*\{[^}]*bottom:\s*14%;/s);
+  assert.doesNotMatch(css, /\.gtpl-step\.hit-root::after\s*\{[^}]*height:\s*32%;/s);
+  assert.doesNotMatch(css, /\.gtpl-step\.hit-root\[data-len="8"\]::after\s*\{[^}]*width:\s*calc\(188% \+ 2px\);/s);
+  assert.doesNotMatch(css, /\.gtpl-step\.hit-root\[data-len="8"\]::after\s*\{[^}]*right:\s*auto;/s);
+  assert.doesNotMatch(css, /\.gtpl-step\.downbeat\.hit-root::after\s*\{/);
+  assert.doesNotMatch(css, /\.gtpl-step\.downbeat\.hit-root\[data-len="8"\]::after\s*\{/);
 });
 
 test('chord template picker has enough room and can scroll full card content', async () => {

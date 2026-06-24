@@ -9,6 +9,7 @@ import {
   isBassCellActive,
   toggleBassCell,
 } from '../src/app/bassActions.js';
+import { getBassGroovePreviewSteps } from '../src/app/bassGroovePreview.js';
 import { BASS_NOTES } from '../src/data/bassNotes.js';
 import {
   createChordCell,
@@ -90,6 +91,17 @@ test('bass groove templates match the three reference picker options', () => {
     '8n',
     '16n',
   ]);
+});
+
+test('bass groove picker preview expands eighth notes onto sixteenth cells', () => {
+  assert.deepEqual(
+    BASS_GROOVE_TEMPLATES.map((template) => getBassGroovePreviewSteps(template)),
+    [
+      [0, 1, 4, 5, 8, 9, 12, 13],
+      [0, 1, 4, 5, 10, 11, 14, 15],
+      [0, 3, 6, 8, 12],
+    ],
+  );
 });
 
 test('applyBassGrooveTemplateToBar writes current bass clip from same-beat chord roots only', () => {

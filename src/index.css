@@ -3610,19 +3610,15 @@ button {
 
 .gtpl-step.hit-root::after {
   position: absolute;
-  right: 6%;
-  bottom: 14%;
-  left: 6%;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: 1;
-  height: 32%;
+  height: auto;
   content: "";
   background: var(--ink);
   border-radius: 2px;
-}
-
-.gtpl-step.hit-root[data-len="8"]::after {
-  right: auto;
-  width: calc(188% + 2px);
 }
 
 .gtpl-beat-num {

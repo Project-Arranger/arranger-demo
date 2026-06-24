@@ -824,6 +824,9 @@ test('app exposes the bass editor and existing-clip groove template workflow', a
   assert.match(bassEditorSource, /data-tutorial-role=\{templateCardRole/);
   assert.match(bassEditorSource, /aria-disabled=\{templateCardDisabled\}/);
   assert.match(bassEditorSource, /Bass Groove Template Picker/);
+  assert.match(bassEditorSource, /getBassGroovePreviewSteps/);
+  assert.match(bassEditorSource, /const previewHitStepSet = new Set\(getBassGroovePreviewSteps\(template\)\);/);
+  assert.match(bassEditorSource, /const isHit = previewHitStepSet\.has\(step\);/);
   assert.match(bassEditorSource, /gtpl-step/);
   assert.match(bassEditorSource, /hit-root/);
   assert.match(bassEditorSource, /data-len/);
