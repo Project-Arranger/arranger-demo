@@ -455,6 +455,30 @@ export default function App() {
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
   }, [dispatchAppCommand]);
 
+  const handleNewSong = useCallback(() => {
+    withUndoCheckpoint(() => {
+      const initialAppState = useMusicStore.getInitialState();
+      const initialTutorialProgress = createTutorialState();
+
+      clearTutorialAutoAdvanceTimer();
+      stopTutorialPreviewPlayback();
+      useMusicStore.setState(initialAppState, true);
+      setCurrentTutorialStepIndex(0);
+      setTutorialProgress(initialTutorialProgress);
+      setAppliedTutorialSetups(() => new Set());
+      setTutorialStepCheckpoints(() => ({
+        0: createTutorialCheckpoint({
+          appState: initialAppState,
+          appliedTutorialSetups: new Set(),
+          tutorialProgress: initialTutorialProgress,
+        }),
+      }));
+      setTutorialModeActive(false);
+      setTutorialSidebarCollapsed(true);
+      setTutorialVisible(true);
+    }, { force: true });
+  }, [stopTutorialPreviewPlayback, withUndoCheckpoint]);
+
   const visibleTrackUi = useMemo(() => getTrackUiByIds(visibleTrackIds), [visibleTrackIds]);
   const availableAddTrackOptions = useMemo(() => (
     OPTIONAL_TRACK_UI.filter((track) => !visibleTrackIds.includes(track.id))
@@ -1569,6 +1593,7 @@ export default function App() {
           currentStep,
           isPlaying,
           onBackToStart: handleBackToStart,
+          onNewSong: handleNewSong,
           onPlayToggle: handlePlayToggle,
           onStop: handleStop,
           onTutorialToggle: handleTutorialSidebarToggle,

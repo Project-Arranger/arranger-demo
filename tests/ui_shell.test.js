@@ -72,6 +72,7 @@ test('topbar exposes independent undo redo controls and App wires history', asyn
 });
 
 test('skeuomorphic workbench structure exposes hardware shell affordances', async () => {
+  const appSource = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
   const topBarSource = await readFile(new URL('../src/app/components/TopBar.jsx', import.meta.url), 'utf8');
   const tracksColumnSource = await readFile(
     new URL('../src/app/components/TracksColumn.jsx', import.meta.url),
@@ -84,6 +85,12 @@ test('skeuomorphic workbench structure exposes hardware shell affordances', asyn
   );
 
   assert.match(topBarSource, /className="power-gem"/);
+  assert.match(topBarSource, /onNewSong = \(\) => \{\}/);
+  assert.match(topBarSource, /<button\s+className="btn-new"\s+aria-label="New song"\s+title="New song"\s+type="button"\s+onClick=\{onNewSong\}>/);
+  assert.doesNotMatch(topBarSource, /renderIcon\(Plus\)/);
+  assert.doesNotMatch(topBarSource, />\s*New Song\s*</);
+  assert.match(appSource, /const handleNewSong = useCallback\(\(\) => \{[\s\S]*const initialAppState = useMusicStore\.getInitialState\(\);[\s\S]*useMusicStore\.setState\(initialAppState, true\);/);
+  assert.match(appSource, /onNewSong:\s*handleNewSong/);
   assert.match(topBarSource, /className="hardware-status-display"/);
   assert.match(topBarSource, /className="key-switch tutorial-switch"/);
   assert.match(topBarSource, /className="key-switch save-switch"/);

@@ -1,5 +1,4 @@
 import {
-  Plus,
   Redo2,
   Settings,
   SkipBack,
@@ -23,6 +22,7 @@ function TopBar({
   currentStep,
   isPlaying,
   onBackToStart,
+  onNewSong = () => {},
   onPlayToggle,
   onStop,
   onTutorialToggle,
@@ -57,10 +57,8 @@ function TopBar({
         <div className="project">v0.22</div>
       </div>
 
-      <button className="btn-new" aria-label="New song">
+      <button className="btn-new" aria-label="New song" title="New song" type="button" onClick={onNewSong}>
         <span className="power-gem" aria-hidden="true" />
-        {renderIcon(Plus)}
-        New Song
       </button>
 
       <div className="topbar-center">

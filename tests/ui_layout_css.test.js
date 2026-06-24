@@ -15,6 +15,7 @@ const SKEUO_ASSETS = [
   '../public/assets/skeuo/gem-amber.png',
   '../public/assets/skeuo/gem-blue.png',
   '../public/assets/skeuo/gem-purple.png',
+  '../public/assets/skeuo/gem-new.png',
   '../public/assets/skeuo/clip-drums.png',
   '../public/assets/skeuo/clip-chord.png',
   '../public/assets/skeuo/clip-bass.png',
@@ -50,6 +51,7 @@ test('skeuomorphic theme provides project-local texture assets and material toke
   assert.match(css, /--asset-gem-amber:\s*url\("\/assets\/skeuo\/gem-amber\.png"\);/);
   assert.match(css, /--asset-gem-blue:\s*url\("\/assets\/skeuo\/gem-blue\.png"\);/);
   assert.match(css, /--asset-gem-purple:\s*url\("\/assets\/skeuo\/gem-purple\.png"\);/);
+  assert.match(css, /--asset-gem-new:\s*url\("\/assets\/skeuo\/gem-new\.png"\);/);
   assert.match(css, /--asset-clip-drums:\s*url\("\/assets\/skeuo\/clip-drums\.png"\);/);
   assert.match(css, /--asset-clip-chord:\s*url\("\/assets\/skeuo\/clip-chord\.png"\);/);
   assert.match(css, /--asset-clip-bass:\s*url\("\/assets\/skeuo\/clip-bass\.png"\);/);
@@ -204,6 +206,18 @@ test('genre gate uses a hardware cabinet with responsive neon style cards', asyn
   assert.match(css, /@media\s*\(max-width:\s*560px\)\s*\{[\s\S]*\.genre-hardware\s*\{[^}]*max-width:\s*100%;/s);
   assert.match(css, /@media\s*\(max-width:\s*560px\)\s*\{[\s\S]*\.genre-hardware::before,\s*\n\s*\.genre-hardware::after\s*\{[^}]*width:\s*10px;/s);
   assert.match(css, /@media\s*\(max-width:\s*560px\)\s*\{[\s\S]*\.genre-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\);/s);
+});
+
+test('topbar new button is only a distinct gem without a brass frame', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.btn-new\s*\{[^}]*display:\s*grid;[^}]*place-items:\s*center;/s);
+  assert.match(css, /\.btn-new\s*\{[^}]*background:\s*transparent;/s);
+  assert.match(css, /\.btn-new\s*\{[^}]*border:\s*0;/s);
+  assert.match(css, /\.btn-new\s*\{[^}]*box-shadow:\s*none;/s);
+  assert.doesNotMatch(css, /\.btn-new\s*\{[^}]*var\(--asset-brass\)/s);
+  assert.match(css, /\.power-gem\s*\{[^}]*var\(--asset-gem-new\)[^}]*#8f1f52/s);
+  assert.match(css, /\.power-gem\s*\{[^}]*clip-path:\s*polygon\(/s);
 });
 
 test('timeline clips fill exactly one bar grid cell', async () => {
