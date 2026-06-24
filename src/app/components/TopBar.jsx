@@ -59,9 +59,10 @@ function TopBar({
 
       <button className="btn-new" aria-label="New song" title="New song" type="button" onClick={onNewSong}>
         <span className="power-gem" aria-hidden="true" />
+        <span className="btn-new-label">New</span>
       </button>
 
-      <div className="topbar-center">
+      <div className="topbar-left-controls">
         <div className="history-controls" role="toolbar" aria-label="History">
           <button
             className="t-btn undo"
@@ -108,7 +109,9 @@ function TopBar({
             <span className="play-glyph" aria-hidden="true" />
           </button>
         </div>
+      </div>
 
+      <div className="topbar-center">
         <div className="hardware-status-display">
           <div className="stats" role="group" aria-label="Project info">
             <div className="stat">

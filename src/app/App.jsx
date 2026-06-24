@@ -195,6 +195,7 @@ export default function App() {
   const [editorResizeMaxHeight, setEditorResizeMaxHeight] = useState(EDITOR_RESIZE_DEFAULT_HEIGHT);
   const [currentEditorResizeValue, setCurrentEditorResizeValue] = useState(EDITOR_RESIZE_DEFAULT_HEIGHT);
   const [isEditorResizing, setIsEditorResizing] = useState(false);
+  const [isNewSongConfirmOpen, setIsNewSongConfirmOpen] = useState(false);
   const tracksScrollRef = useRef(null);
   const timelineScrollRef = useRef(null);
   const editorResizeDragRef = useRef(null);
@@ -478,6 +479,19 @@ export default function App() {
       setTutorialVisible(true);
     }, { force: true });
   }, [stopTutorialPreviewPlayback, withUndoCheckpoint]);
+
+  const requestNewSong = useCallback(() => {
+    setIsNewSongConfirmOpen(true);
+  }, []);
+
+  const cancelNewSong = useCallback(() => {
+    setIsNewSongConfirmOpen(false);
+  }, []);
+
+  const confirmNewSong = useCallback(() => {
+    setIsNewSongConfirmOpen(false);
+    handleNewSong();
+  }, [handleNewSong]);
 
   const visibleTrackUi = useMemo(() => getTrackUiByIds(visibleTrackIds), [visibleTrackIds]);
   const availableAddTrackOptions = useMemo(() => (
@@ -1593,7 +1607,7 @@ export default function App() {
           currentStep,
           isPlaying,
           onBackToStart: handleBackToStart,
-          onNewSong: handleNewSong,
+          onNewSong: requestNewSong,
           onPlayToggle: handlePlayToggle,
           onStop: handleStop,
           onTutorialToggle: handleTutorialSidebarToggle,
@@ -1605,6 +1619,33 @@ export default function App() {
           tutorialCollapsed: tutorialSidebarCollapsed,
           tutorialTargets: activeTutorialTargets,
         })}
+        {isNewSongConfirmOpen ? (
+          <div className="new-song-confirm-overlay" role="presentation">
+            <section
+              className="new-song-confirm-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="new-song-confirm-title"
+              aria-describedby="new-song-confirm-copy"
+            >
+              <span className="new-song-confirm-kicker">NEW MOVEMENT</span>
+              <h2 className="new-song-confirm-title" id="new-song-confirm-title">
+                创建新的乐章？
+              </h2>
+              <p className="new-song-confirm-copy" id="new-song-confirm-copy">
+                是否放弃当前进度创建新的乐章？当前编曲、教程进度和未保存的编辑都会被重置。
+              </p>
+              <div className="new-song-confirm-actions">
+                <button className="new-song-confirm-cancel" type="button" onClick={cancelNewSong}>
+                  取消
+                </button>
+                <button className="new-song-confirm-apply" type="button" onClick={confirmNewSong}>
+                  创建新乐章
+                </button>
+              </div>
+            </section>
+          </div>
+        ) : null}
         <main className={workspaceClassName}>
           {createElement(TracksColumn, {
             activeTrackId,

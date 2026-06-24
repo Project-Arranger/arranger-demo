@@ -85,12 +85,13 @@ test('skeuomorphic workbench structure exposes hardware shell affordances', asyn
   );
 
   assert.match(topBarSource, /className="power-gem"/);
+  assert.match(topBarSource, /<span className="btn-new-label">New<\/span>/);
   assert.match(topBarSource, /onNewSong = \(\) => \{\}/);
   assert.match(topBarSource, /<button\s+className="btn-new"\s+aria-label="New song"\s+title="New song"\s+type="button"\s+onClick=\{onNewSong\}>/);
   assert.doesNotMatch(topBarSource, /renderIcon\(Plus\)/);
   assert.doesNotMatch(topBarSource, />\s*New Song\s*</);
   assert.match(appSource, /const handleNewSong = useCallback\(\(\) => \{[\s\S]*const initialAppState = useMusicStore\.getInitialState\(\);[\s\S]*useMusicStore\.setState\(initialAppState, true\);/);
-  assert.match(appSource, /onNewSong:\s*handleNewSong/);
+  assert.match(appSource, /onNewSong:\s*requestNewSong/);
   assert.match(topBarSource, /className="hardware-status-display"/);
   assert.match(topBarSource, /className="key-switch tutorial-switch"/);
   assert.match(topBarSource, /className="key-switch save-switch"/);
@@ -104,6 +105,23 @@ test('skeuomorphic workbench structure exposes hardware shell affordances', asyn
   assert.match(timelineSource, /className="grid-glass"/);
 
   assert.match(bottomEditorSource, /className="editor-hardware-shell"/);
+});
+
+test('new song flow asks before discarding the current arrangement', async () => {
+  const appSource = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
+  const topBarSource = await readFile(new URL('../src/app/components/TopBar.jsx', import.meta.url), 'utf8');
+
+  assert.match(topBarSource, /<span className="btn-new-label">New<\/span>/);
+  assert.match(appSource, /const \[isNewSongConfirmOpen,\s*setIsNewSongConfirmOpen\] = useState\(false\);/);
+  assert.match(appSource, /const requestNewSong = useCallback\(\(\) => \{[\s\S]*setIsNewSongConfirmOpen\(true\);[\s\S]*\}, \[\]\);/);
+  assert.match(appSource, /const cancelNewSong = useCallback\(\(\) => \{[\s\S]*setIsNewSongConfirmOpen\(false\);[\s\S]*\}, \[\]\);/);
+  assert.match(appSource, /const confirmNewSong = useCallback\(\(\) => \{[\s\S]*setIsNewSongConfirmOpen\(false\);[\s\S]*handleNewSong\(\);[\s\S]*\}, \[handleNewSong\]\);/);
+  assert.match(appSource, /onNewSong:\s*requestNewSong/);
+  assert.doesNotMatch(appSource, /onNewSong:\s*handleNewSong/);
+  assert.match(appSource, /isNewSongConfirmOpen \? \([\s\S]*className="new-song-confirm-overlay"[\s\S]*role="presentation"[\s\S]*className="new-song-confirm-dialog"[\s\S]*role="dialog"[\s\S]*aria-modal="true"[\s\S]*是否放弃当前进度创建新的乐章/);
+  assert.match(appSource, /className="new-song-confirm-cancel"[\s\S]*onClick=\{cancelNewSong\}[\s\S]*取消/);
+  assert.match(appSource, /className="new-song-confirm-apply"[\s\S]*onClick=\{confirmNewSong\}[\s\S]*创建新乐章/);
+  assert.doesNotMatch(appSource, /window\.confirm/);
 });
 
 test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async () => {

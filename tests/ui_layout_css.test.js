@@ -260,24 +260,48 @@ test('topbar new button is only a distinct gem without a brass frame', async () 
   assert.match(css, /\.btn-new\s*\{[^}]*border:\s*0;/s);
   assert.match(css, /\.btn-new\s*\{[^}]*box-shadow:\s*none;/s);
   assert.doesNotMatch(css, /\.btn-new\s*\{[^}]*var\(--asset-brass\)/s);
+  assert.match(css, /\.btn-new-label\s*\{[^}]*color:\s*#ffe5bd;/s);
+  assert.match(css, /\.btn-new-label\s*\{[^}]*text-shadow:\s*0 1px 0 rgb\(0 0 0 \/ 0\.72\)/s);
   assert.match(css, /\.power-gem\s*\{[^}]*var\(--asset-gem-new\)[^}]*#8f1f52/s);
   assert.match(css, /\.power-gem\s*\{[^}]*clip-path:\s*polygon\(/s);
 });
 
-test('topbar tutorial and save switches render as sculpted buttons without key shafts', async () => {
+test('new song confirmation uses the hardware modal surface', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
-  assert.match(css, /\.topbar-center\s*\{[^}]*--topbar-center-side-balance:\s*clamp\(170px,\s*16vw,\s*208px\);/s);
+  assert.match(css, /\.new-song-confirm-overlay\s*\{[^}]*position:\s*absolute;/s);
+  assert.match(css, /\.new-song-confirm-overlay\s*\{[^}]*inset:\s*0;/s);
+  assert.match(css, /\.new-song-confirm-overlay\s*\{[^}]*z-index:\s*70;/s);
+  assert.match(css, /\.new-song-confirm-dialog\s*\{[^}]*display:\s*grid;/s);
+  assert.match(css, /\.new-song-confirm-dialog\s*\{[^}]*var\(--asset-brass\)/s);
+  assert.match(css, /\.new-song-confirm-title\s*\{[^}]*color:\s*#ffe7bd;/s);
+  assert.match(css, /\.new-song-confirm-copy\s*\{[^}]*color:\s*#d9c09a;/s);
+  assert.match(css, /\.new-song-confirm-actions\s*\{[^}]*display:\s*flex;/s);
+  assert.match(css, /\.new-song-confirm-cancel,\s*\n\.new-song-confirm-apply\s*\{[^}]*min-height:\s*38px;/s);
+  assert.match(css, /\.new-song-confirm-apply\s*\{[^}]*background:\s*linear-gradient\(180deg,\s*#ffe0a8,\s*#9b6430\);/s);
+});
+
+test('topbar tutorial and save switches render as sculpted buttons without key shafts', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+  const topBarSource = await readFile(new URL('../src/app/components/TopBar.jsx', import.meta.url), 'utf8');
+  const topbarCenterBlock = topBarSource.match(/<div className="topbar-center">([\s\S]*?)\n\s*<div className="right-tools">/)?.[1] ?? '';
+
+  assert.match(topBarSource, /<button className="btn-new"[\s\S]*<\/button>\s*\n\s*<div className="topbar-left-controls">[\s\S]*<div className="history-controls" role="toolbar" aria-label="History">[\s\S]*<div className=\{transportClassName\} role="toolbar" aria-label="Transport">[\s\S]*<\/div>\s*\n\s*<\/div>\s*\n\s*<div className="topbar-center">\s*\n\s*<div className="hardware-status-display">/);
+  assert.doesNotMatch(topbarCenterBlock, /history-controls|transportClassName/);
+  assert.match(css, /\.topbar-left-controls\s*\{[^}]*display:\s*flex;/s);
+  assert.match(css, /\.topbar-left-controls\s*\{[^}]*grid-column:\s*3;/s);
+  assert.match(css, /\.topbar-left-controls\s*\{[^}]*justify-self:\s*start;/s);
   assert.match(css, /\.topbar-center\s*\{[^}]*position:\s*absolute;/s);
   assert.match(css, /\.topbar-center\s*\{[^}]*left:\s*50%;[^}]*top:\s*50%;/s);
   assert.match(css, /\.topbar-center\s*\{[^}]*transform:\s*translate\(-50%,\s*-50%\);/s);
-  assert.match(css, /\.topbar-center\s*\{[^}]*grid-template-columns:\s*var\(--topbar-center-side-balance\) auto var\(--topbar-center-side-balance\);/s);
-  assert.match(css, /\.topbar-center::after\s*\{[^}]*grid-column:\s*3;[^}]*width:\s*var\(--topbar-center-side-balance\);/s);
-  assert.match(css, /\.topbar-center \.history-controls\s*\{[^}]*grid-column:\s*1;[^}]*justify-self:\s*start;/s);
-  assert.match(css, /\.topbar-center \.transport\s*\{[^}]*grid-column:\s*1;[^}]*justify-self:\s*end;/s);
-  assert.match(css, /\.hardware-status-display\s*\{[^}]*grid-column:\s*2;[^}]*justify-self:\s*center;/s);
-  assert.match(css, /@media \(max-width:\s*980px\)\s*\{[\s\S]*\.topbar-center\s*\{[^}]*position:\s*static;[^}]*transform:\s*none;/);
-  assert.match(css, /@media \(max-width:\s*980px\)\s*\{[\s\S]*\.topbar-center::after\s*\{[^}]*content:\s*none;/);
+  assert.match(css, /\.hardware-status-display\s*\{[^}]*justify-self:\s*center;/s);
+  assert.doesNotMatch(css, /--topbar-center-side-balance/);
+  assert.doesNotMatch(css, /\.topbar-center::after/);
+  assert.doesNotMatch(css, /\.topbar-center \.history-controls/);
+  assert.doesNotMatch(css, /\.topbar-center \.transport/);
+  assert.match(css, /@media \(max-width:\s*1180px\)\s*\{[\s\S]*\.right-tools \.save-switch,\s*\n\s*\.right-tools \.hardware-export,\s*\n\s*\.right-tools \.icon-btn:not\(\.tutorial-topbar-button\)\s*\{[^}]*display:\s*none;/);
+  assert.match(css, /@media \(max-width:\s*980px\)\s*\{[\s\S]*\.topbar-left-controls\s*\{[^}]*grid-column:\s*1 \/ -1;[^}]*grid-row:\s*2;[^}]*overflow-x:\s*auto;/);
+  assert.match(css, /@media \(max-width:\s*980px\)\s*\{[\s\S]*\.topbar-center\s*\{[^}]*position:\s*absolute;[^}]*transform:\s*translate\(-50%,\s*-50%\);/);
   assert.match(css, /\.key-switch\s*\{[^}]*align-items:\s*center;/s);
   assert.match(css, /\.key-switch\s*\{[^}]*height:\s*38px;/s);
   assert.match(css, /\.key-switch\s*\{[^}]*padding:\s*0 14px;/s);
@@ -799,7 +823,7 @@ test('tutorial sidebar is embedded as a workbench column and reopens from the to
   assert.match(css, /\.tutorial-topbar-button\s*\{[^}]*font-weight:\s*800;/s);
   assert.match(css, /\.tutorial-topbar-button\s*\{[^}]*white-space:\s*nowrap;/s);
   assert.match(css, /--tutorial-floating-ui-z:\s*110;/);
-  assert.match(css, /@media \(max-width:\s*980px\)\s*\{[\s\S]*\.topbar-center\s*\{[^}]*grid-row:\s*2;/);
+  assert.match(css, /@media \(max-width:\s*980px\)\s*\{[\s\S]*\.topbar-left-controls\s*\{[^}]*grid-row:\s*2;/);
   assert.match(css, /@media \(max-width:\s*980px\)\s*\{[\s\S]*\.right-tools\s*\{[^}]*grid-column:\s*2;[^}]*grid-row:\s*1;/);
   assert.match(css, /\.tutorial-panel\s*\{[^}]*position:\s*relative;/s);
   assert.match(css, /\.tutorial-panel\s*\{[^}]*z-index:\s*90;/s);
