@@ -609,6 +609,16 @@ test('melody editor mirrors the reference keyboard strip and scale picker layout
   assert.match(css, /\.melody-example-key\s*\{[^}]*display:\s*inline-flex;/s);
 });
 
+test('pitch rails and beat groups do not draw light wood panel backgrounds', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.scale-rail,\s*\n\.beat-group,\s*\n\.melody-beat-group,\s*\n\.bass-beat-group,\s*\n\.keyboard-strip,\s*\n\.melody-example-keys\s*\{[^}]*background:\s*transparent;/s);
+  assert.match(css, /\.scale-rail,\s*\n\.beat-group,\s*\n\.melody-beat-group,\s*\n\.bass-beat-group,\s*\n\.keyboard-strip,\s*\n\.melody-example-keys\s*\{[^}]*border-color:\s*transparent;/s);
+  assert.match(css, /\.scale-rail,\s*\n\.beat-group,\s*\n\.melody-beat-group,\s*\n\.bass-beat-group,\s*\n\.keyboard-strip,\s*\n\.melody-example-keys\s*\{[^}]*box-shadow:\s*none;/s);
+  assert.doesNotMatch(css, /\.scale-rail,\s*\n\.beat-group,\s*\n\.melody-beat-group,\s*\n\.bass-beat-group,\s*\n\.keyboard-strip,\s*\n\.melody-example-keys\s*\{[^}]*var\(--asset-wood\)/s);
+  assert.doesNotMatch(css, /\.scale-rail,\s*\n\.beat-group,\s*\n\.melody-beat-group,\s*\n\.bass-beat-group,\s*\n\.keyboard-strip,\s*\n\.melody-example-keys\s*\{[^}]*rgb\(196 154 99 \/ 0\.28\)/s);
+});
+
 test('bass editor mirrors the reference piano-roll and groove picker layout', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
