@@ -737,6 +737,7 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(melodyEditorSource, /清空本小节/);
   assert.match(melodyEditorSource, /清空整轨/);
   assert.doesNotMatch(melodyEditorSource, /清空 Melody/);
+  assert.doesNotMatch(melodyEditorSource, /Clear phrase/);
   assert.match(melodyEditorSource, /createElement\(TrackBarPager,\s*\{[\s\S]*className:\s*'melody-editor-pager-shell'/);
   assert.match(melodyEditorSource, /createElement\(TrackBarPager,\s*\{[\s\S]*contentClassName:\s*'melody-editor-scroll'/);
   assert.match(melodyEditorSource, /MELODY_KEY_SEQUENCE/);

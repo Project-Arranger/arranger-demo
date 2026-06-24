@@ -43,6 +43,27 @@ const GENRE_ART_ASSETS = [
   '../public/assets/genre-art/jazz-neon.png',
 ];
 
+const DRUM_PNG_SPECS = [
+  ['../public/assets/skeuo/drum-step-off.png', 96, 96, 6],
+  ['../public/assets/skeuo/drum-step-kick-on.png', 96, 96, 6],
+  ['../public/assets/skeuo/drum-step-snare-on.png', 96, 96, 6],
+  ['../public/assets/skeuo/drum-step-hihat-on.png', 96, 96, 6],
+  ['../public/assets/skeuo/drum-control-button.png', 360, 104, 6],
+  ['../public/assets/skeuo/drum-control-button-pressed.png', 360, 104, 6],
+  ['../public/assets/skeuo/drum-control-button-disabled.png', 360, 104, 6],
+  ['../public/assets/skeuo/drum-page-button.png', 112, 196, 6],
+  ['../public/assets/skeuo/drum-close-button.png', 112, 112, 6],
+];
+
+async function readPngInfo(assetPath) {
+  const bytes = await readFile(new URL(assetPath, import.meta.url));
+  return {
+    width: bytes.readUInt32BE(16),
+    height: bytes.readUInt32BE(20),
+    colorType: bytes[25],
+  };
+}
+
 test('skeuomorphic theme provides project-local texture assets and material tokens', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
@@ -243,6 +264,25 @@ test('topbar new button is only a distinct gem without a brass frame', async () 
   assert.match(css, /\.power-gem\s*\{[^}]*clip-path:\s*polygon\(/s);
 });
 
+test('topbar tutorial and save switches render as sculpted buttons without key shafts', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.key-switch\s*\{[^}]*align-items:\s*center;/s);
+  assert.match(css, /\.key-switch\s*\{[^}]*height:\s*38px;/s);
+  assert.match(css, /\.key-switch\s*\{[^}]*padding:\s*0 14px;/s);
+  assert.match(css, /\.key-switch\s*\{[^}]*var\(--asset-brass\) center \/ cover/s);
+  assert.match(css, /\.key-switch\s*\{[^}]*border:\s*1px solid rgb\(255 219 164 \/ 0\.42\);/s);
+  assert.match(css, /\.key-switch\s*\{[^}]*border-radius:\s*12px;/s);
+  assert.match(css, /\.key-switch\s*\{[^}]*inset 0 -9px 16px rgb\(0 0 0 \/ 0\.54\)/s);
+  assert.match(css, /\.key-switch::before\s*\{[^}]*inset:\s*3px;/s);
+  assert.match(css, /\.key-switch::before\s*\{[^}]*border-radius:\s*9px;/s);
+  assert.match(css, /\.key-switch::after\s*\{[^}]*content:\s*none;/s);
+  assert.doesNotMatch(css, /\.key-switch::after\s*\{[^}]*left:\s*calc\(50% \+ 17px\);/s);
+  assert.doesNotMatch(css, /\.key-switch::after\s*\{[^}]*width:\s*24px;/s);
+  assert.match(css, /\.save-switch \.dot\s*\{[^}]*display:\s*inline-block;/s);
+  assert.match(css, /\.save-switch \.dot\s*\{[^}]*radial-gradient\(circle at 38% 28%/s);
+});
+
 test('timeline clips fill exactly one bar grid cell', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
@@ -417,6 +457,13 @@ test('timeline drag and swap feedback is visually prominent', async () => {
 test('drum sequencer uses three fixed rows and sixteen stable step columns', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
+  for (const [assetPath, width, height, colorType] of DRUM_PNG_SPECS) {
+    const png = await readPngInfo(assetPath);
+    assert.equal(png.width, width);
+    assert.equal(png.height, height);
+    assert.equal(png.colorType, colorType);
+  }
+
   assert.match(css, /\.drum-seq-body\s*\{[^}]*overflow:\s*auto;/s);
   assert.match(css, /\.track-editor-pager-shell\s*\{[^}]*grid-template-columns:\s*36px minmax\(0,\s*1fr\) 36px;/s);
   assert.match(css, /\.track-editor-pager-shell\s*\{[^}]*align-items:\s*center;/s);
@@ -427,8 +474,8 @@ test('drum sequencer uses three fixed rows and sixteen stable step columns', asy
   assert.match(css, /\.drum-step-groups\s*\{[^}]*--drum-step-group-gap:\s*clamp\(12px,\s*2\.4vw,\s*22px\);/s);
   assert.match(css, /\.drum-step-groups\s*\{[^}]*--drum-step-group-gap-half:\s*clamp\(6px,\s*1\.2vw,\s*11px\);/s);
   assert.match(css, /\.drum-step-groups\s*\{[^}]*column-gap:\s*var\(--drum-step-group-gap\);/s);
-  assert.match(css, /\.drum-step-group\s*\{[^}]*--drum-step-gap:\s*5px;/s);
-  assert.match(css, /\.drum-step-group\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(18px,\s*32px\)\);/s);
+  assert.match(css, /\.drum-step-group\s*\{[^}]*--drum-step-gap:\s*6px;/s);
+  assert.match(css, /\.drum-step-group\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(28px,\s*42px\)\);/s);
   assert.match(css, /\.drum-step-group\s*\{[^}]*gap:\s*var\(--drum-step-gap\);/s);
   assert.doesNotMatch(css, /\.drum-step(?:-number)?\.beat-end\s*\{[^}]*margin-right:/s);
   assert.match(css, /\.track-page-btn\s*\{[^}]*width:\s*36px;/s);
@@ -436,24 +483,33 @@ test('drum sequencer uses three fixed rows and sixteen stable step columns', asy
   assert.match(css, /\.track-page-btn\s*\{[^}]*color:\s*var\(--track-ink,\s*var\(--c-drums-ink\)\);/s);
   assert.match(css, /\.track-page-btn:hover:not\(:disabled\)\s*\{[^}]*background:\s*var\(--track-ink,\s*var\(--c-drums-ink\)\);/s);
   assert.match(css, /\.track-page-btn:disabled\s*\{[^}]*opacity:\s*0\.32;/s);
-  assert.match(css, /\.drum-editor \.btn-template,\s*\n\.drum-editor \.drum-clear-action\s*\{[^}]*var\(--asset-drum-control-button\)/s);
-  assert.match(css, /\.drum-editor \.btn-template:hover:not\(:disabled\),\s*\n\.drum-editor \.drum-action:hover:not\(:disabled\)\s*\{[^}]*var\(--asset-drum-control-button-pressed\)/s);
-  assert.match(css, /\.drum-editor \.btn-template:disabled,\s*\n\.drum-editor \.drum-action:disabled\s*\{[^}]*var\(--asset-drum-control-button-disabled\)/s);
-  assert.match(css, /\.drum-editor \.track-page-btn\s*\{[^}]*var\(--asset-drum-page-button\)/s);
-  assert.match(css, /\.drum-editor \.track-page-btn:hover:not\(:disabled\)\s*\{[^}]*var\(--asset-drum-control-button-pressed\)/s);
-  assert.match(css, /\.drum-editor \.track-page-btn:disabled\s*\{[^}]*var\(--asset-drum-control-button-disabled\)/s);
-  assert.match(css, /\.drum-editor \.editor-close\s*\{[^}]*var\(--asset-drum-close-button\)/s);
+  assert.doesNotMatch(css, /\.drum-editor \.btn-template,\s*\n\.drum-editor \.drum-clear-action\s*\{[^}]*--asset-drum-control-button/s);
+  assert.doesNotMatch(css, /\.drum-editor \.btn-template:hover:not\(:disabled\),\s*\n\.drum-editor \.drum-action:hover:not\(:disabled\)\s*\{/s);
+  assert.doesNotMatch(css, /\.drum-editor \.btn-template:disabled,\s*\n\.drum-editor \.drum-action:disabled\s*\{/s);
+  assert.doesNotMatch(css, /\.drum-editor \.track-page-btn(?::hover:not\(:disabled\)|:disabled)?\s*\{[^}]*--asset-drum-page-button/s);
+  assert.doesNotMatch(css, /\.drum-editor \.editor-close\s*\{[^}]*--asset-drum-close-button/s);
+  assert.doesNotMatch(css, /\.drum-action\s*\{[^}]*background:/s);
+  assert.match(css, /\.btn-template,\s*\n\.btn-template-groove,\s*\n\.drum-clear-action,\s*\n\.btn-template-active,\s*\n\.btn-template-groove-active,\s*\n\.btn-template-scale-active\s*\{[^}]*var\(--asset-brass\) center \/ cover/s);
+  assert.match(css, /\.editor-close,\s*\n\.track-page-btn,\s*\n\.tool-icon\s*\{[^}]*var\(--asset-brass\) center \/ cover/s);
   assert.doesNotMatch(css, /\.drum-page-btn\s*\{/);
+  assert.match(css, /\.drum-row-label\s*\{[^}]*white-space:\s*nowrap;/s);
+  assert.match(css, /\.drum-dot\s*\{[^}]*flex:\s*0 0 32px;/s);
+  assert.match(css, /\.drum-dot\s*\{[^}]*width:\s*32px;[^}]*height:\s*32px;/s);
+  assert.match(css, /\.drum-dot\[data-instrument="kick"\]\s*\{[^}]*var\(--asset-drum-step-kick-on\)/s);
+  assert.match(css, /\.drum-dot\[data-instrument="snare"\]\s*\{[^}]*var\(--asset-drum-step-snare-on\)/s);
+  assert.match(css, /\.drum-dot\[data-instrument="hihat"\]\s*\{[^}]*var\(--asset-drum-step-hihat-on\)/s);
+  assert.doesNotMatch(css, /\.drum-dot\[data-instrument="kick"\]\s*\{[^}]*color-mix/s);
   assert.match(css, /\.drum-step-number\s*\{[^}]*justify-content:\s*center;[^}]*height:\s*16px;/s);
   assert.match(css, /\.drum-step-number\.beat-end::after\s*\{[^}]*position:\s*absolute;[^}]*right:\s*calc\(-1 \* var\(--drum-step-group-gap-half\)\);[^}]*transform:\s*translateX\(50%\);/s);
   assert.match(css, /\.drum-step\.beat-end::after\s*\{[^}]*position:\s*absolute;[^}]*right:\s*calc\(-1 \* var\(--drum-step-group-gap-half\)\);[^}]*transform:\s*translateX\(50%\);/s);
   assert.match(css, /\.drum-step\s*\{[^}]*var\(--asset-drum-step-off\)/s);
+  assert.doesNotMatch(css, /\.drum-step\s*\{[^}]*linear-gradient/s);
   assert.match(css, /\.drum-step:hover\s*\{[^}]*filter:\s*brightness\(1\.08\) saturate\(1\.08\);/s);
   assert.match(css, /\.drum-step:focus-visible\s*\{[^}]*outline:\s*2px solid color-mix\(in oklab,\s*var\(--track-ink,\s*var\(--c-drums-ink\)\) 64%,\s*white\);/s);
   assert.match(css, /\.drum-step\.active\[data-instrument="kick"\]\s*\{[^}]*var\(--asset-drum-step-kick-on\)/s);
   assert.match(css, /\.drum-step\.active\[data-instrument="snare"\]\s*\{[^}]*var\(--asset-drum-step-snare-on\)/s);
   assert.match(css, /\.drum-step\.active\[data-instrument="hihat"\]\s*\{[^}]*var\(--asset-drum-step-hihat-on\)/s);
-  assert.match(css, /@media\s*\(max-width:\s*980px\)\s*\{[\s\S]*\.drum-step-group\s*\{[^}]*--drum-step-gap:\s*4px;[^}]*gap:\s*var\(--drum-step-gap\);/s);
+  assert.match(css, /@media\s*\(max-width:\s*980px\)\s*\{[\s\S]*\.drum-step-group\s*\{[^}]*--drum-step-gap:\s*5px;[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(24px,\s*34px\)\);[^}]*gap:\s*var\(--drum-step-gap\);/s);
 });
 
 test('chord pitch rail rows align with chord grid rows', async () => {

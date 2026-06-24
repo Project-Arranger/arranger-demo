@@ -4,7 +4,6 @@ import {
   ChevronUp,
   Keyboard,
   MoreHorizontal,
-  Trash2,
   X,
 } from 'lucide-react';
 import {
@@ -176,9 +175,6 @@ function MelodyEditor({
           </button>
           <button className="btn-template drum-clear-action" type="button" disabled={tutorialLocked} onClick={onClearMelody}>
             清空整轨
-          </button>
-          <button className="tool-icon" aria-label="Clear phrase" title="Clear phrase" type="button" disabled={tutorialLocked} onClick={onClearMelodyBar}>
-            {renderIcon(Trash2)}
           </button>
           <button className="tool-icon" aria-label="More" title="More" type="button" disabled={tutorialLocked}>
             {renderIcon(MoreHorizontal)}
