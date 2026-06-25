@@ -971,6 +971,11 @@ test('tutorial sidebar is embedded as a workbench column and reopens from the to
   assert.match(css, /\.app-main:has\(\.tutorial-target-active\)::before,\s*\n\.app-main:has\(\.tutorial-bar-target\)::before,\s*\n\.app-main:has\(\.tutorial-control-target\)::before,\s*\n\.app-main:has\(\.tutorial-cell-target\)::before,\s*\n\.app-main:has\(\.tutorial-cell-source\)::before,\s*\n\.app-main:has\(\.tutorial-playhead-target\)::before\s*\{[^}]*position:\s*absolute;/s);
   assert.match(css, /\.app-main:has\(\.tutorial-target-active\)::before,\s*\n\.app-main:has\(\.tutorial-bar-target\)::before,\s*\n\.app-main:has\(\.tutorial-control-target\)::before,\s*\n\.app-main:has\(\.tutorial-cell-target\)::before,\s*\n\.app-main:has\(\.tutorial-cell-source\)::before,\s*\n\.app-main:has\(\.tutorial-playhead-target\)::before\s*\{[^}]*background:\s*color-mix\(in oklab,\s*black 46%,\s*transparent\);/s);
   assert.match(css, /\.app-main:has\(\.tutorial-target-active\)::before,\s*\n\.app-main:has\(\.tutorial-bar-target\)::before,\s*\n\.app-main:has\(\.tutorial-control-target\)::before,\s*\n\.app-main:has\(\.tutorial-cell-target\)::before,\s*\n\.app-main:has\(\.tutorial-cell-source\)::before,\s*\n\.app-main:has\(\.tutorial-playhead-target\)::before\s*\{[^}]*z-index:\s*var\(--tutorial-spotlight-z\);/s);
+  assert.match(css, /\.timeline-col:has\(\.tutorial-bar-target\)\s*\{[^}]*z-index:\s*calc\(var\(--tutorial-target-z\) \+ 1\);/s);
+  assert.match(css, /\.timeline-col:has\(\.tutorial-bar-target\) \.hover-rows\s*\{[^}]*z-index:\s*auto;/s);
+  assert.match(css, /\.timeline-col:has\(\.tutorial-bar-target\) \.grid::after\s*\{[^}]*position:\s*absolute;/s);
+  assert.match(css, /\.timeline-col:has\(\.tutorial-bar-target\) \.grid::after\s*\{[^}]*z-index:\s*calc\(var\(--tutorial-target-z\) - 1\);/s);
+  assert.match(css, /\.timeline-col:has\(\.tutorial-bar-target\) \.grid::after\s*\{[^}]*background:\s*color-mix\(in oklab,\s*black 42%,\s*transparent\);/s);
   assert.doesNotMatch(css, /black 34%,\s*transparent/);
   assert.match(css, /\.topbar:has\(\.tutorial-transport-target\)\s*\{[^}]*z-index:\s*calc\(var\(--tutorial-target-z\) \+ 2\);/s);
   assert.match(css, /\.topbar:has\(\.tutorial-transport-target\)::after\s*\{[^}]*position:\s*absolute;/s);
@@ -1052,6 +1057,9 @@ test('tutorial task targets make allowed cells and bars obvious', async () => {
   assert.match(css, /\.clip\.tutorial-bar-target\s*\{[^}]*--tutorial-highlight-peak-shadow:\s*var\(--tutorial-target-contained-peak-shadow\);/s);
   assert.match(css, /\.clip\.tutorial-bar-target\s*\{[^}]*position:\s*absolute;/s);
   assert.match(css, /\.clip\.tutorial-bar-target\s*\{[^}]*outline-offset:\s*-3px;/s);
+  assert.match(css, /\.clip\.tutorial-bar-target\s*\{[^}]*animation:\s*tutorial-clip-target-pulse var\(--tutorial-breathe-duration\) var\(--tutorial-breathe-ease\) infinite;/s);
+  assert.match(css, /\.clip\.tutorial-bar-target\s*\{[^}]*filter:\s*brightness\(1\.18\) saturate\(1\.18\);/s);
+  assert.match(css, /@keyframes tutorial-clip-target-pulse\s*\{[\s\S]*filter:\s*brightness\(1\.18\) saturate\(1\.18\);[\s\S]*filter:\s*brightness\(1\.5\) saturate\(1\.38\);/s);
   assert.doesNotMatch(css, /\.clip\.tutorial-bar-target\s*\{[^}]*top:/s);
   assert.doesNotMatch(css, /\.clip\.tutorial-bar-target\s*\{[^}]*bottom:/s);
   assert.doesNotMatch(css, /\.clip\.tutorial-bar-target\s*\{[^}]*height:/s);
@@ -1115,6 +1123,7 @@ test('tutorial task targets make allowed cells and bars obvious', async () => {
   assert.doesNotMatch(css, /\.playhead\.tutorial-playhead-target::after/);
   assert.doesNotMatch(css, /@keyframes tutorial-playhead-pulse/);
   assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*\.tutorial-target-active,[\s\S]*\.tutorial-cell-target,[\s\S]*\.tutorial-cell-source,[\s\S]*\.tutorial-bar-target,[\s\S]*\.tutorial-control-target,[\s\S]*\.playhead\.tutorial-playhead-target,[\s\S]*\.ruler-playhead\.tutorial-playhead-target::after[\s\S]*animation:\s*none;/s);
+  assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*\.clip\.tutorial-bar-target\s*\{[^}]*filter:\s*brightness\(1\.5\) saturate\(1\.38\);/s);
   assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*\.drum-step\.tutorial-cell-source::before\s*\{[^}]*animation:\s*none;/s);
   assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*box-shadow:\s*var\(--tutorial-highlight-rest-shadow\);/s);
   assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*\.tutorial-panel-header::before[\s\S]*animation:\s*none;/s);

@@ -628,6 +628,19 @@ button {
   }
 }
 
+@keyframes tutorial-clip-target-pulse {
+  0%,
+  100% {
+    filter: brightness(1.18) saturate(1.18);
+    box-shadow: var(--tutorial-highlight-rest-shadow);
+  }
+
+  50% {
+    filter: brightness(1.5) saturate(1.38);
+    box-shadow: var(--tutorial-highlight-peak-shadow);
+  }
+}
+
 @keyframes tutorial-kick-drag-ghost {
   0%,
   16% {
@@ -779,6 +792,24 @@ button {
 
 .app .tutorial-target-active {
   z-index: var(--tutorial-target-z);
+}
+
+.timeline-col:has(.tutorial-bar-target) {
+  position: relative;
+  z-index: calc(var(--tutorial-target-z) + 1);
+}
+
+.timeline-col:has(.tutorial-bar-target) .hover-rows {
+  z-index: auto;
+}
+
+.timeline-col:has(.tutorial-bar-target) .grid::after {
+  position: absolute;
+  inset: 0;
+  z-index: calc(var(--tutorial-target-z) - 1);
+  pointer-events: none;
+  content: "";
+  background: color-mix(in oklab, black 42%, transparent);
 }
 
 .app.editor-resizing {
@@ -1841,8 +1872,18 @@ button {
   --tutorial-highlight-peak-shadow: var(--tutorial-target-contained-peak-shadow);
 
   position: absolute;
+  animation: tutorial-clip-target-pulse var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
+  filter: brightness(1.18) saturate(1.18);
   outline-offset: -3px;
   box-shadow: var(--tutorial-highlight-rest-shadow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clip.tutorial-bar-target {
+    animation: none;
+    filter: brightness(1.5) saturate(1.38);
+    box-shadow: var(--tutorial-highlight-peak-shadow);
+  }
 }
 
 .transport.tutorial-transport-target {
