@@ -268,7 +268,7 @@ function BassEditor({
                           return (
                             <button
                               className={[
-                                'cell',
+                                'pitch-step-cell',
                                 'bass-cell',
                                 note.sharp ? 'sharp' : '',
                                 active ? 'active' : '',

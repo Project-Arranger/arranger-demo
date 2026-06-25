@@ -752,7 +752,8 @@ function ChordEditor({
                         return (
                           <button
                             className={[
-                              'cell',
+                              'pitch-step-cell',
+                              'chord-cell',
                               active ? 'active' : '',
                               added ? 'added' : '',
                               note.sharp ? 'sharp' : '',

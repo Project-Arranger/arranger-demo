@@ -2751,12 +2751,13 @@ button {
   padding: var(--chord-cell-padding);
 }
 
-.cell {
+.pitch-step-cell {
   position: relative;
   z-index: 2;
   min-width: 0;
   min-height: 0;
-  background: rgb(255 248 232 / 0.94);
+  background:
+    linear-gradient(180deg, rgb(248 225 190 / 0.92), rgb(232 198 150 / 0.88));
   border: 1px solid rgb(84 48 24 / 0.3);
   border-radius: 4px;
   box-shadow:
@@ -2769,18 +2770,14 @@ button {
     transform 0.08s ease;
 }
 
-.cell.sharp {
-  background: rgb(255 248 232 / 0.94);
-}
-
-.cell.active {
+.chord-cell.active {
   background: var(--c-chord);
   border-color: color-mix(in oklab, var(--c-chord-ink) 42%, var(--border));
   box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c-chord-ink) 24%, transparent);
 }
 
-.cell.added,
-.cell.active.added {
+.chord-cell.added,
+.chord-cell.active.added {
   background: color-mix(in oklab, var(--c-chord) 35%, white);
   border-color: color-mix(in oklab, oklch(62% 0.2 318) 54%, var(--border));
   box-shadow:
@@ -2788,13 +2785,13 @@ button {
     0 0 0 1px color-mix(in oklab, white 70%, transparent);
 }
 
-.cell:hover {
+.chord-cell:hover {
   background: color-mix(in oklab, var(--c-chord) 38%, #f0d5ad);
   border-color: color-mix(in oklab, var(--c-chord-ink) 30%, var(--border));
   transform: translateY(-1px);
 }
 
-.cell.row-hovered,
+.chord-cell.row-hovered,
 .melody-cell.row-hovered,
 .bass-cell.row-hovered {
   border-color: color-mix(in oklab, var(--pitch-row-hover-ink) 36%, var(--border));
@@ -2802,7 +2799,7 @@ button {
   outline-offset: -2px;
 }
 
-.cell.row-hovered:not(.active):not(.added),
+.chord-cell.row-hovered:not(.active):not(.added),
 .melody-cell.row-hovered:not(.active),
 .bass-cell.row-hovered:not(.active) {
   background: color-mix(in oklab, var(--pitch-row-hover) 38%, #f0d5ad);
@@ -4304,12 +4301,15 @@ button {
 }
 
 .track-editor-pager-shell {
+  --track-page-btn-inset: clamp(10px, 1.4vw, 22px);
+
   display: grid;
   grid-template-columns: 36px minmax(0, 1fr) 36px;
   align-items: center;
   gap: 12px;
   width: 100%;
   min-width: 0;
+  padding-inline: var(--track-page-btn-inset);
 }
 
 .track-editor-pager-content {
@@ -6948,9 +6948,7 @@ body {
   box-shadow: none;
 }
 
-.cell,
-.melody-cell,
-.bass-cell,
+.pitch-step-cell,
 .note-key,
 .melody-note-key,
 .bass-note-key {
@@ -6958,15 +6956,6 @@ body {
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.28),
     inset 0 -5px 8px rgb(52 29 14 / 0.08);
-}
-
-.melody-cell {
-  background:
-    linear-gradient(180deg, rgb(248 225 190 / 0.92), rgb(232 198 150 / 0.88));
-  border-color: rgb(84 48 24 / 0.3);
-  box-shadow:
-    inset 0 1px 0 rgb(255 244 218 / 0.5),
-    inset 0 -5px 8px rgb(78 40 16 / 0.1);
 }
 
 .melody-cell.row-hovered:not(.active) {
@@ -6983,14 +6972,6 @@ body {
     inset 0 -4px 7px rgb(78 40 16 / 0.1);
 }
 
-.bass-cell {
-  background: rgb(255 248 232 / 0.94);
-  border-color: rgb(84 48 24 / 0.3);
-  box-shadow:
-    inset 0 1px 0 rgb(255 244 218 / 0.5),
-    inset 0 -5px 8px rgb(78 40 16 / 0.1);
-}
-
 .bass-note-key {
   color: #704827;
   background: rgb(255 248 232 / 0.94);
@@ -7000,7 +6981,7 @@ body {
     inset 0 -4px 7px rgb(78 40 16 / 0.1);
 }
 
-.cell.active,
+.chord-cell.active,
 .melody-cell.active,
 .bass-cell.active {
   box-shadow:
@@ -7321,6 +7302,8 @@ body {
   }
 
   .track-editor-pager-shell {
+    --track-page-btn-inset: 8px;
+
     grid-template-columns: 32px minmax(0, 1fr) 32px;
     gap: 8px;
   }

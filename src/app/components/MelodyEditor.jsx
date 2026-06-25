@@ -332,7 +332,7 @@ function MelodyEditor({
                           return (
                             <button
                               className={[
-                                'cell',
+                                'pitch-step-cell',
                                 'melody-cell',
                                 note.sharp ? 'sharp' : '',
                                 active ? 'active' : '',

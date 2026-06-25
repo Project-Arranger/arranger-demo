@@ -754,6 +754,32 @@ test('track editors reuse the full track-select identity style in editor-left he
   assert.doesNotMatch(keyboardIntro, /TRACK_ICONS\.melody/);
 });
 
+test('chord bass and melody editors share the pitch step cell class model', async () => {
+  const editorFiles = [
+    ['ChordEditor.jsx', 'chord-cell'],
+    ['BassEditor.jsx', 'bass-cell'],
+    ['MelodyEditor.jsx', 'melody-cell'],
+  ];
+
+  for (const [fileName, trackClass] of editorFiles) {
+    const source = await readFile(
+      new URL(`../src/app/components/${fileName}`, import.meta.url),
+      'utf8',
+    );
+
+    assert.match(source, /'pitch-step-cell'/);
+    assert.match(source, new RegExp(`'${trackClass}'`));
+  }
+
+  const chordEditorSource = await readFile(
+    new URL('../src/app/components/ChordEditor.jsx', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(chordEditorSource, /'pitch-step-cell',\s*\n\s*'chord-cell'/);
+  assert.doesNotMatch(chordEditorSource, /'cell',\s*\n\s*(?:active \? 'active'|'chord-cell')/);
+});
+
 test('app exposes the melody editor and keeps melody as the internal track id', async () => {
   const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
   const bottomEditorSource = await readFile(
@@ -835,7 +861,7 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(melodyEditorSource, /MELODY_KEY_SEQUENCE/);
   assert.match(melodyEditorSource, /melodyRailNotes/);
   assert.match(melodyEditorSource, /isMelodyCellActive/);
-  assert.match(melodyEditorSource, /'cell',\s*\n\s*'melody-cell'/);
+  assert.match(melodyEditorSource, /'pitch-step-cell',\s*\n\s*'melody-cell'/);
   assert.doesNotMatch(melodyEditorSource, /colIndex === 0 \? 'downbeat'/);
   assert.match(melodyEditorSource, /onClick=\{\(\) => onMelodyStepToggle\(step, note\.note\)\}/);
   assert.match(melodyEditorSource, /disabled=\{tutorialLocked\}/);
@@ -910,7 +936,7 @@ test('app exposes the bass editor and existing-clip groove template workflow', a
   assert.match(bassEditorSource, /className="chord-grid bass-grid"/);
   assert.doesNotMatch(bassEditorSource, /className="beat-number-row bass-beat-number-row"/);
   assert.doesNotMatch(bassEditorSource, /className="beat-num mono"/);
-  assert.match(bassEditorSource, /'cell'/);
+  assert.match(bassEditorSource, /'pitch-step-cell'/);
   assert.match(bassEditorSource, /'bass-cell'/);
   assert.match(bassEditorSource, /BASS_GROOVE_TEMPLATES/);
   assert.match(bassEditorSource, /选择Bass弹奏律动模板/);
