@@ -584,7 +584,8 @@ button {
   outline: 2px solid color-mix(in oklab, white 58%, transparent);
   outline-offset: 3px;
   box-shadow: var(--tutorial-highlight-rest-shadow);
-  animation: tutorial-highlight-breathe var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
+  filter: brightness(1.18) saturate(1.18);
+  animation: tutorial-unified-target-pulse var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
 }
 
 .tutorial-target-active::after {
@@ -617,18 +618,7 @@ button {
   }
 }
 
-@keyframes tutorial-highlight-breathe {
-  0%,
-  100% {
-    box-shadow: var(--tutorial-highlight-rest-shadow);
-  }
-
-  50% {
-    box-shadow: var(--tutorial-highlight-peak-shadow);
-  }
-}
-
-@keyframes tutorial-clip-target-pulse {
+@keyframes tutorial-unified-target-pulse {
   0%,
   100% {
     filter: brightness(1.18) saturate(1.18);
@@ -678,7 +668,8 @@ button {
   .playhead.tutorial-playhead-target,
   .ruler-playhead.tutorial-playhead-target::after {
     animation: none;
-    box-shadow: var(--tutorial-highlight-rest-shadow);
+    filter: brightness(1.5) saturate(1.38);
+    box-shadow: var(--tutorial-highlight-peak-shadow);
   }
 
   .tutorial-panel-header::before {
@@ -688,6 +679,33 @@ button {
 
 .track-editor-target {
   min-height: 0;
+}
+
+.tracks-col:has(.tutorial-control-target),
+.track-editor-target:has(.tutorial-control-target),
+.track-editor-target:has(.tutorial-cell-target),
+.track-editor-target:has(.tutorial-cell-source) {
+  position: relative;
+  z-index: calc(var(--tutorial-target-z) + 1);
+}
+
+.tracks-col:has(.tutorial-control-target)::after,
+.track-editor-target:has(.tutorial-control-target)::after,
+.track-editor-target:has(.tutorial-cell-target)::after,
+.track-editor-target:has(.tutorial-cell-source)::after {
+  position: absolute;
+  inset: 0;
+  z-index: calc(var(--tutorial-target-z) - 1);
+  pointer-events: none;
+  content: "";
+  background: color-mix(in oklab, black 42%, transparent);
+}
+
+.tracks-col:has(.tutorial-control-target) .tutorial-control-target,
+.track-editor-target:has(.tutorial-control-target) .tutorial-control-target,
+.track-editor-target:has(.tutorial-cell-target) .tutorial-cell-target,
+.track-editor-target:has(.tutorial-cell-source) .tutorial-cell-source {
+  z-index: var(--tutorial-target-z);
 }
 
 .track-editor-target > .editor {
@@ -1829,9 +1847,10 @@ button {
 
   position: relative;
   z-index: var(--tutorial-target-z);
-  animation: tutorial-highlight-breathe var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
+  animation: tutorial-unified-target-pulse var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
   outline: 2px solid color-mix(in oklab, white 58%, transparent);
   outline-offset: 3px;
+  filter: brightness(1.18) saturate(1.18);
   box-shadow: var(--tutorial-highlight-rest-shadow);
 }
 
@@ -1845,9 +1864,23 @@ button {
 
   position: relative;
   z-index: var(--tutorial-target-z);
-  animation: tutorial-highlight-breathe var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
+  animation: tutorial-unified-target-pulse var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
   outline: 2px solid color-mix(in oklab, white 58%, transparent);
   outline-offset: 3px;
+  filter: brightness(1.18) saturate(1.18);
+  box-shadow: var(--tutorial-highlight-rest-shadow);
+}
+
+.btn-template.tutorial-control-target,
+.btn-template-groove.tutorial-control-target,
+.fill-empty-clips.tutorial-control-target {
+  --tutorial-highlight-rest-shadow: var(--tutorial-target-contained-rest-shadow);
+  --tutorial-highlight-peak-shadow: var(--tutorial-target-contained-peak-shadow);
+
+  color: var(--tutorial-target-ink);
+  background: var(--tutorial-target-surface);
+  border: 1px solid var(--tutorial-target-surface-border);
+  outline-offset: -3px;
   box-shadow: var(--tutorial-highlight-rest-shadow);
 }
 
@@ -1872,18 +1905,10 @@ button {
   --tutorial-highlight-peak-shadow: var(--tutorial-target-contained-peak-shadow);
 
   position: absolute;
-  animation: tutorial-clip-target-pulse var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
+  animation: tutorial-unified-target-pulse var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
   filter: brightness(1.18) saturate(1.18);
   outline-offset: -3px;
   box-shadow: var(--tutorial-highlight-rest-shadow);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .clip.tutorial-bar-target {
-    animation: none;
-    filter: brightness(1.5) saturate(1.38);
-    box-shadow: var(--tutorial-highlight-peak-shadow);
-  }
 }
 
 .transport.tutorial-transport-target {
@@ -2070,7 +2095,8 @@ button {
   z-index: var(--tutorial-target-z);
   background: color-mix(in oklab, var(--c-drums-ink) 86%, white);
   box-shadow: var(--tutorial-highlight-rest-shadow);
-  animation: tutorial-highlight-breathe var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
+  filter: brightness(1.18) saturate(1.18);
+  animation: tutorial-unified-target-pulse var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
 }
 
 .ruler-playhead.tutorial-playhead-target::before,
@@ -2085,7 +2111,8 @@ button {
   outline: 2px solid color-mix(in oklab, white 60%, transparent);
   outline-offset: 2px;
   box-shadow: var(--tutorial-highlight-rest-shadow);
-  animation: tutorial-highlight-breathe var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
+  filter: brightness(1.18) saturate(1.18);
+  animation: tutorial-unified-target-pulse var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
 }
 
 .ruler-playhead.tutorial-playhead-completed {
@@ -4578,11 +4605,12 @@ button {
 
   position: relative;
   z-index: var(--tutorial-target-z);
-  animation: tutorial-highlight-breathe var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
+  animation: tutorial-unified-target-pulse var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
   outline: 2px solid color-mix(in oklab, white 60%, transparent);
   outline-offset: 2px;
   background: var(--tutorial-cell-surface);
   border-color: var(--tutorial-cell-border);
+  filter: brightness(1.18) saturate(1.18);
   box-shadow: var(--tutorial-highlight-rest-shadow);
 }
 
@@ -4613,10 +4641,11 @@ button {
   position: relative;
   z-index: var(--tutorial-target-z);
   cursor: grab;
-  animation: tutorial-highlight-breathe var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
+  animation: tutorial-unified-target-pulse var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
   outline: 2px solid color-mix(in oklab, white 60%, transparent);
   outline-offset: 2px;
   border-color: color-mix(in oklab, var(--brand) 44%, white);
+  filter: brightness(1.18) saturate(1.18);
   box-shadow: var(--tutorial-highlight-rest-shadow);
 }
 
