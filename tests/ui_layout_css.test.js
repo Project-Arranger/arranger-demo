@@ -869,6 +869,8 @@ test('chord template preview uses high contrast hardware controls', async () => 
   assert.match(css, /\.cv-name\s*\{[^}]*color:\s*var\(--c-chord-ink\);/s);
   assert.match(css, /\.cv-name\s*\{[^}]*linear-gradient\(180deg,\s*rgb\(255 220 159 \/ 0\.82\),\s*rgb\(196 126 32 \/ 0\.78\)\)/s);
   assert.doesNotMatch(css, /\.cv-name\s*\{[^}]*background:\s*var\(--variant\);/s);
+  assert.match(css, /\.cv-card\.current \.cv-name\s*\{[^}]*border-color:\s*color-mix\(in oklab,\s*var\(--hardware-amber\) 72%,\s*var\(--c-chord-ink\)\);[^}]*0 0 0 2px color-mix\(in oklab,\s*var\(--hardware-amber\) 62%,\s*var\(--c-chord-ink\)\)/s);
+  assert.doesNotMatch(css, /\.cv-card\.current \.cv-name\s*\{[^}]*var\(--c-melody\)/s);
   assert.match(css, /\.cv-desc\s*\{[^}]*color:\s*rgb\(82 52 28 \/ 0\.96\);[^}]*font-weight:\s*650;[^}]*text-shadow:\s*0 1px 0 rgb\(255 255 255 \/ 0\.72\);/s);
   assert.match(css, /\.cv-card:hover,\s*\n\.cv-card\.current\s*\{[^}]*background:\s*var\(--variant-soft\);[^}]*border-color:\s*color-mix\(in oklab,\s*var\(--c-chord-ink\) 32%,\s*var\(--border\)\);/s);
   assert.match(css, /\.cv-preview\.playing,\s*\n\.cv-preview:hover\s*\{[^}]*color:\s*var\(--c-chord-ink\);[^}]*background:[^}]*var\(--c-chord\)/s);
@@ -1229,7 +1231,7 @@ test('passing chord shortcut anchors over column fifteen without shifting the gr
   assert.match(css, /\.add-chord-btn\s*\{[^}]*background:\s*var\(--bg-deep\);[^}]*border:\s*1px solid var\(--border-soft\);[^}]*border-radius:\s*999px;/s);
   assert.match(css, /\.chord-label-segment\s*\{/);
   assert.match(css, /\.add-chord-btn\.variants-open,\s*\.passing-btn\.variants-open\s*\{/);
-  assert.match(css, /\.add-chord-btn\.variants-open,\s*\.passing-btn\.variants-open\s*\{[^}]*0 0 0 2px color-mix\(in oklab,\s*var\(--c-chord\) 62%,\s*var\(--hardware-control-border\)\)/s);
+  assert.match(css, /\.add-chord-btn\.variants-open,\s*\.passing-btn\.variants-open\s*\{[^}]*border-color:\s*color-mix\(in oklab,\s*var\(--hardware-amber\) 72%,\s*var\(--c-chord-ink\)\);[^}]*0 0 0 2px color-mix\(in oklab,\s*var\(--hardware-amber\) 68%,\s*var\(--c-chord-ink\)\)/s);
   assert.doesNotMatch(css, /\.add-chord-btn\.variants-open,\s*\.passing-btn\.variants-open\s*\{[^}]*oklch\(70% 0\.16 355\)/s);
   assert.doesNotMatch(css, /\.add-chord-btn\.variants-open,\s*\.passing-btn\.variants-open\s*\{[^}]*oklch\(56% 0\.16 355 \/ 0\.22\)/s);
   assert.doesNotMatch(css, /\.passing-anchor\s*\{[^}]*top:\s*calc\(-1 \*/s);
