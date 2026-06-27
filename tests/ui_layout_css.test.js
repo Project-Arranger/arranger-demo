@@ -334,8 +334,9 @@ test('short mac viewport compacts hardware chrome before text can collide', asyn
   assert.match(css, /@media\s*\(max-height:\s*720px\)\s*\{[\s\S]*\.app:has\(\.editor\[data-picker="chord"\]\),\s*\n\s*\.app:has\(\.editor\[data-picker="groove"\]\),\s*\n\s*\.app:has\(\.editor\[data-picker="scale"\]\)\s*\{[^}]*--app-editor-height:\s*clamp\(270px,\s*46vh,\s*360px\);/s);
   assert.match(css, /@media\s*\(max-height:\s*720px\)\s*\{[\s\S]*\.track\s*\{[^}]*padding:\s*6px 10px;[^}]*grid-template-rows:\s*32px 14px;[^}]*gap:\s*2px;/s);
   assert.match(css, /@media\s*\(max-height:\s*720px\)\s*\{[\s\S]*\.track-select\s*\{[^}]*grid-template-columns:\s*34px minmax\(0,\s*1fr\);/s);
-  assert.match(css, /@media\s*\(max-height:\s*720px\)\s*\{[\s\S]*\.fill-empty-clips\s*\{[^}]*width:\s*46px;[^}]*max-width:\s*46px;[^}]*height:\s*34px;/s);
-  assert.match(css, /@media\s*\(max-height:\s*720px\)\s*\{[\s\S]*\.fill-empty-clips-label\s*\{[^}]*max-width:\s*46px;[^}]*font-size:\s*8\.5px;[^}]*line-height:\s*1;/s);
+  assert.match(css, /@media\s*\(max-height:\s*720px\)\s*\{[\s\S]*\.fill-empty-clips\s*\{[^}]*width:\s*46px;[^}]*max-width:\s*46px;[^}]*height:\s*34px;[^}]*overflow:\s*hidden;/s);
+  assert.match(css, /@media\s*\(max-height:\s*720px\)\s*\{[\s\S]*\.fill-gem\s*\{[^}]*width:\s*20px;[^}]*height:\s*20px;/s);
+  assert.match(css, /@media\s*\(max-height:\s*720px\)\s*\{[\s\S]*\.fill-empty-clips-label\s*\{[^}]*max-width:\s*46px;[^}]*margin-top:\s*0;[^}]*font-size:\s*8px;[^}]*line-height:\s*1;/s);
   assert.match(css, /@media\s*\(max-height:\s*720px\)\s*\{[\s\S]*\.vol\s*\{[^}]*margin-left:\s*40px;[^}]*padding-right:\s*54px;/s);
   assert.match(css, /@media\s*\(max-height:\s*720px\)\s*\{[\s\S]*\.empty-editor\s*\{[^}]*max-width:\s*min\(460px,\s*70vw\);[^}]*overflow-wrap:\s*anywhere;/s);
 });
