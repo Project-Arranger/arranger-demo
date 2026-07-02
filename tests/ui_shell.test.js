@@ -37,11 +37,17 @@ test('topbar exposes independent undo redo controls and App wires history', asyn
   const topBarSource = await readFile(new URL('../src/app/components/TopBar.jsx', import.meta.url), 'utf8');
 
   assert.match(topBarSource, /Undo2/);
+  assert.match(topBarSource, /Copy/);
+  assert.match(topBarSource, /ClipboardPaste/);
   assert.match(topBarSource, /Redo2/);
   assert.match(topBarSource, /canUndo\s*=\s*false/);
   assert.match(topBarSource, /canRedo\s*=\s*false/);
+  assert.match(topBarSource, /canCopyClip\s*=\s*false/);
+  assert.match(topBarSource, /canPasteClip\s*=\s*false/);
   assert.match(topBarSource, /onUndo/);
   assert.match(topBarSource, /onRedo/);
+  assert.match(topBarSource, /onCopyClip/);
+  assert.match(topBarSource, /onPasteClip/);
   assert.match(topBarSource, /className="history-controls"/);
   assert.match(topBarSource, /role="toolbar" aria-label="History"/);
   assert.match(topBarSource, /className="t-btn undo"/);
@@ -56,7 +62,20 @@ test('topbar exposes independent undo redo controls and App wires history', asyn
   assert.match(topBarSource, /onClick=\{onRedo\}/);
   assert.match(topBarSource, /renderIcon\(Undo2\)/);
   assert.match(topBarSource, /renderIcon\(Redo2\)/);
+  assert.match(topBarSource, /className="clip-controls"/);
+  assert.match(topBarSource, /role="toolbar" aria-label="Clip actions"/);
+  assert.match(topBarSource, /aria-label="复制 clip"/);
+  assert.match(topBarSource, /title="复制 clip \(Cmd\/Ctrl\+C\)"/);
+  assert.match(topBarSource, /disabled=\{!canCopyClip\}/);
+  assert.match(topBarSource, /onClick=\{onCopyClip\}/);
+  assert.match(topBarSource, /renderIcon\(Copy\)/);
+  assert.match(topBarSource, /aria-label="粘贴 clip"/);
+  assert.match(topBarSource, /title="粘贴 clip \(Cmd\/Ctrl\+V\)"/);
+  assert.match(topBarSource, /disabled=\{!canPasteClip\}/);
+  assert.match(topBarSource, /onClick=\{onPasteClip\}/);
+  assert.match(topBarSource, /renderIcon\(ClipboardPaste\)/);
   assert.match(topBarSource, /className="history-controls"[\s\S]*className="t-btn undo"[\s\S]*className="t-btn redo"[\s\S]*<div className=\{transportClassName\} role="toolbar" aria-label="Transport">/);
+  assert.match(topBarSource, /className="history-controls"[\s\S]*className="clip-controls"[\s\S]*<div className=\{transportClassName\} role="toolbar" aria-label="Transport">/);
   assert.doesNotMatch(topBarSource, /<div className=\{transportClassName\} role="toolbar" aria-label="Transport">[\s\S]*className="t-btn undo"[\s\S]*Back to start/);
   assert.doesNotMatch(topBarSource, /<div className=\{transportClassName\} role="toolbar" aria-label="Transport">[\s\S]*className="t-btn redo"[\s\S]*Back to start/);
 
@@ -74,10 +93,18 @@ test('topbar exposes independent undo redo controls and App wires history', asyn
   assert.match(source, /const handleRedo = useCallback/);
   assert.match(source, /APP_COMMAND_TYPES\.APP_UNDO/);
   assert.match(source, /APP_COMMAND_TYPES\.APP_REDO/);
+  assert.match(source, /APP_COMMAND_TYPES\.CLIP_COPY_SELECTED/);
+  assert.match(source, /APP_COMMAND_TYPES\.CLIP_PASTE/);
   assert.match(source, /command\?\.type === APP_COMMAND_TYPES\.APP_UNDO[\s\S]*handleUndo\(\);[\s\S]*return;/);
   assert.match(source, /command\?\.type === APP_COMMAND_TYPES\.APP_REDO[\s\S]*handleRedo\(\);[\s\S]*return;/);
+  assert.match(source, /command\?\.type === APP_COMMAND_TYPES\.CLIP_COPY_SELECTED[\s\S]*handleCopySelectedClip\(\);[\s\S]*return;/);
+  assert.match(source, /command\?\.type === APP_COMMAND_TYPES\.CLIP_PASTE[\s\S]*handlePasteClipRequest\(\);[\s\S]*return;/);
   assert.match(source, /setRedoHistory\(\(\) => \[\]\)/);
   assert.match(source, /canRedo,\s*\n\s*canUndo,\s*\n\s*currentBar/);
+  assert.match(source, /canCopyClip,/);
+  assert.match(source, /canPasteClip,/);
+  assert.match(source, /onCopyClip:\s*handleCopySelectedClip/);
+  assert.match(source, /onPasteClip:\s*handlePasteClipRequest/);
   assert.match(source, /onRedo:\s*handleRedo/);
   assert.match(source, /onUndo:\s*handleUndo/);
   assert.match(source, /withUndoCheckpoint\(\(\) => \{[\s\S]*createClip\(trackId,\s*barIndex\)/);
@@ -136,6 +163,23 @@ test('new song flow asks before discarding the current arrangement', async () =>
   assert.match(appSource, /isNewSongConfirmOpen \? \([\s\S]*className="new-song-confirm-overlay"[\s\S]*role="presentation"[\s\S]*className="new-song-confirm-dialog"[\s\S]*role="dialog"[\s\S]*aria-modal="true"[\s\S]*是否放弃当前进度创建新的乐章/);
   assert.match(appSource, /className="new-song-confirm-cancel"[\s\S]*onClick=\{cancelNewSong\}[\s\S]*取消/);
   assert.match(appSource, /className="new-song-confirm-apply"[\s\S]*onClick=\{confirmNewSong\}[\s\S]*创建新乐章/);
+  assert.doesNotMatch(appSource, /window\.confirm/);
+});
+
+
+test('clip copy paste flow keeps an app clipboard and confirms destructive paste', async () => {
+  const appSource = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
+
+  assert.match(appSource, /const \[clipClipboard,\s*setClipClipboard\] = useState\(null\);/);
+  assert.match(appSource, /const \[pendingClipPaste,\s*setPendingClipPaste\] = useState\(null\);/);
+  assert.match(appSource, /const handleCopySelectedClip = useCallback\(\(\) => \{[\s\S]*createClipClipboardSnapshot\(selectedClipId\)[\s\S]*setClipClipboard\(snapshot\);/);
+  assert.match(appSource, /const handlePasteClipRequest = useCallback\(\(\) => \{[\s\S]*clipClipboard[\s\S]*targetTrackId[\s\S]*targetBar[\s\S]*setPendingClipPaste/);
+  assert.match(appSource, /const confirmClipPaste = useCallback\(\(\) => \{[\s\S]*withUndoCheckpoint\(\(\) => \{[\s\S]*pasteClipClipboardSnapshot\(clipClipboard,\s*pendingClipPaste\.targetTrackId,\s*pendingClipPaste\.targetBar\)/);
+  assert.match(appSource, /const cancelClipPaste = useCallback\(\(\) => \{[\s\S]*setPendingClipPaste\(null\);[\s\S]*\}, \[\]\);/);
+  assert.match(appSource, /setClipClipboard\(null\);[\s\S]*useMusicStore\.setState\(initialAppState, true\);/);
+  assert.match(appSource, /pendingClipPaste \? \([\s\S]*className="clip-paste-confirm-overlay"[\s\S]*role="presentation"[\s\S]*className="clip-paste-confirm-dialog"[\s\S]*role="dialog"[\s\S]*aria-modal="true"[\s\S]*确认覆盖这个 clip/);
+  assert.match(appSource, /className="clip-paste-confirm-cancel"[\s\S]*onClick=\{cancelClipPaste\}[\s\S]*取消/);
+  assert.match(appSource, /className="clip-paste-confirm-apply"[\s\S]*onClick=\{confirmClipPaste\}[\s\S]*覆盖粘贴/);
   assert.doesNotMatch(appSource, /window\.confirm/);
 });
 

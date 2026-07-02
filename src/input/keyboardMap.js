@@ -72,6 +72,29 @@ function mapKeyboardEventToCommand(event, state = {}) {
     return { type: APP_COMMAND_TYPES.APP_UNDO };
   }
 
+  if (
+    eventType === 'keydown'
+    && key.toLowerCase() === 'c'
+    && (event.ctrlKey || event.metaKey)
+    && !event.shiftKey
+    && !event.altKey
+    && state.selectedClipId
+  ) {
+    return { type: APP_COMMAND_TYPES.CLIP_COPY_SELECTED };
+  }
+
+  if (
+    eventType === 'keydown'
+    && key.toLowerCase() === 'v'
+    && (event.ctrlKey || event.metaKey)
+    && !event.shiftKey
+    && !event.altKey
+    && state.activeTrackId
+    && Number.isInteger(state.selectedBar)
+  ) {
+    return { type: APP_COMMAND_TYPES.CLIP_PASTE };
+  }
+
   if (eventType === 'keydown' && key === ' ') {
     return { type: APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY };
   }

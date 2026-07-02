@@ -1,4 +1,6 @@
 import {
+  ClipboardPaste,
+  Copy,
   Redo2,
   Settings,
   SkipBack,
@@ -16,6 +18,8 @@ import { renderIcon } from './icons.js';
 function TopBar({
   activeTutorialTarget,
   bpm,
+  canCopyClip = false,
+  canPasteClip = false,
   canRedo = false,
   canUndo = false,
   currentBar,
@@ -24,6 +28,8 @@ function TopBar({
   onBackToStart,
   onNewSong = () => {},
   onPlayToggle,
+  onCopyClip = () => {},
+  onPasteClip = () => {},
   onStop,
   onTutorialToggle,
   onRedo = () => {},
@@ -83,6 +89,29 @@ function TopBar({
             onClick={onRedo}
           >
             {renderIcon(Redo2)}
+          </button>
+        </div>
+
+        <div className="clip-controls" role="toolbar" aria-label="Clip actions">
+          <button
+            className="t-btn copy-clip"
+            aria-label="复制 clip"
+            title="复制 clip (Cmd/Ctrl+C)"
+            type="button"
+            disabled={!canCopyClip}
+            onClick={onCopyClip}
+          >
+            {renderIcon(Copy)}
+          </button>
+          <button
+            className="t-btn paste-clip"
+            aria-label="粘贴 clip"
+            title="粘贴 clip (Cmd/Ctrl+V)"
+            type="button"
+            disabled={!canPasteClip}
+            onClick={onPasteClip}
+          >
+            {renderIcon(ClipboardPaste)}
           </button>
         </div>
 

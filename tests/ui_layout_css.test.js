@@ -1265,3 +1265,23 @@ test('passing chord shortcut anchors over column fifteen without shifting the gr
   assert.doesNotMatch(css, /\.passing-anchor\s*\{[^}]*margin/s);
   assert.doesNotMatch(css, /\.passing-btn\s*\{[^}]*margin/s);
 });
+
+test('clip copy paste controls and overwrite dialog fit the hardware topbar', async () => {
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  assert.match(css, /\.clip-controls\s*\{[^}]*display:\s*flex;/s);
+  assert.match(css, /\.clip-controls\s*\{[^}]*align-items:\s*center;/s);
+  assert.match(css, /\.clip-controls\s*\{[^}]*gap:\s*4px;/s);
+  assert.match(css, /\.clip-controls\s*\{[^}]*padding:\s*4px;/s);
+  assert.match(css, /\.clip-controls\s*\{[^}]*background:\s*var\(--bg-deep\);/s);
+  assert.match(css, /\.clip-controls\s*\{[^}]*border:\s*1px solid var\(--border-soft\);/s);
+  assert.match(css, /\.clip-controls\s*\{[^}]*border-radius:\s*12px;/s);
+  assert.match(css, /\.clip-controls \.t-btn:disabled\s*\{[^}]*opacity:\s*0\.42;/s);
+  assert.match(css, /\.clip-paste-confirm-overlay\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*z-index:\s*70;/s);
+  assert.match(css, /\.clip-paste-confirm-dialog\s*\{[^}]*var\(--asset-brass\) center \/ cover/s);
+  assert.match(css, /\.clip-paste-confirm-dialog\s*\{[^}]*border:\s*1px solid rgb\(255 220 156 \/ 0\.42\);/s);
+  assert.match(css, /\.clip-paste-confirm-actions\s*\{[^}]*display:\s*flex;[^}]*justify-content:\s*flex-end;/s);
+  assert.match(css, /\.clip-paste-confirm-cancel,\s*\n\.clip-paste-confirm-apply\s*\{[^}]*min-height:\s*38px;/s);
+  assert.match(css, /@media\s*\(max-width:\s*980px\)\s*\{[\s\S]*\.topbar-left-controls\s*\{[^}]*overflow-x:\s*auto;/s);
+  assert.doesNotMatch(css, /window\.confirm/);
+});

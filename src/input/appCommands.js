@@ -6,7 +6,9 @@ const APP_COMMAND_TYPES = Object.freeze({
   TRANSPORT_TOGGLE_PLAY: 'transport.togglePlay',
   TRANSPORT_STOP: 'transport.stop',
   TRANSPORT_SEEK: 'transport.seek',
+  CLIP_COPY_SELECTED: 'clip.copySelected',
   CLIP_DELETE_SELECTED: 'clip.deleteSelected',
+  CLIP_PASTE: 'clip.paste',
   TUTORIAL_NEXT: 'tutorial.next',
   TUTORIAL_COMPLETE_TASK: 'tutorial.completeTask',
   DRUMS_TOGGLE: 'drums.toggle',
@@ -32,7 +34,9 @@ const COMMAND_GROUPS = Object.freeze({
     APP_COMMAND_TYPES.TRANSPORT_SEEK,
   ]),
   clip: Object.freeze([
+    APP_COMMAND_TYPES.CLIP_COPY_SELECTED,
     APP_COMMAND_TYPES.CLIP_DELETE_SELECTED,
+    APP_COMMAND_TYPES.CLIP_PASTE,
   ]),
   tutorial: Object.freeze([
     APP_COMMAND_TYPES.TUTORIAL_NEXT,
@@ -56,7 +60,7 @@ const COMMAND_GROUPS = Object.freeze({
 /**
  * @typedef {{ type: 'app.undo' } | { type: 'app.redo' }} AppUiCommand
  * @typedef {{ type: 'transport.togglePlay' } | { type: 'transport.stop' } | { type: 'transport.seek', bar: number, step: number }} TransportCommand
- * @typedef {{ type: 'clip.deleteSelected' }} ClipCommand
+ * @typedef {{ type: 'clip.copySelected' } | { type: 'clip.deleteSelected' } | { type: 'clip.paste' }} ClipCommand
  * @typedef {{ type: 'tutorial.next' } | { type: 'tutorial.completeTask' }} TutorialCommand
  * @typedef {{ type: 'drums.toggle', bar: number, step: number, instrument: 'kick' | 'snare' | 'hihat', previewInstruments?: Array<'kick' | 'snare' | 'hihat'> }} DrumsCommand
  * @typedef {{ type: 'chord.selectOption', optionIndex: number } | { type: 'chord.confirm' } | { type: 'chord.setCell', bar: number, span: number, root: string } | { type: 'chord.clearCell', bar: number, span: number }} ChordCommand

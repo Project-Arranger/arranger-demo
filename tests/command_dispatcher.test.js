@@ -21,7 +21,9 @@ function createMockStore(initial = {}) {
     currentBar: 0,
     currentStep: 0,
     ...initial,
+    copySelectedClip: () => calls.push(['copySelectedClip']),
     deleteSelectedClip: () => calls.push(['deleteSelectedClip']),
+    pasteClip: () => calls.push(['pasteClip']),
     play: () => calls.push(['play']),
     pause: () => calls.push(['pause']),
     stop: () => calls.push(['stop']),
@@ -222,10 +224,23 @@ test('createCommandDispatcher binds dependencies', async () => {
   assert.deepEqual(store.calls, [['stop']]);
 });
 
-test('clip commands dispatch to the selected clip store action', async () => {
+test('clip commands dispatch to selected clip store actions and injected handlers', async () => {
   const store = createMockStore();
+  const calls = [];
+  const handlers = {
+    clip: {
+      copySelected: () => calls.push(['clip.copySelected']),
+      paste: () => calls.push(['clip.paste']),
+    },
+  };
 
+  assert.deepEqual(await dispatchCommand({ type: 'clip.copySelected' }, { store, handlers }), { ok: true });
   assert.deepEqual(await dispatchCommand({ type: 'clip.deleteSelected' }, { store }), { ok: true });
+  assert.deepEqual(await dispatchCommand({ type: 'clip.paste' }, { store, handlers }), { ok: true });
+  assert.deepEqual(calls, [
+    ['clip.copySelected'],
+    ['clip.paste'],
+  ]);
   assert.deepEqual(store.calls, [['deleteSelectedClip']]);
 });
 
@@ -239,6 +254,41 @@ test('keyboard map turns common keys into app commands', () => {
   assert.equal(
     mapKeyboardEventToCommand(
       { type: 'keydown', key: 'z', ctrlKey: true, target: { tagName: 'INPUT', isContentEditable: false } },
+    ),
+    null,
+  );
+  assert.deepEqual(
+    mapKeyboardEventToCommand(
+      { type: 'keydown', key: 'c', ctrlKey: true },
+      { selectedClipId: 'drums-bar-0' },
+    ),
+    { type: 'clip.copySelected' },
+  );
+  assert.deepEqual(
+    mapKeyboardEventToCommand(
+      { type: 'keydown', key: 'c', metaKey: true },
+      { selectedClipId: 'drums-bar-0' },
+    ),
+    { type: 'clip.copySelected' },
+  );
+  assert.equal(
+    mapKeyboardEventToCommand(
+      { type: 'keydown', key: 'c', ctrlKey: true },
+      { selectedClipId: null },
+    ),
+    null,
+  );
+  assert.deepEqual(
+    mapKeyboardEventToCommand(
+      { type: 'keydown', key: 'v', metaKey: true },
+      { activeTrackId: 'drums', selectedBar: 0 },
+    ),
+    { type: 'clip.paste' },
+  );
+  assert.equal(
+    mapKeyboardEventToCommand(
+      { type: 'keydown', key: 'v', metaKey: true, target: { tagName: 'TEXTAREA', isContentEditable: false } },
+      { activeTrackId: 'drums', selectedBar: 0 },
     ),
     null,
   );

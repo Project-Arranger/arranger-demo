@@ -78,8 +78,16 @@ async function dispatchClipCommand(command, deps) {
   const state = store.getState();
 
   switch (command.type) {
+    case APP_COMMAND_TYPES.CLIP_COPY_SELECTED:
+      await maybeCall(deps.handlers?.clip?.copySelected, command);
+      return { ok: true };
+
     case APP_COMMAND_TYPES.CLIP_DELETE_SELECTED:
       state.deleteSelectedClip?.();
+      return { ok: true };
+
+    case APP_COMMAND_TYPES.CLIP_PASTE:
+      await maybeCall(deps.handlers?.clip?.paste, command);
       return { ok: true };
 
     default:

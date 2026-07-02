@@ -196,6 +196,8 @@ export default function App() {
   const [currentEditorResizeValue, setCurrentEditorResizeValue] = useState(EDITOR_RESIZE_DEFAULT_HEIGHT);
   const [isEditorResizing, setIsEditorResizing] = useState(false);
   const [isNewSongConfirmOpen, setIsNewSongConfirmOpen] = useState(false);
+  const [clipClipboard, setClipClipboard] = useState(null);
+  const [pendingClipPaste, setPendingClipPaste] = useState(null);
   const tracksScrollRef = useRef(null);
   const timelineScrollRef = useRef(null);
   const editorResizeDragRef = useRef(null);
@@ -463,6 +465,8 @@ export default function App() {
 
       clearTutorialAutoAdvanceTimer();
       stopTutorialPreviewPlayback();
+      setClipClipboard(null);
+      setPendingClipPaste(null);
       useMusicStore.setState(initialAppState, true);
       setCurrentTutorialStepIndex(0);
       setTutorialProgress(initialTutorialProgress);
@@ -506,6 +510,14 @@ export default function App() {
     volumes,
   }), [clips, matrix, selectedBar, visibleTrackUi, volumes]);
   const selectedClip = selectedClipId ? clips.byId[selectedClipId] : null;
+  const pasteTargetTrackId = selectedClip?.trackId ?? activeTrackId;
+  const pasteTargetBar = selectedClip?.bar ?? selectedBar;
+  const canCopyClip = Boolean(selectedClip);
+  const canPasteClip = Boolean(
+    clipClipboard
+      && clipClipboard.trackId === pasteTargetTrackId
+      && Array.isArray(matrix[pasteTargetTrackId]?.[pasteTargetBar]),
+  );
   const canPageBars = useMemo(() => (
     canPageTrackClipBars(clips, activeTrackId)
     && getAdjacentTrackClipBar(clips, activeTrackId, selectedBar, 'next') !== null
@@ -536,6 +548,82 @@ export default function App() {
       state.createClip(trackId, barIndex);
     });
   }, [withUndoCheckpoint]);
+
+  const getCurrentClipPasteTarget = useCallback(() => {
+    if (!clipClipboard) return null;
+
+    const state = useMusicStore.getState();
+    const targetClip = state.selectedClipId ? state.clips.byId[state.selectedClipId] : null;
+    const targetTrackId = targetClip?.trackId ?? state.activeTrackId;
+    const targetBar = targetClip?.bar ?? state.selectedBar;
+
+    if (
+      clipClipboard.trackId !== targetTrackId
+      || !Number.isInteger(targetBar)
+      || !Array.isArray(state.matrix[targetTrackId]?.[targetBar])
+    ) {
+      return null;
+    }
+
+    return {
+      targetBar,
+      targetClip,
+      targetTrackId,
+    };
+  }, [clipClipboard]);
+
+  const pasteClipToTarget = useCallback((target) => {
+    if (!target || !clipClipboard) return null;
+
+    let pastedClip = null;
+    withUndoCheckpoint(() => {
+      pastedClip = useMusicStore.getState().pasteClipClipboardSnapshot(
+        clipClipboard,
+        target.targetTrackId,
+        target.targetBar,
+      );
+    });
+
+    return pastedClip;
+  }, [clipClipboard, withUndoCheckpoint]);
+
+  const handleCopySelectedClip = useCallback(() => {
+    if (!selectedClipId) return;
+
+    const snapshot = useMusicStore.getState().createClipClipboardSnapshot(selectedClipId);
+    if (!snapshot) return;
+
+    setClipClipboard(snapshot);
+    setPendingClipPaste(null);
+  }, [selectedClipId]);
+
+  const handlePasteClipRequest = useCallback(() => {
+    const target = getCurrentClipPasteTarget();
+    if (!target) return;
+
+    if (target.targetClip) {
+      setPendingClipPaste(target);
+      return;
+    }
+
+    pasteClipToTarget(target);
+  }, [getCurrentClipPasteTarget, pasteClipToTarget]);
+
+  const cancelClipPaste = useCallback(() => {
+    setPendingClipPaste(null);
+  }, []);
+
+  const confirmClipPaste = useCallback(() => {
+    if (!pendingClipPaste || !clipClipboard) {
+      setPendingClipPaste(null);
+      return;
+    }
+
+    withUndoCheckpoint(() => {
+      useMusicStore.getState().pasteClipClipboardSnapshot(clipClipboard, pendingClipPaste.targetTrackId, pendingClipPaste.targetBar);
+    });
+    setPendingClipPaste(null);
+  }, [clipClipboard, pendingClipPaste, withUndoCheckpoint]);
 
   const applyTutorialStepSetup = useCallback((step, knownAppliedSetups = appliedTutorialSetups) => {
     const setupType = step?.setup?.type;
@@ -886,6 +974,16 @@ export default function App() {
       return;
     }
 
+    if (command?.type === APP_COMMAND_TYPES.CLIP_COPY_SELECTED) {
+      handleCopySelectedClip();
+      return;
+    }
+
+    if (command?.type === APP_COMMAND_TYPES.CLIP_PASTE) {
+      handlePasteClipRequest();
+      return;
+    }
+
     if (command?.type === APP_COMMAND_TYPES.CLIP_DELETE_SELECTED) {
       withUndoCheckpoint(() => {
         useMusicStore.getState().deleteSelectedClip();
@@ -894,7 +992,15 @@ export default function App() {
     }
 
     void dispatchAppCommand(command);
-  }, [dispatchAppCommand, handlePlayToggle, handleRedo, handleUndo, withUndoCheckpoint]);
+  }, [
+    dispatchAppCommand,
+    handleCopySelectedClip,
+    handlePasteClipRequest,
+    handlePlayToggle,
+    handleRedo,
+    handleUndo,
+    withUndoCheckpoint,
+  ]);
 
   useKeyboardCommands({ dispatch: dispatchKeyboardCommand });
 
@@ -1601,13 +1707,17 @@ export default function App() {
         {createElement(TopBar, {
           activeTutorialTarget,
           bpm,
+          canCopyClip,
+          canPasteClip,
           canRedo,
           canUndo,
           currentBar,
           currentStep,
           isPlaying,
           onBackToStart: handleBackToStart,
+          onCopyClip: handleCopySelectedClip,
           onNewSong: requestNewSong,
+          onPasteClip: handlePasteClipRequest,
           onPlayToggle: handlePlayToggle,
           onStop: handleStop,
           onTutorialToggle: handleTutorialSidebarToggle,
@@ -1641,6 +1751,36 @@ export default function App() {
                 </button>
                 <button className="new-song-confirm-apply" type="button" onClick={confirmNewSong}>
                   创建新乐章
+                </button>
+              </div>
+            </section>
+          </div>
+        ) : null}
+        {pendingClipPaste ? (
+          <div className="clip-paste-confirm-overlay" role="presentation">
+            <section
+              className="clip-paste-confirm-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="clip-paste-confirm-title"
+              aria-describedby="clip-paste-confirm-copy"
+            >
+              <span className="clip-paste-confirm-kicker">CLIP PASTE</span>
+              <h2 className="clip-paste-confirm-title" id="clip-paste-confirm-title">
+                确认覆盖这个 clip？
+              </h2>
+              <p className="clip-paste-confirm-copy" id="clip-paste-confirm-copy">
+                目标小节 {pendingClipPaste.targetBar + 1} 已有
+                {' '}
+                {pendingClipPaste.targetClip?.name ?? 'clip'}
+                ，继续粘贴会替换它的内容。
+              </p>
+              <div className="clip-paste-confirm-actions">
+                <button className="clip-paste-confirm-cancel" type="button" onClick={cancelClipPaste}>
+                  取消
+                </button>
+                <button className="clip-paste-confirm-apply" type="button" onClick={confirmClipPaste}>
+                  覆盖粘贴
                 </button>
               </div>
             </section>
