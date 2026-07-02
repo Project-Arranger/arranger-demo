@@ -4,6 +4,11 @@ import {
   TUTORIAL_STEP_IDS,
   TUTORIAL_STEP_ORDER,
 } from '../src/tutorial/tutorialStepIds.js';
+import createInitialMatrix from '../src/store/createInitialMatrix.js';
+import {
+  createTutorialState,
+  getTutorialViewModel,
+} from '../src/tutorial/drumsTutorialRuntime.js';
 import { DRUMS_TUTORIAL_STEPS } from '../src/tutorial/drumsTutorialSteps.js';
 
 test('drums tutorial exposes the priority step order', () => {
@@ -54,13 +59,13 @@ test('drums tutorial v0.2 targets 1-6 keep exact table source columns', () => {
     {
       section: '目标1\n点击第一个Drums Clip并添加基础律动',
       trigger: '用户点击Drum 01乐句Clip',
-      uiEvent: '为本小节生成基础律动闪烁',
-      copy: '创建你的第一个打击乐乐句\n\n一键生成简单的基础律动\n点击“为本小节生成基础律动”，一键添加一个最简单的打击乐律动',
+      uiEvent: '选择律动模板按钮和应用到本小节按钮闪烁',
+      copy: '创建你的第一个打击乐乐句\n\n一键生成简单的基础律动\n点击“选择律动模板”，在模板卡片中确认后点击“应用到本小节”',
       primaryLabel: '下一步',
     },
     {
       section: '目标1\n点击第一个Drums Clip并添加基础律动',
-      trigger: '点击“为本小节生成基础律动”',
+      trigger: '点击“应用到本小节”',
       uiEvent: '播放按钮闪烁',
       copy: '创建你的第一个打击乐乐句\n\n听听看……\n每次添加或编辑了乐句，都别忘了听听看它有什么不同',
       primaryLabel: '下一步',
@@ -75,13 +80,13 @@ test('drums tutorial v0.2 targets 1-6 keep exact table source columns', () => {
     {
       section: '目标2\n添加整轨的Clips，并全局添加基础律动',
       trigger: '点击“填充整轨”按钮',
-      uiEvent: '全局生成基础律动按钮闪烁',
-      copy: '编辑你的第一个打击乐乐句\n\n给整轨添加基础律动\n点击全局生成基础律动按钮，给所有打击乐乐句添加基础律动',
+      uiEvent: '选择律动模板按钮和应用到整轨按钮闪烁',
+      copy: '编辑你的第一个打击乐乐句\n\n给整轨添加基础律动\n点击“选择律动模板”，在模板卡片中点击“应用到整轨”，给所有打击乐乐句添加基础律动',
       primaryLabel: '下一步',
     },
     {
       section: '目标3\n编辑所有Drums Clips，找到用户喜欢的律动感',
-      trigger: '点击全局生成基础律动按钮',
+      trigger: '点击“应用到整轨”',
       uiEvent: 'Kick行：\n1/5/13列闪烁蓝色\n3/7/11/15列闪烁绿色\n其余的偶数列闪烁黄色',
       copy: '编辑你的第一个打击乐乐句\n\n让你的律动变得更好听\n在蓝色位置添加底鼓会创造比较规整的节奏感（但太规整听起来可能会有点无聊）；\n在绿色位置添加底鼓会创造强烈的律动感；\n如果在黄色位置添加了底鼓，最好在它之后再多添加一个绿色音符\n多加1-2个音符就会很不一样了——别忘了时常听一听你添加的音符带来了什么改变！',
       primaryLabel: '完成添加',
@@ -146,14 +151,14 @@ test('drums tutorial v0.2 targets 1-6 keep exact table source columns', () => {
       section: '目标5\n完成编辑Bass轨',
       trigger: '点击[继续探索]按钮',
       uiEvent: 'Bass轨填充整轨按钮闪烁',
-      copy: '创建完整的低音音轨\n\n选择一个你喜欢的低音律动\n低音虽存在感低，但不可或缺，它让你的音乐听起来更加丰满完整。现在，你可以简单地选择一个律动模板，系统会自动让低音旋律和你所选择的和弦进行相匹配。\n觉得满意后，点击[继续探索]以继续',
+      copy: '创建完整的低音音轨\n\n选择一个你喜欢的低音律动\n低音虽存在感低，但不可或缺，它让你的音乐听起来更加丰满完整。现在，你可以简单地选择一个律动模板，系统会自动让低音旋律和你所选择的和弦进行相匹配。',
       primaryLabel: '下一步',
     },
     {
       section: '目标5\n完成编辑Bass轨',
       trigger: '点击Bass轨填充整轨按钮',
       uiEvent: '选择Bass弹奏律动模板按钮闪烁',
-      copy: '创建完整的低音音轨\n\n选择一个你喜欢的低音律动\n低音虽存在感低，但不可或缺，它让你的音乐听起来更加丰满完整。现在，你可以简单地选择一个律动模板，系统会自动让低音旋律和你所选择的和弦进行相匹配。\n觉得满意后，点击[继续探索]以继续',
+      copy: '创建完整的低音音轨\n\n选择一个你喜欢的低音律动\n低音虽存在感低，但不可或缺，它让你的音乐听起来更加丰满完整。现在，你可以简单地选择一个律动模板，系统会自动让低音旋律和你所选择的和弦进行相匹配。',
       primaryLabel: '下一步',
     },
     {
@@ -248,6 +253,31 @@ test('drums tutorial v0.2 documents errata scope', () => {
       '目标6/示例乐句：按确认采用按钮推进，不校验用户按键序列',
     ],
   });
+});
+
+test('target-driven tutorial steps do not ask for hidden primary actions', () => {
+  const matrix = createInitialMatrix();
+  const progress = createTutorialState();
+  const hiddenPrimarySteps = DRUMS_TUTORIAL_STEPS.filter((step) => {
+    const viewModel = getTutorialViewModel({
+      matrix,
+      progress,
+      selectedBar: 0,
+      step,
+    });
+
+    return !viewModel.canManualNext && !viewModel.showCompleteButton;
+  });
+
+  assert.ok(hiddenPrimarySteps.length > 0);
+
+  for (const step of hiddenPrimarySteps) {
+    assert.doesNotMatch(
+      step.copy,
+      /点击\[(?:下一步|继续探索|开始弹奏|开始创作|完成添加|完成拖拽)\]/,
+      `${step.id} should not mention hidden primary actions`,
+    );
+  }
 });
 
 test('drums tutorial fills the basic groove only after explicit generation steps', () => {

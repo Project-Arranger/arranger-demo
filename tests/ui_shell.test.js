@@ -166,7 +166,6 @@ test('new song flow asks before discarding the current arrangement', async () =>
   assert.doesNotMatch(appSource, /window\.confirm/);
 });
 
-
 test('clip copy paste flow keeps an app clipboard and confirms destructive paste', async () => {
   const appSource = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
 
@@ -697,13 +696,28 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(drumSequencerSource, /drum-step-groups/);
   assert.match(drumSequencerSource, /drum-step-group/);
   assert.match(drumSequencerSource, /DRUM SEQUENCER - BAR/);
-  assert.match(drumSequencerSource, /为本小节生成基础律动/);
-  assert.match(drumSequencerSource, /全局生成基础律动/);
-  assert.match(drumSequencerSource, /清空本小节/);
-  assert.match(drumSequencerSource, /清空整轨/);
+  assert.match(drumSequencerSource, /drumTemplatePickerOpen/);
+  assert.match(drumSequencerSource, /data-picker=\{drumTemplatePickerOpen \? 'drum-template' : undefined\}/);
+  assert.match(drumSequencerSource, /选择律动模板/);
+  assert.match(drumSequencerSource, /drum-template-picker/);
+  assert.match(drumSequencerSource, /drum-template-card/);
+  assert.match(drumSequencerSource, /DRUM_TEMPLATE_HIT_LABELS/);
+  assert.match(drumSequencerSource, /getDrumTemplateHitLabel\(row\.id,\s*stepIndex\)/);
+  assert.match(drumSequencerSource, /drum-template-beat-markers/);
+  assert.match(drumSequencerSource, /drum-template-hit-label/);
+  assert.match(drumSequencerSource, /data-hit-label=\{hitLabel \?\? undefined\}/);
+  assert.match(drumSequencerSource, /基础律动/);
+  assert.match(drumSequencerSource, /应用到本小节/);
+  assert.match(drumSequencerSource, /应用到整轨/);
+  assert.doesNotMatch(drumSequencerSource, />\s*生成本小节\s*</);
+  assert.doesNotMatch(drumSequencerSource, />\s*生成全局\s*</);
+  assert.match(drumSequencerSource, /清本小节/);
+  assert.match(drumSequencerSource, /清整轨/);
+  assert.doesNotMatch(drumSequencerSource, /为本小节生成基础律动|全局生成基础律动|清空本小节|清空整轨/);
   assert.doesNotMatch(drumSequencerSource, /清空 Drums/);
   assert.match(drumSequencerSource, /onClose/);
-  assert.match(drumSequencerSource, /className="editor-close"[\s\S]*onClick=\{onClose\}/);
+  assert.match(drumSequencerSource, /const handleClose = \(\) => \{[\s\S]*setDrumTemplatePickerOpen\(false\);[\s\S]*onClose\(\);/);
+  assert.match(drumSequencerSource, /className="editor-close"[\s\S]*onClick=\{handleClose\}/);
   assert.match(source, /applyBasicDrumsBar/);
   assert.match(source, /getDrumsClipBarIndexes/);
   assert.match(source, /applyBasicDrumsAllBars/);
@@ -1114,6 +1128,8 @@ test('app mounts the drums tutorial right sidebar', async () => {
   assert.doesNotMatch(overlaySource, /className="tutorial-copy-line"/);
   assert.doesNotMatch(overlaySource, /<p>\{displayCopy \?\? step\.copy\}<\/p>/);
   assert.match(overlaySource, /showCompleteButton/);
+  assert.match(overlaySource, /const showPrimaryButton = showCompleteButton \|\| canManualNext;/);
+  assert.match(overlaySource, /\{showPrimaryButton \? \(\s*<button[\s\S]*className="tutorial-primary"[\s\S]*<\/button>\s*\) : null\}/);
   assert.match(overlaySource, /primaryLabel/);
   assert.match(overlaySource, /primaryDisabled/);
   assert.match(overlaySource, /onPrimaryAction/);
@@ -1314,6 +1330,11 @@ test('app routes drums tutorial tasks through guards and target props', async ()
   assert.match(tutorialRuntimeSource, /BASS_LISTEN_LOOP[\s\S]*BASS_GROOVE_BUTTON[\s\S]*BASS_GROOVE_CARD_PREFIX/);
   assert.match(source, /handleChordPick = useCallback\(\(spanIndex,\s*root\) => \{[\s\S]*handleTutorialControlAction\(\{[\s\S]*`chord-enrich-button:\$\{spanIndex\}`/);
   assert.match(source, /handlePassingChordPick = useCallback\(\(stepIndex,\s*chordName\) => \{[\s\S]*handleTutorialControlAction\(\{[\s\S]*'chord-passing-button'/);
+  assert.match(drumSequencerSource, /getTutorialControlRole\(tutorialTargets,\s*'generate-current-drums-bar'\)/);
+  assert.match(drumSequencerSource, /getTutorialControlRole\(tutorialTargets,\s*'generate-all-drums-bars'\)/);
+  assert.match(drumSequencerSource, /data-tutorial-role=\{templateButtonRole/);
+  assert.match(drumSequencerSource, /data-tutorial-role=\{generateCurrentRole/);
+  assert.match(drumSequencerSource, /data-tutorial-role=\{generateAllRole/);
   assert.match(drumSequencerSource, /onStepMove/);
   assert.match(drumSequencerSource, /handleMouseDownStep/);
   assert.match(drumSequencerSource, /getDropTargetFromPoint/);

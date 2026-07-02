@@ -22,6 +22,22 @@ test('genre options expose six styles with Pop as the only enabled current genre
     'ROCK',
     'JAZZ',
   ]);
+  assert.deepEqual(GENRE_OPTIONS.map((genre) => genre.displayTitle), [
+    '80年代复古流行乐',
+    'City Pop',
+    '现代独立流行',
+    'Lofi电子乐',
+    '复古摇滚',
+    '爵士嘻哈',
+  ]);
+  assert.deepEqual(GENRE_OPTIONS.map((genre) => genre.description), [
+    '轻快、明媚的迪斯科质感，旋律流畅悦耳，节奏跳动感强',
+    '90年代的日本大都会独有的霓虹感，听感浪漫惬意',
+    '质感暧昧朦胧，旋律暧昧飘忽，节奏富有律动，在极简的编曲中释放细腻而深沉的情绪。',
+    '细腻朦胧的怀旧氛围，鼓点克制却富有律动，旋律平静舒缓',
+    '明亮粗粝的吉他质感，鼓点直接有力，旋律鲜明上口，听感热烈自由',
+    '细腻温润的温暖音色，节奏轻盈摇摆，旋律富有迷离的都市感',
+  ]);
   assert.deepEqual(GENRE_OPTIONS.map((genre) => genre.artImage), [
     '/assets/genre-art/pop-neon.png',
     '/assets/genre-art/hip-hop-neon.png',
@@ -47,6 +63,7 @@ test('genre options expose six styles with Pop as the only enabled current genre
     [false, false, false, false, false],
   );
   assert.equal(GENRE_OPTIONS.every((genre) => genre.neon && genre.artImage), true);
+  assert.equal(GENRE_OPTIONS.every((genre) => genre.displayTitle && genre.description), true);
   assert.equal(GENRE_OPTIONS.every((genre) => !('artKey' in genre)), true);
   assert.equal(GENRE_OPTIONS.every((genre) => !('subtitle' in genre)), true);
 });
@@ -85,12 +102,15 @@ test('genre selection screen renders previewable hardware cards and only enters 
   assert.match(source, /data-selected=\{selected \? 'true' : undefined\}/);
   assert.match(source, /data-enabled=\{genre\.enabled \? 'true' : 'false'\}/);
   assert.match(source, /onClick=\{\(\) => handleGenreSelect\(genre\)\}/);
+  assert.match(source, /aria-label=\{`选择\$\{genre\.displayTitle\}`\}/);
+  assert.match(source, /className="genre-label"[\s\S]*\{genre\.displayTitle\}/);
   assert.match(source, /className="genre-art-frame"/);
   assert.match(source, /className="genre-art-image"/);
   assert.match(source, /src=\{genre\.artImage\}/);
   assert.match(source, /alt=""/);
+  assert.match(source, /className="genre-description"[\s\S]*\{genre\.description\}/);
   assert.match(source, /className="genre-gem-button"/);
-  assert.match(source, /type="button"[\s\S]*aria-label=\{`试听 \$\{genre\.label\}`\}/);
+  assert.match(source, /type="button"[\s\S]*aria-label=\{`试听 \$\{genre\.displayTitle\}`\}/);
   assert.match(source, /data-gem-tone=\{genre\.gemTone \?\? 'amber'\}/);
   assert.match(source, /onClick=\{\(\) => handleGenreAudition\(genre\)\}/);
   assert.match(source, /className="genre-gem-socket"/);

@@ -52,6 +52,7 @@ function TutorialOverlay({
   const resolvedPrimaryLabel = primaryLabel ?? step.primaryLabel ?? '下一步';
   const resolvedPrimaryDisabled = primaryDisabled || (!showCompleteButton && !canManualNext);
   const handlePrimaryAction = showCompleteButton ? onCompleteTask : onPrimaryAction;
+  const showPrimaryButton = showCompleteButton || canManualNext;
 
   if (collapsed) return null;
 
@@ -89,14 +90,16 @@ function TutorialOverlay({
       </div>
 
       <div className="tutorial-panel-actions">
-        <button
-          className="tutorial-primary"
-          type="button"
-          onClick={handlePrimaryAction}
-          disabled={resolvedPrimaryDisabled}
-        >
-          {resolvedPrimaryLabel}
-        </button>
+        {showPrimaryButton ? (
+          <button
+            className="tutorial-primary"
+            type="button"
+            onClick={handlePrimaryAction}
+            disabled={resolvedPrimaryDisabled}
+          >
+            {resolvedPrimaryLabel}
+          </button>
+        ) : null}
         <button className="tutorial-secondary" type="button" onClick={onBack} disabled={!canGoBack}>
           上一步
         </button>

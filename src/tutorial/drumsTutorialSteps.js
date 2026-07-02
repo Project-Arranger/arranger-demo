@@ -7,7 +7,8 @@ const SECTION_TARGET_3 = '目标3\n编辑所有Drums Clips，找到用户喜欢�
 const SECTION_TARGET_4 = '目标4\n编辑所有Chord Clips，对和弦进行概念建立感性认识，并得到一段自己觉得好听的和弦进行Loop';
 const SECTION_TARGET_5 = '目标5\n完成编辑Bass轨';
 const SECTION_TARGET_6 = '目标6\n在Melody轨即兴弹奏';
-const BASS_TARGET_COPY = '创建完整的低音音轨\n\n选择一个你喜欢的低音律动\n低音虽存在感低，但不可或缺，它让你的音乐听起来更加丰满完整。现在，你可以简单地选择一个律动模板，系统会自动让低音旋律和你所选择的和弦进行相匹配。\n觉得满意后，点击[继续探索]以继续';
+const BASS_TARGET_COPY = '创建完整的低音音轨\n\n选择一个你喜欢的低音律动\n低音虽存在感低，但不可或缺，它让你的音乐听起来更加丰满完整。现在，你可以简单地选择一个律动模板，系统会自动让低音旋律和你所选择的和弦进行相匹配。';
+const BASS_LISTEN_COPY = `${BASS_TARGET_COPY}\n觉得满意后，点击[继续探索]以继续`;
 const MELODY_TARGET_COPY = '尝试弹奏你喜欢的旋律乐句\n\n选择一个弹奏音阶\n音阶指一系列特定顺序的音符，使用不同特色的音阶可以创作出你所喜欢的各种旋律。推荐你从五声音阶开始，因为它无论怎么弹都好听，也是中国音乐最常用的一个音阶。';
 const MELODY_EXAMPLE_INTRO_COPY = '尝试弹奏你喜欢的旋律乐句\n\n弹奏示例乐句\n任何时候，你的耳朵永远都是创造旋律最好的工具。现在，我们将给出一些基于五声音阶创作的经典旋律，你将尝试让你的手指找到弹奏的感觉。';
 const MELODY_EXAMPLE_TIP_COPY = '尝试弹奏你喜欢的旋律乐句\n\n让旋律变好听的秘诀\n把旋律想象成一根线条，它可以从低往高、从高往低，也可以曲折往返，并在它流淌的过程中偶有重复或中断；你将通过尝试弹奏两个经典例子来体会这一点。';
@@ -26,8 +27,8 @@ const DRUMS_TUTORIAL_STEPS = [
     id: TUTORIAL_STEP_IDS.DRUMS_GENERATE_CURRENT_BAR,
     section: SECTION_TARGET_1,
     trigger: '用户点击Drum 01乐句Clip',
-    uiEvent: '为本小节生成基础律动闪烁',
-    copy: '创建你的第一个打击乐乐句\n\n一键生成简单的基础律动\n点击“为本小节生成基础律动”，一键添加一个最简单的打击乐律动',
+    uiEvent: '选择律动模板按钮和应用到本小节按钮闪烁',
+    copy: '创建你的第一个打击乐乐句\n\n一键生成简单的基础律动\n点击“选择律动模板”，在模板卡片中确认后点击“应用到本小节”',
     primaryLabel: '下一步',
     completion: {
       type: 'generate-current-drums-bar',
@@ -38,7 +39,7 @@ const DRUMS_TUTORIAL_STEPS = [
   {
     id: TUTORIAL_STEP_IDS.DRUMS_LISTEN_FIRST_CLIP,
     section: SECTION_TARGET_1,
-    trigger: '点击“为本小节生成基础律动”',
+    trigger: '点击“应用到本小节”',
     uiEvent: '播放按钮闪烁',
     copy: '创建你的第一个打击乐乐句\n\n听听看……\n每次添加或编辑了乐句，都别忘了听听看它有什么不同',
     primaryLabel: '下一步',
@@ -66,8 +67,8 @@ const DRUMS_TUTORIAL_STEPS = [
     id: TUTORIAL_STEP_IDS.DRUMS_GENERATE_ALL_BARS,
     section: SECTION_TARGET_2,
     trigger: '点击“填充整轨”按钮',
-    uiEvent: '全局生成基础律动按钮闪烁',
-    copy: '编辑你的第一个打击乐乐句\n\n给整轨添加基础律动\n点击全局生成基础律动按钮，给所有打击乐乐句添加基础律动',
+    uiEvent: '选择律动模板按钮和应用到整轨按钮闪烁',
+    copy: '编辑你的第一个打击乐乐句\n\n给整轨添加基础律动\n点击“选择律动模板”，在模板卡片中点击“应用到整轨”，给所有打击乐乐句添加基础律动',
     primaryLabel: '下一步',
     completion: {
       type: 'generate-all-drums-bars',
@@ -77,7 +78,7 @@ const DRUMS_TUTORIAL_STEPS = [
   {
     id: TUTORIAL_STEP_IDS.DRUMS_ADD_KICK_VARIATION,
     section: SECTION_TARGET_3,
-    trigger: '点击全局生成基础律动按钮',
+    trigger: '点击“应用到整轨”',
     uiEvent: 'Kick行：\n1/5/13列闪烁蓝色\n3/7/11/15列闪烁绿色\n其余的偶数列闪烁黄色',
     copy: '编辑你的第一个打击乐乐句\n\n让你的律动变得更好听\n在蓝色位置添加底鼓会创造比较规整的节奏感（但太规整听起来可能会有点无聊）；\n在绿色位置添加底鼓会创造强烈的律动感；\n如果在黄色位置添加了底鼓，最好在它之后再多添加一个绿色音符\n多加1-2个音符就会很不一样了——别忘了时常听一听你添加的音符带来了什么改变！',
     primaryLabel: '完成添加',
@@ -209,7 +210,7 @@ const DRUMS_TUTORIAL_STEPS = [
     section: SECTION_TARGET_5,
     trigger: '在二级菜单完成选择',
     uiEvent: '播放按钮闪烁',
-    copy: BASS_TARGET_COPY,
+    copy: BASS_LISTEN_COPY,
     primaryLabel: '继续探索',
     completion: {
       type: 'playback-loop-complete',

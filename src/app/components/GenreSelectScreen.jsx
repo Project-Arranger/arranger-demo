@@ -96,14 +96,14 @@ function GenreSelectScreen({
                       className="genre-card"
                       type="button"
                       style={genreStyle}
-                      aria-label={`选择${genre.label}`}
+                      aria-label={`选择${genre.displayTitle}`}
                       aria-pressed={selected}
                       data-enabled={genre.enabled ? 'true' : 'false'}
                       data-genre-id={genre.id}
                       data-selected={selected ? 'true' : undefined}
                       onClick={() => handleGenreSelect(genre)}
                     >
-                      <span className="genre-label">{genre.shortLabel}</span>
+                      <span className="genre-label">{genre.displayTitle}</span>
                       <span className="genre-art-frame" aria-hidden="true">
                         <img
                           className="genre-art-image"
@@ -113,6 +113,7 @@ function GenreSelectScreen({
                           decoding="async"
                         />
                       </span>
+                      <span className="genre-description">{genre.description}</span>
                       <span className="genre-status mono">
                         {genre.enabled ? 'ENTER' : 'PREVIEW'}
                       </span>
@@ -120,7 +121,7 @@ function GenreSelectScreen({
                     <button
                       className="genre-gem-button"
                       type="button"
-                      aria-label={`试听 ${genre.label}`}
+                      aria-label={`试听 ${genre.displayTitle}`}
                       data-gem-tone={genre.gemTone ?? 'amber'}
                       onClick={() => handleGenreAudition(genre)}
                     >

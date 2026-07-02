@@ -42,34 +42,38 @@
   --tutorial-floating-ui-z: 110;
   --tutorial-highlight-accent: var(--c-drums);
   --tutorial-highlight-ink: var(--c-drums-ink);
-  --tutorial-target-surface: color-mix(in oklab, var(--surface) 74%, var(--tutorial-highlight-accent));
+  --tutorial-highlight-rest-filter: brightness(1.28) saturate(1.22);
+  --tutorial-highlight-peak-filter: brightness(1.62) saturate(1.4);
+  --tutorial-target-surface: color-mix(in oklab, white 84%, var(--tutorial-highlight-accent));
   --tutorial-target-ink: var(--tutorial-highlight-ink);
-  --tutorial-target-surface-border: color-mix(in oklab, var(--tutorial-highlight-ink) 18%, transparent);
+  --tutorial-target-surface-border: color-mix(in oklab, white 58%, var(--tutorial-highlight-ink));
   --tutorial-target-rim: var(--tutorial-target-surface-border);
   --tutorial-highlight-rest-shadow:
-    inset 0 0 0 1px color-mix(in oklab, var(--tutorial-highlight-ink) 44%, white),
-    inset 0 0 12px color-mix(in oklab, white 10%, transparent),
-    0 0 0 2px color-mix(in oklab, white 42%, transparent),
-    0 0 0 6px color-mix(in oklab, var(--tutorial-highlight-accent) 18%, transparent),
-    0 10px 24px color-mix(in oklab, black 18%, transparent);
-  --tutorial-highlight-peak-shadow:
     inset 0 0 0 1px color-mix(in oklab, var(--tutorial-highlight-ink) 54%, white),
-    inset 0 0 16px color-mix(in oklab, white 14%, transparent),
-    0 0 0 2px color-mix(in oklab, white 52%, transparent),
-    0 0 0 8px color-mix(in oklab, var(--tutorial-highlight-accent) 24%, transparent),
-    0 14px 30px color-mix(in oklab, black 24%, transparent);
+    inset 0 0 16px color-mix(in oklab, white 16%, transparent),
+    0 0 0 3px color-mix(in oklab, white 68%, transparent),
+    0 0 0 8px color-mix(in oklab, var(--tutorial-highlight-accent) 34%, transparent),
+    0 12px 26px color-mix(in oklab, black 18%, transparent);
+  --tutorial-highlight-peak-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--tutorial-highlight-ink) 62%, white),
+    inset 0 0 20px color-mix(in oklab, white 22%, transparent),
+    0 0 0 4px color-mix(in oklab, white 82%, transparent),
+    0 0 0 11px color-mix(in oklab, var(--tutorial-highlight-accent) 42%, transparent),
+    0 16px 34px color-mix(in oklab, black 24%, transparent);
   --tutorial-target-contained-rest-shadow:
-    inset 0 0 0 2px color-mix(in oklab, white 52%, transparent),
-    inset 0 0 0 4px color-mix(in oklab, var(--tutorial-highlight-accent) 18%, transparent),
-    inset 0 0 14px color-mix(in oklab, white 10%, transparent),
-    0 0 0 2px color-mix(in oklab, white 36%, transparent),
-    0 8px 20px color-mix(in oklab, black 18%, transparent);
+    inset 0 0 0 2px color-mix(in oklab, white 74%, transparent),
+    inset 0 0 0 5px color-mix(in oklab, var(--tutorial-highlight-accent) 28%, transparent),
+    inset 0 0 18px color-mix(in oklab, white 18%, transparent),
+    0 0 0 2px color-mix(in oklab, white 58%, transparent),
+    0 0 0 6px color-mix(in oklab, var(--tutorial-highlight-accent) 24%, transparent),
+    0 10px 24px color-mix(in oklab, black 18%, transparent);
   --tutorial-target-contained-peak-shadow:
-    inset 0 0 0 2px color-mix(in oklab, white 60%, transparent),
-    inset 0 0 0 5px color-mix(in oklab, var(--tutorial-highlight-accent) 22%, transparent),
-    inset 0 0 18px color-mix(in oklab, white 13%, transparent),
-    0 0 0 3px color-mix(in oklab, white 44%, transparent),
-    0 10px 24px color-mix(in oklab, black 22%, transparent);
+    inset 0 0 0 2px color-mix(in oklab, white 88%, transparent),
+    inset 0 0 0 6px color-mix(in oklab, var(--tutorial-highlight-accent) 36%, transparent),
+    inset 0 0 22px color-mix(in oklab, white 24%, transparent),
+    0 0 0 3px color-mix(in oklab, white 76%, transparent),
+    0 0 0 9px color-mix(in oklab, var(--tutorial-highlight-accent) 32%, transparent),
+    0 12px 28px color-mix(in oklab, black 22%, transparent);
   --tutorial-highlight-complete-shadow:
     inset 0 0 0 2px color-mix(in oklab, var(--play) 72%, white),
     0 0 0 4px color-mix(in oklab, var(--play) 30%, transparent);
@@ -599,7 +603,7 @@ button {
   outline: 2px solid color-mix(in oklab, white 58%, transparent);
   outline-offset: 3px;
   box-shadow: var(--tutorial-highlight-rest-shadow);
-  filter: brightness(1.18) saturate(1.18);
+  filter: var(--tutorial-highlight-rest-filter);
   animation: tutorial-unified-target-pulse var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
 }
 
@@ -855,6 +859,10 @@ button {
 }
 
 .app:has(.editor[data-picker="scale"]) {
+  --app-editor-height: clamp(380px, 55vh, 560px);
+}
+
+.app:has(.editor[data-picker="drum-template"]) {
   --app-editor-height: clamp(380px, 55vh, 560px);
 }
 
@@ -1875,7 +1883,7 @@ button {
   animation: tutorial-unified-target-pulse var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
   outline: 2px solid color-mix(in oklab, white 58%, transparent);
   outline-offset: 3px;
-  filter: brightness(1.18) saturate(1.18);
+  filter: var(--tutorial-highlight-rest-filter);
   box-shadow: var(--tutorial-highlight-rest-shadow);
 }
 
@@ -1892,8 +1900,14 @@ button {
   animation: tutorial-unified-target-pulse var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
   outline: 2px solid color-mix(in oklab, white 58%, transparent);
   outline-offset: 3px;
-  filter: brightness(1.18) saturate(1.18);
+  filter: var(--tutorial-highlight-rest-filter);
   box-shadow: var(--tutorial-highlight-rest-shadow);
+}
+
+.tutorial-control-target:disabled,
+.fill-empty-clips.tutorial-control-target:disabled {
+  opacity: 1;
+  filter: var(--tutorial-highlight-rest-filter);
 }
 
 .btn-template.tutorial-control-target,
@@ -1931,7 +1945,7 @@ button {
 
   position: absolute;
   animation: tutorial-unified-target-pulse var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
-  filter: brightness(1.18) saturate(1.18);
+  filter: var(--tutorial-highlight-rest-filter);
   outline-offset: -3px;
   box-shadow: var(--tutorial-highlight-rest-shadow);
 }
@@ -2144,7 +2158,7 @@ button {
   z-index: var(--tutorial-target-z);
   background: color-mix(in oklab, var(--c-drums-ink) 86%, white);
   box-shadow: var(--tutorial-highlight-rest-shadow);
-  filter: brightness(1.18) saturate(1.18);
+  filter: var(--tutorial-highlight-rest-filter);
   animation: tutorial-unified-target-pulse var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
 }
 
@@ -2160,7 +2174,7 @@ button {
   outline: 2px solid color-mix(in oklab, white 60%, transparent);
   outline-offset: 2px;
   box-shadow: var(--tutorial-highlight-rest-shadow);
-  filter: brightness(1.18) saturate(1.18);
+  filter: var(--tutorial-highlight-rest-filter);
   animation: tutorial-unified-target-pulse var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
 }
 
@@ -2340,6 +2354,29 @@ button {
   background: var(--surface-2);
   border: 1px solid var(--border-soft);
   box-shadow: none;
+}
+
+.btn-template.tutorial-control-target,
+.btn-template-groove.tutorial-control-target,
+.drum-action.tutorial-control-target {
+  --tutorial-highlight-rest-shadow: var(--tutorial-target-contained-rest-shadow);
+  --tutorial-highlight-peak-shadow: var(--tutorial-target-contained-peak-shadow);
+
+  color: var(--tutorial-target-ink);
+  background-color: var(--tutorial-target-surface);
+  border: 1px solid var(--tutorial-target-surface-border);
+  box-shadow: var(--tutorial-highlight-rest-shadow);
+}
+
+.btn-template.tutorial-control-target:hover:not(:disabled),
+.btn-template-groove.tutorial-control-target:hover:not(:disabled),
+.drum-action.tutorial-control-target:hover:not(:disabled),
+.btn-template.tutorial-control-target:focus-visible:not(:disabled),
+.btn-template-groove.tutorial-control-target:focus-visible:not(:disabled),
+.drum-action.tutorial-control-target:focus-visible:not(:disabled) {
+  color: var(--tutorial-target-ink);
+  background-color: var(--tutorial-target-surface);
+  border-color: var(--tutorial-target-surface-border);
 }
 
 .tool-icon,
@@ -3588,6 +3625,38 @@ button {
   .gtpl-list-centered > .gtpl-card {
     grid-column: auto;
   }
+
+  .drum-template-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .drum-template-card {
+    width: 100%;
+  }
+
+  .drum-template-actions {
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+
+  .drum-template-row {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+
+  .drum-template-beat-markers {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+
+  .drum-template-row-grid,
+  .drum-template-beat-marker-grid {
+    gap: 2px;
+  }
+
+  .drum-template-hit-label {
+    width: 16px;
+    height: 16px;
+    font-size: 8px;
+  }
 }
 
 .tpl-card {
@@ -3765,8 +3834,16 @@ button {
   display: none;
 }
 
+.drum-template-picker {
+  grid-template-rows: 48px 1fr 58px;
+}
+
 .app-main:has(.tutorial-panel) .tpl-picker:not([hidden]),
 .app-main:has(.tutorial-panel) .gtpl-picker:not([hidden]) {
+  z-index: var(--tutorial-floating-ui-z);
+}
+
+.app-main:has(.tutorial-panel) .drum-template-picker:not([hidden]) {
   z-index: var(--tutorial-floating-ui-z);
 }
 
@@ -3787,6 +3864,142 @@ button {
     border-color 0.14s ease,
     box-shadow 0.14s ease,
     transform 0.14s ease;
+}
+
+.drum-template-list {
+  grid-template-columns: minmax(260px, 420px);
+  justify-content: center;
+  align-content: start;
+}
+
+.drum-template-card {
+  display: flex;
+  width: min(100%, 420px);
+}
+
+.drum-template-card:focus-visible {
+  outline: 2px solid color-mix(in oklab, white 62%, var(--c-drums));
+  outline-offset: 3px;
+}
+
+.drum-template-rhythm {
+  gap: 10px;
+}
+
+.drum-template-beat-markers {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: end;
+  gap: 10px;
+  min-width: 0;
+  padding-inline: 1px;
+}
+
+.drum-template-beat-marker-grid {
+  display: grid;
+  grid-template-columns: repeat(16, minmax(0, 1fr));
+  gap: 3px;
+  min-width: 0;
+}
+
+.drum-template-beat-marker {
+  min-width: 0;
+  color: #d6b27b;
+  font-size: 9px;
+  font-weight: 850;
+  line-height: 1;
+  text-align: center;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.72);
+}
+
+.drum-template-row {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.drum-template-row-label {
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.drum-template-row-grid {
+  display: grid;
+  grid-template-columns: repeat(16, minmax(0, 1fr));
+  gap: 3px;
+  min-width: 0;
+}
+
+.drum-template-step {
+  min-width: 0;
+  height: 26px;
+}
+
+.drum-template-hit-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  color: #1f1209;
+  border: 1px solid rgb(255 242 210 / 0.52);
+  border-radius: 999px;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 235 / 0.48),
+    0 2px 6px rgb(0 0 0 / 0.4);
+  font-size: 9px;
+  font-weight: 950;
+  line-height: 1;
+  transform: translate(-50%, -50%);
+}
+
+.drum-template-step.hit-block::after {
+  background: var(--c-drums);
+  box-shadow: 0 0 8px color-mix(in oklab, var(--c-drums) 46%, transparent);
+}
+
+.drum-template-step[data-hit-label="K"] .drum-template-hit-label {
+  background: var(--c-drums);
+  color: var(--c-drums-ink);
+}
+
+.drum-template-step[data-instrument="snare"].hit-block::after {
+  background: var(--c-chord);
+  box-shadow: 0 0 8px color-mix(in oklab, var(--c-chord) 42%, transparent);
+}
+
+.drum-template-step[data-hit-label="S"] .drum-template-hit-label {
+  background: var(--c-chord);
+  color: var(--c-chord-ink);
+}
+
+.drum-template-step[data-instrument="hihat"].hit-block::after {
+  background: var(--hardware-amber);
+  box-shadow: 0 0 8px color-mix(in oklab, var(--hardware-amber) 44%, transparent);
+}
+
+.drum-template-step[data-hit-label="H"] .drum-template-hit-label {
+  background: var(--hardware-amber);
+  color: #2a170c;
+}
+
+.drum-template-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  padding-inline: 18px;
+}
+
+.drum-template-apply {
+  min-height: 36px;
+  padding-inline: 18px;
 }
 
 .gtpl-card:hover {
@@ -4776,7 +4989,7 @@ button {
   outline-offset: 2px;
   background: var(--tutorial-cell-surface);
   border-color: var(--tutorial-cell-border);
-  filter: brightness(1.18) saturate(1.18);
+  filter: var(--tutorial-highlight-rest-filter);
   box-shadow: var(--tutorial-highlight-rest-shadow);
 }
 
@@ -4811,7 +5024,7 @@ button {
   outline: 2px solid color-mix(in oklab, white 60%, transparent);
   outline-offset: 2px;
   border-color: color-mix(in oklab, var(--brand) 44%, white);
-  filter: brightness(1.18) saturate(1.18);
+  filter: var(--tutorial-highlight-rest-filter);
   box-shadow: var(--tutorial-highlight-rest-shadow);
 }
 
@@ -5360,15 +5573,15 @@ body {
   padding: 0 8px;
   overflow-wrap: anywhere;
   color: currentColor;
-  font-size: clamp(25px, 2.1vw, 29px);
+  font-size: clamp(20px, 1.55vw, 24px);
   font-weight: 900;
   letter-spacing: 0;
-  line-height: 1;
-  white-space: nowrap;
+  line-height: 1.08;
+  white-space: normal;
 }
 
 .genre-card[data-genre-id="electronic-edm"] .genre-label {
-  font-size: clamp(23px, 1.9vw, 27px);
+  font-size: clamp(19px, 1.5vw, 23px);
 }
 
 .genre-art-frame {
@@ -5395,6 +5608,55 @@ body {
     drop-shadow(0 0 7px color-mix(in oklab, var(--genre-neon) 74%, transparent))
     drop-shadow(0 0 16px color-mix(in oklab, var(--genre-neon) 34%, transparent));
   user-select: none;
+}
+
+.genre-description {
+  position: absolute;
+  right: 14px;
+  bottom: 38px;
+  left: 14px;
+  z-index: 3;
+  display: grid;
+  align-items: center;
+  min-height: 72px;
+  min-width: 0;
+  margin: 0;
+  padding: 12px 13px;
+  color: color-mix(in oklab, var(--genre-neon) 38%, #fff4dd);
+  background:
+    linear-gradient(180deg, rgb(3 6 7 / 0.92), rgb(0 0 0 / 0.86)),
+    radial-gradient(circle at 50% 0%, color-mix(in oklab, var(--genre-neon) 20%, transparent), transparent 68%);
+  border: 1px solid color-mix(in oklab, var(--genre-neon) 62%, white);
+  border-radius: 7px;
+  opacity: 0;
+  visibility: hidden;
+  font-size: clamp(12px, 0.95vw, 13px);
+  font-weight: 760;
+  letter-spacing: 0;
+  line-height: 1.28;
+  overflow-wrap: anywhere;
+  box-shadow:
+    inset 0 0 18px color-mix(in oklab, var(--genre-neon) 18%, transparent),
+    0 0 18px color-mix(in oklab, var(--genre-neon) 30%, transparent),
+    0 14px 24px rgb(0 0 0 / 0.46);
+  text-shadow:
+    0 0 8px color-mix(in oklab, var(--genre-neon) 26%, transparent),
+    0 2px 5px rgb(0 0 0 / 0.78);
+  transform: translateY(6px);
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease,
+    visibility 0.16s ease;
+  pointer-events: none;
+  white-space: normal;
+}
+
+.genre-card:hover .genre-description,
+.genre-card:focus .genre-description,
+.genre-card:focus-visible .genre-description {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
 }
 
 .genre-status {
@@ -5784,11 +6046,11 @@ body {
   }
 
   .genre-label {
-    font-size: 29px;
+    font-size: 23px;
   }
 
   .genre-card[data-genre-id="electronic-edm"] .genre-label {
-    font-size: 27px;
+    font-size: 22px;
   }
 
 }
@@ -5862,7 +6124,7 @@ body {
 @media (max-width: 560px) {
   .genre-gate {
     justify-items: center;
-    padding: 10px;
+    padding: 8px;
     overflow-x: hidden;
   }
 
@@ -5916,11 +6178,15 @@ body {
   }
 
   .genre-label {
-    font-size: 30px;
+    font-size: 23px;
   }
 
   .genre-card[data-genre-id="electronic-edm"] .genre-label {
-    font-size: 28px;
+    font-size: 22px;
+  }
+
+  .genre-description {
+    font-size: 13px;
   }
 
   .genre-gem-button {
@@ -7072,6 +7338,32 @@ body {
   text-shadow: 0 1px 2px rgb(0 0 0 / 0.62);
 }
 
+.btn-template.tutorial-control-target,
+.btn-template-groove.tutorial-control-target,
+.drum-action.tutorial-control-target {
+  --tutorial-highlight-rest-shadow: var(--tutorial-target-contained-rest-shadow);
+  --tutorial-highlight-peak-shadow: var(--tutorial-target-contained-peak-shadow);
+
+  color: var(--tutorial-target-ink);
+  background: #e7f7ed;
+  border: 1px solid #8daf9a;
+  appearance: none;
+  -webkit-appearance: none;
+  box-shadow: var(--tutorial-highlight-rest-shadow);
+  text-shadow: none;
+}
+
+.btn-template.tutorial-control-target:hover:not(:disabled),
+.btn-template-groove.tutorial-control-target:hover:not(:disabled),
+.drum-action.tutorial-control-target:hover:not(:disabled),
+.btn-template.tutorial-control-target:focus-visible:not(:disabled),
+.btn-template-groove.tutorial-control-target:focus-visible:not(:disabled),
+.drum-action.tutorial-control-target:focus-visible:not(:disabled) {
+  color: var(--tutorial-target-ink);
+  background: #e7f7ed;
+  border-color: #8daf9a;
+}
+
 .editor-close,
 .track-page-btn,
 .tool-icon {
@@ -7624,6 +7916,10 @@ body {
     --app-editor-height: clamp(270px, 46vh, 360px);
   }
 
+  .app:has(.editor[data-picker="drum-template"]) {
+    --app-editor-height: clamp(270px, 46vh, 360px);
+  }
+
   .track {
     margin: 3px 8px;
     height: calc(100% - 6px);
@@ -7697,6 +7993,627 @@ body {
   }
 }
 
+@media (min-width: 1180px) and (max-width: 1512px) and (max-height: 760px) {
+  .app {
+    --app-topbar-height: 46px;
+    --app-editor-height: clamp(250px, 43vh, 286px);
+    --track-row-size: minmax(44px, 1fr);
+    --track-footer-height: 32px;
+    --timeline-clip-y-inset: 4px;
+    --timeline-bar-x-inset: 3px;
+    --tutorial-breathe-duration: 1.6s;
+    --tutorial-highlight-rest-filter: brightness(1.28) saturate(1.22);
+    --tutorial-highlight-peak-filter: brightness(1.62) saturate(1.4);
+    --tutorial-highlight-rest-shadow:
+      inset 0 0 0 1px color-mix(in oklab, var(--tutorial-highlight-ink) 54%, white),
+      inset 0 0 16px color-mix(in oklab, white 16%, transparent),
+      0 0 0 3px color-mix(in oklab, white 68%, transparent),
+      0 0 0 8px color-mix(in oklab, var(--tutorial-highlight-accent) 34%, transparent),
+      0 12px 26px color-mix(in oklab, black 18%, transparent);
+    --tutorial-highlight-peak-shadow:
+      inset 0 0 0 1px color-mix(in oklab, var(--tutorial-highlight-ink) 62%, white),
+      inset 0 0 20px color-mix(in oklab, white 22%, transparent),
+      0 0 0 4px color-mix(in oklab, white 82%, transparent),
+      0 0 0 11px color-mix(in oklab, var(--tutorial-highlight-accent) 42%, transparent),
+      0 16px 34px color-mix(in oklab, black 24%, transparent);
+    --tutorial-target-contained-rest-shadow:
+      inset 0 0 0 2px color-mix(in oklab, white 74%, transparent),
+      inset 0 0 0 5px color-mix(in oklab, var(--tutorial-highlight-accent) 28%, transparent),
+      inset 0 0 18px color-mix(in oklab, white 18%, transparent),
+      0 0 0 2px color-mix(in oklab, white 58%, transparent),
+      0 0 0 6px color-mix(in oklab, var(--tutorial-highlight-accent) 24%, transparent),
+      0 10px 24px color-mix(in oklab, black 18%, transparent);
+    --tutorial-target-contained-peak-shadow:
+      inset 0 0 0 2px color-mix(in oklab, white 88%, transparent),
+      inset 0 0 0 6px color-mix(in oklab, var(--tutorial-highlight-accent) 36%, transparent),
+      inset 0 0 22px color-mix(in oklab, white 24%, transparent),
+      0 0 0 3px color-mix(in oklab, white 76%, transparent),
+      0 0 0 9px color-mix(in oklab, var(--tutorial-highlight-accent) 32%, transparent),
+      0 12px 28px color-mix(in oklab, black 22%, transparent);
+  }
+
+  .app:has(.editor[data-screen-label="Chord Editor"]:not([data-picker="chord"]):not([data-picker="groove"])),
+  .app:has(.editor[data-screen-label="Melody Editor"]:not([data-picker="scale"])),
+  .app:has(.editor[data-screen-label="Bass Editor"]:not([data-picker="groove"])) {
+    --app-editor-height: clamp(250px, 43vh, 286px);
+  }
+
+  .app:has(.editor[data-picker="chord"]),
+  .app:has(.editor[data-picker="groove"]),
+  .app:has(.editor[data-picker="scale"]) {
+    --app-editor-height: clamp(286px, 48vh, 332px);
+  }
+
+  .app:has(.editor[data-picker="drum-template"]) {
+    --app-editor-height: clamp(286px, 48vh, 332px);
+  }
+
+  .app-main:has(.tutorial-target-active)::before,
+  .app-main:has(.tutorial-bar-target)::before,
+  .app-main:has(.tutorial-control-target)::before,
+  .app-main:has(.tutorial-cell-target)::before,
+  .app-main:has(.tutorial-cell-source)::before,
+  .app-main:has(.tutorial-playhead-target)::before {
+    background: color-mix(in oklab, black 38%, transparent);
+  }
+
+  .topbar {
+    grid-template-columns: minmax(148px, 0.72fr) minmax(62px, max-content) minmax(0, 1fr) minmax(170px, 0.72fr);
+    gap: 8px;
+    overflow: hidden;
+    padding: 0 12px;
+  }
+
+  .brand {
+    grid-column: 1;
+    width: clamp(148px, 12vw, 176px);
+    height: 34px;
+    padding-right: 10px;
+  }
+
+  .brand .name {
+    font-size: 15px;
+  }
+
+  .brand .project {
+    margin-top: 3px;
+    font-size: 8.5px;
+    letter-spacing: 0.1em;
+  }
+
+  .btn-new {
+    grid-column: 2;
+    grid-template-columns: 30px auto;
+    min-width: 68px;
+    height: 36px;
+    gap: 4px;
+    padding: 0 6px 0 0;
+    overflow: hidden;
+    font-size: 11px;
+  }
+
+  .power-gem {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+  }
+
+  .btn-new-label {
+    font-size: 10px;
+    letter-spacing: 0.07em;
+  }
+
+  .topbar-left-controls {
+    grid-column: 3;
+    justify-self: start;
+    gap: 8px;
+  }
+
+  .topbar-center {
+    position: absolute;
+    grid-column: 1 / -1;
+    grid-row: 1;
+    left: 50%;
+    top: 50%;
+    z-index: 2;
+    gap: 8px;
+    transform: translate(-50%, -50%);
+    width: max-content;
+    max-width: min(430px, calc(100% - 560px));
+  }
+
+  .history-controls,
+  .transport {
+    gap: 3px;
+    padding: 3px;
+    border-radius: 10px;
+  }
+
+  .t-btn,
+  .t-btn.undo,
+  .t-btn.redo {
+    width: 28px;
+    height: 28px;
+    flex-basis: 28px;
+    border-radius: 7px;
+  }
+
+  .t-btn.play {
+    width: 32px;
+  }
+
+  .stats {
+    max-width: 100%;
+    height: 36px;
+    overflow: hidden;
+    border-radius: 10px;
+  }
+
+  .stat {
+    min-width: 56px;
+    padding: 3px 7px;
+  }
+
+  .stat .lbl {
+    font-size: 8px;
+    letter-spacing: 0.1em;
+  }
+
+  .stat .val {
+    margin-top: 4px;
+    font-size: 12px;
+  }
+
+  .right-tools {
+    grid-column: 4;
+    justify-self: end;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .tutorial-switch {
+    height: 32px;
+    min-width: 54px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+
+  .save-switch {
+    width: 34px;
+    min-width: 34px;
+    height: 32px;
+    padding: 0;
+    font-size: 0;
+  }
+
+  .save-switch .dot {
+    width: 8px;
+    height: 8px;
+    margin-right: 0;
+  }
+
+  .hardware-export {
+    height: 32px;
+    padding: 0 14px;
+    border-radius: 9px;
+    font-size: 12px;
+  }
+
+  .icon-btn {
+    height: 32px;
+    border-radius: 9px;
+  }
+
+  .icon-btn {
+    width: 32px;
+  }
+
+  .workspace {
+    grid-template-columns: clamp(164px, 15vw, 196px) minmax(0, 1fr);
+  }
+
+  .workspace.tutorial-sidebar-open {
+    grid-template-columns: clamp(164px, 15vw, 196px) minmax(0, 1fr) clamp(248px, 20vw, 294px);
+  }
+
+  .workspace.tutorial-sidebar-collapsed {
+    grid-template-columns: clamp(164px, 15vw, 196px) minmax(0, 1fr);
+  }
+
+  .tracks-col,
+  .timeline-col {
+    grid-template-rows: 36px minmax(0, 1fr) var(--track-footer-height);
+  }
+
+  .tracks-head {
+    padding: 0 10px 0 12px;
+  }
+
+  .tracks-head .label {
+    font-size: 12px;
+  }
+
+  .tracks-head .count {
+    font-size: 10px;
+  }
+
+  .track {
+    grid-template-rows: 25px 10px;
+    gap: 1px;
+    overflow: hidden;
+    padding: 3px 7px;
+  }
+
+  .track-main-row {
+    grid-template-columns: minmax(0, 1fr) 34px;
+    gap: 4px;
+  }
+
+  .track-select {
+    grid-template-columns: 28px minmax(0, 1fr);
+    min-width: 0;
+  }
+
+  .ic {
+    width: 26px;
+    min-width: 26px;
+    height: 26px;
+    flex-basis: 26px;
+    border-radius: 8px;
+  }
+
+  .ic svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .track-name {
+    min-width: 0;
+    font-size: 12px;
+    line-height: 1;
+  }
+
+  .fill-empty-clips {
+    width: 34px;
+    max-width: 34px;
+    height: 26px;
+    padding: 0 4px;
+  }
+
+  .fill-empty-clips-label {
+    display: none;
+  }
+
+  .vol {
+    grid-template-columns: 1fr 24px;
+    gap: 5px;
+    margin-left: 31px;
+    padding-right: 36px;
+  }
+
+  .volume-control {
+    height: 10px;
+  }
+
+  .db {
+    font-size: 8.5px;
+  }
+
+  .add-track-row {
+    padding: 0 10px;
+  }
+
+  .add-track {
+    height: 28px;
+    border-radius: 8px;
+    font-size: 11px;
+  }
+
+  .bar-label {
+    padding-left: 8px;
+    font-size: 10px;
+  }
+
+  .clip {
+    padding: 4px 7px 5px;
+    border-radius: 8px;
+  }
+
+  .clip-name {
+    min-width: 0;
+    gap: 4px;
+    overflow: hidden;
+    font-size: 11.5px;
+    line-height: 1;
+  }
+
+  .clip[data-type="chord"] .clip-name {
+    gap: 1px;
+  }
+
+  .clip-name > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .clip-empty-tag {
+    margin-top: 2px;
+    font-size: 8px;
+    line-height: 1;
+  }
+
+  .clip-idx {
+    font-size: 8px;
+  }
+
+  .clip-chord-name {
+    max-width: 100%;
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  .tutorial-panel {
+    grid-template-rows: 40px minmax(0, 1fr) var(--track-footer-height);
+  }
+
+  .tutorial-panel-header {
+    min-height: 40px;
+    gap: 6px;
+    padding: 0 8px 0 12px;
+  }
+
+  .tutorial-panel-label {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+  }
+
+  .tutorial-directory {
+    gap: 3px;
+  }
+
+  .tutorial-directory-button {
+    min-height: 20px;
+    padding: 0 5px;
+    border-radius: 5px;
+    font-size: 9px;
+  }
+
+  .tutorial-panel-body {
+    align-content: start;
+    gap: 6px;
+    padding: 10px 12px;
+    overflow: hidden;
+  }
+
+  .tutorial-copy {
+    gap: 8px;
+  }
+
+  .tutorial-copy-title-group {
+    gap: 3px;
+  }
+
+  .tutorial-copy-body-group {
+    gap: 4px;
+    margin-top: 6px;
+  }
+
+  .tutorial-copy-title {
+    font-size: 11px;
+    line-height: 1.16;
+  }
+
+  .tutorial-copy-subtitle {
+    font-size: 20px;
+    line-height: 1.08;
+  }
+
+  .tutorial-copy-body {
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .tutorial-panel-actions {
+    gap: 4px;
+    padding: 4px 8px;
+  }
+
+  .tutorial-primary,
+  .tutorial-secondary,
+  .tutorial-link {
+    height: 28px;
+    min-height: 28px;
+    padding: 0 7px;
+    font-size: 11px;
+  }
+
+  .tutorial-target-active::after {
+    top: 6px;
+    right: 6px;
+    padding: 5px 8px;
+    font-size: 11px;
+    box-shadow: 0 4px 10px color-mix(in oklab, black 18%, transparent);
+  }
+
+  .editor-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    align-items: center;
+    min-height: 44px;
+    gap: 8px;
+    overflow: hidden;
+    padding: 0 12px;
+  }
+
+  .editor-left {
+    display: grid;
+    grid-template-columns: minmax(104px, 116px) minmax(0, 1fr);
+    gap: 8px;
+    overflow: hidden;
+  }
+
+  .tools {
+    justify-content: end;
+    gap: 6px;
+    max-width: min(610px, 52vw);
+    overflow: hidden;
+  }
+
+  .clip-chip {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+  }
+
+  .clip-name-input {
+    width: min(200px, 100%);
+    font-size: 14px;
+  }
+
+  .clip-name-meta {
+    font-size: 9px;
+  }
+
+  .clip-title,
+  .clip-name-field {
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .crumb,
+  .clip-name-meta,
+  .clip-name-input,
+  .clip-empty-tag,
+  .clip-idx,
+  .clip-chord-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .editor-track-identity {
+    grid-template-columns: 32px minmax(0, 1fr);
+    width: 104px;
+    max-width: 104px;
+  }
+
+  .editor-track-identity .ic {
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    flex-basis: 30px;
+  }
+
+  .editor-track-identity .track-name {
+    font-size: 14px;
+  }
+
+  .btn-template,
+  .btn-template-groove {
+    height: 28px;
+    min-height: 28px;
+    gap: 6px;
+    padding: 0 10px;
+    overflow: hidden;
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tools .btn-template,
+  .tools .btn-template-groove {
+    flex: 0 1 auto;
+    max-width: 120px;
+  }
+
+  .tools .drum-clear-action {
+    max-width: 84px;
+  }
+
+  .tool-icon,
+  .editor-close {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+  }
+
+  .drum-seq-body {
+    padding: 6px 10px 8px;
+    overflow: hidden;
+  }
+
+  .drum-seq-body .track-editor-pager-shell {
+    grid-template-columns: 24px minmax(0, 860px) 24px;
+    gap: 6px;
+    min-width: 0;
+    height: 100%;
+    padding-inline: 6px;
+  }
+
+  .track-editor-pager-content {
+    gap: 4px;
+    justify-content: center;
+  }
+
+  .drum-seq-panel {
+    --drum-step-size: clamp(22px, calc((var(--app-editor-height) - 136px) / 4.2), 32px);
+    --drum-row-gap: clamp(5px, calc((var(--app-editor-height) - 236px) / 12), 10px);
+
+    gap: var(--drum-row-gap);
+    max-width: 860px;
+  }
+
+  .drum-step-numbers,
+  .drum-row {
+    grid-template-columns: 84px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .drum-row-label {
+    gap: 7px;
+    font-size: 13px;
+  }
+
+  .drum-dot {
+    width: clamp(24px, calc(var(--drum-step-size) + 2px), 32px);
+    height: clamp(24px, calc(var(--drum-step-size) + 2px), 32px);
+    flex-basis: clamp(24px, calc(var(--drum-step-size) + 2px), 32px);
+    border-radius: 6px;
+  }
+
+  .drum-step-groups {
+    --drum-step-group-gap: clamp(8px, 1.2vw, 12px);
+    --drum-step-group-gap-half: calc(var(--drum-step-group-gap) / 2);
+
+    column-gap: var(--drum-step-group-gap);
+  }
+
+  .drum-step-number {
+    height: 14px;
+    font-size: 8.5px;
+  }
+
+  .drum-step-group {
+    --drum-step-gap: 4px;
+
+    grid-template-columns: repeat(4, var(--drum-step-size));
+  }
+
+  .drum-step {
+    width: var(--drum-step-size);
+    min-height: var(--drum-step-size);
+    border-radius: 5px;
+  }
+
+  .track-page-btn {
+    width: 24px;
+    height: clamp(40px, calc(var(--app-editor-height) - 216px), 54px);
+    border-radius: 7px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tutorial-target-active,
   .tutorial-cell-target,
@@ -7706,7 +8623,7 @@ body {
   .playhead.tutorial-playhead-target,
   .ruler-playhead.tutorial-playhead-target::after {
     animation: none;
-    filter: brightness(1.5) saturate(1.38);
+    filter: var(--tutorial-highlight-peak-filter);
     box-shadow: var(--tutorial-highlight-peak-shadow);
   }
 
