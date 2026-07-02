@@ -309,7 +309,7 @@ const DRUMS_TUTORIAL_STEPS = [
     section: SECTION_TARGET_6,
     trigger: '点击继续探索',
     uiEvent: '点击[开始创作]后，Tutorial窗口收起',
-    copy: '你已经掌握了如何创作一段完整的乐曲，现在可以开始自由创作了。\n你可以随时在这里回看之前的所有提示。',
+    copy: '完成教程\n\n开始自由创作\n你已经掌握了如何创作一段完整的乐曲。\n现在可以开始自由创作了。\n你可以随时在这里回看之前的所有提示。',
     primaryLabel: '开始创作',
     completion: {
       type: 'manual',

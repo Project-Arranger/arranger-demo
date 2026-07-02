@@ -519,7 +519,7 @@ button {
 
 .tutorial-panel-body {
   display: grid;
-  align-content: center;
+  align-content: start;
   justify-items: center;
   gap: 8px;
   min-width: 0;
@@ -530,49 +530,64 @@ button {
 
 .tutorial-copy {
   display: grid;
-  gap: 12px;
-  justify-items: center;
-  width: min(100%, 28rem);
+  align-self: start;
+  gap: clamp(10px, 1.5vw, 16px);
+  justify-items: stretch;
+  width: min(100%, 30rem);
 }
 
-.tutorial-copy-title-group,
+.tutorial-copy-title-group {
+  display: grid;
+  justify-self: start;
+  justify-items: start;
+  gap: 4px;
+  min-width: 0;
+}
+
 .tutorial-copy-body-group {
   display: grid;
+  justify-self: center;
   gap: 6px;
   justify-items: center;
+  max-width: 26em;
+  min-width: 0;
+  margin-top: clamp(8px, 1.6vw, 18px);
 }
 
 .tutorial-copy-title,
 .tutorial-copy-subtitle,
 .tutorial-copy-body {
   display: block;
-  text-align: center;
   text-wrap: balance;
   overflow-wrap: anywhere;
 }
 
 .tutorial-copy-title {
-  max-width: 14em;
-  color: var(--ink);
-  font-size: 24px;
-  font-weight: 900;
-  line-height: 1.18;
+  max-width: 100%;
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 760;
+  line-height: 1.2;
+  text-align: left;
 }
 
 .tutorial-copy-subtitle {
-  max-width: 16em;
-  color: var(--c-drums-ink);
-  font-size: 18px;
-  font-weight: 850;
-  line-height: 1.28;
+  max-width: 12em;
+  color: var(--ink);
+  font-size: clamp(24px, 2.6vw, 34px);
+  font-weight: 950;
+  line-height: 1.08;
+  text-align: left;
+  text-shadow: 0 1px 0 color-mix(in oklab, white 42%, transparent);
 }
 
 .tutorial-copy-body {
   max-width: 26em;
   color: var(--ink-2);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 650;
   line-height: 1.62;
+  text-align: center;
 }
 
 .tutorial-target-active {
