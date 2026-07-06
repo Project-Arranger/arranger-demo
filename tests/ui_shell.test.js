@@ -1081,6 +1081,7 @@ test('app mounts the drums tutorial right sidebar', async () => {
   assert.match(source, /const activeTutorialTargets = tutorialActive \? tutorialViewModel\.targets : undefined;/);
   assert.match(source, /const activeTutorialLocked = tutorialActive && tutorialViewModel\.locked;/);
   assert.match(source, /tutorialViewModel\.displayCopy/);
+  assert.match(source, /countInValue:\s*tutorialCountInValue/);
   assert.match(source, /APP_COMMAND_TYPES\.TRANSPORT_STOP/);
   assert.match(source, /stopTutorialPreviewPlayback/);
   assert.match(overlaySource, /tutorial-panel/);
@@ -1116,6 +1117,7 @@ test('app mounts the drums tutorial right sidebar', async () => {
   assert.doesNotMatch(topBarSource, /showTutorialReopen/);
   assert.doesNotMatch(topBarSource, /onTutorialReopen/);
   assert.match(overlaySource, /displayCopy/);
+  assert.match(overlaySource, /countInValue/);
   assert.match(overlaySource, /renderTutorialCopy/);
   assert.match(overlaySource, /\.split\('\\n\\n'\)/);
   assert.match(overlaySource, /\.split\('\\n'\)/);
@@ -1123,6 +1125,8 @@ test('app mounts the drums tutorial right sidebar', async () => {
   assert.match(overlaySource, /className="tutorial-copy-title"/);
   assert.match(overlaySource, /className="tutorial-copy-subtitle"/);
   assert.match(overlaySource, /className="tutorial-copy-body"/);
+  assert.match(overlaySource, /className="tutorial-count-in"/);
+  assert.match(overlaySource, /aria-live="assertive"/);
   assert.doesNotMatch(overlaySource, /isTutorialActionHintLine/);
   assert.doesNotMatch(overlaySource, /tutorial-copy-action-hint/);
   assert.doesNotMatch(overlaySource, /className="tutorial-copy-line"/);
@@ -1155,6 +1159,15 @@ test('tutorial navigation buttons interrupt preview playback', async () => {
   assert.match(source, /function clearTutorialAutoAdvanceTimer\(\)/);
   assert.match(source, /window\.clearTimeout\(tutorialAutoAdvanceTimerId\)/);
   assert.match(source, /function scheduleTutorialAutoAdvance\(callback\)/);
+  assert.match(source, /const \[tutorialCountInValue,\s*setTutorialCountInValue\] = useState\(null\);/);
+  assert.match(source, /let tutorialCountInTimerIds = \[\];/);
+  assert.match(source, /const clearTutorialCountIn = useCallback\(\(\) => \{[\s\S]*tutorialCountInTimerIds\.forEach\(\(timerId\) => window\.clearTimeout\(timerId\)\);[\s\S]*setTutorialCountInValue\(null\);/);
+  assert.match(source, /const TUTORIAL_COUNT_IN_BEATS = Object\.freeze\(\[1,\s*2,\s*3\]\);/);
+  assert.match(source, /const TUTORIAL_COUNT_IN_BEAT_MULTIPLIER = 1\.5;/);
+  assert.match(source, /const startTutorialCountInPlayback = useCallback\(\(\) => \{[\s\S]*clearTutorialCountIn\(\);[\s\S]*const secondsPerBeat = \(60 \/ bpm\) \* TUTORIAL_COUNT_IN_BEAT_MULTIPLIER;[\s\S]*TUTORIAL_COUNT_IN_BEATS\.forEach/);
+  assert.match(source, /startTutorialCountInPlayback[\s\S]*audioEngine\.triggerDrumsStep\('hihat'\)/);
+  assert.match(source, /startTutorialCountInPlayback[\s\S]*APP_COMMAND_TYPES\.TRANSPORT_TOGGLE_PLAY/);
+  assert.match(source, /tutorialCountInTimerIds = nextTimerIds;/);
   assert.match(source, /handleTutorialPlaybackComplete/);
   assert.match(source, /handleTutorialPlaybackPosition/);
   assert.match(source, /onPositionChange[\s\S]*handleTutorialPlaybackComplete/);
@@ -1184,7 +1197,8 @@ test('tutorial navigation buttons interrupt preview playback', async () => {
   assert.match(source, /setTutorialStepCheckpoints\(\(checkpoints\) => \(\{[\s\S]*\[nextStepIndex\]: nextStepCheckpoint/);
   assert.match(source, /setTutorialStepCheckpoints\(\(checkpoints\) => \(\{[\s\S]*applyTutorialStepSetup\(nextStep\)/);
   assert.match(source, /advanceTutorialToNextStep\([\s\S]*tutorialAction\.nextProgress,\s*\{[\s\S]*startPlaybackAfterAdvance:\s*tutorialAction\.shouldStartPlaybackAfterAdvance/);
-  assert.match(source, /const advanceTutorialToNextStep = useCallback\(\([\s\S]*checkpointProgress = tutorialProgress,[\s\S]*options = \{\},[\s\S]*\) => \{[\s\S]*await resetTutorialTransportToStart\(\);[\s\S]*enterTutorialStepIndex\(currentTutorialStepIndex \+ 1,\s*checkpointProgress\);[\s\S]*if \(options\.startPlaybackAfterAdvance\)[\s\S]*APP_COMMAND_TYPES\.TRANSPORT_TOGGLE_PLAY/);
+  assert.match(source, /const advanceTutorialToNextStep = useCallback\(\([\s\S]*checkpointProgress = tutorialProgress,[\s\S]*options = \{\},[\s\S]*\) => \{[\s\S]*await resetTutorialTransportToStart\(\);[\s\S]*enterTutorialStepIndex\(currentTutorialStepIndex \+ 1,\s*checkpointProgress\);[\s\S]*if \(options\.startPlaybackAfterAdvance\)[\s\S]*startTutorialCountInPlayback\(\);/);
+  assert.doesNotMatch(source, /if \(options\.startPlaybackAfterAdvance\) \{\s*\n\s*await dispatchAppCommand\(\{ type: APP_COMMAND_TYPES\.TRANSPORT_TOGGLE_PLAY \}\);/);
   assert.match(source, /const targetStepIndex = Math\.max\(currentTutorialStepIndex - 1, 0\);/);
   assert.match(source, /const targetCheckpoint = ensureTutorialStepCheckpoint\(targetStepIndex\);/);
   assert.match(source, /restoreTutorialCheckpoint\(\{[\s\S]*checkpoint:\s*targetCheckpoint/);
@@ -1198,10 +1212,10 @@ test('tutorial navigation buttons interrupt preview playback', async () => {
   assert.doesNotMatch(source, /TUTORIAL_BACK_TARGET_RESET_STEP_IDS/);
   assert.doesNotMatch(source, /resetTutorialStepsForBack/);
   assert.doesNotMatch(source, /resetTutorialStepForRetry/);
-  assert.match(source, /handleTutorialNext = useCallback\(\(\) => \{[\s\S]*clearTutorialAutoAdvanceTimer\(\);[\s\S]*advanceTutorialToNextStep\(tutorialProgress\);/);
+  assert.match(source, /handleTutorialNext = useCallback\(\(\) => \{[\s\S]*clearTutorialAutoAdvanceTimer\(\);[\s\S]*clearTutorialCountIn\(\);[\s\S]*advanceTutorialToNextStep\(tutorialProgress\);/);
   assert.match(source, /handleTutorialOpenClip = useCallback\(\(clip\) => \{[\s\S]*advanceTutorialToNextStep\(tutorialAction\.nextProgress\);/);
-  assert.match(source, /if \(tutorialAction\.shouldCompleteTutorial\)[\s\S]*clearTutorialAutoAdvanceTimer\(\);[\s\S]*stopTutorialPreviewPlayback\(\);[\s\S]*resetTutorialTransportToStart\(\);[\s\S]*setTutorialModeActive\(false\);[\s\S]*setTutorialSidebarCollapsed\(true\);[\s\S]*return;/);
-  assert.match(source, /handleTutorialSkip = useCallback\(\(\) => \{[\s\S]*clearTutorialAutoAdvanceTimer\(\);[\s\S]*stopTutorialPreviewPlayback\(\);[\s\S]*useMusicStore\.setState\(useMusicStore\.getInitialState\(\), true\);[\s\S]*setCurrentTutorialStepIndex\(0\);[\s\S]*setTutorialProgress\(createTutorialState\(\)\);[\s\S]*setAppliedTutorialSetups\(\(\) => new Set\(\)\);[\s\S]*setTutorialStepCheckpoints\(\(\) => \(\{[\s\S]*0: createTutorialCheckpoint\(\{[\s\S]*appState: useMusicStore\.getInitialState\(\),[\s\S]*appliedTutorialSetups: new Set\(\),[\s\S]*tutorialProgress: createTutorialState\(\),[\s\S]*\}\),[\s\S]*\}\)\);[\s\S]*setTutorialModeActive\(false\);[\s\S]*setTutorialSidebarCollapsed\(true\);[\s\S]*setTutorialVisible\(true\);/);
+  assert.match(source, /if \(tutorialAction\.shouldCompleteTutorial\)[\s\S]*clearTutorialAutoAdvanceTimer\(\);[\s\S]*clearTutorialCountIn\(\);[\s\S]*stopTutorialPreviewPlayback\(\);[\s\S]*resetTutorialTransportToStart\(\);[\s\S]*setTutorialModeActive\(false\);[\s\S]*setTutorialSidebarCollapsed\(true\);[\s\S]*return;/);
+  assert.match(source, /handleTutorialSkip = useCallback\(\(\) => \{[\s\S]*clearTutorialAutoAdvanceTimer\(\);[\s\S]*clearTutorialCountIn\(\);[\s\S]*stopTutorialPreviewPlayback\(\);[\s\S]*useMusicStore\.setState\(useMusicStore\.getInitialState\(\), true\);[\s\S]*setCurrentTutorialStepIndex\(0\);[\s\S]*setTutorialProgress\(createTutorialState\(\)\);[\s\S]*setAppliedTutorialSetups\(\(\) => new Set\(\)\);[\s\S]*setTutorialStepCheckpoints\(\(\) => \(\{[\s\S]*0: createTutorialCheckpoint\(\{[\s\S]*appState: useMusicStore\.getInitialState\(\),[\s\S]*appliedTutorialSetups: new Set\(\),[\s\S]*tutorialProgress: createTutorialState\(\),[\s\S]*\}\),[\s\S]*\}\)\);[\s\S]*setTutorialModeActive\(false\);[\s\S]*setTutorialSidebarCollapsed\(true\);[\s\S]*setTutorialVisible\(true\);/);
   assert.doesNotMatch(source, /handleTutorialSkip = useCallback\(\(\) => \{[\s\S]*setTutorialVisible\(false\);/);
   assert.doesNotMatch(source, /handleTutorialSkip = useCallback\(\(\) => \{[\s\S]*restoreTutorialCheckpoint/);
   assert.match(source, /tutorialTargets:\s*activeTutorialTargets/);

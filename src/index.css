@@ -532,6 +532,31 @@ button {
   overflow: auto;
 }
 
+.tutorial-count-in {
+  display: grid;
+  place-items: center;
+  justify-self: center;
+  width: clamp(58px, 6vw, 76px);
+  height: clamp(58px, 6vw, 76px);
+  margin: 2px 0 8px;
+  color: var(--tutorial-highlight-ink);
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 36% 24%, rgb(255 255 245 / 0.78), transparent 28%),
+    color-mix(in oklab, var(--tutorial-highlight-accent) 58%, white);
+  border: 2px solid color-mix(in oklab, var(--tutorial-highlight-ink) 34%, white);
+  border-radius: 999px;
+  box-shadow:
+    inset 0 2px 0 rgb(255 255 255 / 0.58),
+    inset 0 -9px 18px color-mix(in oklab, var(--tutorial-highlight-ink) 18%, transparent),
+    var(--tutorial-highlight-rest-shadow);
+  font-size: clamp(32px, 3.6vw, 44px);
+  font-weight: 950;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.42);
+  animation: tutorial-count-in-pop 0.24s ease-out both;
+}
+
 .tutorial-copy {
   display: grid;
   align-self: start;
@@ -650,6 +675,18 @@ button {
   }
 }
 
+@keyframes tutorial-count-in-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.78);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @keyframes tutorial-kick-drag-ghost {
   0%,
   16% {
@@ -680,6 +717,10 @@ button {
 
 @media (prefers-reduced-motion: reduce) {
   .tutorial-panel-header::before {
+    animation: none;
+  }
+
+  .tutorial-count-in {
     animation: none;
   }
 }

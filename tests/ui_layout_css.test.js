@@ -1053,6 +1053,13 @@ test('tutorial sidebar is embedded as a workbench column and reopens from the to
   assert.match(css, /\.tutorial-directory-button:disabled\s*\{[^}]*opacity:\s*0\.36;/s);
   assert.match(css, /\.tutorial-panel-body\s*\{[^}]*justify-items:\s*center;/s);
   assert.match(css, /\.tutorial-panel-body\s*\{[^}]*align-content:\s*start;/s);
+  assert.match(css, /\.tutorial-count-in\s*\{[^}]*pointer-events:\s*none;/s);
+  assert.match(css, /\.tutorial-count-in\s*\{[^}]*justify-self:\s*center;/s);
+  assert.match(css, /\.tutorial-count-in\s*\{[^}]*display:\s*grid;/s);
+  assert.match(css, /\.tutorial-count-in\s*\{[^}]*place-items:\s*center;/s);
+  assert.match(css, /\.tutorial-count-in\s*\{[^}]*box-shadow:[^}]*var\(--tutorial-highlight-rest-shadow\)/s);
+  assert.match(css, /\.tutorial-count-in\s*\{[^}]*animation:\s*tutorial-count-in-pop/s);
+  assert.match(css, /@keyframes tutorial-count-in-pop/);
   assert.match(css, /\.tutorial-copy\s*\{[^}]*display:\s*grid;/s);
   assert.match(css, /\.tutorial-copy\s*\{[^}]*align-self:\s*start;/s);
   assert.match(css, /\.tutorial-copy-title-group\s*\{[^}]*justify-self:\s*start;/s);
@@ -1315,6 +1322,7 @@ test('tutorial task targets make allowed cells and bars obvious', async () => {
   assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*\.transport\.tutorial-transport-target \.t-btn\.play\s*\{[^}]*animation:\s*none;[^}]*filter:\s*var\(--tutorial-highlight-peak-filter\);[^}]*box-shadow:\s*var\(--tutorial-highlight-peak-shadow\);/s);
   assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*\.drum-step\.tutorial-cell-source::before\s*\{[^}]*animation:\s*none;/s);
   assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*\.tutorial-panel-header::before[\s\S]*animation:\s*none;/s);
+  assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*\.tutorial-count-in\s*\{[^}]*animation:\s*none;/s);
 });
 
 test('clip name edit icon sits beside the shared clip name input', async () => {

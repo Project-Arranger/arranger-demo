@@ -1143,6 +1143,33 @@ test('target 6 melody examples advance by primary buttons and then end tutorial'
   assert.equal(finishTutorial.shouldCompleteTutorial, true);
 });
 
+test('only melody example start actions request tutorial count-in playback', () => {
+  const progress = {
+    ...createTutorialState(),
+    kickVariationEdited: true,
+    kickDragMoved: true,
+    chordLoopPlaybackComplete: true,
+    chordEnriched: true,
+    chordPassingAdded: true,
+    bassLoopPlaybackComplete: true,
+    melodyFreeCreateReady: true,
+  };
+  const countInStepIds = new Set([
+    TUTORIAL_STEP_IDS.MELODY_EXAMPLE_INTRO_1,
+    TUTORIAL_STEP_IDS.MELODY_EXAMPLE_INTRO_2,
+    TUTORIAL_STEP_IDS.MELODY_PLAY_EXAMPLE_2,
+  ]);
+
+  for (const step of DRUMS_TUTORIAL_STEPS) {
+    const action = completeTutorialPrimaryAction({ progress, step });
+    if (countInStepIds.has(step.id)) {
+      assert.equal(action.shouldStartPlaybackAfterAdvance, true, `${step.id} should request count-in playback`);
+    } else {
+      assert.equal(action.shouldStartPlaybackAfterAdvance, undefined, `${step.id} should not request count-in playback`);
+    }
+  }
+});
+
 test('tutorial directory points to each track teaching start', () => {
   assert.deepEqual(TUTORIAL_DIRECTORY_ITEMS, [
     { id: 'drums', label: 'Drums', stepId: TUTORIAL_STEP_IDS.DRUMS_OPEN_FIRST_CLIP },

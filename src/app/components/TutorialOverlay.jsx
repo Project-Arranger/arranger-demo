@@ -35,6 +35,7 @@ function TutorialOverlay({
   canGoBack = true,
   canManualNext = true,
   collapsed = false,
+  countInValue = null,
   directoryItems = [],
   displayCopy,
   onBack,
@@ -86,6 +87,11 @@ function TutorialOverlay({
       </div>
 
       <div className="tutorial-panel-body">
+        {countInValue ? (
+          <div className="tutorial-count-in" aria-live="assertive">
+            {countInValue}
+          </div>
+        ) : null}
         {renderTutorialCopy(displayCopy ?? step.copy)}
       </div>
 

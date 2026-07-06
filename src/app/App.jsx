@@ -107,12 +107,15 @@ import {
 } from './uiShellData.js';
 
 const TUTORIAL_AUTO_ADVANCE_MS = 450;
+const TUTORIAL_COUNT_IN_BEATS = Object.freeze([1, 2, 3]);
+const TUTORIAL_COUNT_IN_BEAT_MULTIPLIER = 1.5;
 const EDITOR_RESIZE_MIN_HEIGHT = 180;
 const EDITOR_RESIZE_WORKSPACE_MIN_HEIGHT = 180;
 const EDITOR_RESIZE_KEYBOARD_STEP = 16;
 const EDITOR_RESIZE_DEFAULT_HEIGHT = 300;
 
 let tutorialAutoAdvanceTimerId = null;
+let tutorialCountInTimerIds = [];
 
 function clearTutorialAutoAdvanceTimer() {
   if (tutorialAutoAdvanceTimerId === null) return;
@@ -198,6 +201,7 @@ export default function App() {
   const [isNewSongConfirmOpen, setIsNewSongConfirmOpen] = useState(false);
   const [clipClipboard, setClipClipboard] = useState(null);
   const [pendingClipPaste, setPendingClipPaste] = useState(null);
+  const [tutorialCountInValue, setTutorialCountInValue] = useState(null);
   const tracksScrollRef = useRef(null);
   const timelineScrollRef = useRef(null);
   const editorResizeDragRef = useRef(null);
@@ -240,6 +244,34 @@ export default function App() {
     [],
   );
 
+  const clearTutorialCountIn = useCallback(() => {
+    tutorialCountInTimerIds.forEach((timerId) => window.clearTimeout(timerId));
+    tutorialCountInTimerIds = [];
+    setTutorialCountInValue(null);
+  }, []);
+
+  const startTutorialCountInPlayback = useCallback(() => {
+    clearTutorialCountIn();
+
+    const secondsPerBeat = (60 / bpm) * TUTORIAL_COUNT_IN_BEAT_MULTIPLIER;
+    const nextTimerIds = [];
+
+    TUTORIAL_COUNT_IN_BEATS.forEach((beat, beatIndex) => {
+      const timerId = window.setTimeout(() => {
+        setTutorialCountInValue(beat);
+        void audioEngine.triggerDrumsStep('hihat');
+      }, Math.round(secondsPerBeat * beatIndex * 1000));
+      nextTimerIds.push(timerId);
+    });
+
+    const playbackTimerId = window.setTimeout(() => {
+      clearTutorialCountIn();
+      void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY });
+    }, Math.round(secondsPerBeat * TUTORIAL_COUNT_IN_BEATS.length * 1000));
+    nextTimerIds.push(playbackTimerId);
+    tutorialCountInTimerIds = nextTimerIds;
+  }, [bpm, clearTutorialCountIn, dispatchAppCommand]);
+
   const createCurrentUndoSnapshot = useCallback(() => createUndoSnapshot({
     appState: useMusicStore.getState(),
     tutorialState: {
@@ -280,6 +312,7 @@ export default function App() {
     if (!snapshot) return;
 
     clearTutorialAutoAdvanceTimer();
+    clearTutorialCountIn();
     void (async () => {
       await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
       restoreUndoSnapshot({
@@ -294,7 +327,7 @@ export default function App() {
         store: useMusicStore,
       });
     })();
-  }, [dispatchAppCommand]);
+  }, [clearTutorialCountIn, dispatchAppCommand]);
 
   const handleUndo = useCallback(() => {
     const transition = createUndoTransition({
@@ -323,13 +356,15 @@ export default function App() {
   }, [createCurrentUndoSnapshot, redoHistory, restoreHistorySnapshot, undoHistory]);
 
   const resetTutorialTransportToStart = useCallback(async () => {
+    clearTutorialCountIn();
     await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
     await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_SEEK, bar: 0, step: 0 });
-  }, [dispatchAppCommand]);
+  }, [clearTutorialCountIn, dispatchAppCommand]);
 
   const stopTutorialPreviewPlayback = useCallback(() => {
+    clearTutorialCountIn();
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
-  }, [dispatchAppCommand]);
+  }, [clearTutorialCountIn, dispatchAppCommand]);
 
   useEffect(() => {
     if (!melodyEditorIsOpen) return;
@@ -338,7 +373,8 @@ export default function App() {
 
   useEffect(() => () => {
     clearTutorialAutoAdvanceTimer();
-  }, []);
+    clearTutorialCountIn();
+  }, [clearTutorialCountIn]);
 
   useEffect(() => {
     audioEngine.setVolumeSource?.(() => useMusicStore.getState().volumes);
@@ -681,14 +717,14 @@ export default function App() {
       await resetTutorialTransportToStart();
       enterTutorialStepIndex(currentTutorialStepIndex + 1, checkpointProgress);
       if (options.startPlaybackAfterAdvance) {
-        await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY });
+        startTutorialCountInPlayback();
       }
     })();
   }, [
     currentTutorialStepIndex,
-    dispatchAppCommand,
     enterTutorialStepIndex,
     resetTutorialTransportToStart,
+    startTutorialCountInPlayback,
     tutorialProgress,
   ]);
 
@@ -715,6 +751,7 @@ export default function App() {
     setTutorialProgress(tutorialAction.nextProgress);
     if (tutorialAction.shouldCompleteTutorial) {
       clearTutorialAutoAdvanceTimer();
+      clearTutorialCountIn();
       stopTutorialPreviewPlayback();
       resetTutorialTransportToStart();
       setTutorialModeActive(false);
@@ -723,6 +760,7 @@ export default function App() {
     }
     if (tutorialAction.shouldEnd) {
       clearTutorialAutoAdvanceTimer();
+      clearTutorialCountIn();
       setTutorialVisible(false);
       return;
     }
@@ -734,6 +772,7 @@ export default function App() {
     }
   }, [
     advanceTutorialToNextStep,
+    clearTutorialCountIn,
     resetTutorialTransportToStart,
     stopTutorialPreviewPlayback,
   ]);
@@ -1547,10 +1586,12 @@ export default function App() {
     if (!tutorialViewModel.canManualNext) return;
     withUndoCheckpoint(() => {
       clearTutorialAutoAdvanceTimer();
+      clearTutorialCountIn();
       advanceTutorialToNextStep(tutorialProgress);
     }, { force: true });
   }, [
     advanceTutorialToNextStep,
+    clearTutorialCountIn,
     tutorialProgress,
     tutorialViewModel.canManualNext,
     withUndoCheckpoint,
@@ -1587,6 +1628,7 @@ export default function App() {
 
   const handleTutorialBack = useCallback(() => {
     clearTutorialAutoAdvanceTimer();
+    clearTutorialCountIn();
     stopTutorialPreviewPlayback();
     const targetStepIndex = Math.max(currentTutorialStepIndex - 1, 0);
     const targetCheckpoint = ensureTutorialStepCheckpoint(targetStepIndex);
@@ -1609,6 +1651,7 @@ export default function App() {
     setCurrentTutorialStepIndex(targetStepIndex);
   }, [
     applyTutorialStepSetup,
+    clearTutorialCountIn,
     currentTutorialStepIndex,
     ensureTutorialStepCheckpoint,
     stopTutorialPreviewPlayback,
@@ -1616,6 +1659,7 @@ export default function App() {
 
   const handleTutorialJumpToSection = useCallback((targetStepIndex) => {
     clearTutorialAutoAdvanceTimer();
+    clearTutorialCountIn();
     stopTutorialPreviewPlayback();
     const targetCheckpoint = ensureTutorialStepCheckpoint(targetStepIndex);
     if (!targetCheckpoint) return;
@@ -1636,6 +1680,7 @@ export default function App() {
     setTutorialVisible(true);
   }, [
     applyTutorialStepSetup,
+    clearTutorialCountIn,
     ensureTutorialStepCheckpoint,
     stopTutorialPreviewPlayback,
   ]);
@@ -1643,6 +1688,7 @@ export default function App() {
   const handleTutorialSkip = useCallback(() => {
     withUndoCheckpoint(() => {
       clearTutorialAutoAdvanceTimer();
+      clearTutorialCountIn();
       stopTutorialPreviewPlayback();
       useMusicStore.setState(useMusicStore.getInitialState(), true);
       setCurrentTutorialStepIndex(0);
@@ -1659,7 +1705,7 @@ export default function App() {
       setTutorialSidebarCollapsed(true);
       setTutorialVisible(true);
     }, { force: true });
-  }, [stopTutorialPreviewPlayback, withUndoCheckpoint]);
+  }, [clearTutorialCountIn, stopTutorialPreviewPlayback, withUndoCheckpoint]);
 
   const handleTutorialSidebarToggle = useCallback(() => {
     setTutorialSidebarCollapsed((collapsed) => {
@@ -1822,6 +1868,7 @@ export default function App() {
             canGoBack: currentTutorialStepIndex > 0,
             canManualNext: tutorialViewModel.canManualNext,
             collapsed: tutorialSidebarCollapsed,
+            countInValue: tutorialCountInValue,
             directoryItems: tutorialDirectoryItems,
             displayCopy: tutorialViewModel.displayCopy,
             onBack: handleTutorialBack,
