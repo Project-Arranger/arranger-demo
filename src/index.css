@@ -472,14 +472,14 @@ button {
   height: 18px;
   flex: 0 0 3px;
   content: "";
-  background: color-mix(in oklab, var(--c-drums-ink) 66%, var(--ink-3));
+  background: color-mix(in oklab, var(--hardware-amber) 72%, var(--ink-3));
   border-radius: 999px;
   box-shadow: none;
   animation: tutorial-panel-rail-breathe var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
 }
 
 .tutorial-panel-label {
-  color: var(--c-drums-ink);
+  color: var(--hardware-control-ink);
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.16em;
@@ -500,7 +500,7 @@ button {
   padding: 0 6px;
   color: var(--ink-2);
   background: color-mix(in oklab, white 58%, var(--surface));
-  border: 1px solid color-mix(in oklab, var(--c-drums-ink) 12%, var(--border-soft));
+  border: 1px solid color-mix(in oklab, var(--hardware-amber) 16%, var(--border-soft));
   border-radius: 6px;
   cursor: pointer;
   font-size: 10.5px;
@@ -510,9 +510,9 @@ button {
 }
 
 .tutorial-directory-button.active {
-  color: var(--c-drums-ink);
-  background: color-mix(in oklab, var(--c-drums) 26%, white);
-  border-color: color-mix(in oklab, var(--c-drums-ink) 30%, var(--border-soft));
+  color: #2a170d;
+  background: color-mix(in oklab, var(--hardware-amber) 42%, white);
+  border-color: color-mix(in oklab, var(--hardware-amber) 62%, #4c2a12);
   box-shadow: inset 0 0 0 1px color-mix(in oklab, white 42%, transparent);
 }
 
@@ -6964,6 +6964,79 @@ body {
   text-shadow: 0 2px 2px rgb(0 0 0 / 0.72);
 }
 
+.track-main-row:has(.fill-empty-clips.tutorial-control-target) {
+  grid-template-columns: minmax(0, 1fr) minmax(72px, 80px);
+}
+
+.fill-empty-clips.tutorial-control-target {
+  --tutorial-highlight-accent: var(--track-color, var(--c-drums));
+  --tutorial-highlight-ink: var(--track-ink, var(--c-drums-ink));
+  --tutorial-target-ink: color-mix(in oklab, var(--track-ink, var(--c-drums-ink)) 84%, black);
+  --tutorial-target-surface: color-mix(in oklab, white 88%, var(--track-color, var(--c-drums)));
+  --tutorial-target-surface-border: color-mix(in oklab, var(--track-color, var(--c-drums)) 74%, white);
+  --tutorial-highlight-rest-shadow: var(--tutorial-target-contained-rest-shadow);
+  --tutorial-highlight-peak-shadow: var(--tutorial-target-contained-peak-shadow);
+
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 30px auto;
+  align-content: center;
+  justify-items: center;
+  justify-self: end;
+  row-gap: 2px;
+  width: 76px;
+  max-width: 80px;
+  min-height: 54px;
+  height: 58px;
+  padding: 5px 6px 6px;
+  overflow: visible;
+  color: var(--tutorial-target-ink);
+  background:
+    linear-gradient(90deg, rgb(255 245 218 / 0.3), rgb(255 252 232 / 0.74) 48%, rgb(189 119 57 / 0.14)),
+    linear-gradient(
+      180deg,
+      rgb(255 252 232 / 0.94),
+      color-mix(in oklab, var(--track-color, var(--c-drums)) 36%, white) 58%,
+      rgb(124 69 34 / 0.26)
+    ),
+    var(--tutorial-target-surface);
+  border: 1px solid var(--tutorial-target-surface-border);
+  border-radius: 12px;
+  box-shadow:
+    var(--tutorial-highlight-rest-shadow),
+    inset 0 1px 0 rgb(255 255 255 / 0.72),
+    inset 0 -8px 14px color-mix(in oklab, var(--track-ink, var(--c-drums-ink)) 18%, transparent);
+  text-shadow: 0 1px 0 rgb(255 246 218 / 0.65);
+  filter: var(--tutorial-highlight-rest-filter);
+  animation: tutorial-unified-target-pulse var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
+}
+
+.fill-empty-clips.tutorial-control-target .fill-gem {
+  width: 30px;
+  height: 30px;
+  border-color: color-mix(in oklab, var(--track-ink, var(--c-drums-ink)) 42%, #f7de9d);
+  box-shadow:
+    inset 0 0 7px rgb(255 255 255 / 0.32),
+    0 0 0 2px rgb(255 249 224 / 0.48),
+    0 0 14px color-mix(in oklab, var(--track-color, var(--c-drums)) 58%, transparent),
+    0 3px 6px rgb(0 0 0 / 0.34);
+  filter: brightness(1.28) saturate(1.32);
+}
+
+.fill-empty-clips.tutorial-control-target .fill-empty-clips-label {
+  display: block;
+  max-width: 72px;
+  margin-top: 0;
+  overflow: visible;
+  color: var(--tutorial-target-ink);
+  font-size: 10.5px;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  text-overflow: clip;
+  text-shadow: 0 1px 0 rgb(255 246 218 / 0.78), 0 0 8px rgb(255 246 218 / 0.5);
+}
+
 .vol {
   grid-template-columns: minmax(0, 1fr) 0;
   gap: 0;
@@ -7427,16 +7500,48 @@ body {
 .btn-template.tutorial-control-target,
 .btn-template-groove.tutorial-control-target,
 .drum-action.tutorial-control-target {
-  --tutorial-highlight-rest-shadow: var(--tutorial-target-contained-rest-shadow);
-  --tutorial-highlight-peak-shadow: var(--tutorial-target-contained-peak-shadow);
+  --tutorial-highlight-accent: rgb(255 239 199 / 0.86);
+  --tutorial-highlight-ink: #3f2414;
+  --tutorial-target-ink: #2a170d;
+  --tutorial-highlight-rest-filter: brightness(1.12) saturate(1.04);
+  --tutorial-highlight-peak-filter: brightness(1.22) saturate(1.08);
+  --tutorial-control-highlight-glow: rgb(255 239 199 / 0.24);
+  --tutorial-control-highlight-peak-glow: rgb(255 244 214 / 0.34);
+  --tutorial-highlight-rest-shadow:
+    inset 0 0 0 1px rgb(255 246 218 / 0.78),
+    inset 0 1px 0 rgb(255 252 232 / 0.62),
+    inset 0 -7px 12px rgb(88 45 20 / 0.28),
+    0 0 0 2px rgb(255 250 230 / 0.72),
+    0 0 0 6px var(--tutorial-control-highlight-glow),
+    0 0 18px rgb(255 226 166 / 0.18),
+    0 8px 20px rgb(0 0 0 / 0.26);
+  --tutorial-highlight-peak-shadow:
+    inset 0 0 0 1px rgb(255 250 230 / 0.9),
+    inset 0 2px 0 rgb(255 254 238 / 0.74),
+    inset 0 -8px 14px rgb(88 45 20 / 0.26),
+    0 0 0 3px rgb(255 252 236 / 0.78),
+    0 0 0 8px var(--tutorial-control-highlight-peak-glow),
+    0 0 24px rgb(255 228 170 / 0.22),
+    0 10px 24px rgb(0 0 0 / 0.28);
 
-  color: var(--tutorial-target-ink);
-  background: #e7f7ed;
-  border: 1px solid #8daf9a;
   appearance: none;
   -webkit-appearance: none;
-  box-shadow: var(--tutorial-highlight-rest-shadow);
-  text-shadow: none;
+  color: #2a170d;
+  background:
+    linear-gradient(90deg, rgb(255 245 218 / 0.26), rgb(255 248 224 / 0.62) 50%, rgb(189 119 57 / 0.18)),
+    linear-gradient(180deg, rgb(255 252 232 / 0.95), rgb(255 232 178 / 0.72) 52%, rgb(124 69 34 / 0.36)),
+    var(--hardware-control-bg);
+  border: 1px solid rgb(255 246 218 / 0.82);
+  box-shadow:
+    var(--tutorial-highlight-rest-shadow),
+    inset 0 1px 0 rgb(255 246 218 / 0.46),
+    inset 0 -8px 14px rgb(35 17 8 / 0.26);
+  text-shadow: 0 1px 0 rgb(255 246 218 / 0.58);
+}
+
+.btn-template-groove.tutorial-control-target svg {
+  color: #2a170d;
+  filter: drop-shadow(0 1px 0 rgb(255 246 218 / 0.58));
 }
 
 .btn-template.tutorial-control-target:hover:not(:disabled),
@@ -7446,8 +7551,109 @@ body {
 .btn-template-groove.tutorial-control-target:focus-visible:not(:disabled),
 .drum-action.tutorial-control-target:focus-visible:not(:disabled) {
   color: var(--tutorial-target-ink);
-  background: #e7f7ed;
-  border-color: #8daf9a;
+  background:
+    linear-gradient(90deg, rgb(255 248 224 / 0.32), rgb(255 252 234 / 0.72) 50%, rgb(198 126 60 / 0.16)),
+    linear-gradient(180deg, rgb(255 254 238 / 0.98), rgb(255 237 194 / 0.78) 52%, rgb(137 76 36 / 0.34)),
+    var(--hardware-control-bg);
+  border-color: rgb(255 252 232 / 0.92);
+  box-shadow:
+    var(--tutorial-highlight-peak-shadow),
+    inset 0 1px 0 rgb(255 246 218 / 0.58),
+    inset 0 -8px 14px rgb(35 17 8 / 0.22);
+}
+
+.track-main-row:has(.fill-empty-clips.tutorial-control-target) {
+  grid-template-columns: minmax(0, 1fr) minmax(72px, 80px);
+}
+
+.fill-empty-clips.tutorial-control-target {
+  --tutorial-highlight-accent: rgb(255 239 199 / 0.86);
+  --tutorial-highlight-ink: #3f2414;
+  --tutorial-target-ink: #2a170d;
+  --tutorial-target-surface: rgb(255 244 214 / 0.9);
+  --tutorial-target-surface-border: rgb(255 246 218 / 0.78);
+  --tutorial-highlight-rest-filter: brightness(1.12) saturate(1.04);
+  --tutorial-highlight-peak-filter: brightness(1.22) saturate(1.08);
+  --tutorial-control-highlight-glow: rgb(255 239 199 / 0.24);
+  --tutorial-control-highlight-peak-glow: rgb(255 244 214 / 0.34);
+  --tutorial-highlight-rest-shadow:
+    inset 0 0 0 1px rgb(255 246 218 / 0.74),
+    inset 0 1px 0 rgb(255 252 232 / 0.58),
+    inset 0 -7px 12px rgb(88 45 20 / 0.22),
+    0 0 0 2px rgb(255 250 230 / 0.68),
+    0 0 0 6px var(--tutorial-control-highlight-glow),
+    0 0 18px rgb(255 226 166 / 0.16),
+    0 8px 20px rgb(0 0 0 / 0.24);
+  --tutorial-highlight-peak-shadow:
+    inset 0 0 0 1px rgb(255 250 230 / 0.86),
+    inset 0 2px 0 rgb(255 254 238 / 0.7),
+    inset 0 -8px 14px rgb(88 45 20 / 0.22),
+    0 0 0 3px rgb(255 252 236 / 0.72),
+    0 0 0 8px var(--tutorial-control-highlight-peak-glow),
+    0 0 24px rgb(255 228 170 / 0.2),
+    0 10px 24px rgb(0 0 0 / 0.26);
+
+  width: 76px;
+  max-width: 80px;
+  min-height: 54px;
+  overflow: visible;
+  color: var(--tutorial-target-ink);
+  background:
+    linear-gradient(90deg, rgb(255 245 218 / 0.24), rgb(255 248 224 / 0.58) 50%, rgb(189 119 57 / 0.14)),
+    linear-gradient(180deg, rgb(255 252 232 / 0.92), var(--tutorial-target-surface) 52%, rgb(124 69 34 / 0.3)),
+    var(--hardware-control-bg);
+  border: 1px solid rgb(255 246 218 / 0.78);
+  box-shadow:
+    var(--tutorial-highlight-rest-shadow),
+    inset 0 1px 0 rgb(255 246 218 / 0.42),
+    inset 0 -8px 14px rgb(35 17 8 / 0.22);
+}
+
+.fill-empty-clips.tutorial-control-target .fill-gem {
+  width: 30px;
+  height: 30px;
+  filter: brightness(1.18) saturate(1.04);
+  box-shadow:
+    inset 0 0 5px rgb(255 255 255 / 0.22),
+    0 0 14px rgb(255 239 199 / 0.32),
+    0 3px 6px rgb(0 0 0 / 0.38);
+}
+
+.fill-empty-clips.tutorial-control-target .fill-empty-clips-label {
+  display: block;
+  max-width: 72px;
+  overflow: visible;
+  color: var(--tutorial-target-ink);
+  font-size: 10.5px;
+  font-weight: 900;
+  text-overflow: clip;
+  text-shadow:
+    0 1px 0 rgb(255 246 218 / 0.78),
+    0 0 8px rgb(255 246 218 / 0.5);
+}
+
+@media (max-height: 720px) {
+  .track-main-row:has(.fill-empty-clips.tutorial-control-target) {
+    grid-template-columns: minmax(0, 1fr) minmax(68px, 72px);
+  }
+
+  .fill-empty-clips.tutorial-control-target {
+    width: 70px;
+    max-width: 72px;
+    height: 48px;
+    overflow: visible;
+  }
+
+  .fill-empty-clips.tutorial-control-target .fill-gem {
+    width: 24px;
+    height: 24px;
+  }
+
+  .fill-empty-clips.tutorial-control-target .fill-empty-clips-label {
+    max-width: 66px;
+    overflow: visible;
+    font-size: 9.5px;
+  }
 }
 
 .editor-close,
@@ -8058,6 +8264,34 @@ body {
     margin-top: 0;
     font-size: 8px;
     line-height: 1;
+  }
+
+  .track-main-row:has(.fill-empty-clips.tutorial-control-target) {
+    grid-template-columns: minmax(0, 1fr) minmax(68px, 72px);
+  }
+
+  .fill-empty-clips.tutorial-control-target {
+    grid-template-rows: 24px auto;
+    row-gap: 1px;
+    width: 70px;
+    max-width: 72px;
+    min-height: 46px;
+    height: 48px;
+    padding: 3px 5px 4px;
+    overflow: visible;
+  }
+
+  .fill-empty-clips.tutorial-control-target .fill-gem {
+    width: 24px;
+    height: 24px;
+  }
+
+  .fill-empty-clips.tutorial-control-target .fill-empty-clips-label {
+    display: block;
+    max-width: 66px;
+    overflow: visible;
+    font-size: 9.5px;
+    text-overflow: clip;
   }
 
   .vol {
