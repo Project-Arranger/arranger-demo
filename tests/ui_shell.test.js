@@ -706,6 +706,7 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(drumSequencerSource, /drum-template-beat-markers/);
   assert.match(drumSequencerSource, /drum-template-hit-label/);
   assert.match(drumSequencerSource, /data-hit-label=\{hitLabel \?\? undefined\}/);
+  assert.doesNotMatch(drumSequencerSource, /drum-template-(?:legend|row-icon)/);
   assert.match(drumSequencerSource, /基础律动/);
   assert.match(drumSequencerSource, /应用到本小节/);
   assert.match(drumSequencerSource, /应用到整轨/);

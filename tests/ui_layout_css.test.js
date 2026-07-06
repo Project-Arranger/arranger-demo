@@ -882,6 +882,13 @@ test('groove template picker mirrors the reference secondary menu layout', async
   assert.match(css, /\.drum-template-beat-markers\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*58px minmax\(0,\s*1fr\);/s);
   assert.match(css, /\.drum-template-beat-marker-grid\s*\{[^}]*grid-template-columns:\s*repeat\(16,\s*minmax\(0,\s*1fr\)\);/s);
   assert.match(css, /\.drum-template-hit-label\s*\{[^}]*display:\s*grid;[^}]*place-items:\s*center;/s);
+  assert.ok(
+    css.lastIndexOf('.drum-template-step.hit-block::after') > css.lastIndexOf('.gtpl-step.hit-block::after'),
+    'drum template hit markers must override generic groove hit blocks so hits stay lightweight',
+  );
+  assert.match(css, /\.drum-template-step\s*\{[^}]*overflow:\s*visible;/s);
+  assert.match(css, /\.drum-template-step \.drum-template-hit-label\s*\{[^}]*display:\s*none;/s);
+  assert.match(css, /\.drum-template-step\.hit-block::after\s*\{[^}]*top:\s*50%;[^}]*right:\s*auto;[^}]*bottom:\s*auto;[^}]*left:\s*50%;[^}]*z-index:\s*1;[^}]*width:\s*6px;[^}]*height:\s*6px;[^}]*transform:\s*translate\(-50%,\s*-50%\);/s);
   assert.match(css, /\.drum-template-step\[data-hit-label="K"\] \.drum-template-hit-label\s*\{[^}]*background:\s*var\(--c-drums\);/s);
   assert.match(css, /\.drum-template-step\[data-hit-label="S"\] \.drum-template-hit-label\s*\{[^}]*background:\s*var\(--c-chord\);/s);
   assert.match(css, /\.drum-template-step\[data-hit-label="H"\] \.drum-template-hit-label\s*\{[^}]*background:\s*var\(--hardware-amber\);/s);

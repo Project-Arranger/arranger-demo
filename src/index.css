@@ -4206,6 +4206,51 @@ button {
   height: calc(28% + var(--h, 1) * 18%);
 }
 
+.drum-template-step {
+  overflow: visible;
+}
+
+.drum-template-step .drum-template-hit-label {
+  display: none;
+}
+
+.drum-template-step.hit-block::after {
+  top: 50%;
+  right: auto;
+  bottom: auto;
+  left: 50%;
+  z-index: 1;
+  width: 6px;
+  height: 6px;
+  background:
+    radial-gradient(circle at 34% 28%, rgb(255 255 245 / 0.95), transparent 34%),
+    var(--c-drums);
+  border: 1px solid rgb(24 18 12 / 0.68);
+  border-radius: 999px;
+  box-shadow:
+    0 0 0 1px rgb(255 235 180 / 0.42),
+    0 0 6px color-mix(in oklab, var(--c-drums) 58%, transparent);
+  transform: translate(-50%, -50%);
+}
+
+.drum-template-step[data-instrument="snare"].hit-block::after {
+  background:
+    radial-gradient(circle at 34% 28%, rgb(255 255 245 / 0.95), transparent 34%),
+    var(--c-chord);
+  box-shadow:
+    0 0 0 1px rgb(255 235 180 / 0.42),
+    0 0 6px color-mix(in oklab, var(--c-chord) 54%, transparent);
+}
+
+.drum-template-step[data-instrument="hihat"].hit-block::after {
+  background:
+    radial-gradient(circle at 34% 28%, rgb(255 255 245 / 0.95), transparent 34%),
+    var(--hardware-amber);
+  box-shadow:
+    0 0 0 1px rgb(255 235 180 / 0.42),
+    0 0 6px color-mix(in oklab, var(--hardware-amber) 56%, transparent);
+}
+
 .gtpl-step.hit-root {
   z-index: 2;
   overflow: visible;
