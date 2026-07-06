@@ -1316,7 +1316,7 @@ test('tutorial task targets make allowed cells and bars obvious', async () => {
   assert.match(fillTargetLabelBlock, /font-size:\s*10\.5px;/);
   assert.match(fillTargetLabelBlock, /font-weight:\s*900;/);
   assert.match(fillTargetLabelBlock, /text-shadow:\s*0 1px 0 rgb\(255 246 218 \/ 0\.78\),\s*0 0 8px rgb\(255 246 218 \/ 0\.5\);/);
-  const compactFillTargetMatch = css.match(/@media\s*\(max-height:\s*720px\)\s*\{[\s\S]*?\.track-main-row:has\(\.fill-empty-clips\.tutorial-control-target\)\s*\{(?<rowBlock>[\s\S]*?)\n\}[\s\S]*?\.fill-empty-clips\.tutorial-control-target\s*\{(?<buttonBlock>[\s\S]*?)\n\}[\s\S]*?\.fill-empty-clips\.tutorial-control-target \.fill-gem\s*\{(?<gemBlock>[\s\S]*?)\n\}[\s\S]*?\.fill-empty-clips\.tutorial-control-target \.fill-empty-clips-label\s*\{(?<labelBlock>[\s\S]*?)\n\}/);
+  const compactFillTargetMatch = css.match(/@media\s*\(max-height:\s*720px\)\s*\{[\s\S]*?\.track-main-row:has\(\.fill-empty-clips\.tutorial-control-target\)\s*\{(?<rowBlock>[\s\S]*?)\n\s*\}[\s\S]*?\.fill-empty-clips\.tutorial-control-target\s*\{(?<buttonBlock>[\s\S]*?)\n\s*\}[\s\S]*?\.fill-empty-clips\.tutorial-control-target \.fill-gem\s*\{(?<gemBlock>[\s\S]*?)\n\s*\}[\s\S]*?\.fill-empty-clips\.tutorial-control-target \.fill-empty-clips-label\s*\{(?<labelBlock>[\s\S]*?)\n\s*\}/);
   assert.ok(compactFillTargetMatch, 'compact height layout should keep tutorial fill target readable');
   assert.match(compactFillTargetMatch.groups.rowBlock, /grid-template-columns:\s*minmax\(0,\s*1fr\) minmax\(68px,\s*72px\);/);
   assert.match(compactFillTargetMatch.groups.buttonBlock, /width:\s*70px;/);
