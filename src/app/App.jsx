@@ -97,14 +97,7 @@ import {
   useEditorResize,
 } from './useEditorResize.js';
 import { useClipClipboardActions } from './useClipClipboardActions.js';
-import {
-  createRedoTransition,
-  createUndoSnapshot,
-  createUndoTransition,
-  hasUndoSnapshotChanged,
-  pushHistoryCheckpoint,
-  restoreUndoSnapshot,
-} from './undoHistory.js';
+import { useUndoHistoryController } from './useUndoHistoryController.js';
 import {
   BAR_NUMBERS,
   getTrackUiByIds,
@@ -162,13 +155,10 @@ export default function App() {
       tutorialProgress: createTutorialState(),
     }),
   }));
-  const [undoHistory, setUndoHistory] = useState(() => []);
-  const [redoHistory, setRedoHistory] = useState(() => []);
   const [isNewSongConfirmOpen, setIsNewSongConfirmOpen] = useState(false);
   const [tutorialCountInValue, setTutorialCountInValue] = useState(null);
   const tracksScrollRef = useRef(null);
   const timelineScrollRef = useRef(null);
-  const volumeUndoSnapshotRef = useRef(null);
   const {
     currentEditorResizeValue,
     editorHeightPx,
@@ -242,88 +232,33 @@ export default function App() {
     tutorialCountInTimerIds = nextTimerIds;
   }, [bpm, clearTutorialCountIn, dispatchAppCommand]);
 
-  const createCurrentUndoSnapshot = useCallback(() => createUndoSnapshot({
-    appState: useMusicStore.getState(),
-    tutorialState: {
-      appliedTutorialSetups,
-      currentTutorialStepIndex,
-      tutorialModeActive,
-      tutorialProgress,
-      tutorialSidebarCollapsed,
-      tutorialStepCheckpoints,
-      tutorialVisible,
-    },
-  }), [
+  const {
+    canRedo,
+    canUndo,
+    handleRedo,
+    handleTrackVolumeChangeEnd,
+    handleTrackVolumeChangeStart,
+    handleUndo,
+    withUndoCheckpoint,
+  } = useUndoHistoryController({
     appliedTutorialSetups,
+    clearTutorialAutoAdvanceTimer,
+    clearTutorialCountIn,
     currentTutorialStepIndex,
+    dispatchAppCommand,
+    setAppliedTutorialSetups,
+    setCurrentTutorialStepIndex,
+    setTutorialModeActive,
+    setTutorialProgress,
+    setTutorialSidebarCollapsed,
+    setTutorialStepCheckpoints,
+    setTutorialVisible,
     tutorialModeActive,
     tutorialProgress,
     tutorialSidebarCollapsed,
     tutorialStepCheckpoints,
     tutorialVisible,
-  ]);
-
-  const recordUndoSnapshot = useCallback((snapshot) => {
-    setUndoHistory((history) => pushHistoryCheckpoint({ undoHistory: history, snapshot }).undoHistory);
-    setRedoHistory(() => []);
-  }, []);
-
-  const withUndoCheckpoint = useCallback((action, options = {}) => {
-    const beforeSnapshot = createCurrentUndoSnapshot();
-    const result = action();
-    const shouldRecord = options.force === true
-      || hasUndoSnapshotChanged(beforeSnapshot, createCurrentUndoSnapshot());
-
-    if (shouldRecord) recordUndoSnapshot(beforeSnapshot);
-    return result;
-  }, [createCurrentUndoSnapshot, recordUndoSnapshot]);
-
-  const restoreHistorySnapshot = useCallback((snapshot) => {
-    if (!snapshot) return;
-
-    clearTutorialAutoAdvanceTimer();
-    clearTutorialCountIn();
-    void (async () => {
-      await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
-      restoreUndoSnapshot({
-        setAppliedTutorialSetups,
-        setCurrentTutorialStepIndex,
-        setTutorialModeActive,
-        setTutorialProgress,
-        setTutorialSidebarCollapsed,
-        setTutorialStepCheckpoints,
-        setTutorialVisible,
-        snapshot,
-        store: useMusicStore,
-      });
-    })();
-  }, [clearTutorialCountIn, dispatchAppCommand]);
-
-  const handleUndo = useCallback(() => {
-    const transition = createUndoTransition({
-      currentSnapshot: createCurrentUndoSnapshot(),
-      redoHistory,
-      undoHistory,
-    });
-    if (!transition.snapshot) return;
-
-    setUndoHistory(transition.undoHistory);
-    setRedoHistory(transition.redoHistory);
-    restoreHistorySnapshot(transition.snapshot);
-  }, [createCurrentUndoSnapshot, redoHistory, restoreHistorySnapshot, undoHistory]);
-
-  const handleRedo = useCallback(() => {
-    const transition = createRedoTransition({
-      currentSnapshot: createCurrentUndoSnapshot(),
-      redoHistory,
-      undoHistory,
-    });
-    if (!transition.snapshot) return;
-
-    setUndoHistory(transition.undoHistory);
-    setRedoHistory(transition.redoHistory);
-    restoreHistorySnapshot(transition.snapshot);
-  }, [createCurrentUndoSnapshot, redoHistory, restoreHistorySnapshot, undoHistory]);
+  });
 
   const resetTutorialTransportToStart = useCallback(async () => {
     clearTutorialCountIn();
@@ -631,20 +566,6 @@ export default function App() {
   const handleTrackVolumeChange = useCallback((trackId, volume) => {
     useMusicStore.getState().setTrackVolume(trackId, volume);
   }, []);
-
-  const handleTrackVolumeChangeStart = useCallback(() => {
-    if (volumeUndoSnapshotRef.current) return;
-    volumeUndoSnapshotRef.current = createCurrentUndoSnapshot();
-  }, [createCurrentUndoSnapshot]);
-
-  const handleTrackVolumeChangeEnd = useCallback(() => {
-    const beforeSnapshot = volumeUndoSnapshotRef.current;
-    volumeUndoSnapshotRef.current = null;
-    if (!beforeSnapshot) return;
-    if (hasUndoSnapshotChanged(beforeSnapshot, createCurrentUndoSnapshot())) {
-      recordUndoSnapshot(beforeSnapshot);
-    }
-  }, [createCurrentUndoSnapshot, recordUndoSnapshot]);
 
   const handleMoveClip = useCallback((clipId, targetBar) => {
     const state = useMusicStore.getState();
@@ -1543,9 +1464,6 @@ export default function App() {
   const appStyle = editorHeightPx === null ? undefined : {
     '--app-editor-height': `${editorHeightPx}px`,
   };
-  const canRedo = redoHistory.length > 0;
-  const canUndo = undoHistory.length > 0;
-
   return (
     <div
       className={appClassName}

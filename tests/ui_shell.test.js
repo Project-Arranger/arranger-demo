@@ -35,6 +35,10 @@ test('pitch row hover uses event delegation without React hover state', async ()
 test('topbar exposes independent undo redo controls and App wires history', async () => {
   const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
   const topBarSource = await readFile(new URL('../src/app/components/TopBar.jsx', import.meta.url), 'utf8');
+  const undoControllerSource = await readFile(
+    new URL('../src/app/useUndoHistoryController.js', import.meta.url),
+    'utf8',
+  );
 
   assert.match(topBarSource, /Undo2/);
   assert.match(topBarSource, /Copy/);
@@ -79,18 +83,20 @@ test('topbar exposes independent undo redo controls and App wires history', asyn
   assert.doesNotMatch(topBarSource, /<div className=\{transportClassName\} role="toolbar" aria-label="Transport">[\s\S]*className="t-btn undo"[\s\S]*Back to start/);
   assert.doesNotMatch(topBarSource, /<div className=\{transportClassName\} role="toolbar" aria-label="Transport">[\s\S]*className="t-btn redo"[\s\S]*Back to start/);
 
-  assert.match(source, /createUndoSnapshot/);
-  assert.match(source, /createUndoTransition/);
-  assert.match(source, /createRedoTransition/);
-  assert.match(source, /pushHistoryCheckpoint/);
-  assert.match(source, /restoreUndoSnapshot/);
-  assert.match(source, /const \[undoHistory,\s*setUndoHistory\] = useState\(\(\) => \[\]\);/);
-  assert.match(source, /const \[redoHistory,\s*setRedoHistory\] = useState\(\(\) => \[\]\);/);
-  assert.match(source, /const canUndo = undoHistory\.length > 0;/);
-  assert.match(source, /const canRedo = redoHistory\.length > 0;/);
-  assert.match(source, /const withUndoCheckpoint = useCallback/);
-  assert.match(source, /const handleUndo = useCallback/);
-  assert.match(source, /const handleRedo = useCallback/);
+  assert.match(source, /useUndoHistoryController\(\{\s*appliedTutorialSetups,\s*clearTutorialAutoAdvanceTimer,\s*clearTutorialCountIn,\s*currentTutorialStepIndex,\s*dispatchAppCommand,/);
+  assert.match(undoControllerSource, /createUndoSnapshot/);
+  assert.match(undoControllerSource, /createUndoTransition/);
+  assert.match(undoControllerSource, /createRedoTransition/);
+  assert.match(undoControllerSource, /pushHistoryCheckpoint/);
+  assert.match(undoControllerSource, /restoreUndoSnapshot/);
+  assert.match(undoControllerSource, /const \[undoHistory,\s*setUndoHistory\] = useState\(\(\) => \[\]\);/);
+  assert.match(undoControllerSource, /const \[redoHistory,\s*setRedoHistory\] = useState\(\(\) => \[\]\);/);
+  assert.match(undoControllerSource, /canUndo:\s*undoHistory\.length > 0/);
+  assert.match(undoControllerSource, /canRedo:\s*redoHistory\.length > 0/);
+  assert.match(undoControllerSource, /const withUndoCheckpoint = useCallback/);
+  assert.match(undoControllerSource, /const handleUndo = useCallback/);
+  assert.match(undoControllerSource, /const handleRedo = useCallback/);
+  assert.match(undoControllerSource, /volumeUndoSnapshotRef/);
   assert.match(source, /APP_COMMAND_TYPES\.APP_UNDO/);
   assert.match(source, /APP_COMMAND_TYPES\.APP_REDO/);
   assert.match(source, /APP_COMMAND_TYPES\.CLIP_COPY_SELECTED/);
@@ -99,7 +105,7 @@ test('topbar exposes independent undo redo controls and App wires history', asyn
   assert.match(source, /command\?\.type === APP_COMMAND_TYPES\.APP_REDO[\s\S]*handleRedo\(\);[\s\S]*return;/);
   assert.match(source, /command\?\.type === APP_COMMAND_TYPES\.CLIP_COPY_SELECTED[\s\S]*handleCopySelectedClip\(\);[\s\S]*return;/);
   assert.match(source, /command\?\.type === APP_COMMAND_TYPES\.CLIP_PASTE[\s\S]*handlePasteClipRequest\(\);[\s\S]*return;/);
-  assert.match(source, /setRedoHistory\(\(\) => \[\]\)/);
+  assert.match(undoControllerSource, /setRedoHistory\(\(\) => \[\]\)/);
   assert.match(source, /canRedo,\s*\n\s*canUndo,\s*\n\s*currentBar/);
   assert.match(source, /canCopyClip,/);
   assert.match(source, /canPasteClip,/);
