@@ -52,6 +52,10 @@ const GROOVE_STEPS_PER_BEAT = 4;
 const PASSING_CHORD_STEP_INDEX = 14;
 const PASSING_CHORD_SPAN_INDEX = 3;
 
+function isTutorialControlAllowed(role) {
+  return role === 'target' || role === 'allowed';
+}
+
 function rectToAnchor(rect) {
   return {
     bottom: rect.bottom,
@@ -585,7 +589,8 @@ function ChordEditor({
             className={grooveButtonClassName}
             aria-label="选择和弦弹奏律动模板"
             type="button"
-            disabled={tutorialLocked && grooveButtonRole !== 'target'}
+            data-tutorial-role={grooveButtonRole}
+            disabled={tutorialLocked && !isTutorialControlAllowed(grooveButtonRole)}
             onClick={() => {
               setPickerMode('groove');
               closeChordPanels();
@@ -997,7 +1002,7 @@ function ChordEditor({
                 tutorialTargets,
                 `chord-groove-card:${template.id}`,
               );
-              const grooveCardDisabled = tutorialLocked && grooveCardRole !== 'target';
+              const grooveCardDisabled = tutorialLocked && !isTutorialControlAllowed(grooveCardRole);
               const grooveCardClassName = [
                 'gtpl-card',
                 selectedGrooveTemplateId === template.id ? 'selected' : '',
@@ -1009,6 +1014,7 @@ function ChordEditor({
                   className={grooveCardClassName}
                   aria-disabled={grooveCardDisabled}
                   data-gtpl={template.id}
+                  data-tutorial-role={grooveCardRole}
                   key={template.id}
                   onClick={() => {
                     if (grooveCardDisabled) return;

@@ -336,6 +336,12 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(chordEditorSource, /chord-template-card:\$\{template\.id\}/);
   assert.match(chordEditorSource, /chord-groove-button/);
   assert.match(chordEditorSource, /chord-groove-card:\$\{template\.id\}/);
+  assert.match(chordEditorSource, /function isTutorialControlAllowed\(role\)\s*\{[\s\S]*role === 'target' \|\| role === 'allowed';[\s\S]*\}/);
+  assert.match(chordEditorSource, /data-tutorial-role=\{grooveButtonRole\}/);
+  assert.match(chordEditorSource, /disabled=\{tutorialLocked && !isTutorialControlAllowed\(grooveButtonRole\)\}/);
+  assert.match(chordEditorSource, /const grooveCardDisabled = tutorialLocked && !isTutorialControlAllowed\(grooveCardRole\);/);
+  assert.match(chordEditorSource, /data-tutorial-role=\{grooveCardRole\}/);
+  assert.match(chordEditorSource, /grooveCardRole === 'target' \? 'tutorial-control-target' : ''/);
   assert.match(chordEditorSource, /chord-enrich-button:\$\{spanIndex\}/);
   assert.match(chordEditorSource, /chord-passing-button/);
   assert.match(chordEditorSource, /tutorial-control-target/);

@@ -576,9 +576,9 @@ test('target 4 chord listen step enables next after the first four bars', () => 
   assert.equal(viewModel.primaryDisabled, true);
   assert.deepEqual(viewModel.targets.controls, [
     { name: 'transport-play', role: 'target' },
-    { name: 'chord-groove-button', role: 'target' },
-    { name: 'chord-groove-card:block-basic', role: 'target' },
-    { name: 'chord-groove-card:block-syncopated', role: 'target' },
+    { name: 'chord-groove-button', role: 'allowed' },
+    { name: 'chord-groove-card:block-basic', role: 'allowed' },
+    { name: 'chord-groove-card:block-syncopated', role: 'allowed' },
   ]);
 
   const blockedNext = completeTutorialPrimaryAction({
