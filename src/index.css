@@ -7427,48 +7427,48 @@ body {
 .btn-template.tutorial-control-target,
 .btn-template-groove.tutorial-control-target,
 .drum-action.tutorial-control-target {
-  --tutorial-highlight-accent: rgb(255 239 199 / 0.86);
+  --tutorial-highlight-accent: rgb(255 230 205 / 0.82);
   --tutorial-highlight-ink: #3f2414;
   --tutorial-target-ink: #2a170d;
-  --tutorial-highlight-rest-filter: brightness(1.12) saturate(1.04);
-  --tutorial-highlight-peak-filter: brightness(1.22) saturate(1.08);
-  --tutorial-control-highlight-glow: rgb(255 239 199 / 0.24);
-  --tutorial-control-highlight-peak-glow: rgb(255 244 214 / 0.34);
+  --tutorial-highlight-rest-filter: brightness(1.1) saturate(0.94);
+  --tutorial-highlight-peak-filter: brightness(1.18) saturate(0.98);
+  --tutorial-control-highlight-glow: rgb(255 226 198 / 0.24);
+  --tutorial-control-highlight-peak-glow: rgb(255 238 218 / 0.34);
   --tutorial-highlight-rest-shadow:
-    inset 0 0 0 1px rgb(255 246 218 / 0.78),
-    inset 0 1px 0 rgb(255 252 232 / 0.62),
-    inset 0 -7px 12px rgb(88 45 20 / 0.28),
-    0 0 0 2px rgb(255 250 230 / 0.72),
+    inset 0 0 0 1px rgb(255 238 214 / 0.76),
+    inset 0 1px 0 rgb(255 252 236 / 0.62),
+    inset 0 -7px 12px rgb(88 45 20 / 0.2),
+    0 0 0 2px rgb(255 250 236 / 0.68),
     0 0 0 6px var(--tutorial-control-highlight-glow),
-    0 0 18px rgb(255 226 166 / 0.18),
+    0 0 18px rgb(255 226 198 / 0.16),
     0 8px 20px rgb(0 0 0 / 0.26);
   --tutorial-highlight-peak-shadow:
-    inset 0 0 0 1px rgb(255 250 230 / 0.9),
-    inset 0 2px 0 rgb(255 254 238 / 0.74),
-    inset 0 -8px 14px rgb(88 45 20 / 0.26),
-    0 0 0 3px rgb(255 252 236 / 0.78),
+    inset 0 0 0 1px rgb(255 244 224 / 0.88),
+    inset 0 2px 0 rgb(255 254 240 / 0.72),
+    inset 0 -8px 14px rgb(88 45 20 / 0.2),
+    0 0 0 3px rgb(255 252 238 / 0.74),
     0 0 0 8px var(--tutorial-control-highlight-peak-glow),
-    0 0 24px rgb(255 228 170 / 0.22),
+    0 0 24px rgb(255 228 204 / 0.2),
     0 10px 24px rgb(0 0 0 / 0.28);
 
   appearance: none;
   -webkit-appearance: none;
   color: #2a170d;
   background:
-    linear-gradient(90deg, rgb(255 245 218 / 0.26), rgb(255 248 224 / 0.62) 50%, rgb(189 119 57 / 0.18)),
-    linear-gradient(180deg, rgb(255 252 232 / 0.95), rgb(255 232 178 / 0.72) 52%, rgb(124 69 34 / 0.36)),
+    linear-gradient(90deg, rgb(255 248 232 / 0.22), rgb(255 250 238 / 0.58) 50%, rgb(166 96 58 / 0.13)),
+    linear-gradient(180deg, rgb(255 253 240 / 0.96), rgb(250 224 192 / 0.62) 52%, rgb(118 64 38 / 0.24)),
     var(--hardware-control-bg);
-  border: 1px solid rgb(255 246 218 / 0.82);
+  border: 1px solid rgb(255 238 214 / 0.82);
   box-shadow:
     var(--tutorial-highlight-rest-shadow),
-    inset 0 1px 0 rgb(255 246 218 / 0.46),
-    inset 0 -8px 14px rgb(35 17 8 / 0.26);
-  text-shadow: 0 1px 0 rgb(255 246 218 / 0.58);
+    inset 0 1px 0 rgb(255 246 228 / 0.44),
+    inset 0 -8px 14px rgb(35 17 8 / 0.2);
+  text-shadow: 0 1px 0 rgb(255 246 228 / 0.58);
 }
 
 .btn-template-groove.tutorial-control-target svg {
   color: #2a170d;
-  filter: drop-shadow(0 1px 0 rgb(255 246 218 / 0.58));
+  filter: drop-shadow(0 1px 0 rgb(255 246 228 / 0.58));
 }
 
 .btn-template.tutorial-control-target:hover:not(:disabled),
@@ -7479,14 +7479,23 @@ body {
 .drum-action.tutorial-control-target:focus-visible:not(:disabled) {
   color: var(--tutorial-target-ink);
   background:
-    linear-gradient(90deg, rgb(255 248 224 / 0.32), rgb(255 252 234 / 0.72) 50%, rgb(198 126 60 / 0.16)),
-    linear-gradient(180deg, rgb(255 254 238 / 0.98), rgb(255 237 194 / 0.78) 52%, rgb(137 76 36 / 0.34)),
+    linear-gradient(90deg, rgb(255 250 236 / 0.28), rgb(255 253 242 / 0.68) 50%, rgb(174 104 62 / 0.13)),
+    linear-gradient(180deg, rgb(255 254 242 / 0.98), rgb(252 232 204 / 0.7) 52%, rgb(124 70 42 / 0.24)),
     var(--hardware-control-bg);
-  border-color: rgb(255 252 232 / 0.92);
+  border-color: rgb(255 246 228 / 0.9);
   box-shadow:
     var(--tutorial-highlight-peak-shadow),
-    inset 0 1px 0 rgb(255 246 218 / 0.58),
-    inset 0 -8px 14px rgb(35 17 8 / 0.22);
+    inset 0 1px 0 rgb(255 246 228 / 0.56),
+    inset 0 -8px 14px rgb(35 17 8 / 0.18);
+}
+
+.track:has(.fill-empty-clips.tutorial-control-target) {
+  position: relative;
+  z-index: calc(var(--tutorial-target-z) + 1);
+}
+
+.track:has(.fill-empty-clips.tutorial-control-target) .fill-empty-clips.tutorial-control-target {
+  z-index: calc(var(--tutorial-target-z) + 2);
 }
 
 .track-main-row:has(.fill-empty-clips.tutorial-control-target) {
@@ -7494,30 +7503,30 @@ body {
 }
 
 .fill-empty-clips.tutorial-control-target {
-  --tutorial-highlight-accent: rgb(255 239 199 / 0.86);
+  --tutorial-highlight-accent: rgb(255 230 205 / 0.82);
   --tutorial-highlight-ink: #3f2414;
   --tutorial-target-ink: #2a170d;
-  --tutorial-target-surface: rgb(255 244 214 / 0.9);
-  --tutorial-target-surface-border: rgb(255 246 218 / 0.78);
-  --tutorial-highlight-rest-filter: brightness(1.12) saturate(1.04);
-  --tutorial-highlight-peak-filter: brightness(1.22) saturate(1.08);
-  --tutorial-control-highlight-glow: rgb(255 239 199 / 0.24);
-  --tutorial-control-highlight-peak-glow: rgb(255 244 214 / 0.34);
+  --tutorial-target-surface: rgb(255 244 224 / 0.9);
+  --tutorial-target-surface-border: rgb(255 238 214 / 0.78);
+  --tutorial-highlight-rest-filter: brightness(1.1) saturate(0.94);
+  --tutorial-highlight-peak-filter: brightness(1.18) saturate(0.98);
+  --tutorial-control-highlight-glow: rgb(255 226 198 / 0.24);
+  --tutorial-control-highlight-peak-glow: rgb(255 238 218 / 0.34);
   --tutorial-highlight-rest-shadow:
-    inset 0 0 0 1px rgb(255 246 218 / 0.74),
-    inset 0 1px 0 rgb(255 252 232 / 0.58),
-    inset 0 -7px 12px rgb(88 45 20 / 0.22),
-    0 0 0 2px rgb(255 250 230 / 0.68),
+    inset 0 0 0 1px rgb(255 238 214 / 0.74),
+    inset 0 1px 0 rgb(255 252 236 / 0.58),
+    inset 0 -7px 12px rgb(88 45 20 / 0.18),
+    0 0 0 2px rgb(255 250 236 / 0.64),
     0 0 0 6px var(--tutorial-control-highlight-glow),
-    0 0 18px rgb(255 226 166 / 0.16),
+    0 0 18px rgb(255 226 198 / 0.14),
     0 8px 20px rgb(0 0 0 / 0.24);
   --tutorial-highlight-peak-shadow:
-    inset 0 0 0 1px rgb(255 250 230 / 0.86),
-    inset 0 2px 0 rgb(255 254 238 / 0.7),
-    inset 0 -8px 14px rgb(88 45 20 / 0.22),
-    0 0 0 3px rgb(255 252 236 / 0.72),
+    inset 0 0 0 1px rgb(255 244 224 / 0.86),
+    inset 0 2px 0 rgb(255 254 240 / 0.7),
+    inset 0 -8px 14px rgb(88 45 20 / 0.18),
+    0 0 0 3px rgb(255 252 238 / 0.7),
     0 0 0 8px var(--tutorial-control-highlight-peak-glow),
-    0 0 24px rgb(255 228 170 / 0.2),
+    0 0 24px rgb(255 228 204 / 0.18),
     0 10px 24px rgb(0 0 0 / 0.26);
 
   display: grid;
@@ -7535,16 +7544,16 @@ body {
   overflow: visible;
   color: var(--tutorial-target-ink);
   background:
-    linear-gradient(90deg, rgb(255 245 218 / 0.24), rgb(255 248 224 / 0.58) 50%, rgb(189 119 57 / 0.14)),
-    linear-gradient(180deg, rgb(255 252 232 / 0.92), var(--tutorial-target-surface) 52%, rgb(124 69 34 / 0.3)),
+    linear-gradient(90deg, rgb(255 248 232 / 0.22), rgb(255 250 238 / 0.58) 50%, rgb(166 96 58 / 0.12)),
+    linear-gradient(180deg, rgb(255 253 240 / 0.92), var(--tutorial-target-surface) 52%, rgb(118 64 38 / 0.2)),
     var(--hardware-control-bg);
-  border: 1px solid rgb(255 246 218 / 0.78);
+  border: 1px solid rgb(255 238 214 / 0.78);
   border-radius: 12px;
   box-shadow:
     var(--tutorial-highlight-rest-shadow),
-    inset 0 1px 0 rgb(255 246 218 / 0.42),
-    inset 0 -8px 14px rgb(35 17 8 / 0.22);
-  text-shadow: 0 1px 0 rgb(255 246 218 / 0.65);
+    inset 0 1px 0 rgb(255 246 228 / 0.42),
+    inset 0 -8px 14px rgb(35 17 8 / 0.2);
+  text-shadow: 0 1px 0 rgb(255 246 228 / 0.58);
   filter: var(--tutorial-highlight-rest-filter);
   animation: tutorial-unified-target-pulse var(--tutorial-breathe-duration) var(--tutorial-breathe-ease) infinite;
 }
@@ -7554,9 +7563,9 @@ body {
   height: 30px;
   box-shadow:
     inset 0 0 5px rgb(255 255 255 / 0.22),
-    0 0 14px rgb(255 239 199 / 0.32),
+    0 0 14px rgb(255 226 198 / 0.3),
     0 3px 6px rgb(0 0 0 / 0.38);
-  filter: brightness(1.18) saturate(1.04);
+  filter: brightness(1.16) saturate(0.98);
 }
 
 .fill-empty-clips.tutorial-control-target .fill-empty-clips-label {
