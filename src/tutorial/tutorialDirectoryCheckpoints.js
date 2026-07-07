@@ -1,4 +1,8 @@
 import { TOTAL_BARS } from '../domain/musicConstants.js';
+import {
+  createClipId,
+  createClipRecord,
+} from '../domain/clipHelpers.js';
 import { applyBassGrooveTemplateToExistingClips } from '../app/bassActions.js';
 import { applyChordTemplateToExistingClips } from '../app/chordActions.js';
 import { applyChordGrooveTemplateToExistingClips } from '../app/chordGrooveActions.js';
@@ -7,13 +11,6 @@ import { createTutorialState } from './drumsTutorialRuntime.js';
 import { DRUMS_TUTORIAL_STEPS } from './drumsTutorialSteps.js';
 import { createTutorialCheckpoint } from './tutorialCheckpoints.js';
 import { TUTORIAL_STEP_IDS } from './tutorialStepIds.js';
-
-const CLIP_LABELS = Object.freeze({
-  bass: 'Bass',
-  chord: 'Chord',
-  drums: 'Drum',
-  melody: 'Melody',
-});
 
 const CHORD_TEMPLATE_ID = 'doowop';
 const CHORD_GROOVE_TEMPLATE_ID = 'block-basic';
@@ -26,22 +23,6 @@ function cloneValue(value) {
   return Object.fromEntries(
     Object.entries(value).map(([key, entry]) => [key, cloneValue(entry)]),
   );
-}
-
-function createClipId(trackId, bar) {
-  return `${trackId}-bar-${bar}`;
-}
-
-function createClipRecord(trackId, bar) {
-  const label = CLIP_LABELS[trackId] ?? trackId;
-  const barNumber = String(bar + 1).padStart(2, '0');
-
-  return {
-    bar,
-    id: createClipId(trackId, bar),
-    name: `${label} ${barNumber}`,
-    trackId,
-  };
 }
 
 function addTrackClips(clips, trackId) {

@@ -1,34 +1,9 @@
+import {
+  createClipId,
+  createClipRecord,
+  formatClipName,
+} from '../../domain/clipHelpers.js';
 import { TOTAL_BARS, TRACK_IDS } from '../../domain/musicConstants.js';
-
-const TRACK_LABELS = Object.freeze({
-  drums: 'Drum',
-  bass: 'Bass',
-  chord: 'Chord',
-  melody: 'Melody',
-  pad: 'Pad',
-  sample: 'Sampler',
-  vocal: 'Vocal',
-});
-
-function createClipId(trackId, bar) {
-  return `${trackId}-bar-${bar}`;
-}
-
-function formatClipName(trackId, bar) {
-  const label = TRACK_LABELS[trackId] ?? trackId;
-  const barNumber = String(bar + 1).padStart(2, '0');
-
-  return `${label} ${barNumber}`;
-}
-
-function createClipRecord(trackId, bar) {
-  return {
-    id: createClipId(trackId, bar),
-    trackId,
-    bar,
-    name: formatClipName(trackId, bar),
-  };
-}
 
 function createEmptyBarLike(bar) {
   return Array.from({ length: bar.length }, () => null);
@@ -355,10 +330,6 @@ export default function createClipsSlice(set, get) {
 }
 
 export {
-  createClipId,
-  createClipRecord,
   createInitialClips,
   findClipForTrackBar,
-  formatClipName,
-  isValidClipLocation,
 };
