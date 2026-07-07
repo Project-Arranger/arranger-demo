@@ -63,16 +63,29 @@ function rectToAnchor(rect) {
   };
 }
 
+function getTutorialSafeRight() {
+  const viewportRight = window.innerWidth - VIEWPORT_MARGIN;
+  const tutorialPanel = document.querySelector('.tutorial-panel');
+  if (!tutorialPanel) return viewportRight;
+
+  const panelRect = tutorialPanel.getBoundingClientRect();
+  if (panelRect.width <= 0 || panelRect.left <= VIEWPORT_MARGIN) return viewportRight;
+
+  return Math.min(viewportRight, panelRect.left - VIEWPORT_MARGIN);
+}
+
 function getPopoverPosition(anchorRect) {
   if (!anchorRect || typeof window === 'undefined') {
     return { left: 16, top: 16, side: 'below', arrowX: 24 };
   }
 
-  const width = Math.min(ADD_CHORD_PANEL_WIDTH, window.innerWidth - VIEWPORT_MARGIN * 2);
+  const safeRight = getTutorialSafeRight();
+  const availableWidth = Math.max(280, safeRight - VIEWPORT_MARGIN);
+  const width = Math.min(ADD_CHORD_PANEL_WIDTH, availableWidth);
   const anchorCenterX = anchorRect.left + anchorRect.width / 2;
   const left = Math.max(
     VIEWPORT_MARGIN,
-    Math.min(window.innerWidth - width - VIEWPORT_MARGIN, anchorCenterX - width / 2),
+    Math.min(safeRight - width, anchorCenterX - width / 2),
   );
   const estimatedHeight = 300;
   const fitsBelow = anchorRect.bottom + PANEL_GAP + estimatedHeight + VIEWPORT_MARGIN <= window.innerHeight;

@@ -866,10 +866,10 @@ test('target 5 bass listen step enables continue after the first four bars', () 
   assert.equal(viewModel.primaryDisabled, true);
   assert.deepEqual(viewModel.targets.controls, [
     { name: 'transport-play', role: 'target' },
-    { name: 'bass-groove-button', role: 'target' },
-    { name: 'bass-groove-card:bass-8th-basic', role: 'target' },
-    { name: 'bass-groove-card:bass-8th-swing', role: 'target' },
-    { name: 'bass-groove-card:bass-16th-swing', role: 'target' },
+    { name: 'bass-groove-button', role: 'allowed' },
+    { name: 'bass-groove-card:bass-8th-basic', role: 'allowed' },
+    { name: 'bass-groove-card:bass-8th-swing', role: 'allowed' },
+    { name: 'bass-groove-card:bass-16th-swing', role: 'allowed' },
   ]);
 
   const blockedNext = completeTutorialPrimaryAction({

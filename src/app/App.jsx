@@ -1486,14 +1486,7 @@ export default function App() {
     if (nextMatrix === state.matrix) return;
 
     withUndoCheckpoint(() => {
-      state.clips.ids
-        .map((id) => state.clips.byId[id])
-        .filter((clip) => clip?.trackId === 'bass')
-        .forEach((clip) => {
-          nextMatrix.bass[clip.bar].forEach((cell, step) => {
-            state.setCell('bass', clip.bar, step, cell);
-          });
-        });
+      state.setTrackMatrix('bass', nextMatrix.bass);
       if (tutorialAction) applyTutorialActionProgress(tutorialAction);
     }, { force: Boolean(tutorialAction) });
   }, [

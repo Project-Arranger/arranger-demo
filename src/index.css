@@ -4058,8 +4058,7 @@ button {
     var(--shadow-2);
 }
 
-.tpl-card.tutorial-control-target,
-.gtpl-card.tutorial-control-target {
+.tpl-card.tutorial-control-target {
   --tutorial-highlight-rest-shadow: var(--tutorial-target-contained-rest-shadow);
   --tutorial-highlight-peak-shadow: var(--tutorial-target-contained-peak-shadow);
 
@@ -4071,44 +4070,130 @@ button {
   box-shadow: var(--tutorial-highlight-rest-shadow);
 }
 
-.sctpl-card.tutorial-control-target {
-  --tutorial-highlight-accent: var(--c-melody);
-  --tutorial-highlight-ink: var(--c-melody-ink);
-  --tutorial-target-surface: color-mix(in oklab, white 92%, var(--c-melody));
-  --tutorial-target-rim: color-mix(in oklab, var(--c-melody-ink) 58%, white);
+.gtpl-card.tutorial-control-target {
+  --tutorial-highlight-accent: rgb(255 230 205 / 0.82);
+  --tutorial-highlight-ink: #3f2414;
+  --tutorial-target-ink: #2a170d;
   --tutorial-highlight-rest-shadow:
-    inset 0 0 0 2px color-mix(in oklab, white 92%, transparent),
-    inset 0 0 0 6px color-mix(in oklab, var(--c-melody-ink) 24%, transparent),
-    0 0 0 3px color-mix(in oklab, white 58%, transparent),
-    0 0 0 8px color-mix(in oklab, var(--c-melody) 18%, transparent),
-    0 16px 34px color-mix(in oklab, black 28%, transparent);
+    inset 0 0 0 2px rgb(255 238 214 / 0.74),
+    inset 0 0 0 5px rgb(255 230 205 / 0.28),
+    inset 0 0 18px rgb(255 246 228 / 0.14),
+    0 0 0 2px rgb(255 250 236 / 0.58),
+    0 0 0 6px rgb(255 230 205 / 0.24),
+    0 10px 24px rgb(0 0 0 / 0.18);
   --tutorial-highlight-peak-shadow:
-    inset 0 0 0 2px color-mix(in oklab, white 96%, transparent),
-    inset 0 0 0 7px color-mix(in oklab, var(--c-melody-ink) 30%, transparent),
-    0 0 0 4px color-mix(in oklab, white 68%, transparent),
-    0 0 0 10px color-mix(in oklab, var(--c-melody) 24%, transparent),
-    0 18px 38px color-mix(in oklab, black 30%, transparent);
+    inset 0 0 0 2px rgb(255 244 224 / 0.86),
+    inset 0 0 0 6px rgb(255 238 218 / 0.36),
+    inset 0 0 22px rgb(255 250 238 / 0.18),
+    0 0 0 3px rgb(255 252 238 / 0.68),
+    0 0 0 9px rgb(255 238 218 / 0.32),
+    0 12px 28px rgb(0 0 0 / 0.22);
+
+  color: var(--hardware-control-ink);
+  background:
+    linear-gradient(180deg, rgb(34 25 18 / 0.96), rgb(24 16 11 / 0.94)),
+    var(--hardware-control-bg);
+  border: 1px solid var(--hardware-control-border);
+  outline-offset: -4px;
+  opacity: 1;
+  box-shadow:
+    var(--tutorial-highlight-rest-shadow),
+    inset 0 1px 0 rgb(255 238 196 / 0.12),
+    inset 0 -14px 22px rgb(0 0 0 / 0.3);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.72);
+}
+
+.gtpl-card.tutorial-control-target .gtpl-name {
+  color: var(--hardware-chord-ink-strong);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.74);
+}
+
+.gtpl-card.tutorial-control-target .gtpl-desc {
+  color: #e8c99a;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.72);
+}
+
+.gtpl-card.tutorial-control-target .gtpl-detail {
+  color: #f1d8ad;
+  background: rgb(16 9 6 / 0.78);
+  border-left-color: var(--hardware-control-border);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.76);
+}
+
+.gtpl-card.tutorial-control-target .gtpl-foot {
+  border-top-color: rgb(255 219 164 / 0.28);
+}
+
+.gtpl-card.tutorial-control-target .gtpl-foot-label {
+  color: var(--hardware-control-ink);
+}
+
+.gtpl-card.tutorial-control-target .gtpl-beat-num {
+  color: var(--hardware-control-ink);
+}
+
+.gtpl-card.tutorial-control-target .gtpl-rhythm {
+  background: rgb(16 9 6 / 0.86);
+  border-color: var(--hardware-control-border);
+}
+
+.gtpl-card.tutorial-control-target .gtpl-step {
+  background: rgb(62 50 40 / 0.76);
+  border-color: rgb(255 219 164 / 0.2);
+}
+
+.gtpl-card.tutorial-control-target .gtpl-step.downbeat {
+  background: rgb(80 62 44 / 0.82);
+}
+
+.gtpl-card.tutorial-control-target .gtpl-play {
+  color: var(--hardware-control-ink);
+  background: var(--hardware-control-bg);
+  border-color: var(--hardware-control-border);
+}
+
+.sctpl-card.tutorial-control-target {
+  --tutorial-highlight-accent: rgb(255 230 205 / 0.82);
+  --tutorial-highlight-ink: #3f2414;
+  --tutorial-highlight-rest-shadow:
+    inset 0 0 0 2px rgb(255 238 214 / 0.74),
+    inset 0 0 0 5px rgb(255 230 205 / 0.28),
+    inset 0 0 18px rgb(255 246 228 / 0.14),
+    0 0 0 2px rgb(255 250 236 / 0.58),
+    0 0 0 6px rgb(255 230 205 / 0.24),
+    0 10px 24px rgb(0 0 0 / 0.18);
+  --tutorial-highlight-peak-shadow:
+    inset 0 0 0 2px rgb(255 244 224 / 0.86),
+    inset 0 0 0 6px rgb(255 238 218 / 0.36),
+    inset 0 0 22px rgb(255 250 238 / 0.18),
+    0 0 0 3px rgb(255 252 238 / 0.68),
+    0 0 0 9px rgb(255 238 218 / 0.32),
+    0 12px 28px rgb(0 0 0 / 0.22);
 
   position: relative;
   z-index: calc(var(--tutorial-target-z) + 2);
-  color: var(--tutorial-target-ink);
-  background: var(--tutorial-target-surface);
-  border: 1px solid var(--tutorial-target-rim);
-  border-color: var(--tutorial-target-rim);
+  color: var(--hardware-control-ink);
+  background:
+    linear-gradient(180deg, rgb(34 25 18 / 0.96), rgb(24 16 11 / 0.94)),
+    var(--hardware-control-bg);
+  border: 1px solid var(--hardware-control-border);
   outline-offset: -4px;
   opacity: 1;
-  box-shadow: var(--tutorial-highlight-rest-shadow);
+  box-shadow:
+    var(--tutorial-highlight-rest-shadow),
+    inset 0 1px 0 rgb(255 238 196 / 0.12),
+    inset 0 -14px 22px rgb(0 0 0 / 0.3);
 }
 
 .sctpl-card.tutorial-control-target .sctpl-notes {
-  background: color-mix(in oklab, white 78%, var(--c-melody));
-  border-color: color-mix(in oklab, var(--c-melody-ink) 42%, var(--border-soft));
+  background: rgb(16 9 6 / 0.86);
+  border-color: var(--hardware-control-border);
 }
 
 .sctpl-card.tutorial-control-target .sctpl-note:not(.gap) {
-  color: var(--c-melody-ink);
-  background: color-mix(in oklab, white 86%, var(--c-melody));
-  border-color: color-mix(in oklab, var(--c-melody-ink) 42%, transparent);
+  color: var(--hardware-chord-ink-strong);
+  background: rgb(255 244 224 / 0.12);
+  border-color: rgb(255 219 164 / 0.26);
 }
 
 .scale-picker:has(.sctpl-card.tutorial-control-target) .sctpl-card:not(.tutorial-control-target) {
@@ -4375,10 +4460,16 @@ button {
   min-width: 0;
   padding: 26px 26px 22px;
   overflow: hidden;
-  background: var(--surface);
-  border: 1px solid var(--border-soft);
+  color: var(--hardware-control-ink);
+  background:
+    linear-gradient(180deg, rgb(34 25 18 / 0.96), rgb(24 16 11 / 0.94)),
+    var(--hardware-control-bg);
+  border: 1px solid var(--hardware-control-border);
   border-radius: 16px;
-  box-shadow: var(--shadow-1);
+  box-shadow:
+    inset 0 1px 0 rgb(255 238 196 / 0.1),
+    inset 0 -14px 22px rgb(0 0 0 / 0.28),
+    0 8px 18px rgb(0 0 0 / 0.2);
   cursor: pointer;
   transition:
     background 0.14s ease,
@@ -4388,18 +4479,28 @@ button {
 }
 
 .sctpl-card:hover {
-  background: color-mix(in oklab, var(--c-melody) 14%, var(--surface));
-  border-color: var(--c-melody-ink);
-  box-shadow: var(--shadow-2);
+  background:
+    linear-gradient(180deg, rgb(42 30 21 / 0.98), rgb(27 18 12 / 0.96)),
+    var(--hardware-control-bg);
+  border-color: rgb(255 219 164 / 0.42);
+  box-shadow:
+    inset 0 1px 0 rgb(255 238 196 / 0.14),
+    inset 0 -14px 22px rgb(0 0 0 / 0.28),
+    0 0 0 2px rgb(255 230 205 / 0.12),
+    0 12px 24px rgb(0 0 0 / 0.24);
   transform: translateY(-3px);
 }
 
 .sctpl-card.selected {
-  background: color-mix(in oklab, var(--c-melody) 20%, var(--surface));
-  border-color: var(--c-melody-ink);
+  background:
+    linear-gradient(180deg, rgb(42 30 21 / 0.98), rgb(27 18 12 / 0.96)),
+    var(--hardware-control-bg);
+  border-color: rgb(255 219 164 / 0.5);
   box-shadow:
-    0 0 0 2px color-mix(in oklab, var(--c-melody-ink) 25%, transparent),
-    var(--shadow-2);
+    inset 0 1px 0 rgb(255 238 196 / 0.16),
+    inset 0 -14px 22px rgb(0 0 0 / 0.28),
+    0 0 0 2px rgb(255 230 205 / 0.2),
+    0 12px 26px rgb(0 0 0 / 0.26);
 }
 
 .sctpl-name-row {
@@ -4411,10 +4512,11 @@ button {
 
 .sctpl-name {
   margin: 0;
-  color: var(--ink);
+  color: var(--hardware-chord-ink-strong);
   font-size: 20px;
   font-weight: 900;
   line-height: 1.2;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.74);
 }
 
 .sctpl-default-tag {
@@ -4423,8 +4525,9 @@ button {
   align-items: center;
   height: 22px;
   padding: 0 10px;
-  color: white;
-  background: var(--c-melody-ink);
+  color: #3f2414;
+  background: rgb(255 230 205 / 0.72);
+  border: 1px solid rgb(255 238 214 / 0.32);
   border-radius: 999px;
   font-size: 10px;
   font-weight: 800;
@@ -4438,15 +4541,15 @@ button {
   justify-content: center;
   gap: 5px;
   padding: 16px 14px;
-  background: var(--bg-deep);
-  border: 1px solid var(--border-soft);
+  background: rgb(16 9 6 / 0.86);
+  border: 1px solid var(--hardware-control-border);
   border-radius: 12px;
 }
 
 .sctpl-card:hover .sctpl-notes,
 .sctpl-card.selected .sctpl-notes {
-  background: color-mix(in oklab, var(--c-melody-ink) 5%, var(--bg-deep));
-  border-color: color-mix(in oklab, var(--c-melody-ink) 22%, var(--border-soft));
+  background: rgb(18 10 7 / 0.9);
+  border-color: rgb(255 219 164 / 0.34);
 }
 
 .sctpl-note {
@@ -4456,19 +4559,22 @@ button {
   min-width: 36px;
   height: 36px;
   padding: 0 9px;
-  color: var(--ink);
-  background: var(--surface);
-  border: 1px solid var(--border-soft);
+  color: var(--hardware-chord-ink-strong);
+  background: rgb(255 244 224 / 0.12);
+  border: 1px solid rgb(255 219 164 / 0.24);
   border-radius: 8px;
-  box-shadow: 0 1px 0 oklch(100% 0 0 / 0.6) inset;
+  box-shadow:
+    inset 0 1px 0 rgb(255 246 218 / 0.14),
+    0 1px 3px rgb(0 0 0 / 0.22);
   font-size: 14px;
   font-weight: 800;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.66);
 }
 
 .sctpl-card.selected .sctpl-note {
-  color: var(--c-melody-ink);
-  background: var(--c-melody);
-  border-color: var(--c-melody-ink);
+  color: #fff1cf;
+  background: rgb(255 230 205 / 0.18);
+  border-color: rgb(255 219 164 / 0.36);
 }
 
 .sctpl-note.gap {
@@ -4477,18 +4583,19 @@ button {
   height: 6px;
   padding: 0;
   margin: 0 2px;
-  background: var(--border);
+  background: #c4864e;
   border: 0;
   border-radius: 50%;
-  box-shadow: none;
+  box-shadow: 0 0 8px rgb(255 194 86 / 0.34);
 }
 
 .sctpl-desc {
   flex: 1;
   margin: 0;
-  color: var(--ink-2);
+  color: #e8c99a;
   font-size: 13.5px;
   line-height: 1.65;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.72);
 }
 
 .sctpl-foot {
@@ -4497,13 +4604,14 @@ button {
   justify-content: space-between;
   gap: 10px;
   padding-top: 14px;
-  border-top: 1px dashed var(--border-soft);
+  border-top: 1px dashed rgb(255 219 164 / 0.28);
 }
 
 .sctpl-foot-label {
-  color: var(--ink-3);
+  color: var(--hardware-control-ink);
   font-size: 11px;
   font-weight: 700;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.72);
 }
 
 .sctpl-play {
@@ -4512,16 +4620,31 @@ button {
   gap: 7px;
   height: 32px;
   padding: 0 16px 0 12px;
-  color: white;
-  background: var(--play);
-  border: 1px solid color-mix(in oklab, var(--play) 70%, var(--ink));
+  color: var(--hardware-control-ink);
+  background: var(--hardware-control-bg);
+  border: 1px solid var(--hardware-control-border);
   border-radius: 999px;
   box-shadow:
-    0 1px 0 oklch(100% 0 0 / 0.25) inset,
-    0 2px 6px oklch(52% 0.12 155 / 0.28);
+    inset 0 1px 0 rgb(255 246 218 / 0.12),
+    0 1px 4px rgb(0 0 0 / 0.34);
   cursor: pointer;
   font-size: 12.5px;
   font-weight: 800;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.62);
+}
+
+.sctpl-play:hover,
+.sctpl-play.playing {
+  color: #fff1cf;
+  background:
+    linear-gradient(180deg, rgb(255 244 224 / 0.2), rgb(18 11 7 / 0.72)),
+    var(--hardware-control-bg);
+  border-color: rgb(255 219 164 / 0.5);
+  box-shadow:
+    inset 0 1px 0 rgb(255 246 218 / 0.16),
+    0 0 0 2px rgb(255 230 205 / 0.14),
+    0 4px 10px rgb(0 0 0 / 0.32);
+  transform: translateY(-1px);
 }
 
 .sctpl-play .play-glyph {
@@ -7516,13 +7639,13 @@ body {
     inset 0 0 0 1px rgb(255 238 214 / 0.74),
     inset 0 1px 0 rgb(255 252 236 / 0.58),
     inset 0 -7px 12px rgb(88 45 20 / 0.18),
-    0 0 0 2px rgb(255 250 236 / 0.64),
+    0 0 0 2px rgb(255 250 236 / 0.62),
     0 0 0 6px var(--tutorial-control-highlight-glow),
     0 0 18px rgb(255 226 198 / 0.14),
     0 8px 20px rgb(0 0 0 / 0.24);
   --tutorial-highlight-peak-shadow:
     inset 0 0 0 1px rgb(255 244 224 / 0.86),
-    inset 0 2px 0 rgb(255 254 240 / 0.7),
+    inset 0 2px 0 rgb(255 254 240 / 0.68),
     inset 0 -8px 14px rgb(88 45 20 / 0.18),
     0 0 0 3px rgb(255 252 238 / 0.7),
     0 0 0 8px var(--tutorial-control-highlight-peak-glow),
@@ -7544,8 +7667,18 @@ body {
   overflow: visible;
   color: var(--tutorial-target-ink);
   background:
-    linear-gradient(90deg, rgb(255 248 232 / 0.22), rgb(255 250 238 / 0.58) 50%, rgb(166 96 58 / 0.12)),
-    linear-gradient(180deg, rgb(255 253 240 / 0.92), var(--tutorial-target-surface) 52%, rgb(118 64 38 / 0.2)),
+    linear-gradient(
+      90deg,
+      rgb(255 248 232 / 0.2),
+      rgb(255 253 240 / 0.52) 50%,
+      rgb(166 96 58 / 0.1)
+    ),
+    linear-gradient(
+      180deg,
+      rgb(255 253 240 / 0.92),
+      rgb(250 224 192 / 0.58) 54%,
+      rgb(118 64 38 / 0.2)
+    ),
     var(--hardware-control-bg);
   border: 1px solid rgb(255 238 214 / 0.78);
   border-radius: 12px;
@@ -7561,11 +7694,13 @@ body {
 .fill-empty-clips.tutorial-control-target .fill-gem {
   width: 30px;
   height: 30px;
+  border-color: rgb(255 238 214 / 0.72);
   box-shadow:
-    inset 0 0 5px rgb(255 255 255 / 0.22),
-    0 0 14px rgb(255 226 198 / 0.3),
-    0 3px 6px rgb(0 0 0 / 0.38);
-  filter: brightness(1.16) saturate(0.98);
+    inset 0 0 7px rgb(255 255 255 / 0.34),
+    0 0 0 2px rgb(255 249 224 / 0.5),
+    0 0 16px rgb(255 226 198 / 0.28),
+    0 3px 6px rgb(0 0 0 / 0.34);
+  filter: brightness(1.24) saturate(1.08);
 }
 
 .fill-empty-clips.tutorial-control-target .fill-empty-clips-label {

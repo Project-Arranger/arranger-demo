@@ -400,6 +400,12 @@ test('app shell exposes the chord editor preview and audio wiring hooks', async 
   assert.match(chordEditorSource, /'passing-anchor'/);
   assert.match(chordEditorSource, /className=\{passingAnchorClassName\}/);
   assert.match(chordEditorSource, /passingAnchorClassName/);
+  assert.match(chordEditorSource, /function getTutorialSafeRight/);
+  assert.match(chordEditorSource, /document\.querySelector\('\.tutorial-panel'\)/);
+  assert.match(chordEditorSource, /panelRect\.left - VIEWPORT_MARGIN/);
+  assert.match(chordEditorSource, /const safeRight = getTutorialSafeRight\(\);/);
+  assert.match(chordEditorSource, /const availableWidth = Math\.max\(280,\s*safeRight - VIEWPORT_MARGIN\);/);
+  assert.match(chordEditorSource, /Math\.min\(safeRight - width,\s*anchorCenterX - width \/ 2\)/);
   assert.match(chordEditorSource, /passingRole === 'target' \? 'tutorial-passing-anchor-target' : ''/);
   assert.match(chordEditorSource, /className=\{passingButtonClassName\}/);
   assert.match(chordEditorSource, /const passingButtonClassName = \[\s*'add-chord-btn',\s*'passing-btn',/);
@@ -1002,6 +1008,11 @@ test('app exposes the bass editor and existing-clip groove template workflow', a
   assert.match(bassEditorSource, /bass-groove-button/);
   assert.match(bassEditorSource, /bass-groove-card:\$\{template\.id\}/);
   assert.match(bassEditorSource, /tutorial-control-target/);
+  assert.match(bassEditorSource, /function isTutorialControlAllowed\(role\)\s*\{\s*return role === 'target' \|\| role === 'allowed';\s*\}/);
+  assert.match(bassEditorSource, /grooveButtonRole === 'target' \? 'tutorial-control-target' : ''/);
+  assert.match(bassEditorSource, /disabled=\{tutorialLocked && !isTutorialControlAllowed\(grooveButtonRole\)\}/);
+  assert.match(bassEditorSource, /const templateCardDisabled = tutorialLocked && !isTutorialControlAllowed\(templateCardRole\);/);
+  assert.match(bassEditorSource, /templateCardRole === 'target' \? 'tutorial-control-target' : ''/);
   assert.match(bassEditorSource, /data-tutorial-role=\{grooveButtonRole/);
   assert.match(bassEditorSource, /data-tutorial-role=\{templateCardRole/);
   assert.match(bassEditorSource, /aria-disabled=\{templateCardDisabled\}/);
@@ -1038,7 +1049,8 @@ test('app exposes the bass editor and existing-clip groove template workflow', a
   assert.match(source, /control:\s*`bass-groove-card:\$\{templateId\}`/);
   assert.match(source, /applyTutorialActionProgress\(tutorialAction\)/);
   assert.match(source, /applyBassGrooveTemplateToExistingClips\(state\.matrix,\s*state\.clips,\s*templateId\)/);
-  assert.match(source, /filter\(\(clip\) => clip\?\.trackId === 'bass'\)/);
+  assert.match(source, /state\.setTrackMatrix\('bass',\s*nextMatrix\.bass\)/);
+  assert.doesNotMatch(source, /nextMatrix\.bass\[clip\.bar\]\.forEach\(\(cell,\s*step\) => \{[\s\S]*state\.setCell\('bass',\s*clip\.bar,\s*step,\s*cell\);/);
   assert.match(source, /handleClearBassBar/);
   assert.match(source, /clearTrack\('bass'\)/);
   assert.match(source, /triggerBassNote/);

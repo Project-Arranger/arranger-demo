@@ -407,10 +407,10 @@ function getTutorialViewModel({
   if (step.id === TUTORIAL_STEP_IDS.BASS_LISTEN_LOOP) {
     targets.controls = [
       { name: TUTORIAL_CONTROL_TARGETS.TRANSPORT_PLAY, role: 'target' },
-      { name: TUTORIAL_CONTROL_TARGETS.BASS_GROOVE_BUTTON, role: 'target' },
+      { name: TUTORIAL_CONTROL_TARGETS.BASS_GROOVE_BUTTON, role: 'allowed' },
       ...BASS_GROOVE_TEMPLATES.map((template) => ({
         name: `${TUTORIAL_CONTROL_TARGETS.BASS_GROOVE_CARD_PREFIX}:${template.id}`,
-        role: 'target',
+        role: 'allowed',
       })),
     ];
   }

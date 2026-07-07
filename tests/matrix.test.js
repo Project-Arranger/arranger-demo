@@ -159,6 +159,28 @@ test('setCell writes only the requested cell', () => {
   assert.equal(matrix.bass[2][4], null);
 });
 
+test('setTrackMatrix replaces one track with one store notification', () => {
+  const nextBassTrack = createInitialMatrix().bass;
+  nextBassTrack[0][0] = { type: 'bass', note: 'C1', duration: '16n' };
+  nextBassTrack[3][8] = { type: 'bass', note: 'G0', duration: '16n' };
+  useMusicStore.getState().setCell('drums', 2, 4, { instruments: ['kick'] });
+
+  let notifications = 0;
+  const unsubscribe = useMusicStore.subscribe(() => {
+    notifications += 1;
+  });
+  useMusicStore.getState().setTrackMatrix('bass', nextBassTrack);
+  unsubscribe();
+
+  const { matrix } = useMusicStore.getState();
+  assert.equal(notifications, 1);
+  assert.deepEqual(matrix.bass, nextBassTrack);
+  assert.deepEqual(matrix.drums[2][4], { instruments: ['kick'] });
+
+  useMusicStore.getState().setTrackMatrix('unknown-track', nextBassTrack);
+  assert.equal(useMusicStore.getState().matrix, matrix);
+});
+
 test('clearStep clears only the requested cell', () => {
   useMusicStore.getState().setCell('drums', 2, 4, { instruments: ['kick'] });
   useMusicStore.getState().setCell('bass', 2, 4, { note: 'C1', velocity: 100 });

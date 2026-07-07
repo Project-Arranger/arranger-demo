@@ -25,6 +25,17 @@ export default function createMatrixSlice(set, get) {
       };
     }),
 
+    setTrackMatrix: (trackId, trackMatrix) => set((state) => {
+      if (!hasTrack(state.matrix, trackId) || !Array.isArray(trackMatrix)) return state;
+
+      return {
+        matrix: {
+          ...state.matrix,
+          [trackId]: trackMatrix.map((bar) => [...bar]),
+        },
+      };
+    }),
+
     clearStep: (trackId, barIndex, stepIndex) => {
       const { matrix, setCell } = get();
       if (!hasTrack(matrix, trackId)) return;

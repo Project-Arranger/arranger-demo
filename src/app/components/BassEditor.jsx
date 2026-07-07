@@ -43,6 +43,10 @@ function getGrooveStepClass(isHit, step) {
   ].filter(Boolean).join(' ');
 }
 
+function isTutorialControlAllowed(role) {
+  return role === 'target' || role === 'allowed';
+}
+
 function BassEditor({
   canPageBars = false,
   clipName,
@@ -135,7 +139,7 @@ function BassEditor({
             aria-label="选择Bass弹奏律动模板"
             type="button"
             data-tutorial-role={grooveButtonRole}
-            disabled={tutorialLocked && grooveButtonRole !== 'target'}
+            disabled={tutorialLocked && !isTutorialControlAllowed(grooveButtonRole)}
             onClick={() => setPickerMode('groove')}
           >
             {renderIcon(AudioWaveform)}
@@ -328,7 +332,7 @@ function BassEditor({
                 tutorialTargets,
                 `bass-groove-card:${template.id}`,
               );
-              const templateCardDisabled = tutorialLocked && templateCardRole !== 'target';
+              const templateCardDisabled = tutorialLocked && !isTutorialControlAllowed(templateCardRole);
               const templateCardClassName = [
                 'gtpl-card',
                 selectedGrooveTemplateId === template.id ? 'selected' : '',
