@@ -13,7 +13,7 @@ import { flushSync } from 'react-dom';
 import {
   STEPS_PER_BAR,
   TOTAL_BARS,
-} from '../../store/useMusicStore.js';
+} from '../../domain/musicConstants.js';
 import { getTimelinePlayheadSeekPosition } from '../timelinePlayhead.js';
 import { BAR_NUMBERS } from '../uiShellData.js';
 import { renderIcon } from './icons.js';

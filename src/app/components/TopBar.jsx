@@ -11,7 +11,7 @@ import {
   BEATS_PER_BAR,
   ROOT_KEY,
   SCALE,
-} from '../../store/useMusicStore.js';
+} from '../../domain/musicConstants.js';
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
 import { renderIcon } from './icons.js';
 

@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { STEPS_PER_BAR } from '../../store/useMusicStore.js';
+import { STEPS_PER_BAR } from '../../domain/musicConstants.js';
 import {
   DRUM_SEQUENCER_ROWS,
   isDrumsStepActive,
