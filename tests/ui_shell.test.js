@@ -1173,6 +1173,8 @@ test('tutorial navigation buttons interrupt preview playback', async () => {
   assert.match(source, /const stopTutorialPreviewPlayback = useCallback/);
   assert.match(source, /const resetTutorialTransportToStart = useCallback/);
   assert.match(source, /resetTutorialTransportToStart = useCallback\(async \(\) => \{[\s\S]*APP_COMMAND_TYPES\.TRANSPORT_STOP[\s\S]*APP_COMMAND_TYPES\.TRANSPORT_SEEK,\s*bar:\s*0,\s*step:\s*0/);
+  assert.match(source, /handleBackToStart = useCallback\(\(\) => \{[\s\S]*clearTutorialCountIn\(\);[\s\S]*APP_COMMAND_TYPES\.TRANSPORT_SEEK,\s*bar:\s*0,\s*step:\s*0/);
+  assert.match(source, /handleStop = useCallback\(\(\) => \{[\s\S]*clearTutorialCountIn\(\);[\s\S]*APP_COMMAND_TYPES\.TRANSPORT_STOP/);
   assert.doesNotMatch(source, /tutorialPlaybackStateRef/);
   assert.match(source, /let tutorialAutoAdvanceTimerId = null/);
   assert.match(source, /function clearTutorialAutoAdvanceTimer\(\)/);

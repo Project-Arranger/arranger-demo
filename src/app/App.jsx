@@ -487,12 +487,14 @@ export default function App() {
   }, [commitEditorHeight, readEditorHeight]);
 
   const handleBackToStart = useCallback(() => {
+    clearTutorialCountIn();
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_SEEK, bar: 0, step: 0 });
-  }, [dispatchAppCommand]);
+  }, [clearTutorialCountIn, dispatchAppCommand]);
 
   const handleStop = useCallback(() => {
+    clearTutorialCountIn();
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
-  }, [dispatchAppCommand]);
+  }, [clearTutorialCountIn, dispatchAppCommand]);
 
   const handleNewSong = useCallback(() => {
     withUndoCheckpoint(() => {
