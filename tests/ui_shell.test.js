@@ -1087,6 +1087,10 @@ test('app keeps the editor focused on the playback bar while transport is playin
 
 test('app mounts the drums tutorial right sidebar', async () => {
   const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
+  const tutorialControllerSource = await readFile(
+    new URL('../src/app/useTutorialController.js', import.meta.url),
+    'utf8',
+  );
   const overlaySource = await readFile(
     new URL('../src/app/components/TutorialOverlay.jsx', import.meta.url),
     'utf8',
@@ -1101,7 +1105,8 @@ test('app mounts the drums tutorial right sidebar', async () => {
   assert.match(source, /tutorialSidebarCollapsed/);
   assert.match(source, /setTutorialSidebarCollapsed/);
   assert.match(source, /tutorialModeActive/);
-  assert.match(source, /const tutorialActive = tutorialVisible && tutorialModeActive;/);
+  assert.match(source, /useTutorialController\(\{/);
+  assert.match(tutorialControllerSource, /const tutorialActive = tutorialVisible && tutorialModeActive;/);
   assert.match(source, /showTutorialToggle:\s*tutorialVisible/);
   assert.match(source, /onTutorialToggle:\s*handleTutorialSidebarToggle/);
   assert.match(source, /tutorialCollapsed:\s*tutorialSidebarCollapsed/);
@@ -1109,10 +1114,10 @@ test('app mounts the drums tutorial right sidebar', async () => {
   assert.doesNotMatch(source, /onTutorialReopen/);
   assert.match(source, /DRUMS_TUTORIAL_STEPS/);
   assert.match(source, /currentTutorialStepIndex/);
-  assert.match(source, /getTutorialViewModel/);
-  assert.match(source, /const activeTutorialTarget = tutorialActive \? currentTutorialStep\?\.target\?\.name \?\? null : null;/);
-  assert.match(source, /const activeTutorialTargets = tutorialActive \? tutorialViewModel\.targets : undefined;/);
-  assert.match(source, /const activeTutorialLocked = tutorialActive && tutorialViewModel\.locked;/);
+  assert.match(tutorialControllerSource, /getTutorialViewModel/);
+  assert.match(tutorialControllerSource, /const activeTutorialTarget = tutorialActive \? currentTutorialStep\?\.target\?\.name \?\? null : null;/);
+  assert.match(tutorialControllerSource, /const activeTutorialTargets = tutorialActive \? tutorialViewModel\.targets : undefined;/);
+  assert.match(tutorialControllerSource, /const activeTutorialLocked = tutorialActive && tutorialViewModel\.locked;/);
   assert.match(source, /tutorialViewModel\.displayCopy/);
   assert.match(source, /countInValue:\s*tutorialCountInValue/);
   assert.match(source, /APP_COMMAND_TYPES\.TRANSPORT_STOP/);
@@ -1183,6 +1188,10 @@ test('app mounts the drums tutorial right sidebar', async () => {
 
 test('tutorial navigation buttons interrupt preview playback', async () => {
   const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
+  const tutorialControllerSource = await readFile(
+    new URL('../src/app/useTutorialController.js', import.meta.url),
+    'utf8',
+  );
 
   assert.match(source, /const stopTutorialPreviewPlayback = useCallback/);
   assert.match(source, /const resetTutorialTransportToStart = useCallback/);
@@ -1194,15 +1203,15 @@ test('tutorial navigation buttons interrupt preview playback', async () => {
   assert.match(source, /function clearTutorialAutoAdvanceTimer\(\)/);
   assert.match(source, /window\.clearTimeout\(tutorialAutoAdvanceTimerId\)/);
   assert.match(source, /function scheduleTutorialAutoAdvance\(callback\)/);
-  assert.match(source, /const \[tutorialCountInValue,\s*setTutorialCountInValue\] = useState\(null\);/);
-  assert.match(source, /let tutorialCountInTimerIds = \[\];/);
-  assert.match(source, /const clearTutorialCountIn = useCallback\(\(\) => \{[\s\S]*tutorialCountInTimerIds\.forEach\(\(timerId\) => window\.clearTimeout\(timerId\)\);[\s\S]*setTutorialCountInValue\(null\);/);
-  assert.match(source, /const TUTORIAL_COUNT_IN_BEATS = Object\.freeze\(\[1,\s*2,\s*3\]\);/);
-  assert.match(source, /const TUTORIAL_COUNT_IN_BEAT_MULTIPLIER = 1\.5;/);
-  assert.match(source, /const startTutorialCountInPlayback = useCallback\(\(\) => \{[\s\S]*clearTutorialCountIn\(\);[\s\S]*const secondsPerBeat = \(60 \/ bpm\) \* TUTORIAL_COUNT_IN_BEAT_MULTIPLIER;[\s\S]*TUTORIAL_COUNT_IN_BEATS\.forEach/);
-  assert.match(source, /startTutorialCountInPlayback[\s\S]*audioEngine\.triggerDrumsStep\('hihat'\)/);
-  assert.match(source, /startTutorialCountInPlayback[\s\S]*APP_COMMAND_TYPES\.TRANSPORT_TOGGLE_PLAY/);
-  assert.match(source, /tutorialCountInTimerIds = nextTimerIds;/);
+  assert.match(tutorialControllerSource, /const \[tutorialCountInValue,\s*setTutorialCountInValue\] = useState\(null\);/);
+  assert.match(tutorialControllerSource, /const tutorialCountInTimerIdsRef = useRef\(\[\]\);/);
+  assert.match(tutorialControllerSource, /const clearTutorialCountIn = useCallback\(\(\) => \{[\s\S]*tutorialCountInTimerIdsRef\.current\.forEach\(\(timerId\) => window\.clearTimeout\(timerId\)\);[\s\S]*setTutorialCountInValue\(null\);/);
+  assert.match(tutorialControllerSource, /const TUTORIAL_COUNT_IN_BEATS = Object\.freeze\(\[1,\s*2,\s*3\]\);/);
+  assert.match(tutorialControllerSource, /const TUTORIAL_COUNT_IN_BEAT_MULTIPLIER = 1\.5;/);
+  assert.match(tutorialControllerSource, /const startTutorialCountInPlayback = useCallback\(\(\) => \{[\s\S]*clearTutorialCountIn\(\);[\s\S]*const secondsPerBeat = \(60 \/ bpm\) \* TUTORIAL_COUNT_IN_BEAT_MULTIPLIER;[\s\S]*TUTORIAL_COUNT_IN_BEATS\.forEach/);
+  assert.match(tutorialControllerSource, /startTutorialCountInPlayback[\s\S]*audioEngine\.triggerDrumsStep\('hihat'\)/);
+  assert.match(tutorialControllerSource, /startTutorialCountInPlayback[\s\S]*APP_COMMAND_TYPES\.TRANSPORT_TOGGLE_PLAY/);
+  assert.match(tutorialControllerSource, /tutorialCountInTimerIdsRef\.current = nextTimerIds;/);
   assert.match(source, /handleTutorialPlaybackComplete/);
   assert.match(source, /handleTutorialPlaybackPosition/);
   assert.match(source, /onPositionChange[\s\S]*handleTutorialPlaybackComplete/);
@@ -1213,12 +1222,12 @@ test('tutorial navigation buttons interrupt preview playback', async () => {
   assert.match(source, /useKeyboardCommands\(\{ dispatch: dispatchKeyboardCommand \}\)/);
   assert.doesNotMatch(source, /useKeyboardCommands\(\{ dispatch: dispatchAppCommand \}\)/);
   assert.match(source, /applyTutorialActionProgress,[\s\S]*currentTutorialStep,[\s\S]*tutorialProgress,[\s\S]*tutorialActive/);
-  assert.match(source, /const tutorialDirectoryItems = useMemo/);
-  assert.match(source, /TUTORIAL_DIRECTORY_ITEMS\.map/);
-  assert.match(source, /DRUMS_TUTORIAL_STEPS\.findIndex\(\(step\) => step\.id === item\.stepId\)/);
-  assert.doesNotMatch(source, /disabled:\s*!tutorialStepCheckpoints\[stepIndex\]/);
-  assert.match(source, /disabled:\s*false/);
-  assert.match(source, /active:\s*stepIndex <= currentTutorialStepIndex && nextDirectoryStepIndex > currentTutorialStepIndex/);
+  assert.match(tutorialControllerSource, /const tutorialDirectoryItems = useMemo/);
+  assert.match(tutorialControllerSource, /TUTORIAL_DIRECTORY_ITEMS\.map/);
+  assert.match(tutorialControllerSource, /DRUMS_TUTORIAL_STEPS\.findIndex\(\(step\) => step\.id === item\.stepId\)/);
+  assert.doesNotMatch(tutorialControllerSource, /disabled:\s*!tutorialStepCheckpoints\[stepIndex\]/);
+  assert.match(tutorialControllerSource, /disabled:\s*false/);
+  assert.match(tutorialControllerSource, /active:\s*stepIndex <= currentTutorialStepIndex && nextDirectoryStepIndex > currentTutorialStepIndex/);
   assert.match(source, /ensureTutorialStepCheckpoint = useCallback/);
   assert.match(source, /stopTutorialPreviewPlayback\(\);[\s\S]*setCurrentTutorialStepIndex/);
   assert.match(source, /handleTutorialBack = useCallback\(\(\) => \{[\s\S]*stopTutorialPreviewPlayback\(\);/);
@@ -1310,6 +1319,10 @@ test('app routes drums tutorial tasks through guards and target props', async ()
     'utf8',
   );
   const topBarSource = await readFile(new URL('../src/app/components/TopBar.jsx', import.meta.url), 'utf8');
+  const tutorialControllerSource = await readFile(
+    new URL('../src/app/useTutorialController.js', import.meta.url),
+    'utf8',
+  );
   const tutorialRuntimeSource = await readFile(
     new URL('../src/tutorial/drumsTutorialRuntime.js', import.meta.url),
     'utf8',
@@ -1332,8 +1345,8 @@ test('app routes drums tutorial tasks through guards and target props', async ()
   assert.doesNotMatch(source, /completeTutorialTask4/);
   assert.match(source, /getDrumsCellInstruments/);
   assert.match(source, /previewInstruments:\s*getDrumsCellInstruments\(nextCell\)/);
-  assert.match(source, /tutorialViewModel\.targets/);
-  assert.match(source, /tutorialViewModel\.locked/);
+  assert.match(tutorialControllerSource, /tutorialViewModel\.targets/);
+  assert.match(tutorialControllerSource, /tutorialViewModel\.locked/);
   assert.match(source, /tutorialViewModel\.primaryLabel/);
   assert.match(source, /tutorialViewModel\.primaryDisabled/);
   assert.match(source, /onDrumsStepMove:\s*handleDrumsStepMove/);
