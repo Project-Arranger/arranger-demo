@@ -96,6 +96,7 @@ import {
   EDITOR_RESIZE_MIN_HEIGHT,
   useEditorResize,
 } from './useEditorResize.js';
+import { useClipClipboardActions } from './useClipClipboardActions.js';
 import {
   createRedoTransition,
   createUndoSnapshot,
@@ -164,8 +165,6 @@ export default function App() {
   const [undoHistory, setUndoHistory] = useState(() => []);
   const [redoHistory, setRedoHistory] = useState(() => []);
   const [isNewSongConfirmOpen, setIsNewSongConfirmOpen] = useState(false);
-  const [clipClipboard, setClipClipboard] = useState(null);
-  const [pendingClipPaste, setPendingClipPaste] = useState(null);
   const [tutorialCountInValue, setTutorialCountInValue] = useState(null);
   const tracksScrollRef = useRef(null);
   const timelineScrollRef = useRef(null);
@@ -337,6 +336,25 @@ export default function App() {
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
   }, [clearTutorialCountIn, dispatchAppCommand]);
 
+  const {
+    canCopyClip,
+    canPasteClip,
+    cancelClipPaste,
+    clearClipClipboardState,
+    confirmClipPaste,
+    handleCopySelectedClip,
+    handlePasteClipRequest,
+    pendingClipPaste,
+    selectedClip,
+  } = useClipClipboardActions({
+    activeTrackId,
+    clips,
+    matrix,
+    selectedBar,
+    selectedClipId,
+    withUndoCheckpoint,
+  });
+
   useEffect(() => {
     if (!melodyEditorIsOpen) return;
     void audioEngine.startAudio();
@@ -380,8 +398,7 @@ export default function App() {
 
       clearTutorialAutoAdvanceTimer();
       stopTutorialPreviewPlayback();
-      setClipClipboard(null);
-      setPendingClipPaste(null);
+      clearClipClipboardState();
       useMusicStore.setState(initialAppState, true);
       setCurrentTutorialStepIndex(0);
       setTutorialProgress(initialTutorialProgress);
@@ -397,7 +414,7 @@ export default function App() {
       setTutorialSidebarCollapsed(true);
       setTutorialVisible(true);
     }, { force: true });
-  }, [stopTutorialPreviewPlayback, withUndoCheckpoint]);
+  }, [clearClipClipboardState, stopTutorialPreviewPlayback, withUndoCheckpoint]);
 
   const requestNewSong = useCallback(() => {
     setIsNewSongConfirmOpen(true);
@@ -424,15 +441,6 @@ export default function App() {
     trackUi: visibleTrackUi,
     volumes,
   }), [clips, matrix, selectedBar, visibleTrackUi, volumes]);
-  const selectedClip = selectedClipId ? clips.byId[selectedClipId] : null;
-  const pasteTargetTrackId = selectedClip?.trackId ?? activeTrackId;
-  const pasteTargetBar = selectedClip?.bar ?? selectedBar;
-  const canCopyClip = Boolean(selectedClip);
-  const canPasteClip = Boolean(
-    clipClipboard
-      && clipClipboard.trackId === pasteTargetTrackId
-      && Array.isArray(matrix[pasteTargetTrackId]?.[pasteTargetBar]),
-  );
   const canPageBars = useMemo(() => (
     canPageTrackClipBars(clips, activeTrackId)
     && getAdjacentTrackClipBar(clips, activeTrackId, selectedBar, 'next') !== null
@@ -463,82 +471,6 @@ export default function App() {
       state.createClip(trackId, barIndex);
     });
   }, [withUndoCheckpoint]);
-
-  const getCurrentClipPasteTarget = useCallback(() => {
-    if (!clipClipboard) return null;
-
-    const state = useMusicStore.getState();
-    const targetClip = state.selectedClipId ? state.clips.byId[state.selectedClipId] : null;
-    const targetTrackId = targetClip?.trackId ?? state.activeTrackId;
-    const targetBar = targetClip?.bar ?? state.selectedBar;
-
-    if (
-      clipClipboard.trackId !== targetTrackId
-      || !Number.isInteger(targetBar)
-      || !Array.isArray(state.matrix[targetTrackId]?.[targetBar])
-    ) {
-      return null;
-    }
-
-    return {
-      targetBar,
-      targetClip,
-      targetTrackId,
-    };
-  }, [clipClipboard]);
-
-  const pasteClipToTarget = useCallback((target) => {
-    if (!target || !clipClipboard) return null;
-
-    let pastedClip = null;
-    withUndoCheckpoint(() => {
-      pastedClip = useMusicStore.getState().pasteClipClipboardSnapshot(
-        clipClipboard,
-        target.targetTrackId,
-        target.targetBar,
-      );
-    });
-
-    return pastedClip;
-  }, [clipClipboard, withUndoCheckpoint]);
-
-  const handleCopySelectedClip = useCallback(() => {
-    if (!selectedClipId) return;
-
-    const snapshot = useMusicStore.getState().createClipClipboardSnapshot(selectedClipId);
-    if (!snapshot) return;
-
-    setClipClipboard(snapshot);
-    setPendingClipPaste(null);
-  }, [selectedClipId]);
-
-  const handlePasteClipRequest = useCallback(() => {
-    const target = getCurrentClipPasteTarget();
-    if (!target) return;
-
-    if (target.targetClip) {
-      setPendingClipPaste(target);
-      return;
-    }
-
-    pasteClipToTarget(target);
-  }, [getCurrentClipPasteTarget, pasteClipToTarget]);
-
-  const cancelClipPaste = useCallback(() => {
-    setPendingClipPaste(null);
-  }, []);
-
-  const confirmClipPaste = useCallback(() => {
-    if (!pendingClipPaste || !clipClipboard) {
-      setPendingClipPaste(null);
-      return;
-    }
-
-    withUndoCheckpoint(() => {
-      useMusicStore.getState().pasteClipClipboardSnapshot(clipClipboard, pendingClipPaste.targetTrackId, pendingClipPaste.targetBar);
-    });
-    setPendingClipPaste(null);
-  }, [clipClipboard, pendingClipPaste, withUndoCheckpoint]);
 
   const applyTutorialStepSetup = useCallback((step, knownAppliedSetups = appliedTutorialSetups) => {
     const setupType = step?.setup?.type;

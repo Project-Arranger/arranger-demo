@@ -168,14 +168,20 @@ test('new song flow asks before discarding the current arrangement', async () =>
 
 test('clip copy paste flow keeps an app clipboard and confirms destructive paste', async () => {
   const appSource = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
+  const clipClipboardSource = await readFile(
+    new URL('../src/app/useClipClipboardActions.js', import.meta.url),
+    'utf8',
+  );
 
-  assert.match(appSource, /const \[clipClipboard,\s*setClipClipboard\] = useState\(null\);/);
-  assert.match(appSource, /const \[pendingClipPaste,\s*setPendingClipPaste\] = useState\(null\);/);
-  assert.match(appSource, /const handleCopySelectedClip = useCallback\(\(\) => \{[\s\S]*createClipClipboardSnapshot\(selectedClipId\)[\s\S]*setClipClipboard\(snapshot\);/);
-  assert.match(appSource, /const handlePasteClipRequest = useCallback\(\(\) => \{[\s\S]*clipClipboard[\s\S]*targetTrackId[\s\S]*targetBar[\s\S]*setPendingClipPaste/);
-  assert.match(appSource, /const confirmClipPaste = useCallback\(\(\) => \{[\s\S]*withUndoCheckpoint\(\(\) => \{[\s\S]*pasteClipClipboardSnapshot\(clipClipboard,\s*pendingClipPaste\.targetTrackId,\s*pendingClipPaste\.targetBar\)/);
-  assert.match(appSource, /const cancelClipPaste = useCallback\(\(\) => \{[\s\S]*setPendingClipPaste\(null\);[\s\S]*\}, \[\]\);/);
-  assert.match(appSource, /setClipClipboard\(null\);[\s\S]*useMusicStore\.setState\(initialAppState, true\);/);
+  assert.match(appSource, /useClipClipboardActions\(\{\s*activeTrackId,\s*clips,\s*matrix,\s*selectedBar,\s*selectedClipId,\s*withUndoCheckpoint,\s*\}\)/);
+  assert.match(clipClipboardSource, /const \[clipClipboard,\s*setClipClipboard\] = useState\(null\);/);
+  assert.match(clipClipboardSource, /const \[pendingClipPaste,\s*setPendingClipPaste\] = useState\(null\);/);
+  assert.match(clipClipboardSource, /const handleCopySelectedClip = useCallback\(\(\) => \{[\s\S]*createClipClipboardSnapshot\(selectedClipId\)[\s\S]*setClipClipboard\(snapshot\);/);
+  assert.match(clipClipboardSource, /const handlePasteClipRequest = useCallback\(\(\) => \{[\s\S]*getCurrentClipPasteTarget\(\)[\s\S]*setPendingClipPaste/);
+  assert.match(clipClipboardSource, /const confirmClipPaste = useCallback\(\(\) => \{[\s\S]*pasteClipToTarget\(pendingClipPaste\);[\s\S]*setPendingClipPaste\(null\);/);
+  assert.match(clipClipboardSource, /const cancelClipPaste = useCallback\(\(\) => \{[\s\S]*setPendingClipPaste\(null\);[\s\S]*\}, \[\]\);/);
+  assert.match(clipClipboardSource, /const clearClipClipboardState = useCallback\(\(\) => \{[\s\S]*setClipClipboard\(null\);[\s\S]*setPendingClipPaste\(null\);/);
+  assert.match(appSource, /clearClipClipboardState\(\);[\s\S]*useMusicStore\.setState\(initialAppState, true\);/);
   assert.match(appSource, /pendingClipPaste \? \([\s\S]*className="clip-paste-confirm-overlay"[\s\S]*role="presentation"[\s\S]*className="clip-paste-confirm-dialog"[\s\S]*role="dialog"[\s\S]*aria-modal="true"[\s\S]*确认覆盖这个 clip/);
   assert.match(appSource, /className="clip-paste-confirm-cancel"[\s\S]*onClick=\{cancelClipPaste\}[\s\S]*取消/);
   assert.match(appSource, /className="clip-paste-confirm-apply"[\s\S]*onClick=\{confirmClipPaste\}[\s\S]*覆盖粘贴/);
