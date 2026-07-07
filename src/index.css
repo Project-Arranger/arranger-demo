@@ -6328,7 +6328,7 @@ body {
 }
 
 .topbar-center > * {
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .history-controls,

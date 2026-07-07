@@ -189,6 +189,7 @@ test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async
     new URL('../src/app/components/TracksColumn.jsx', import.meta.url),
     'utf8',
   );
+  const editorResizeSource = await readFile(new URL('../src/app/useEditorResize.js', import.meta.url), 'utf8');
   const topBarSource = await readFile(new URL('../src/app/components/TopBar.jsx', import.meta.url), 'utf8');
   const uiDataSource = await readFile(new URL('../src/app/uiShellData.js', import.meta.url), 'utf8');
 
@@ -197,15 +198,16 @@ test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async
   assert.match(topBarSource, /play-glyph/);
   assert.doesNotMatch(topBarSource, /import\s*\{[^}]*Play/);
   assert.match(source, /data-screen-label="Main"/);
-  assert.match(source, /EDITOR_RESIZE_MIN_HEIGHT\s*=\s*180/);
-  assert.match(source, /EDITOR_RESIZE_WORKSPACE_MIN_HEIGHT\s*=\s*180/);
-  assert.match(source, /EDITOR_RESIZE_KEYBOARD_STEP\s*=\s*16/);
+  assert.match(source, /useEditorResize\(\{\s*activeTrackId,\s*selectedClipId,?\s*\}\)/);
+  assert.match(editorResizeSource, /EDITOR_RESIZE_MIN_HEIGHT\s*=\s*180/);
+  assert.match(editorResizeSource, /EDITOR_RESIZE_WORKSPACE_MIN_HEIGHT\s*=\s*180/);
+  assert.match(editorResizeSource, /EDITOR_RESIZE_KEYBOARD_STEP\s*=\s*16/);
   assert.match(source, /editorHeightPx/);
-  assert.match(source, /setEditorHeightPx/);
+  assert.match(editorResizeSource, /setEditorHeightPx/);
   assert.match(source, /handleEditorResizePointerDown/);
   assert.match(source, /handleEditorResizeKeyDown/);
-  assert.match(source, /pointermove/);
-  assert.match(source, /pointerup/);
+  assert.match(editorResizeSource, /pointermove/);
+  assert.match(editorResizeSource, /pointerup/);
   assert.match(source, /--app-editor-height/);
   assert.match(source, /className="editor-resizer"/);
   assert.match(source, /role="separator"/);
@@ -218,10 +220,10 @@ test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async
   assert.match(source, /onKeyDown=\{handleEditorResizeKeyDown\}/);
   assert.match(source, /className="editor-resizer-grip"/);
   assert.match(source, /<\/main>[\s\S]*className="editor-resizer"[\s\S]*createElement\(BottomEditor/);
-  assert.match(source, /case 'ArrowUp':/);
-  assert.match(source, /case 'ArrowDown':/);
-  assert.match(source, /case 'Home':/);
-  assert.match(source, /case 'End':/);
+  assert.match(editorResizeSource, /case 'ArrowUp':/);
+  assert.match(editorResizeSource, /case 'ArrowDown':/);
+  assert.match(editorResizeSource, /case 'Home':/);
+  assert.match(editorResizeSource, /case 'End':/);
   assert.doesNotMatch(source, /localStorage/);
   assert.match(source, /drums/);
   assert.match(source, /DRUMS_TOGGLE/);

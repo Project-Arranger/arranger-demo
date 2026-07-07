@@ -313,6 +313,7 @@ test('topbar tutorial and save switches render as sculpted buttons without key s
   assert.match(topbarCenterRule, /width:\s*min\(100%,\s*max-content\);/);
   assert.doesNotMatch(topbarCenterRule, /position:\s*absolute;/);
   assert.doesNotMatch(topbarCenterRule, /transform:\s*translate\(-50%,\s*-50%\);/);
+  assert.match(css, /\.topbar-center > \* \{\s*pointer-events:\s*none;\s*\}/s);
   assert.match(css, /\.hardware-status-display\s*\{[^}]*justify-self:\s*center;/s);
   assert.doesNotMatch(css, /--topbar-center-side-balance/);
   assert.doesNotMatch(css, /\.topbar-center::after/);
