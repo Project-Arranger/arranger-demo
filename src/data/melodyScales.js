@@ -1,3 +1,5 @@
+import { createPianoRollNotes } from './pianoRollNotes.js';
+
 const MELODY_KEY_SEQUENCE = Object.freeze(['·', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=']);
 const MELODY_KEY_ALIASES = Object.freeze({
   '`': '·',
@@ -55,30 +57,8 @@ const MELODY_SCALES = Object.freeze({
 
 const MELODY_SCALE_IDS = Object.freeze(Object.keys(MELODY_SCALES));
 
-const MELODY_PITCH_CLASS_ORDER = Object.freeze({
-  C: 0,
-  'C#': 1,
-  D: 2,
-  'D#': 3,
-  E: 4,
-  F: 5,
-  'F#': 6,
-  G: 7,
-  'G#': 8,
-  A: 9,
-  'A#': 10,
-  B: 11,
-});
-
-function getMelodyNotePitch(note) {
-  const { name, octave } = formatMelodyNoteParts(note);
-  return Number(octave) * 12 + (MELODY_PITCH_CLASS_ORDER[name] ?? 0);
-}
-
-const MELODY_NOTE_IDS = Object.freeze(
-  [...new Set(Object.values(MELODY_SCALES).flatMap(({ keyNotes }) => keyNotes))]
-    .sort((leftNote, rightNote) => getMelodyNotePitch(leftNote) - getMelodyNotePitch(rightNote)),
-);
+const MELODY_NOTES = createPianoRollNotes({ lowestOctave: 3 });
+const MELODY_NOTE_IDS = Object.freeze(MELODY_NOTES.map(({ note }) => note));
 
 function getMelodyScale(scaleId) {
   return MELODY_SCALES[scaleId] ?? MELODY_SCALES.major;
@@ -86,26 +66,6 @@ function getMelodyScale(scaleId) {
 
 function getMelodyKeyboardKey(key) {
   return MELODY_KEY_ALIASES[key] ?? key;
-}
-
-function getMelodyScaleRailNotes(scaleId) {
-  return Object.freeze(
-    getMelodyScale(scaleId).keyNotes
-      .slice()
-      .reverse()
-      .map((note) => {
-        const { name, octave } = formatMelodyNoteParts(note);
-
-        return Object.freeze({
-          label: note,
-          note,
-          octave: Number(octave),
-          rootName: name,
-          root: name === 'C',
-          sharp: name.includes('#'),
-        });
-      }),
-  );
 }
 
 function getMelodyKeyNote(scaleId, key) {
@@ -127,9 +87,9 @@ export {
   formatMelodyNoteParts,
   getMelodyKeyboardKey,
   getMelodyKeyNote,
-  getMelodyScaleRailNotes,
   getMelodyScale,
   MELODY_KEY_SEQUENCE,
+  MELODY_NOTES,
   MELODY_NOTE_IDS,
   MELODY_SCALES,
   MELODY_SCALE_IDS,

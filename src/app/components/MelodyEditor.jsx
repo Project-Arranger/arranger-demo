@@ -1,5 +1,4 @@
 import {
-  ChevronDown,
   ChevronUp,
   Keyboard,
   MoreHorizontal,
@@ -11,22 +10,22 @@ import {
   useMemo,
   useState,
 } from 'react';
+import { flushSync } from 'react-dom';
 import {
   formatMelodyNoteParts,
   getMelodyKeyboardKey,
   getMelodyKeyNote,
   getMelodyScale,
-  getMelodyScaleRailNotes,
   MELODY_KEY_SEQUENCE,
+  MELODY_NOTES,
   MELODY_SCALES,
 } from '../../data/melodyScales.js';
-import { BEAT_NUMBERS } from '../uiShellData.js';
 import { isMelodyCellActive } from '../melodyActions.js';
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
-import { usePitchRowHover } from '../usePitchRowHover.js';
 import { ClipNameInput } from './ClipNameInput.jsx';
 import { EditorTrackIdentity } from './EditorTrackIdentity.jsx';
 import { renderIcon } from './icons.js';
+import { PianoRoll } from './PianoRoll.jsx';
 import { TrackBarPager } from './TrackBarPager.jsx';
 
 const MELODY_EXAMPLE_DISPLAY_BY_TARGET = Object.freeze({
@@ -82,11 +81,6 @@ function MelodyEditor({
 }) {
   const [pickerMode, setPickerMode] = useState(null);
   const [playingKeys, setPlayingKeys] = useState(() => new Set());
-  const {
-    handlePitchRowPointerOut,
-    handlePitchRowPointerOver,
-    pitchRowHoverRef,
-  } = usePitchRowHover();
   const scaleButtonRole = getTutorialControlRole(tutorialTargets, 'melody-scale-button');
   const scaleButtonDisabled = tutorialLocked && scaleButtonRole !== 'target';
   const exampleKeysTarget = tutorialTargets?.controls?.find((target) => (
@@ -96,10 +90,6 @@ function MelodyEditor({
   const exampleKeysId = exampleKeysTarget?.name?.slice('melody-example-keys:'.length) ?? '';
   const exampleKeysLabel = MELODY_EXAMPLE_DISPLAY_BY_TARGET[exampleKeysId] ?? exampleKeysId;
   const activeScale = getMelodyScale(melodyScaleId);
-  const melodyRailNotes = useMemo(
-    () => getMelodyScaleRailNotes(melodyScaleId),
-    [melodyScaleId],
-  );
   const activePlayedNotes = useMemo(() => new Set(
     [...playingKeys]
       .map((key) => getMelodyKeyNote(melodyScaleId, key))
@@ -111,7 +101,9 @@ function MelodyEditor({
       if (event.repeat || isEditableKeyboardTarget(event.target)) return;
       const note = getMelodyKeyNote(melodyScaleId, event.key);
       if (!note) return;
-      setPlayingKeys((keys) => addSetValue(keys, getMelodyKeyboardKey(event.key)));
+      flushSync(() => {
+        setPlayingKeys((keys) => addSetValue(keys, getMelodyKeyboardKey(event.key)));
+      });
     };
     const handleKeyUp = (event) => {
       if (!getMelodyKeyNote(melodyScaleId, event.key)) return;
@@ -128,7 +120,9 @@ function MelodyEditor({
   }, [melodyScaleId]);
 
   const handlePreviewStart = (key, note) => {
-    setPlayingKeys((keys) => addSetValue(keys, key));
+    flushSync(() => {
+      setPlayingKeys((keys) => addSetValue(keys, key));
+    });
     onMelodyPreview(note);
   };
   const handlePreviewEnd = (key) => {
@@ -266,97 +260,19 @@ function MelodyEditor({
           </div>
         ) : null}
 
-        <div
-          className="seq-body melody-seq-body"
-          ref={pitchRowHoverRef}
-          onPointerOut={handlePitchRowPointerOut}
-          onPointerOver={handlePitchRowPointerOver}
-        >
-          <aside className="scale-rail melody-scale-rail" aria-label="Scale ruler">
-            <button
-              className="scale-arrow"
-              aria-label="Scroll up an octave"
-              title="Scroll up an octave"
-              type="button"
-              disabled
-            >
-              {renderIcon(ChevronUp)}
-            </button>
-            <div className="scale-notes-viewport">
-              <div className="scale-notes melody-scale-notes">
-                {melodyRailNotes.map((note, rowIndex) => (
-                  <div
-                    className={[
-                      'note-key',
-                      'melody-note-key',
-                      note.sharp ? 'sharp' : '',
-                      note.root ? 'root' : '',
-                      activePlayedNotes.has(note.note) ? 'playing' : '',
-                    ].filter(Boolean).join(' ')}
-                    data-row={rowIndex}
-                    key={note.note}
-                    title={note.note}
-                  >
-                    {note.label}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <button
-              className="scale-arrow"
-              aria-label="Scroll down an octave"
-              title="Scroll down an octave"
-              type="button"
-              disabled
-            >
-              {renderIcon(ChevronDown)}
-            </button>
-          </aside>
-
-          <div className="melody-grid">
-            {BEAT_NUMBERS.map((beatNumber) => {
-              const beatIndex = beatNumber - 1;
-
-              return (
-                <div className="melody-beat-group" key={beatNumber}>
-                  <div className="pitch-grid-head-spacer" aria-hidden="true" />
-                  <div
-                    className="beat-cells-viewport"
-                  >
-                    <div className="beat-cells melody-beat-cells">
-                      {melodyRailNotes.flatMap((note, rowIndex) => (
-                        BEAT_NUMBERS.map((stepNumber, colIndex) => {
-                          const step = beatIndex * 4 + colIndex;
-                          const active = isMelodyCellActive(matrix, selectedBar, step, note.note);
-
-                          return (
-                            <button
-                              className={[
-                                'pitch-step-cell',
-                                'melody-cell',
-                                note.sharp ? 'sharp' : '',
-                                active ? 'active' : '',
-                              ].filter(Boolean).join(' ')}
-                              data-row={rowIndex}
-                              data-col={colIndex}
-                              data-note={note.note}
-                              key={`${note.note}-${stepNumber}`}
-                              type="button"
-                              aria-label={`${note.note} beat ${beatNumber}.${stepNumber}`}
-                              aria-pressed={active}
-                              disabled={tutorialLocked}
-                              onClick={() => onMelodyStepToggle(step, note.note)}
-                            />
-                          );
-                        })
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        {createElement(PianoRoll, {
+          activeNoteIds: activePlayedNotes,
+          ariaLabel: 'Melody piano roll',
+          autoRevealActiveNote: true,
+          disabled: tutorialLocked,
+          initialTopNote: 'B4',
+          isCellActive: (step, note) => (
+            isMelodyCellActive(matrix, selectedBar, step, note)
+          ),
+          notes: MELODY_NOTES,
+          onCellToggle: onMelodyStepToggle,
+          trackId,
+        })}
         </>
       ))}
 

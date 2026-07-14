@@ -2358,14 +2358,30 @@ button {
 }
 
 .seq-body {
-  --chord-beat-head-height: 26px;
-  --chord-beat-gap: 8px;
-  --chord-cell-grid-height: 220px;
-  --chord-cell-gap: 3px;
-  --chord-cell-padding: 6px;
-  --pitch-rail-head-height: var(--chord-beat-head-height);
-  --pitch-row-hover: var(--c-chord);
-  --pitch-row-hover-ink: var(--c-chord-ink);
+  --piano-roll-beat-head-height: 26px;
+  --piano-roll-beat-gap: 8px;
+  --piano-roll-viewport-height: 220px;
+  --piano-roll-total-rows: 36;
+  --piano-roll-visible-rows: 12;
+  --piano-roll-row-gap: 3px;
+  --piano-roll-row-padding: 6px;
+  --piano-roll-visible-gap-space: 33px;
+  --piano-roll-visible-padding-space: 12px;
+  --piano-roll-viewport-border-space: 2px;
+  --piano-roll-row-height: calc(
+    (
+      var(--piano-roll-viewport-height)
+      - var(--piano-roll-viewport-border-space)
+      - var(--piano-roll-visible-padding-space)
+      - var(--piano-roll-visible-gap-space)
+    ) / 12
+  );
+  --chord-beat-head-height: var(--piano-roll-beat-head-height);
+  --chord-beat-gap: var(--piano-roll-beat-gap);
+  --chord-cell-grid-height: var(--piano-roll-viewport-height);
+  --chord-cell-gap: var(--piano-roll-row-gap);
+  --chord-cell-padding: var(--piano-roll-row-padding);
+  --pitch-rail-head-height: var(--piano-roll-beat-head-height);
   display: grid;
   grid-template-columns: 64px 1fr;
   min-height: 0;
@@ -2374,8 +2390,8 @@ button {
 
 .scale-rail {
   display: grid;
-  grid-template-rows: var(--pitch-rail-head-height) var(--chord-cell-grid-height) 22px;
-  gap: var(--chord-beat-gap);
+  grid-template-rows: var(--pitch-rail-head-height) var(--piano-roll-viewport-height) 22px;
+  gap: var(--piano-roll-beat-gap);
   min-height: 0;
   padding: 14px 8px 16px 14px;
   border-right: 1px solid var(--border-soft);
@@ -2401,7 +2417,7 @@ button {
 }
 
 .scale-notes-viewport {
-  height: var(--chord-cell-grid-height);
+  height: var(--piano-roll-viewport-height);
   min-height: 0;
   overflow-y: auto;
   border: 1px solid transparent;
@@ -2415,14 +2431,18 @@ button {
 }
 
 .scale-notes {
+  position: relative;
   display: grid;
-  grid-template-rows: repeat(36, minmax(0, 1fr));
-  gap: var(--chord-cell-gap);
-  min-height: calc(var(--chord-cell-grid-height) * 3);
-  padding: var(--chord-cell-padding);
+  grid-template-rows: repeat(var(--piano-roll-total-rows), var(--piano-roll-row-height));
+  gap: var(--piano-roll-row-gap);
+  min-height: 0;
+  padding: var(--piano-roll-row-padding);
+  align-content: start;
 }
 
 .note-key {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2446,25 +2466,12 @@ button {
 }
 
 .note-key.root {
-  color: var(--c-chord-ink);
-  box-shadow: inset 2px 0 0 var(--c-chord-ink);
-}
-
-.note-key.row-hovered {
   color: var(--pitch-row-hover-ink);
-  background: color-mix(in oklab, var(--pitch-row-hover) 38%, #f0d5ad);
-  border-color: color-mix(in oklab, var(--pitch-row-hover-ink) 36%, var(--border));
-  outline: 2px solid color-mix(in oklab, var(--pitch-row-hover-ink) 30%, transparent);
-  outline-offset: -2px;
+  box-shadow: inset 2px 0 0 var(--pitch-row-hover-ink);
 }
 
-.note-key.sharp.row-hovered {
-  color: white;
-  background: color-mix(in oklab, var(--pitch-row-hover-ink) 88%, black);
-  border-color: color-mix(in oklab, var(--pitch-row-hover) 44%, white);
-}
-
-.chord-grid {
+.chord-grid,
+.piano-roll-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(128px, 1fr));
   grid-template-rows: minmax(0, 1fr);
@@ -2479,7 +2486,7 @@ button {
 .beat-group {
   display: flex;
   flex-direction: column;
-  gap: var(--chord-beat-gap);
+  gap: var(--piano-roll-beat-gap);
   min-width: 0;
   min-height: 0;
 }
@@ -2497,7 +2504,7 @@ button {
   justify-content: flex-start;
   gap: 8px;
   min-width: 0;
-  min-height: var(--chord-beat-head-height);
+  min-height: var(--piano-roll-beat-head-height);
 }
 
 .beat-group.has-passing .beat-head {
@@ -2622,7 +2629,7 @@ button {
 }
 
 .beat-cells-viewport {
-  height: var(--chord-cell-grid-height);
+  height: var(--piano-roll-viewport-height);
   min-height: 0;
   overflow-y: auto;
   background: color-mix(in oklab, var(--bg) 50%, var(--surface));
@@ -2640,10 +2647,11 @@ button {
   position: relative;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(36, minmax(0, 1fr));
-  gap: var(--chord-cell-gap);
-  min-height: calc(var(--chord-cell-grid-height) * 3);
-  padding: var(--chord-cell-padding);
+  grid-template-rows: repeat(var(--piano-roll-total-rows), var(--piano-roll-row-height));
+  gap: var(--piano-roll-row-gap);
+  min-height: 0;
+  padding: var(--piano-roll-row-padding);
+  align-content: start;
 }
 
 .pitch-step-cell {
@@ -2659,10 +2667,7 @@ button {
     inset 0 1px 0 rgb(255 244 218 / 0.5),
     inset 0 -5px 8px rgb(78 40 16 / 0.1);
   cursor: pointer;
-  transition:
-    background 0.1s ease,
-    border-color 0.12s ease,
-    transform 0.08s ease;
+  transition: none;
 }
 
 .chord-cell.active {
@@ -2686,6 +2691,20 @@ button {
   transform: translateY(-1px);
 }
 
+.note-key.row-hovered {
+  color: var(--pitch-row-hover-ink);
+  background: color-mix(in oklab, var(--pitch-row-hover) 38%, #f0d5ad);
+  border-color: color-mix(in oklab, var(--pitch-row-hover-ink) 36%, var(--border));
+  outline: 2px solid color-mix(in oklab, var(--pitch-row-hover-ink) 30%, transparent);
+  outline-offset: -2px;
+}
+
+.note-key.sharp.row-hovered {
+  color: white;
+  background: color-mix(in oklab, var(--pitch-row-hover-ink) 88%, black);
+  border-color: color-mix(in oklab, var(--pitch-row-hover) 44%, white);
+}
+
 .chord-cell.row-hovered,
 .melody-cell.row-hovered,
 .bass-cell.row-hovered {
@@ -2704,28 +2723,47 @@ button {
   --pitch-rail-head-height: 22px;
   --pitch-row-hover: var(--c-melody);
   --pitch-row-hover-ink: var(--c-melody-ink);
-  --melody-pitch-row-count: 13;
-  --melody-pitch-viewport-height: var(--chord-cell-grid-height);
   grid-template-columns: 64px 1fr;
 }
 
-.melody-scale-rail {
-  grid-template-rows: var(--pitch-rail-head-height) var(--melody-pitch-viewport-height) 22px;
+.piano-roll-row-indicator {
+  position: absolute;
+  top: 0;
+  right: var(--piano-roll-row-padding);
+  left: var(--piano-roll-row-padding);
+  z-index: 3;
+  height: var(--piano-roll-row-height);
+  pointer-events: none;
+  opacity: 0;
+  background: color-mix(in oklab, var(--pitch-row-hover) 28%, transparent);
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--pitch-row-hover-ink) 36%, transparent);
+  transform: translate3d(0, var(--piano-roll-hover-y, 0), 0);
+  transition: opacity 50ms ease-in;
+  will-change: transform, opacity;
 }
 
-.melody-seq-body .scale-notes-viewport,
-.melody-seq-body .beat-cells-viewport {
-  height: var(--melody-pitch-viewport-height);
-  overflow-y: hidden;
+.piano-roll[data-row-indicator-visible="true"] .piano-roll-row-indicator {
+  opacity: 1;
+  transition-duration: 0ms;
 }
 
-.melody-scale-notes,
-.melody-beat-cells {
-  grid-template-rows: repeat(var(--melody-pitch-row-count), minmax(0, 1fr));
-  gap: var(--chord-cell-gap);
-  height: var(--melody-pitch-viewport-height);
-  min-height: var(--melody-pitch-viewport-height);
-  padding: var(--chord-cell-padding);
+.piano-roll .pitch-step-cell:hover,
+.piano-roll .pitch-step-cell:focus-visible,
+.piano-roll .note-key:hover,
+.piano-roll .note-key:focus-visible {
+  z-index: 4;
+}
+
+.piano-roll .pitch-step-cell:focus-visible,
+.piano-roll .note-key:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--pitch-row-hover-ink) 64%, white);
+  outline-offset: -2px;
+}
+
+.piano-roll .pitch-step-cell:disabled,
+.piano-roll .note-key:disabled {
+  cursor: default;
 }
 
 .melody-note-key.root {
@@ -2745,18 +2783,6 @@ button {
 .melody-note-key.sharp.playing {
   color: white;
   background: var(--c-melody-ink);
-}
-
-.melody-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(128px, 1fr));
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 6px 14px;
-  min-width: 0;
-  min-height: 0;
-  padding: 14px 22px 16px 14px;
-  overflow-x: auto;
-  overflow-y: hidden;
 }
 
 .melody-editor-pager-shell {
@@ -2783,18 +2809,23 @@ button {
   flex: 0 0 auto;
 }
 
-.melody-beat-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--chord-beat-gap);
-  min-width: 0;
-  min-height: 0;
-}
-
 .melody-cell.active {
   background: var(--c-melody);
   border-color: color-mix(in oklab, var(--c-melody-ink) 42%, var(--border));
   box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c-melody-ink) 24%, transparent);
+}
+
+.melody-cell.previewing:not(.active),
+.bass-cell.previewing:not(.active) {
+  z-index: 4;
+  background: color-mix(in oklab, var(--pitch-row-hover) 52%, #f0d5ad);
+  border-color: color-mix(in oklab, var(--pitch-row-hover-ink) 46%, var(--border));
+}
+
+.melody-cell:not(:disabled):hover,
+.bass-cell:not(:disabled):hover {
+  background: color-mix(in oklab, var(--pitch-row-hover) 38%, #f0d5ad);
+  border-color: color-mix(in oklab, var(--pitch-row-hover-ink) 30%, var(--border));
 }
 
 .bass-note-key {
@@ -2813,13 +2844,13 @@ button {
   box-shadow: inset 2px 0 0 var(--c-bass-ink);
 }
 
-.bass-note-key:hover {
+.bass-note-key:not(:disabled):hover {
   color: var(--c-bass-ink);
   background: var(--c-bass);
   border-color: var(--c-bass-ink);
 }
 
-.bass-note-key.sharp:hover {
+.bass-note-key.sharp:not(:disabled):hover {
   color: white;
   background: var(--c-bass-ink);
 }
@@ -2830,10 +2861,10 @@ button {
   box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c-bass-ink) 24%, transparent);
 }
 
-.bass-cell:hover {
-  background: color-mix(in oklab, var(--c-bass) 38%, #f0d5ad);
-  border-color: color-mix(in oklab, var(--c-bass-ink) 30%, var(--border));
-  transform: translateY(-1px);
+@media (prefers-reduced-motion: reduce) {
+  .piano-roll-row-indicator {
+    transition: none;
+  }
 }
 
 .editor {
@@ -7604,18 +7635,13 @@ body {
 }
 
 .chord-grid,
-.melody-grid,
-.bass-grid,
-.seq-body,
-.bass-seq-body,
-.melody-seq-body {
+.piano-roll-grid,
+.seq-body {
   color: #24170e;
 }
 
 .scale-rail,
-.beat-group,
-.melody-beat-group,
-.bass-beat-group,
+.piano-roll-beat-group,
 .keyboard-strip,
 .melody-example-keys {
   background: transparent;
@@ -7631,10 +7657,6 @@ body {
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.28),
     inset 0 -5px 8px rgb(52 29 14 / 0.08);
-}
-
-.melody-cell.row-hovered:not(.active) {
-  background: color-mix(in oklab, var(--c-melody) 38%, #f0d5ad);
 }
 
 .melody-note-key {
@@ -7656,9 +7678,9 @@ body {
     inset 0 -4px 7px rgb(78 40 16 / 0.1);
 }
 
-.chord-cell.active,
 .melody-cell.active,
 .bass-cell.active {
+  z-index: 4;
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.42),
     0 0 12px color-mix(in oklab, var(--pitch-row-hover, var(--hardware-gold)) 40%, transparent),
@@ -7957,18 +7979,15 @@ body {
     padding-bottom: 2px;
   }
 
-  .chord-grid {
+  .chord-grid,
+  .piano-roll-grid {
     grid-template-columns: repeat(4, minmax(116px, 1fr));
     gap: 10px;
     padding: 12px;
   }
 
   .seq-body {
-    --chord-cell-grid-height: 214px;
-  }
-
-  .beat-cells {
-    min-height: calc(var(--chord-cell-grid-height) * 3);
+    --piano-roll-viewport-height: 214px;
   }
 
   .drum-seq-body {

@@ -10,6 +10,7 @@ import {
 } from '../src/audio/matrixPlaybackAdapter.js';
 import { createPassingChordCell } from '../src/domain/chordCells.js';
 import { STEPS_PER_BAR, TOTAL_BARS } from '../src/domain/musicConstants.js';
+import { MELODY_NOTE_IDS } from '../src/data/melodyScales.js';
 import createInitialMatrix from '../src/store/createInitialMatrix.js';
 
 test('extractDrumsInstruments reads drums cells', () => {
@@ -69,6 +70,19 @@ test('extractMelodyEvent reads melody cells into playable melody events', () => 
     duration: '16n',
   });
   assert.equal(extractMelodyEvent({ type: 'melody', note: 'H4' }, 3, 8), null);
+});
+
+test('extractMelodyEvent plays every semitone in the three-octave melody roll', () => {
+  MELODY_NOTE_IDS.forEach((note) => {
+    assert.deepEqual(extractMelodyEvent({ type: 'melody', note }, 0, 0), {
+      type: 'melody',
+      trackId: 'melody',
+      bar: 0,
+      step: 0,
+      note,
+      duration: '16n',
+    });
+  });
 });
 
 test('createChordNotes maps major chord roots to playable triads', () => {

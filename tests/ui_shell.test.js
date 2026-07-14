@@ -17,19 +17,21 @@ import {
   TRACK_UI,
 } from '../src/app/uiShellData.js';
 
-test('pitch row hover uses event delegation without React hover state', async () => {
-  const pitchRowHoverSource = await readFile(
-    new URL('../src/app/usePitchRowHover.js', import.meta.url),
+test('piano-roll row indicator uses one delegated coordinate without per-cell hover state', async () => {
+  const rowIndicatorSource = await readFile(
+    new URL('../src/app/usePianoRollRowIndicator.js', import.meta.url),
     'utf8',
   );
 
-  assert.match(pitchRowHoverSource, /useRef/);
-  assert.match(pitchRowHoverSource, /querySelectorAll/);
-  assert.match(pitchRowHoverSource, /ROW_HOVER_CLASS = 'row-hovered'/);
-  assert.match(pitchRowHoverSource, /classList\.toggle\(ROW_HOVER_CLASS/);
-  assert.match(pitchRowHoverSource, /handlePitchRowPointerOver/);
-  assert.match(pitchRowHoverSource, /handlePitchRowPointerOut/);
-  assert.doesNotMatch(pitchRowHoverSource, /useState/);
+  assert.match(rowIndicatorSource, /useRef/);
+  assert.match(rowIndicatorSource, /closest\?\.\('\[data-row\]'\)/);
+  assert.match(rowIndicatorSource, /rowTarget\.offsetTop/);
+  assert.match(rowIndicatorSource, /--piano-roll-hover-y/);
+  assert.match(rowIndicatorSource, /handlePointerOver/);
+  assert.match(rowIndicatorSource, /handlePointerLeave/);
+  assert.match(rowIndicatorSource, /handleFocusCapture/);
+  assert.match(rowIndicatorSource, /ResizeObserver/);
+  assert.doesNotMatch(rowIndicatorSource, /querySelectorAll|classList|row-hovered|useState/);
 });
 
 test('topbar exposes independent undo redo controls and App wires history', async () => {
@@ -839,22 +841,31 @@ test('track editors reuse the full track-select identity style in editor-left he
   assert.doesNotMatch(keyboardIntro, /TRACK_ICONS\.melody/);
 });
 
-test('chord bass and melody editors share the pitch step cell class model', async () => {
-  const editorFiles = [
-    ['ChordEditor.jsx', 'chord-cell'],
-    ['BassEditor.jsx', 'bass-cell'],
-    ['MelodyEditor.jsx', 'melody-cell'],
-  ];
+test('bass and melody share the reusable PianoRoll component', async () => {
+  const editorFiles = ['BassEditor.jsx', 'MelodyEditor.jsx'];
 
-  for (const [fileName, trackClass] of editorFiles) {
+  for (const fileName of editorFiles) {
     const source = await readFile(
       new URL(`../src/app/components/${fileName}`, import.meta.url),
       'utf8',
     );
 
-    assert.match(source, /'pitch-step-cell'/);
-    assert.match(source, new RegExp(`'${trackClass}'`));
+    assert.match(source, /import \{ PianoRoll \} from '\.\/PianoRoll\.jsx';/);
+    assert.match(source, /createElement\(PianoRoll,/);
+    assert.doesNotMatch(source, /notes\.flatMap|className="scale-notes-viewport"|pitch-step-cell/);
   }
+
+  const pianoRollSource = await readFile(
+    new URL('../src/app/components/PianoRoll.jsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(pianoRollSource, /className=\{`piano-roll-grid \$\{trackId\}-grid`\}/);
+  assert.match(pianoRollSource, /'pitch-step-cell'/);
+  assert.match(pianoRollSource, /`\$\{trackId\}-cell`/);
+  assert.match(pianoRollSource, /notes\.flatMap/);
+  assert.match(pianoRollSource, /useLayoutEffect\(\(\) => \{/);
+  assert.match(pianoRollSource, /nextActiveNoteIds\.forEach/);
+  assert.match(pianoRollSource, /revealPitchRow\(noteIndexById\.get\(latestAddedNoteId\)\)/);
 
   const chordEditorSource = await readFile(
     new URL('../src/app/components/ChordEditor.jsx', import.meta.url),
@@ -913,13 +924,15 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.doesNotMatch(melodyEditorSource, /const \[melodyRailOctave,\s*setMelodyRailOctave\]/);
   assert.doesNotMatch(melodyEditorSource, /clampMelodyRailOctave/);
   assert.doesNotMatch(melodyEditorSource, /DEFAULT_MELODY_RAIL_OCTAVE/);
-  assert.match(melodyEditorSource, /usePitchRowHover/);
-  assert.match(melodyEditorSource, /pitchRowHoverRef/);
-  assert.match(melodyEditorSource, /handlePitchRowPointerOver/);
-  assert.match(melodyEditorSource, /handlePitchRowPointerOut/);
-  assert.doesNotMatch(melodyEditorSource, /setHoveredPitchRow/);
-  assert.match(melodyEditorSource, /getMelodyScaleRailNotes\(melodyScaleId\)/);
-  assert.doesNotMatch(melodyEditorSource, /MELODY_RAIL_NOTES\.map\(\(note,\s*rowIndex\)/);
+  assert.match(melodyEditorSource, /createElement\(PianoRoll,\s*\{/);
+  assert.match(melodyEditorSource, /activeNoteIds:\s*activePlayedNotes/);
+  assert.match(melodyEditorSource, /autoRevealActiveNote:\s*true/);
+  assert.match(melodyEditorSource, /import \{ flushSync \} from 'react-dom';/);
+  assert.match(melodyEditorSource, /flushSync\(\(\) => \{\s*setPlayingKeys/s);
+  assert.match(melodyEditorSource, /initialTopNote:\s*'B4'/);
+  assert.match(melodyEditorSource, /notes:\s*MELODY_NOTES/);
+  assert.match(melodyEditorSource, /onCellToggle:\s*onMelodyStepToggle/);
+  assert.doesNotMatch(melodyEditorSource, /usePitchRowHover|getMelodyScaleRailNotes|setHoveredPitchRow/);
   assert.doesNotMatch(melodyEditorSource, /usePitchScrollSync/);
   assert.doesNotMatch(melodyEditorSource, /initializeToMiddleOctave/);
   assert.doesNotMatch(melodyEditorSource, /scalePitchViewportRef/);
@@ -927,14 +940,7 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.doesNotMatch(melodyEditorSource, /handlePitchViewportScroll/);
   assert.doesNotMatch(melodyEditorSource, /handlePitchWheel/);
   assert.doesNotMatch(melodyEditorSource, /scrollPitchByOctave/);
-  assert.match(melodyEditorSource, /className="scale-notes-viewport"/);
-  assert.match(melodyEditorSource, /className="beat-cells-viewport"/);
-  assert.match(melodyEditorSource, /aria-label="Scroll up an octave"[\s\S]{0,180}disabled/);
-  assert.match(melodyEditorSource, /aria-label="Scroll down an octave"[\s\S]{0,180}disabled/);
-  assert.match(melodyEditorSource, /className="pitch-grid-head-spacer"/);
-  assert.match(melodyEditorSource, /ref=\{pitchRowHoverRef\}/);
-  assert.match(melodyEditorSource, /onPointerOver=\{handlePitchRowPointerOver\}/);
-  assert.match(melodyEditorSource, /onPointerOut=\{handlePitchRowPointerOut\}/);
+  assert.doesNotMatch(melodyEditorSource, /className="scale-notes-viewport"|className="beat-cells-viewport"|pitch-grid-head-spacer/);
   assert.match(melodyDataSource, /自然大调音阶/);
   assert.match(melodyDataSource, /五声音阶/);
   assert.match(melodyEditorSource, /清空本小节/);
@@ -944,15 +950,10 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(melodyEditorSource, /createElement\(TrackBarPager,\s*\{[\s\S]*className:\s*'melody-editor-pager-shell'/);
   assert.match(melodyEditorSource, /createElement\(TrackBarPager,\s*\{[\s\S]*contentClassName:\s*'melody-editor-scroll'/);
   assert.match(melodyEditorSource, /MELODY_KEY_SEQUENCE/);
-  assert.match(melodyEditorSource, /melodyRailNotes/);
   assert.match(melodyEditorSource, /isMelodyCellActive/);
-  assert.match(melodyEditorSource, /'pitch-step-cell',\s*\n\s*'melody-cell'/);
-  assert.doesNotMatch(melodyEditorSource, /colIndex === 0 \? 'downbeat'/);
-  assert.match(melodyEditorSource, /onClick=\{\(\) => onMelodyStepToggle\(step, note\.note\)\}/);
-  assert.match(melodyEditorSource, /disabled=\{tutorialLocked\}/);
+  assert.doesNotMatch(melodyEditorSource, /pitch-step-cell|melody-cell|colIndex === 0 \? 'downbeat'/);
   assert.match(melodyEditorSource, /setPlayingKeys/);
   assert.match(melodyEditorSource, /activePlayedNotes/);
-  assert.match(melodyEditorSource, /activePlayedNotes\.has\(note\.note\)/);
   assert.match(melodyEditorSource, /onMelodyPreview\(note\)/);
   assert.match(melodyEditorSource, /melody-example-keys/);
   assert.match(melodyEditorSource, /data-tutorial-role=\{exampleKeysRole/);
@@ -997,32 +998,16 @@ test('app exposes the bass editor and existing-clip groove template workflow', a
   assert.match(bassEditorSource, /getTutorialControlRole/);
   assert.match(bassEditorSource, /Bass · Phrase/);
   assert.match(bassEditorSource, /BASS EDITOR - BAR/);
-  assert.match(bassEditorSource, /BASS_NOTES\.flatMap/);
-  assert.match(bassEditorSource, /usePitchRowHover/);
-  assert.match(bassEditorSource, /pitchRowHoverRef/);
-  assert.match(bassEditorSource, /handlePitchRowPointerOver/);
-  assert.match(bassEditorSource, /handlePitchRowPointerOut/);
-  assert.doesNotMatch(bassEditorSource, /setHoveredPitchRow/);
-  assert.match(bassEditorSource, /BASS_NOTES\.map\(\(note,\s*rowIndex\)/);
-  assert.match(bassEditorSource, /className="pitch-grid-head-spacer"/);
-  assert.match(bassEditorSource, /ref=\{pitchRowHoverRef\}/);
-  assert.match(bassEditorSource, /onPointerOver=\{handlePitchRowPointerOver\}/);
-  assert.match(bassEditorSource, /onPointerOut=\{handlePitchRowPointerOut\}/);
-  assert.match(bassEditorSource, /usePitchScrollSync/);
-  assert.match(bassEditorSource, /scalePitchViewportRef/);
-  assert.match(bassEditorSource, /setBeatCellsViewportRef/);
-  assert.match(bassEditorSource, /handlePitchViewportScroll/);
-  assert.match(bassEditorSource, /handlePitchWheel/);
-  assert.match(bassEditorSource, /scrollPitchByOctave/);
-  assert.match(bassEditorSource, /className="scale-notes-viewport"/);
-  assert.match(bassEditorSource, /className="beat-cells-viewport"/);
-  assert.match(bassEditorSource, /disabled=\{!canScrollPitchUp\}/);
-  assert.match(bassEditorSource, /disabled=\{!canScrollPitchDown\}/);
-  assert.match(bassEditorSource, /className="chord-grid bass-grid"/);
+  assert.match(bassEditorSource, /createElement\(PianoRoll,\s*\{/);
+  assert.match(bassEditorSource, /initialTopNote:\s*'D1'/);
+  assert.match(bassEditorSource, /notes:\s*BASS_NOTES/);
+  assert.match(bassEditorSource, /onCellToggle:\s*onBassStepToggle/);
+  assert.match(bassEditorSource, /onNotePreview:\s*onBassPreview/);
+  assert.match(bassEditorSource, /onPitchInteraction:\s*closeBassPicker/);
+  assert.doesNotMatch(bassEditorSource, /BASS_NOTES\.(?:flatMap|map)|usePitchRowHover|usePitchScrollSync/);
+  assert.doesNotMatch(bassEditorSource, /scalePitchViewportRef|setBeatCellsViewportRef|pitch-step-cell|bass-cell/);
   assert.doesNotMatch(bassEditorSource, /className="beat-number-row bass-beat-number-row"/);
   assert.doesNotMatch(bassEditorSource, /className="beat-num mono"/);
-  assert.match(bassEditorSource, /'pitch-step-cell'/);
-  assert.match(bassEditorSource, /'bass-cell'/);
   assert.match(bassEditorSource, /BASS_GROOVE_TEMPLATES/);
   assert.match(bassEditorSource, /选择Bass弹奏律动模板/);
   assert.match(bassEditorSource, /bass-groove-button/);
@@ -1043,8 +1028,6 @@ test('app exposes the bass editor and existing-clip groove template workflow', a
   assert.match(bassEditorSource, /gtpl-step/);
   assert.match(bassEditorSource, /hit-root/);
   assert.match(bassEditorSource, /data-len/);
-  assert.match(bassEditorSource, /onBassStepToggle\(step,\s*note\.note\)/);
-  assert.match(bassEditorSource, /onBassPreview\(note\.note\)/);
   assert.match(bassEditorSource, /onBassGrooveTemplatePreview\(template\.id\)/);
   assert.match(bassEditorSource, /onBassGrooveTemplateApply\(templateId\)/);
   assert.match(bassEditorSource, /closest\?\.\('\[data-action="bgpreview"\]'\)/);
@@ -1058,8 +1041,7 @@ test('app exposes the bass editor and existing-clip groove template workflow', a
   assert.match(bassActionsSource, /applyBassGrooveTemplateToExistingClips/);
   assert.match(bassActionsSource, /createBassPreviewEvents/);
   assert.match(bassNotesSource, /BASS_NOTE_IDS/);
-  assert.match(bassNotesSource, /BASS_GRID_ROOTS/);
-  assert.match(bassNotesSource, /BASS_GRID_OCTAVES/);
+  assert.match(bassNotesSource, /createPianoRollNotes\(\{ lowestOctave: 0 \}\)/);
   assert.doesNotMatch(bassNotesSource, /CHORD_GRID_PITCHES/);
   assert.match(source, /handleBassStepToggle/);
   assert.match(source, /handleBassGrooveTemplatePreview/);

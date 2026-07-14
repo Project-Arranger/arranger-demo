@@ -28,14 +28,16 @@ test('app command constants use drums naming', () => {
   assert.equal(COMMAND_GROUPS.chord.includes(APP_COMMAND_TYPES.CHORD_SET_CELL), true);
   assert.equal(COMMAND_GROUPS.chord.includes(APP_COMMAND_TYPES.CHORD_CLEAR_CELL), true);
   assert.equal(CHORD_OPTION_COUNT, 8);
-  assert.equal(MELODY_NOTE_IDS.at(0), 'D3');
-  assert.equal(MELODY_NOTE_IDS.includes('C#4'), false);
+  assert.equal(MELODY_NOTE_IDS.length, 36);
+  assert.equal(MELODY_NOTE_IDS.at(0), 'B5');
+  assert.equal(MELODY_NOTE_IDS.includes('C#4'), true);
   assert.equal(MELODY_NOTE_IDS.includes('A4'), true);
   assert.equal(MELODY_NOTE_IDS.includes('C5'), true);
   assert.equal(MELODY_NOTE_IDS.includes('G5'), true);
   assert.equal(MELODY_NOTE_IDS.includes('C2'), false);
-  assert.equal(MELODY_NOTE_IDS.includes('A5'), false);
-  assert.equal(MELODY_NOTE_IDS.at(-1), 'G5');
+  assert.equal(MELODY_NOTE_IDS.includes('A5'), true);
+  assert.equal(MELODY_NOTE_IDS.includes('C6'), false);
+  assert.equal(MELODY_NOTE_IDS.at(-1), 'C3');
 });
 
 test('transport commands validate exact payloads', () => {
@@ -115,10 +117,13 @@ test('drums command validates track step and known instruments', () => {
 test('melody note commands only accept configured melody notes', () => {
   assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'D3' }), true);
   assert.equal(isValidAppCommand({ type: 'melody.noteOff', note: 'E5' }), true);
-  assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'C#4' }), false);
+  assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'C#4' }), true);
   assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'G5' }), true);
   assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'C2' }), false);
-  assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'A5' }), false);
+  assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'A5' }), true);
+  assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'B5' }), true);
+  assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'C3' }), true);
+  assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'C6' }), false);
   assert.equal(isValidAppCommand({ type: 'melody.noteOff', note: 'D3', velocity: 100 }), false);
 });
 

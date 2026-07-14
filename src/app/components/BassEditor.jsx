@@ -20,11 +20,10 @@ import { getBassGroovePreviewSteps } from '../bassGroovePreview.js';
 import { BASS_NOTES } from '../../data/bassNotes.js';
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
 import { BEAT_NUMBERS } from '../uiShellData.js';
-import { usePitchRowHover } from '../usePitchRowHover.js';
-import { usePitchScrollSync } from '../usePitchScrollSync.js';
 import { ClipNameInput } from './ClipNameInput.jsx';
 import { EditorTrackIdentity } from './EditorTrackIdentity.jsx';
 import { renderIcon } from './icons.js';
+import { PianoRoll } from './PianoRoll.jsx';
 import { TrackBarPager } from './TrackBarPager.jsx';
 
 function renderPlayGlyph() {
@@ -68,22 +67,8 @@ function BassEditor({
 }) {
   const [pickerMode, setPickerMode] = useState(null);
   const [selectedGrooveTemplateId, setSelectedGrooveTemplateId] = useState('bass-8th-basic');
-  const {
-    handlePitchRowPointerOut,
-    handlePitchRowPointerOver,
-    pitchRowHoverRef,
-  } = usePitchRowHover();
   const groovePickerOpen = pickerMode === 'groove';
   const closeBassPicker = useCallback(() => setPickerMode(null), []);
-  const {
-    canScrollPitchDown,
-    canScrollPitchUp,
-    handlePitchViewportScroll,
-    handlePitchWheel,
-    scalePitchViewportRef,
-    scrollPitchByOctave,
-    setBeatCellsViewportRef,
-  } = usePitchScrollSync({ onPitchInteraction: closeBassPicker });
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -192,111 +177,19 @@ function BassEditor({
         onPreviousBar,
         trackId,
       }, (
-        <div
-          className="seq-body bass-seq-body"
-          ref={pitchRowHoverRef}
-          onPointerOut={handlePitchRowPointerOut}
-          onPointerOver={handlePitchRowPointerOver}
-          onWheel={handlePitchWheel}
-        >
-          <aside className="scale-rail bass-scale-rail" aria-label="Bass note ruler">
-            <button
-              className="scale-arrow"
-              aria-label="Scroll up an octave"
-              title="Scroll up an octave"
-              type="button"
-              disabled={!canScrollPitchUp}
-              onClick={() => scrollPitchByOctave(-1)}
-            >
-              {renderIcon(ChevronUp)}
-            </button>
-            <div
-              className="scale-notes-viewport"
-              ref={scalePitchViewportRef}
-              onScroll={handlePitchViewportScroll}
-            >
-              <div className="scale-notes bass-scale-notes">
-                {BASS_NOTES.map((note, rowIndex) => (
-                  <button
-                    className={[
-                      'note-key',
-                      'bass-note-key',
-                      note.sharp ? 'sharp' : '',
-                      note.root ? 'root' : '',
-                    ].filter(Boolean).join(' ')}
-                    data-row={rowIndex}
-                    key={note.note}
-                    type="button"
-                    disabled={tutorialLocked}
-                    onClick={() => onBassPreview(note.note)}
-                  >
-                    {note.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <button
-              className="scale-arrow"
-              aria-label="Scroll down an octave"
-              title="Scroll down an octave"
-              type="button"
-              disabled={!canScrollPitchDown}
-              onClick={() => scrollPitchByOctave(1)}
-            >
-              {renderIcon(ChevronDown)}
-            </button>
-          </aside>
-
-          <div className="chord-grid bass-grid">
-            {BEAT_NUMBERS.map((beatNumber) => {
-              const beatIndex = beatNumber - 1;
-
-              return (
-                <div
-                  className="beat-group bass-beat-group"
-                  key={beatNumber}
-                  style={{ gridColumn: beatIndex + 1 }}
-                >
-                  <div className="pitch-grid-head-spacer" aria-hidden="true" />
-                  <div
-                    className="beat-cells-viewport"
-                    ref={(viewport) => setBeatCellsViewportRef(beatIndex, viewport)}
-                    onScroll={handlePitchViewportScroll}
-                  >
-                    <div className="beat-cells bass-beat-cells">
-                      {BASS_NOTES.flatMap((note, rowIndex) => (
-                        BEAT_NUMBERS.map((stepNumber, colIndex) => {
-                          const step = beatIndex * 4 + colIndex;
-                          const active = isBassCellActive(matrix, selectedBar, step, note.note);
-
-                          return (
-                            <button
-                              className={[
-                                'pitch-step-cell',
-                                'bass-cell',
-                                note.sharp ? 'sharp' : '',
-                                active ? 'active' : '',
-                              ].filter(Boolean).join(' ')}
-                              data-row={rowIndex}
-                              data-col={colIndex}
-                              data-note={note.note}
-                              key={`${note.note}-${stepNumber}`}
-                              type="button"
-                              aria-label={`${note.note} beat ${beatNumber}.${stepNumber}`}
-                              aria-pressed={active}
-                              disabled={tutorialLocked}
-                              onClick={() => onBassStepToggle(step, note.note)}
-                            />
-                          );
-                        })
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        createElement(PianoRoll, {
+          ariaLabel: 'Bass piano roll',
+          disabled: tutorialLocked,
+          initialTopNote: 'D1',
+          isCellActive: (step, note) => (
+            isBassCellActive(matrix, selectedBar, step, note)
+          ),
+          notes: BASS_NOTES,
+          onCellToggle: onBassStepToggle,
+          onNotePreview: onBassPreview,
+          onPitchInteraction: closeBassPicker,
+          trackId,
+        })
       ))}
 
       <div className="gtpl-picker" role="dialog" aria-label="选择Bass弹奏律动模板" data-screen-label="Bass Groove Template Picker" hidden={!groovePickerOpen}>
