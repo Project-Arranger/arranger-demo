@@ -491,7 +491,7 @@ test('target 4 starts by filling chord clips from the chord track control', () =
   assert.equal(filled.nextProgress.chordTrackClipsFilled, true);
 });
 
-test('target 4 progression step only completes from the Doo-wop template card', () => {
+test('target 4 template workspace completes only after applying Doo-wop and a groove globally', () => {
   const step = getStep(TUTORIAL_STEP_IDS.CHORD_SELECT_PROGRESSION_TEMPLATE);
   const progress = {
     ...createTutorialState(),
@@ -506,19 +506,22 @@ test('target 4 progression step only completes from the Doo-wop template card', 
 
   assert.equal(viewModel.locked, true);
   assert.deepEqual(viewModel.targets.controls, [
-    { name: 'chord-template-button', role: 'target' },
+    { name: 'chord-template-workspace-button', role: 'target' },
     { name: 'chord-template-card:doowop', role: 'target' },
+    { name: 'chord-groove-card:block-basic', role: 'target' },
+    { name: 'chord-groove-card:block-syncopated', role: 'target' },
+    { name: 'chord-template-apply-global', role: 'target' },
   ]);
 
-  const wrongTemplate = handleTutorialControlAction({
-    control: 'chord-template-card:axis',
+  const wrongScope = handleTutorialControlAction({
+    control: 'chord-template-apply-current',
     progress,
     step,
   });
-  assert.equal(wrongTemplate.allowed, false);
+  assert.equal(wrongScope.allowed, false);
 
   const selected = handleTutorialControlAction({
-    control: 'chord-template-card:doowop',
+    control: 'chord-template-apply-global',
     progress,
     step,
   });
@@ -527,41 +530,11 @@ test('target 4 progression step only completes from the Doo-wop template card', 
   assert.equal(selected.nextProgress.chordTemplateSelected, true);
 });
 
-test('target 4 groove step accepts a chord groove card and writes progress', () => {
-  const step = getStep(TUTORIAL_STEP_IDS.CHORD_SELECT_GROOVE_TEMPLATE);
-  const progress = {
-    ...createTutorialState(),
-    chordTemplateSelected: true,
-  };
-  const viewModel = getTutorialViewModel({
-    matrix: createInitialMatrix(),
-    progress,
-    selectedBar: 0,
-    step,
-  });
-
-  assert.equal(viewModel.locked, true);
-  assert.deepEqual(viewModel.targets.controls, [
-    { name: 'chord-groove-button', role: 'target' },
-    { name: 'chord-groove-card:block-basic', role: 'target' },
-    { name: 'chord-groove-card:block-syncopated', role: 'target' },
-  ]);
-
-  const selected = handleTutorialControlAction({
-    control: 'chord-groove-card:block-basic',
-    progress,
-    step,
-  });
-  assert.equal(selected.allowed, true);
-  assert.equal(selected.shouldAdvance, true);
-  assert.equal(selected.nextProgress.chordGrooveSelected, true);
-});
-
 test('target 4 chord listen step enables next after the first four bars', () => {
   const step = getStep(TUTORIAL_STEP_IDS.CHORD_LISTEN_LOOP);
   let progress = {
     ...createTutorialState(),
-    chordGrooveSelected: true,
+    chordTemplateSelected: true,
   };
   const viewModel = getTutorialViewModel({
     matrix: createInitialMatrix(),
@@ -576,9 +549,17 @@ test('target 4 chord listen step enables next after the first four bars', () => 
   assert.equal(viewModel.primaryDisabled, true);
   assert.deepEqual(viewModel.targets.controls, [
     { name: 'transport-play', role: 'target' },
-    { name: 'chord-groove-button', role: 'allowed' },
+    { name: 'chord-template-workspace-button', role: 'allowed' },
+    { name: 'chord-template-card:axis', role: 'allowed' },
+    { name: 'chord-template-card:doowop', role: 'allowed' },
+    { name: 'chord-template-card:andalusian', role: 'allowed' },
+    { name: 'chord-template-card:canon', role: 'allowed' },
+    { name: 'chord-template-card:blues', role: 'allowed' },
+    { name: 'chord-template-card:jazz251', role: 'allowed' },
     { name: 'chord-groove-card:block-basic', role: 'allowed' },
     { name: 'chord-groove-card:block-syncopated', role: 'allowed' },
+    { name: 'chord-template-apply-current', role: 'allowed' },
+    { name: 'chord-template-apply-global', role: 'allowed' },
   ]);
 
   const blockedNext = completeTutorialPrimaryAction({
@@ -643,7 +624,7 @@ test('target 4 chord listen step counts bar visits without play-start or bar-sta
   const step = getStep(TUTORIAL_STEP_IDS.CHORD_LISTEN_LOOP);
   let progress = {
     ...createTutorialState(),
-    chordGrooveSelected: true,
+    chordTemplateSelected: true,
   };
 
   for (const [bar, stepIndex] of [[0, 5], [1, 9], [2, 12]]) {
@@ -681,97 +662,6 @@ test('target 4 chord listen step counts bar visits without play-start or bar-sta
   assert.equal(completed.shouldAdvance, false);
   assert.equal(completed.nextProgress.chordLoopPlaybackComplete, true);
   assert.deepEqual(completed.nextProgress.chordLoopVisitedBars, [0, 1, 2, 3]);
-});
-
-test('target 4 enrich and passing steps enable continue only after their chord edits', () => {
-  const enrichStep = getStep(TUTORIAL_STEP_IDS.CHORD_ENRICH_HARMONY);
-  let progress = {
-    ...createTutorialState(),
-    chordLoopPlaybackComplete: true,
-  };
-  const enrichViewModel = getTutorialViewModel({
-    matrix: createInitialMatrix(),
-    progress,
-    selectedBar: 0,
-    step: enrichStep,
-  });
-
-  assert.equal(enrichViewModel.locked, false);
-  assert.equal(enrichViewModel.primaryLabel, '继续探索');
-  assert.equal(enrichViewModel.primaryDisabled, true);
-  assert.deepEqual(enrichViewModel.targets.controls, [
-    { name: 'chord-enrich-button:0', role: 'target' },
-    { name: 'chord-enrich-button:1', role: 'target' },
-    { name: 'chord-enrich-button:2', role: 'target' },
-    { name: 'chord-enrich-button:3', role: 'target' },
-  ]);
-
-  const enrichPlay = handleTutorialControlAction({
-    control: 'transport-play',
-    progress,
-    step: enrichStep,
-  });
-  assert.equal(enrichPlay.allowed, true);
-  assert.equal(enrichPlay.shouldAdvance, false);
-  assert.equal(enrichPlay.nextProgress, progress);
-  assert.equal(enrichPlay.nextProgress.chordEnriched, false);
-
-  const enriched = handleTutorialControlAction({
-    control: 'chord-enrich-button:0',
-    progress,
-    step: enrichStep,
-  });
-  assert.equal(enriched.allowed, true);
-  assert.equal(enriched.shouldAdvance, false);
-  assert.equal(enriched.nextProgress.chordEnriched, true);
-
-  const continueAfterEnrich = completeTutorialPrimaryAction({
-    progress: enriched.nextProgress,
-    step: enrichStep,
-  });
-  assert.equal(continueAfterEnrich.allowed, true);
-  assert.equal(continueAfterEnrich.shouldAdvance, true);
-  progress = continueAfterEnrich.nextProgress;
-
-  const passingStep = getStep(TUTORIAL_STEP_IDS.CHORD_ADD_PASSING);
-  const passingViewModel = getTutorialViewModel({
-    matrix: createInitialMatrix(),
-    progress,
-    selectedBar: 0,
-    step: passingStep,
-  });
-  assert.equal(passingViewModel.locked, false);
-  assert.equal(passingViewModel.primaryLabel, '继续探索');
-  assert.equal(passingViewModel.primaryDisabled, true);
-  assert.deepEqual(passingViewModel.targets.controls, [
-    { name: 'chord-passing-button', role: 'target' },
-  ]);
-
-  const passingPlay = handleTutorialControlAction({
-    control: 'transport-play',
-    progress,
-    step: passingStep,
-  });
-  assert.equal(passingPlay.allowed, true);
-  assert.equal(passingPlay.shouldAdvance, false);
-  assert.equal(passingPlay.nextProgress, progress);
-  assert.equal(passingPlay.nextProgress.chordPassingAdded, false);
-
-  const passingAdded = handleTutorialControlAction({
-    control: 'chord-passing-button',
-    progress,
-    step: passingStep,
-  });
-  assert.equal(passingAdded.allowed, true);
-  assert.equal(passingAdded.nextProgress.chordPassingAdded, true);
-
-  const finishTarget4 = completeTutorialPrimaryAction({
-    progress: passingAdded.nextProgress,
-    step: passingStep,
-  });
-  assert.equal(finishTarget4.allowed, true);
-  assert.equal(finishTarget4.shouldAdvance, true);
-  assert.equal(finishTarget4.shouldEnd, undefined);
 });
 
 test('target 5 starts by filling bass clips from the bass track control', () => {

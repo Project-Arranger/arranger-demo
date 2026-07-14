@@ -1,364 +1,71 @@
 import {
-  AudioWaveform,
-  ChevronDown,
-  ChevronUp,
-  LayoutTemplate,
-  MoreHorizontal,
-  Plus,
-  X,
-} from 'lucide-react';
-import {
   createElement,
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
+import { Square } from 'lucide-react';
+import { CHORD_TEMPLATES } from '../../domain/chordCells.js';
 import {
-  BEAT_NUMBERS,
-  CHORD_GRID_PITCHES,
-} from '../uiShellData.js';
-import {
-  getChordBarDisplayLabel,
-  getChordEnrichTargetLabel,
-  getPassingChordContext,
-  getPassingChordDisplayLabel,
-  getChordSpanDisplayLabel,
-  getChordStepCell,
-} from '../chordActions.js';
-import {
-  CHORD_TEMPLATES,
-  getChordRootName,
-  getPassingChordOptions,
-  getChordVariantOptions,
-  getChordToneRoots,
-  isChordAddedNoteActive,
-  isChordCellActive,
-} from '../../domain/chordCells.js';
-import { CHORD_GROOVE_TEMPLATES } from '../chordGrooveActions.js';
+  CHORD_GROOVE_TEMPLATES,
+  CUSTOM_CHORD_GROOVE_ID,
+  getAppliedChordProgressionTemplateId,
+  getChordRhythmSteps,
+  getChordSelectedGrooveTemplateId,
+  getSourceChordLabel,
+} from '../chordGrooveActions.js';
+import { getExistingChordClipBars } from '../chordActions.js';
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
-import { usePitchRowHover } from '../usePitchRowHover.js';
-import { usePitchScrollSync } from '../usePitchScrollSync.js';
 import { ClipNameInput } from './ClipNameInput.jsx';
 import { EditorTrackIdentity } from './EditorTrackIdentity.jsx';
 import { renderIcon } from './icons.js';
 import { TrackBarPager } from './TrackBarPager.jsx';
 
 const TEMPLATE_PAGE_SIZE = 3;
-const ADD_CHORD_PANEL_WIDTH = 760;
-const VIEWPORT_MARGIN = 16;
-const PANEL_GAP = 12;
-const GROOVE_STEPS_PER_BEAT = 4;
-const PASSING_CHORD_STEP_INDEX = 14;
-const PASSING_CHORD_SPAN_INDEX = 3;
+const STEPS_PER_BAR = 16;
+const STEPS_PER_BEAT = 4;
+const DEFAULT_TEMPLATE_ID = 'doowop';
+const DEFAULT_GROOVE_TEMPLATE_ID = 'block-basic';
+const WORKSPACE_BUTTON_CONTROL = 'chord-template-workspace-button';
+const APPLY_BAR_CONTROL = 'chord-template-apply-current';
+const APPLY_GLOBAL_CONTROL = 'chord-template-apply-global';
+const ICON_PLAY_URL = `${import.meta.env.BASE_URL}assets/skeuo/icon-play.svg`;
+const ICON_CLOSE_URL = `${import.meta.env.BASE_URL}assets/skeuo/icon-x.svg`;
 
 function isTutorialControlAllowed(role) {
   return role === 'target' || role === 'allowed';
 }
 
-function rectToAnchor(rect) {
-  return {
-    bottom: rect.bottom,
-    height: rect.height,
-    left: rect.left,
-    right: rect.right,
-    top: rect.top,
-    width: rect.width,
-  };
+function getNextChordClipBar(clips, selectedBar) {
+  const bars = getExistingChordClipBars(clips);
+  if (bars.length < 2) return null;
+  const selectedIndex = bars.indexOf(selectedBar);
+  if (selectedIndex === -1) return null;
+  return bars[(selectedIndex + 1) % bars.length] ?? null;
 }
 
-function getTutorialSafeRight() {
-  const viewportRight = window.innerWidth - VIEWPORT_MARGIN;
-  const tutorialPanel = document.querySelector('.tutorial-panel');
-  if (!tutorialPanel) return viewportRight;
-
-  const panelRect = tutorialPanel.getBoundingClientRect();
-  if (panelRect.width <= 0 || panelRect.left <= VIEWPORT_MARGIN) return viewportRight;
-
-  return Math.min(viewportRight, panelRect.left - VIEWPORT_MARGIN);
+function getGrooveStatusLabel(grooveTemplateId) {
+  if (grooveTemplateId === CUSTOM_CHORD_GROOVE_ID) return '自定义律动';
+  return CHORD_GROOVE_TEMPLATES.find((template) => template.id === grooveTemplateId)?.name
+    ?? '自定义律动';
 }
 
-function getPopoverPosition(anchorRect) {
-  if (!anchorRect || typeof window === 'undefined') {
-    return { left: 16, top: 16, side: 'below', arrowX: 24 };
-  }
-
-  const safeRight = getTutorialSafeRight();
-  const availableWidth = Math.max(280, safeRight - VIEWPORT_MARGIN);
-  const width = Math.min(ADD_CHORD_PANEL_WIDTH, availableWidth);
-  const anchorCenterX = anchorRect.left + anchorRect.width / 2;
-  const left = Math.max(
-    VIEWPORT_MARGIN,
-    Math.min(safeRight - width, anchorCenterX - width / 2),
-  );
-  const estimatedHeight = 300;
-  const fitsBelow = anchorRect.bottom + PANEL_GAP + estimatedHeight + VIEWPORT_MARGIN <= window.innerHeight;
-  const top = fitsBelow
-    ? anchorRect.bottom + PANEL_GAP
-    : Math.max(VIEWPORT_MARGIN, anchorRect.top - PANEL_GAP - estimatedHeight);
-  const side = fitsBelow ? 'below' : 'above';
-  const arrowX = Math.max(20, Math.min(width - 20, anchorCenterX - left));
-
-  return { arrowX, left, side, top, width };
-}
-
-function AddChordPopover({
-  anchorRect,
-  currentChord,
-  onClose,
-  onPick,
-  onChordPreview,
-  spanIndex,
-}) {
-  const [playingChord, setPlayingChord] = useState(null);
-  const currentChordRoot = getChordRootName(currentChord);
-  const variantOptions = getChordVariantOptions(currentChord);
-  const position = getPopoverPosition(anchorRect);
-  const currentChordPreviewClassName = [
-    'cv-preview',
-    'current-chord-preview',
-    playingChord === currentChord ? 'playing' : '',
-  ].filter(Boolean).join(' ');
-
-  const handlePreview = (event, chordName) => {
-    event.stopPropagation();
-    setPlayingChord(chordName);
-    onChordPreview(chordName);
-    window.setTimeout(() => setPlayingChord(null), 600);
-  };
-
-  const renderOptionCard = (option) => {
-    const isCurrent = option.name === currentChord;
-
-    return (
-      <article
-        className={[
-          'cv-card',
-          isCurrent ? 'current' : '',
-        ].filter(Boolean).join(' ')}
-        data-variant={option.name}
-        key={option.name}
-        tabIndex={0}
-        onClick={() => {
-          onPick(spanIndex, option.name);
-          onClose();
-        }}
-        onKeyDown={(event) => {
-          if (event.key !== 'Enter' && event.key !== ' ') return;
-          event.preventDefault();
-          onPick(spanIndex, option.name);
-          onClose();
-        }}
-      >
-        <span className="cv-name">{option.name}</span>
-        <p className="cv-desc">{option.desc}</p>
-        <div className="cv-foot">
-          <div className="cv-notes" aria-label="组成音">
-            {getChordToneRoots(option.name).map((note) => (
-              <span className="n" key={note}>{note}</span>
-            ))}
-          </div>
-          <button
-            className={['cv-preview', playingChord === option.name ? 'playing' : ''].filter(Boolean).join(' ')}
-            type="button"
-            aria-label={`试听 ${option.name}`}
-            data-action="preview"
-            onClick={(event) => handlePreview(event, option.name)}
-          >
-            <span className="play-glyph" aria-hidden="true" />
-          </button>
-        </div>
-      </article>
-    );
-  };
-
-  return (
-    <div
-      className="chord-variants"
-      id="chordVariants"
-      role="dialog"
-      aria-label="丰富和弦色彩"
-      data-side={position.side}
-      style={{
-        '--arrow-x': `${position.arrowX}px`,
-        left: `${position.left}px`,
-        top: `${position.top}px`,
-        width: `${position.width}px`,
-      }}
-    >
-      <span className="cv-arrow" />
-      <header className="cv-head">
-        <h2 className="cv-title">丰富和弦</h2>
-      </header>
-
-      <section className="cv-panel" id="cvPanelEnrich" role="tabpanel">
-        <div className="cv-context enrich">
-          <span>丰富和弦色彩</span>
-          <span className="cv-ctx-chord">{currentChordRoot ?? currentChord}</span>
-          <button
-            className={currentChordPreviewClassName}
-            type="button"
-            aria-label={`试听当前和弦 ${currentChord}`}
-            data-action="preview"
-            onClick={(event) => handlePreview(event, currentChord)}
-          >
-            <span className="play-glyph" aria-hidden="true" />
-          </button>
-        </div>
-        {variantOptions.length ? (
-          <div className="cv-grid enrich">
-            {variantOptions.map((option) => renderOptionCard(option))}
-          </div>
-        ) : (
-          <div className="cv-empty">
-            暂无可用丰富和弦
-          </div>
-        )}
-      </section>
-    </div>
-  );
-}
-
-function PassingChordPopover({
-  anchorRect,
-  currentChord,
-  targetChord,
-  onClose,
-  onPassingChordPreview,
-  onPassingChordPick,
-}) {
-  const [playingChord, setPlayingChord] = useState(null);
-  const passingOptions = getPassingChordOptions(currentChord, targetChord);
-  const position = getPopoverPosition(anchorRect);
-
-  const handlePreview = (event, chordName) => {
-    event.stopPropagation();
-    const chordNames = getPassingPreviewChordNames(chordName);
-    setPlayingChord(chordName);
-    onPassingChordPreview(chordNames);
-    window.setTimeout(() => setPlayingChord(null), 600);
-  };
-
-  const getPassingPreviewChordNames = (chordName) => {
-    if (!currentChord) return [chordName];
-    return [currentChord, chordName, targetChord].filter(Boolean);
-  };
-
-  const getPassingPreviewLabel = (chordName) => (
-    `试听 ${getPassingPreviewChordNames(chordName).join(' 到 ')} 的完整经过`
-  );
-
-  const handlePick = (option) => {
-    onPassingChordPick(PASSING_CHORD_STEP_INDEX, option.name);
-    onClose();
-  };
-
-  return (
-    <div
-      className="chord-variants passing-variants"
-      id="chordVariants"
-      role="dialog"
-      aria-label="添加经过和弦"
-      data-side={position.side}
-      style={{
-        '--arrow-x': `${position.arrowX}px`,
-        left: `${position.left}px`,
-        top: `${position.top}px`,
-        width: `${position.width}px`,
-      }}
-    >
-      <span className="cv-arrow" />
-      <header className="cv-head">
-        <h2 className="cv-title">添加经过和弦</h2>
-        <button className="cv-custom" type="button" aria-label="自定义和弦">
-          <MoreHorizontal size={12} />
-          自定义
-        </button>
-      </header>
-
-      <section className="cv-panel" id="cvPanelPassing" role="tabpanel">
-        {currentChord ? (
-          <div className="cv-context">
-            {targetChord ? (
-              <>
-                <span>在</span>
-                <span className="cv-ctx-chord">{currentChord}</span>
-                <span className="cv-ctx-arrow">→</span>
-                <span className="cv-ctx-chord">{targetChord}</span>
-                <span>之间插入经过和弦</span>
-              </>
-            ) : (
-              <>
-                <span>从</span>
-                <span className="cv-ctx-chord">{currentChord}</span>
-                <span>引出的经过和弦</span>
-              </>
-            )}
-          </div>
-        ) : null}
-        <div className="cv-grid passing">
-          {passingOptions.map((option) => (
-            <article
-              className="cv-card"
-              data-variant={option.name}
-              key={option.name}
-              tabIndex={0}
-              onClick={() => handlePick(option)}
-              onKeyDown={(event) => {
-                if (event.key !== 'Enter' && event.key !== ' ') return;
-                event.preventDefault();
-                handlePick(option);
-              }}
-            >
-              <span className="cv-name">{option.name}</span>
-              <p className="cv-desc">{option.desc}</p>
-              <div className="cv-foot">
-                <div className="cv-notes" aria-label="组成音">
-                  {getChordToneRoots(option.name).map((note) => (
-                    <span className="n" key={note}>{note}</span>
-                  ))}
-                </div>
-                <button
-                  className={[
-                    'cv-preview',
-                    'full-context',
-                    playingChord === option.name ? 'playing' : '',
-                  ].filter(Boolean).join(' ')}
-                  type="button"
-                  aria-label={getPassingPreviewLabel(option.name)}
-                  data-action="preview"
-                  onClick={(event) => handlePreview(event, option.name)}
-                >
-                  <span className="play-glyph" aria-hidden="true" />
-                  试听走向
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function getGrooveStepClass(template, step) {
-  const isHit = template.steps.includes(step);
-  const hitClass = template.kind === 'arpeggio' ? 'hit-arp' : 'hit-block';
-
-  return [
-    'gtpl-step',
-    step % GROOVE_STEPS_PER_BEAT === 0 ? 'downbeat' : '',
-    isHit ? hitClass : '',
-  ].filter(Boolean).join(' ');
-}
-
-function getGrooveStepStyle(template, step) {
-  if (template.kind !== 'arpeggio') return undefined;
-
-  const hitIndex = template.steps.indexOf(step);
-  if (hitIndex === -1) return undefined;
-
-  return { '--h': String((hitIndex % 4) + 1) };
+function renderMiniGroove(template) {
+  return Array.from({ length: STEPS_PER_BAR / STEPS_PER_BEAT }, (_, beat) => (
+    <span className="chord-template-mini-beat-group" key={`${template.id}-mini-beat-${beat}`}>
+      {Array.from({ length: STEPS_PER_BEAT }, (__, beatStep) => {
+        const step = beat * STEPS_PER_BEAT + beatStep;
+        return (
+          <span
+            className={template.steps.includes(step) ? 'on' : ''}
+            key={`${template.id}-mini-step-${step}`}
+          />
+        );
+      })}
+    </span>
+  ));
 }
 
 function ChordEditor({
@@ -366,730 +73,429 @@ function ChordEditor({
   clips,
   clipName,
   matrix,
-  onChordNoteSelect,
-  onChordPick,
-  onChordPreview,
-  onChordGrooveTemplatePreview,
-  onChordGrooveTemplateApply,
-  onChordTemplatePreview,
-  onChordTemplateApply,
-  onPassingChordPick = () => {},
-  onPassingChordPreview = () => {},
+  onChordRhythmStepToggle = () => {},
+  onChordTemplateWorkspacePreview = () => Promise.resolve('empty'),
+  onChordTemplateWorkspacePreviewStop = () => {},
+  onChordTemplateWorkspaceApply = () => {},
   onClose = () => {},
-  onClearChord = () => {},
-  onClearChordBar,
+  onClearChordBar = () => {},
   onNextBar = () => {},
   onPreviousBar = () => {},
   onRenameClip,
   selectedBar,
-  shouldConfirmChordTemplateApply = false,
   trackId = 'chord',
   tutorialLocked = false,
   tutorialTargets,
 }) {
-  const [pickerMode, setPickerMode] = useState(null);
-  const [templatePage, setTemplatePage] = useState(0);
-  const [selectedTemplateId, setSelectedTemplateId] = useState(null);
-  const [pendingTemplateId, setPendingTemplateId] = useState(null);
-  const [selectedGrooveTemplateId, setSelectedGrooveTemplateId] = useState('block-basic');
-  const [addChordPanel, setAddChordPanel] = useState(null);
-  const [passingChordPanel, setPassingChordPanel] = useState(null);
-  const {
-    handlePitchRowPointerOut,
-    handlePitchRowPointerOver,
-    pitchRowHoverRef,
-  } = usePitchRowHover();
   const templates = useMemo(() => Object.values(CHORD_TEMPLATES), []);
   const pageCount = Math.ceil(templates.length / TEMPLATE_PAGE_SIZE);
-  const chordPickerOpen = pickerMode === 'chord';
-  const groovePickerOpen = pickerMode === 'groove';
+  const appliedTemplateId = getAppliedChordProgressionTemplateId(matrix, clips, selectedBar);
+  const appliedGrooveTemplateId = getChordSelectedGrooveTemplateId(matrix, selectedBar);
+  const activeTemplate = appliedTemplateId ? CHORD_TEMPLATES[appliedTemplateId] : null;
+  const currentChord = getSourceChordLabel(matrix, selectedBar);
+  const nextChordBar = getNextChordClipBar(clips, selectedBar);
+  const nextChord = nextChordBar === null ? null : getSourceChordLabel(matrix, nextChordBar);
+  const activeSteps = new Set(getChordRhythmSteps(matrix, selectedBar));
+  const [workspaceOpen, setWorkspaceOpen] = useState(false);
+  const [templatePage, setTemplatePage] = useState(0);
+  const [pendingTemplateId, setPendingTemplateId] = useState(DEFAULT_TEMPLATE_ID);
+  const [pendingGrooveTemplateId, setPendingGrooveTemplateId] = useState(DEFAULT_GROOVE_TEMPLATE_ID);
+  const [previewing, setPreviewing] = useState(false);
+  const previewRunRef = useRef(0);
+  const workspaceButtonRole = getTutorialControlRole(tutorialTargets, WORKSPACE_BUTTON_CONTROL);
+  const applyBarRole = getTutorialControlRole(tutorialTargets, APPLY_BAR_CONTROL);
+  const applyGlobalRole = getTutorialControlRole(tutorialTargets, APPLY_GLOBAL_CONTROL);
   const visibleTemplates = templates.slice(
     templatePage * TEMPLATE_PAGE_SIZE,
     templatePage * TEMPLATE_PAGE_SIZE + TEMPLATE_PAGE_SIZE,
   );
-  const pendingTemplate = pendingTemplateId ? CHORD_TEMPLATES[pendingTemplateId] : null;
-  const primaryChordLabel = getChordBarDisplayLabel(matrix, selectedBar);
-  const passingChordContext = getPassingChordContext(matrix, clips, selectedBar);
-  const passingSourceChord = passingChordContext.currentChord;
-  const passingTargetChord = passingChordContext.targetChord;
-  const passingChordDisplayLabel = getPassingChordDisplayLabel(matrix, selectedBar, PASSING_CHORD_STEP_INDEX);
-  const passingRole = getTutorialControlRole(tutorialTargets, 'chord-passing-button');
-  const passingAnchorClassName = [
-    'passing-anchor',
-    passingRole === 'target' ? 'tutorial-passing-anchor-target' : '',
-  ].filter(Boolean).join(' ');
-  const passingButtonClassName = [
-    'add-chord-btn',
-    'passing-btn',
-    passingChordDisplayLabel ? 'filled' : '',
-    passingRole === 'target' ? 'tutorial-control-target' : '',
-    passingChordPanel?.bar === selectedBar ? 'variants-open' : '',
-  ].filter(Boolean).join(' ');
-  const templateButtonRole = getTutorialControlRole(
-    tutorialTargets,
-    'chord-template-button',
-  );
-  const grooveButtonRole = getTutorialControlRole(
-    tutorialTargets,
-    'chord-groove-button',
-  );
-  const templateButtonClassName = [
-    'btn-template',
-    templateButtonRole === 'target' ? 'tutorial-control-target' : '',
-  ].filter(Boolean).join(' ');
-  const grooveButtonClassName = [
-    'btn-template-groove',
-    grooveButtonRole === 'target' ? 'tutorial-control-target' : '',
-  ].filter(Boolean).join(' ');
-  const closeChordPanels = useCallback(() => {
-    setAddChordPanel(null);
-    setPassingChordPanel(null);
-  }, []);
-  const {
-    canScrollPitchDown,
-    canScrollPitchUp,
-    handlePitchViewportScroll,
-    handlePitchWheel,
-    scalePitchViewportRef,
-    scrollPitchByOctave,
-    setBeatCellsViewportRef,
-  } = usePitchScrollSync({ onPitchInteraction: closeChordPanels });
+
+  const stopPreview = useCallback(() => {
+    previewRunRef.current += 1;
+    onChordTemplateWorkspacePreviewStop();
+    setPreviewing(false);
+  }, [onChordTemplateWorkspacePreviewStop]);
+
+  const closeWorkspace = useCallback(() => {
+    stopPreview();
+    setWorkspaceOpen(false);
+  }, [stopPreview]);
+
+  useEffect(() => () => {
+    previewRunRef.current += 1;
+    onChordTemplateWorkspacePreviewStop();
+  }, [onChordTemplateWorkspacePreviewStop]);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
-      if (event.key !== 'Escape') return;
-      setPickerMode(null);
-      setPendingTemplateId(null);
-      closeChordPanels();
+      if (event.key === 'Escape' && workspaceOpen) closeWorkspace();
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [closeChordPanels]);
+  }, [closeWorkspace, workspaceOpen]);
 
-  useEffect(() => {
-    const handlePointerDown = (event) => {
-      if (!addChordPanel && !passingChordPanel) return;
-      if (event.target.closest('.chord-variants')) return;
-      if (event.target.closest('.add-chord-btn')) return;
-      if (event.target.closest('.passing-btn')) return;
-      closeChordPanels();
-    };
+  const openWorkspace = () => {
+    stopPreview();
+    const nextTemplateId = appliedTemplateId ?? DEFAULT_TEMPLATE_ID;
+    const nextTemplateIndex = Math.max(0, templates.findIndex((template) => template.id === nextTemplateId));
+    setPendingTemplateId(nextTemplateId);
+    setPendingGrooveTemplateId(
+      CHORD_GROOVE_TEMPLATES.some((template) => template.id === appliedGrooveTemplateId)
+        ? appliedGrooveTemplateId
+        : DEFAULT_GROOVE_TEMPLATE_ID,
+    );
+    setTemplatePage(Math.floor(nextTemplateIndex / TEMPLATE_PAGE_SIZE));
+    setWorkspaceOpen(true);
+  };
 
-    document.addEventListener('mousedown', handlePointerDown);
-    return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, [addChordPanel, closeChordPanels, passingChordPanel]);
-
-  const handleTemplateRequest = (templateId) => {
-    if (!shouldConfirmChordTemplateApply) {
-      setSelectedTemplateId(templateId);
-      onChordTemplateApply(templateId);
-      setPickerMode(null);
-      closeChordPanels();
+  const handlePreview = async () => {
+    if (previewing) {
+      stopPreview();
       return;
     }
 
+    const runId = previewRunRef.current + 1;
+    previewRunRef.current = runId;
+    setPreviewing(true);
+    try {
+      await onChordTemplateWorkspacePreview({
+        progressionTemplateId: pendingTemplateId,
+        grooveTemplateId: pendingGrooveTemplateId,
+      });
+    } catch {
+      // The preview is optional UI feedback; keep the workspace usable if audio startup fails.
+    } finally {
+      if (previewRunRef.current === runId) setPreviewing(false);
+    }
+  };
+
+  const handleApply = (scope) => {
+    stopPreview();
+    onChordTemplateWorkspaceApply({
+      progressionTemplateId: pendingTemplateId,
+      grooveTemplateId: pendingGrooveTemplateId,
+      scope,
+    });
+    setWorkspaceOpen(false);
+  };
+
+  const handleProgressionSelect = (templateId) => {
+    if (templateId === pendingTemplateId) return;
+    stopPreview();
     setPendingTemplateId(templateId);
   };
 
-  const handleTemplateConfirm = () => {
-    if (!pendingTemplateId) return;
-
-    setSelectedTemplateId(pendingTemplateId);
-    onChordTemplateApply(pendingTemplateId);
-    setPendingTemplateId(null);
-    setPickerMode(null);
-    closeChordPanels();
+  const handleGrooveSelect = (templateId) => {
+    if (templateId === pendingGrooveTemplateId) return;
+    stopPreview();
+    setPendingGrooveTemplateId(templateId);
   };
 
-  const handleTemplateCancel = () => {
-    setPendingTemplateId(null);
-  };
-
-  const handleGrooveTemplateApply = (templateId) => {
-    setSelectedGrooveTemplateId(templateId);
-    onChordGrooveTemplateApply(templateId);
-    setPickerMode(null);
-    closeChordPanels();
-  };
-
-  const handleClear = () => {
-    onClearChordBar();
-    setPendingTemplateId(null);
-    closeChordPanels();
-  };
-
-  const handleClearChord = () => {
-    onClearChord();
-    setPendingTemplateId(null);
-    closeChordPanels();
-  };
-
-  const handleClose = () => {
-    setPickerMode(null);
-    setPendingTemplateId(null);
-    closeChordPanels();
-    onClose();
-  };
-
-  const openAddChordPanel = (spanIndex, buttonElement, chordLabel) => {
-    if (!chordLabel) return;
-
-    setPickerMode(null);
-    setPassingChordPanel(null);
-    setAddChordPanel({
-      anchorRect: rectToAnchor(buttonElement.getBoundingClientRect()),
-      bar: selectedBar,
-      chordLabel,
-      spanIndex,
-    });
-  };
-
-  const openPassingChordPanel = (buttonElement) => {
-    setPickerMode(null);
-    setAddChordPanel(null);
-    setPassingChordPanel({
-      anchorRect: rectToAnchor(buttonElement.getBoundingClientRect()),
-      bar: selectedBar,
-    });
-  };
+  const editorClassName = [
+    'editor',
+    'chord-rhythm-editor',
+    workspaceOpen ? 'chord-template-workspace-open' : '',
+  ].filter(Boolean).join(' ');
 
   return (
-    <section className="editor" data-screen-label="Chord Editor" data-picker={pickerMode ?? undefined}>
-      <header className="editor-head">
+    <section
+      className={editorClassName}
+      data-screen-label="Chord Editor"
+      data-picker={workspaceOpen ? 'chord-workspace' : undefined}
+    >
+      <header className="editor-head chord-rhythm-editor-head">
         <div className="editor-left">
           {createElement(EditorTrackIdentity, { trackId: 'chord', label: 'Chord' })}
           <div className="clip-title">
             <div className="crumb">Chord · Phrase</div>
             {createElement(ClipNameInput, { clipName, onRenameClip })}
             <div className="clip-name-meta">
-              CHORD EDITOR - BAR
+              CHORD EDITOR · BAR
               {' '}
-              {selectedBar + 1}
-              {primaryChordLabel ? ` · ${primaryChordLabel}` : ''}
+              {String(selectedBar + 1).padStart(2, '0')}
             </div>
           </div>
         </div>
 
-        <div className="tools">
+        <div className="tools chord-rhythm-tools">
           <button
-            className={templateButtonClassName}
-            aria-label="选择和弦进行模板"
+            className={[
+              'chord-template-workspace-trigger',
+              workspaceButtonRole === 'target' ? 'tutorial-control-target' : '',
+            ].filter(Boolean).join(' ')}
+            aria-expanded={workspaceOpen}
+            data-tutorial-role={workspaceButtonRole}
+            disabled={tutorialLocked && !isTutorialControlAllowed(workspaceButtonRole)}
             type="button"
-            disabled={tutorialLocked && templateButtonRole !== 'target'}
-            onClick={() => {
-              setPickerMode('chord');
-              closeChordPanels();
-            }}
+            onClick={openWorkspace}
           >
-            {renderIcon(LayoutTemplate)}
-            选择和弦进行模板
+            选择和弦模板与律动
           </button>
           <button
-            className={grooveButtonClassName}
-            aria-label="选择和弦弹奏律动模板"
-            type="button"
-            data-tutorial-role={grooveButtonRole}
-            disabled={tutorialLocked && !isTutorialControlAllowed(grooveButtonRole)}
-            onClick={() => {
-              setPickerMode('groove');
-              closeChordPanels();
-            }}
-          >
-            {renderIcon(AudioWaveform)}
-            选择和弦弹奏律动模板
-          </button>
-          <button
-            className="btn-template drum-clear-action"
-            type="button"
+            className="chord-rhythm-clear"
             disabled={tutorialLocked}
-            onClick={handleClear}
+            type="button"
+            onClick={onClearChordBar}
           >
             清空本小节
           </button>
           <button
-            className="btn-template drum-clear-action"
+            className="editor-close chord-rhythm-close"
+            aria-label="关闭编辑器"
+            title="关闭编辑器"
             type="button"
-            disabled={tutorialLocked}
-            onClick={handleClearChord}
+            onClick={onClose}
           >
-            清空整轨
-          </button>
-          <button className="tool-icon" aria-label="More" title="More" type="button" disabled={tutorialLocked}>
-            {renderIcon(MoreHorizontal)}
-          </button>
-          <button
-            className="editor-close"
-            aria-label="Close editor"
-            title="Close"
-            type="button"
-            onClick={handleClose}
-          >
-            {renderIcon(X)}
+            <img src={ICON_CLOSE_URL} alt="" aria-hidden="true" />
           </button>
         </div>
       </header>
 
       {createElement(TrackBarPager, {
         canPageBars,
+        className: 'chord-rhythm-pager',
+        contentClassName: 'chord-rhythm-pager-content',
         onNextBar,
         onPreviousBar,
         trackId,
       }, (
-        <div
-          className="seq-body"
-          ref={pitchRowHoverRef}
-          onPointerOut={handlePitchRowPointerOut}
-          onPointerOver={handlePitchRowPointerOver}
-          onWheel={handlePitchWheel}
-        >
-        <aside className="scale-rail" aria-label="Scale ruler">
-          <button
-            className="scale-arrow"
-            aria-label="Scroll up an octave"
-            title="Scroll up an octave"
-            type="button"
-            disabled={!canScrollPitchUp}
-            onClick={() => scrollPitchByOctave(-1)}
-          >
-            {renderIcon(ChevronUp)}
-          </button>
-          <div
-            className="scale-notes-viewport"
-            ref={scalePitchViewportRef}
-            onScroll={handlePitchViewportScroll}
-          >
-            <div className="scale-notes">
-              {CHORD_GRID_PITCHES.map((note, rowIndex) => (
-                <div
-                  className={[
-                    'note-key',
-                    note.sharp ? 'sharp' : '',
-                    note.root ? 'root' : '',
-                  ].filter(Boolean).join(' ')}
-                  data-row={rowIndex}
-                  key={note.label}
-                >
-                  {note.label}
-                </div>
-              ))}
-            </div>
-          </div>
-          <button
-            className="scale-arrow"
-            aria-label="Scroll down an octave"
-            title="Scroll down an octave"
-            type="button"
-            disabled={!canScrollPitchDown}
-            onClick={() => scrollPitchByOctave(1)}
-          >
-            {renderIcon(ChevronDown)}
-          </button>
-        </aside>
-
-        <div className="chord-grid">
-          {BEAT_NUMBERS.map((beatNumber) => {
-            const spanIndex = beatNumber - 1;
-            const hasPassingShortcut = spanIndex === PASSING_CHORD_SPAN_INDEX;
-            const label = getChordSpanDisplayLabel(matrix, selectedBar, spanIndex);
-            const enrichTargetLabel = getChordEnrichTargetLabel(matrix, selectedBar, spanIndex);
-            const hasValue = Boolean(label);
-            const enrichControlName = `chord-enrich-button:${spanIndex}`;
-            const enrichRole = getTutorialControlRole(tutorialTargets, enrichControlName);
-            const canUseEnrichButton = !tutorialLocked || enrichRole === 'target';
-            const beatHeadAddButtonClassName = [
-              'add-chord-btn',
-              'chord-label-segment',
-              hasValue ? 'filled' : '',
-              enrichRole === 'target' ? 'tutorial-control-target' : '',
-              addChordPanel?.bar === selectedBar && addChordPanel?.spanIndex === spanIndex ? 'variants-open' : '',
-            ].filter(Boolean).join(' ');
-
-            return (
-              <div
-                className={[
-                  'beat-group',
-                  hasPassingShortcut ? 'has-passing' : '',
-                ].filter(Boolean).join(' ')}
-                key={beatNumber}
-                style={{ gridColumn: spanIndex + 1 }}
-              >
-                <div className="beat-head">
-                  {label ? (
-                    <button
-                      className={beatHeadAddButtonClassName}
-                      aria-label={`添加和弦 beat ${beatNumber}`}
-                      data-chord-root={enrichTargetLabel ?? label}
-                      type="button"
-                      disabled={!canUseEnrichButton}
-                      onClick={(event) => {
-                        openAddChordPanel(spanIndex, event.currentTarget, enrichTargetLabel);
-                      }}
-                    >
-                      {label}
-                    </button>
-                  ) : null}
-                  {hasPassingShortcut ? (
-                    <div className={passingAnchorClassName}>
-                      <button
-                        className={passingButtonClassName}
-                        type="button"
-                        aria-label="添加经过和弦"
-                        title="添加经过和弦"
-                        aria-expanded={passingChordPanel?.bar === selectedBar}
-                        disabled={
-                          tutorialLocked
-                          && getTutorialControlRole(
-                            tutorialTargets,
-                            'chord-passing-button',
-                          ) !== 'target'
-                        }
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          openPassingChordPanel(event.currentTarget);
-                        }}
-                      >
-                        {passingChordDisplayLabel ? null : renderIcon(Plus)}
-                        {passingChordDisplayLabel ?? '经过和弦'}
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-                <div
-                  className="beat-cells-viewport"
-                  ref={(viewport) => setBeatCellsViewportRef(spanIndex, viewport)}
-                  onScroll={handlePitchViewportScroll}
-                >
-                  <div className="beat-cells">
-                    {CHORD_GRID_PITCHES.flatMap((note, rowIndex) => (
-                      BEAT_NUMBERS.map((stepNumber, colIndex) => {
-                        const stepCell = getChordStepCell(matrix, selectedBar, spanIndex, colIndex);
-                        const active = isChordCellActive(stepCell, note.label, colIndex);
-                        const added = isChordAddedNoteActive(stepCell, note.label);
-
-                        return (
-                          <button
-                            className={[
-                              'pitch-step-cell',
-                              'chord-cell',
-                              active ? 'active' : '',
-                              added ? 'added' : '',
-                              note.sharp ? 'sharp' : '',
-                            ].filter(Boolean).join(' ')}
-                            data-row={rowIndex}
-                            data-col={colIndex}
-                            data-span-index={spanIndex}
-                            data-chord-root={note.label}
-                            key={`${note.label}-${stepNumber}`}
-                            type="button"
-                            aria-label={`${note.label} beat ${beatNumber}.${stepNumber}`}
-                            aria-pressed={active || added}
-                            disabled={tutorialLocked}
-                            onClick={() => {
-                              onChordNoteSelect(spanIndex, colIndex, note.label);
-                              closeChordPanels();
-                            }}
-                          />
-                        );
-                      })
-                    ))}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        </div>
-      ))}
-
-      {addChordPanel?.bar === selectedBar ? createElement(AddChordPopover, {
-        anchorRect: addChordPanel.anchorRect,
-        currentChord: addChordPanel.chordLabel,
-        onChordPreview,
-        onClose: closeChordPanels,
-        onPick: onChordPick,
-        spanIndex: addChordPanel.spanIndex,
-      }) : null}
-
-      {passingChordPanel?.bar === selectedBar ? createElement(PassingChordPopover, {
-        anchorRect: passingChordPanel.anchorRect,
-        currentChord: passingSourceChord,
-        targetChord: passingTargetChord,
-        onClose: closeChordPanels,
-        onPassingChordPreview,
-        onPassingChordPick,
-      }) : null}
-
-      <div className="tpl-picker" role="dialog" aria-label="选择和弦进行模板" data-screen-label="Chord Template Picker" hidden={!chordPickerOpen}>
-        <header className="tpl-head">
-          <div className="tpl-head-left">
-            <button className="btn-template-active" aria-label="关闭和弦进行模板" type="button" onClick={() => setPickerMode(null)}>
-              {renderIcon(LayoutTemplate)}
-              选择和弦进行模板
-            </button>
-            <span className="tpl-meta">
-              和弦进行模板库 ·
-              {' '}
-              <span className="mono">{templates.length}</span>
-              {' '}
-              个
-            </span>
-          </div>
-          <div className="tpl-head-right">
-            <label className="tpl-search">
-              <input type="text" placeholder="搜索模板名 / 风格 / 和弦…" />
-            </label>
-            <button className="tpl-close" aria-label="关闭" type="button" onClick={() => setPickerMode(null)}>
-              {renderIcon(X)}
-            </button>
-          </div>
-        </header>
-
-        <div className="tpl-body">
-          <div className="tpl-list" id="tplList">
-            {visibleTemplates.map((template) => {
-              const templateCardRole = getTutorialControlRole(
-                tutorialTargets,
-                `chord-template-card:${template.id}`,
-              );
-              const templateCardDisabled = tutorialLocked && templateCardRole !== 'target';
-              const templateCardClassName = [
-                'tpl-card',
-                selectedTemplateId === template.id ? 'selected' : '',
-                templateCardRole === 'target' ? 'tutorial-control-target' : '',
-              ].filter(Boolean).join(' ');
-
-              return (
-                <article
-                  className={templateCardClassName}
-                  aria-disabled={templateCardDisabled}
-                  data-tpl={template.id}
-                  key={template.id}
-                  onClick={() => {
-                    if (templateCardDisabled) return;
-                    handleTemplateRequest(template.id);
-                  }}
-                >
-                  <div className="tpl-name-row">
-                    <h3 className="tpl-name">{template.name}</h3>
-                    <span className="tpl-tag">{template.tag}</span>
-                  </div>
-                  <div className="tpl-prog">
-                    <div className="tpl-chords">
-                      {template.chords.map((chord, index) => (
-                        <span className="tpl-chord-wrap" key={`${template.id}-${chord}-${index}`}>
-                          <span className="tpl-chord">{chord}</span>
-                          {index < template.chords.length - 1 ? <span className="tpl-chord-sep">-</span> : null}
-                        </span>
-                      ))}
-                    </div>
-                    <button
-                      className="tpl-play"
-                      aria-label="试听"
-                      data-action="preview"
-                      type="button"
-                      disabled={templateCardDisabled}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onChordTemplatePreview(template.chords);
-                      }}
-                    >
-                      <span className="play-glyph" aria-hidden="true" />
-                    </button>
-                  </div>
-                  <p className="tpl-desc">{template.desc}</p>
-                  <div className="tpl-songs">
-                    <span className="tpl-songs-label">代表曲目</span>
-                    {template.songs.map((song) => (
-                      <span className="tpl-song" key={song}>{song}</span>
-                    ))}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </div>
-
-        <footer className="tpl-pager">
-          <button
-            className="tpl-pager-btn"
-            type="button"
-            aria-label="上一页"
-            disabled={templatePage === 0}
-            onClick={() => setTemplatePage((page) => Math.max(0, page - 1))}
-          >
-            ‹
-          </button>
-          <span className="tpl-pager-count mono">
-            <span className="now">{templatePage + 1}</span>
-            {' '}
-            /
-            {' '}
-            {pageCount}
-          </span>
-          <button
-            className="tpl-pager-btn"
-            type="button"
-            aria-label="下一页"
-            disabled={templatePage === pageCount - 1}
-            onClick={() => setTemplatePage((page) => Math.min(pageCount - 1, page + 1))}
-          >
-            ›
-          </button>
-        </footer>
-
-        {pendingTemplate ? (
-          <div className="tpl-confirm-overlay" role="presentation">
-            <div
-              className="tpl-confirm-dialog"
-              role="dialog"
-              aria-modal="true"
-              aria-label="确认覆盖和弦模板"
-            >
-              <span className="tpl-confirm-kicker">确认覆盖</span>
-              <h3 className="tpl-confirm-title">确认覆盖和弦模板？</h3>
-              <p className="tpl-confirm-copy">
-                将覆盖所有已有 Chord clips 的当前模板和弦。
-              </p>
-              <div className="tpl-confirm-template">
-                <span className="tpl-confirm-template-name">{pendingTemplate.name}</span>
-                <span className="tpl-confirm-template-chords">
-                  {pendingTemplate.chords.join(' - ')}
+        <section className="chord-rhythm-panel" aria-label="本小节和弦律动">
+          <div className="chord-rhythm-summary">
+            <div className="chord-rhythm-summary-left">
+              <div className="chord-rhythm-progression-info">
+                <span className="chord-rhythm-eyebrow">Progression</span>
+                <strong className="chord-rhythm-progression-name">
+                  {activeTemplate?.name ?? '自定义'}
+                </strong>
+                <span className="chord-rhythm-progression-chords">
+                  {activeTemplate?.chords.join(' · ') ?? currentChord}
                 </span>
               </div>
-              <div className="tpl-confirm-actions">
-                <button className="tpl-confirm-cancel" type="button" onClick={handleTemplateCancel}>
-                  取消
+              <div className="chord-rhythm-readout">
+                <div>
+                  <span className="chord-rhythm-readout-label">当前小节主和弦</span>
+                  <span className="chord-rhythm-readout-sub">
+                    BAR {String(selectedBar + 1).padStart(2, '0')} · ROOT CHORD
+                  </span>
+                </div>
+                <span className="chord-rhythm-badge">{currentChord ?? '—'}</span>
+              </div>
+            </div>
+            <div className="chord-rhythm-readout next">
+              <div>
+                <span className="chord-rhythm-readout-label">下一小节主和弦</span>
+                <span className="chord-rhythm-readout-sub">
+                  {nextChordBar === null
+                    ? 'NO NEXT CHORD'
+                    : `BAR ${String(nextChordBar + 1).padStart(2, '0')} · NEXT CHORD`}
+                </span>
+              </div>
+              <span className="chord-rhythm-badge">{nextChord ?? '—'}</span>
+            </div>
+          </div>
+
+          <div className="chord-rhythm-sequencer-head">
+            <div>
+              <h2>本小节弹奏律动</h2>
+              <p>点击 16 个步进开关，决定这个和弦在一小节里的触发位置</p>
+            </div>
+            <div className="chord-rhythm-status">
+              <span className="chord-rhythm-status-lamp" aria-hidden="true" />
+              <span>GROOVE · {getGrooveStatusLabel(appliedGrooveTemplateId)}</span>
+            </div>
+          </div>
+
+          <div className="chord-rhythm-step-grid" aria-label="16 step chord groove">
+            {Array.from({ length: STEPS_PER_BAR / STEPS_PER_BEAT }, (_, beat) => (
+              <div
+                className="chord-rhythm-beat-group"
+                aria-label={`Beat ${beat + 1}`}
+                key={`chord-rhythm-beat-group-${beat}`}
+                role="group"
+              >
+                {Array.from({ length: STEPS_PER_BEAT }, (__, beatStep) => {
+                  const step = beat * STEPS_PER_BEAT + beatStep;
+                  return (
+                    <div className="chord-rhythm-step-wrap" key={`chord-rhythm-step-${step}`}>
+                      <span>{String(step + 1).padStart(2, '0')}</span>
+                      <button
+                        className="chord-rhythm-step"
+                        aria-label={`切换第 ${step + 1} 步`}
+                        aria-pressed={activeSteps.has(step)}
+                        disabled={tutorialLocked}
+                        type="button"
+                        onClick={() => onChordRhythmStepToggle(step)}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+          <div className="chord-rhythm-beat-labels" aria-hidden="true">
+            {Array.from({ length: STEPS_PER_BAR / STEPS_PER_BEAT }, (_, beat) => (
+              <span key={`chord-rhythm-beat-${beat}`}>BEAT {beat + 1}</span>
+            ))}
+          </div>
+        </section>
+      ))}
+
+      <section
+        className="chord-template-workspace"
+        aria-labelledby="chordTemplateWorkspaceTitle"
+        aria-modal="true"
+        hidden={!workspaceOpen}
+        role="dialog"
+      >
+        <div className="chord-template-workspace-panel">
+          <header className="chord-template-workspace-head">
+            <h2 id="chordTemplateWorkspaceTitle">和弦模板与弹奏律动</h2>
+            <div>
+              <button
+                className={[
+                  'chord-template-workspace-icon-button',
+                  'preview',
+                  previewing ? 'is-playing' : '',
+                ].filter(Boolean).join(' ')}
+                aria-label={previewing ? '停止试听' : '试听所选和弦与律动'}
+                aria-pressed={previewing}
+                title={previewing ? '停止试听' : '试听所选和弦与律动'}
+                type="button"
+                onClick={handlePreview}
+              >
+                {previewing
+                  ? renderIcon(Square)
+                  : <img src={ICON_PLAY_URL} alt="" aria-hidden="true" />}
+              </button>
+              <button
+                className="chord-template-workspace-icon-button close"
+                aria-label="关闭二级菜单"
+                title="关闭二级菜单"
+                type="button"
+                onClick={closeWorkspace}
+              >
+                <img src={ICON_CLOSE_URL} alt="" aria-hidden="true" />
+              </button>
+            </div>
+          </header>
+
+          <div className="chord-template-workspace-body">
+            <div className="chord-template-workspace-label progression">
+              <strong>选择和弦模板</strong>
+              <span>CHORD PROGRESSION</span>
+              <div className="chord-template-page-controls">
+                <button
+                  type="button"
+                  disabled={templatePage === 0}
+                  onClick={() => setTemplatePage((page) => Math.max(0, page - 1))}
+                >
+                  上一页
                 </button>
-                <button className="tpl-confirm-apply" type="button" onClick={handleTemplateConfirm}>
-                  确认覆盖
+                <span>{templatePage + 1} / {pageCount}</span>
+                <button
+                  type="button"
+                  disabled={templatePage === pageCount - 1}
+                  onClick={() => setTemplatePage((page) => Math.min(pageCount - 1, page + 1))}
+                >
+                  下一页
                 </button>
               </div>
             </div>
-          </div>
-        ) : null}
-      </div>
+            <div className="chord-template-progression-options" aria-label="选择和弦模板">
+              {visibleTemplates.map((template) => {
+                const controlName = `chord-template-card:${template.id}`;
+                const role = getTutorialControlRole(tutorialTargets, controlName);
+                const disabled = tutorialLocked && !isTutorialControlAllowed(role);
 
-      <div className="gtpl-picker" role="dialog" aria-label="选择和弦弹奏律动模板" data-screen-label="Groove Template Picker" hidden={!groovePickerOpen}>
-        <header className="tpl-head">
-          <div className="tpl-head-left">
-            <button className="btn-template-groove-active" aria-label="关闭和弦弹奏律动模板" type="button" onClick={() => setPickerMode(null)}>
-              {renderIcon(AudioWaveform)}
-              选择和弦弹奏律动模板
-            </button>
-            <span className="tpl-meta">
-              弹奏律动模板库 ·
-              {' '}
-              <span className="mono">{CHORD_GROOVE_TEMPLATES.length}</span>
-              {' '}
-              个
-            </span>
-          </div>
-          <div className="tpl-head-right">
-            <label className="tpl-search">
-              <input type="text" placeholder="搜索律动名称 / 音型…" />
-            </label>
-            <button className="tpl-close" aria-label="关闭" type="button" onClick={() => setPickerMode(null)}>
-              {renderIcon(X)}
-            </button>
-          </div>
-        </header>
-
-        <div className="tpl-body">
-          <div className="tpl-list gtpl-list-centered" id="gtplList">
-            {CHORD_GROOVE_TEMPLATES.map((template) => {
-              const grooveCardRole = getTutorialControlRole(
-                tutorialTargets,
-                `chord-groove-card:${template.id}`,
-              );
-              const grooveCardDisabled = tutorialLocked && !isTutorialControlAllowed(grooveCardRole);
-              const grooveCardClassName = [
-                'gtpl-card',
-                selectedGrooveTemplateId === template.id ? 'selected' : '',
-                grooveCardRole === 'target' ? 'tutorial-control-target' : '',
-              ].filter(Boolean).join(' ');
-
-              return (
-                <article
-                  className={grooveCardClassName}
-                  aria-disabled={grooveCardDisabled}
-                  data-gtpl={template.id}
-                  data-tutorial-role={grooveCardRole}
-                  key={template.id}
-                  onClick={() => {
-                    if (grooveCardDisabled) return;
-                    handleGrooveTemplateApply(template.id);
-                  }}
-                >
-                  <div className="gtpl-name-row">
-                    <h3 className="gtpl-name">{template.name}</h3>
-                    {template.default ? <span className="gtpl-default-tag">默认</span> : null}
-                  </div>
-                  <div className="gtpl-rhythm" aria-label={`律动预览·${template.name}`}>
-                    <div className="gtpl-rhythm-grid">
-                      {BEAT_NUMBERS.map((beatNumber) => (
-                        <div className="gtpl-beat" key={`${template.id}-beat-${beatNumber}`}>
-                          {BEAT_NUMBERS.map((stepNumber) => {
-                            const step = (beatNumber - 1) * GROOVE_STEPS_PER_BEAT + stepNumber - 1;
-
-                            return (
-                              <span
-                                className={getGrooveStepClass(template, step)}
-                                key={`${template.id}-${step}`}
-                                style={getGrooveStepStyle(template, step)}
-                              />
-                            );
-                          })}
-                        </div>
+                return (
+                  <button
+                    className={role === 'target' ? 'tutorial-control-target' : ''}
+                    aria-pressed={pendingTemplateId === template.id}
+                    data-tutorial-role={role}
+                    disabled={disabled}
+                    key={template.id}
+                    type="button"
+                    onClick={() => handleProgressionSelect(template.id)}
+                  >
+                    <span className="chord-template-card-head">
+                      <strong>{template.name}</strong>
+                      <span>{template.tag}</span>
+                    </span>
+                    <span className="chord-template-card-chords">
+                      {template.chords.map((chord, index) => (
+                        <span className="chord-template-card-chord-wrap" key={`${template.id}-${chord}-${index}`}>
+                          <span className="chord-template-card-chord">{chord}</span>
+                          {index < template.chords.length - 1 ? <span className="chord-template-card-separator">–</span> : null}
+                        </span>
                       ))}
-                    </div>
-                    <div className="gtpl-beat-num mono">
-                      {BEAT_NUMBERS.map((beatNumber) => (
-                        <span key={`${template.id}-num-${beatNumber}`}>{beatNumber}</span>
-                      ))}
-                    </div>
-                  </div>
-                  <p className="gtpl-desc">{template.desc}</p>
-                  <p className="gtpl-detail">{template.detail}</p>
-                  <div className="gtpl-foot">
-                    <span className="gtpl-foot-label mono">{template.hitLabel}</span>
-                    <button
-                      className="gtpl-play"
-                      type="button"
-                      aria-label={`试听 ${template.name}`}
-                      data-action="gpreview"
-                      disabled={grooveCardDisabled}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onChordGrooveTemplatePreview(template.id);
-                      }}
-                    >
-                      <span className="play-glyph" aria-hidden="true" />
-                      试听
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
+                    </span>
+                    <span className="chord-template-card-description">{template.desc}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="chord-template-workspace-label groove">
+              <strong>选择和弦弹奏律动模板</strong>
+              <span>CHORD GROOVE</span>
+            </div>
+            <div className="chord-template-groove-options" aria-label="选择和弦弹奏律动模板">
+              {CHORD_GROOVE_TEMPLATES.map((template) => {
+                const controlName = `chord-groove-card:${template.id}`;
+                const role = getTutorialControlRole(tutorialTargets, controlName);
+                const disabled = tutorialLocked && !isTutorialControlAllowed(role);
+
+                return (
+                  <button
+                    className={role === 'target' ? 'tutorial-control-target' : ''}
+                    aria-pressed={pendingGrooveTemplateId === template.id}
+                    data-tutorial-role={role}
+                    disabled={disabled}
+                    key={template.id}
+                    type="button"
+                    onClick={() => handleGrooveSelect(template.id)}
+                  >
+                    <strong>{template.name}</strong>
+                    <span className="chord-template-mini-groove" aria-hidden="true">
+                      {renderMiniGroove(template)}
+                    </span>
+                    <span className="chord-template-card-description">{template.desc}</span>
+                    <span className="chord-template-groove-meta">
+                      {template.hitLabel}{template.default ? ' · DEFAULT' : ''}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div aria-hidden="true" />
+            <div className="chord-template-workspace-actions">
+              <button
+                className={[
+                  'primary',
+                  applyBarRole === 'target' ? 'tutorial-control-target' : '',
+                ].filter(Boolean).join(' ')}
+                data-tutorial-role={applyBarRole}
+                disabled={tutorialLocked && !isTutorialControlAllowed(applyBarRole)}
+                type="button"
+                onClick={() => handleApply('bar')}
+              >
+                应用到本小节
+              </button>
+              <button
+                className={applyGlobalRole === 'target' ? 'tutorial-control-target' : ''}
+                data-tutorial-role={applyGlobalRole}
+                disabled={tutorialLocked && !isTutorialControlAllowed(applyGlobalRole)}
+                type="button"
+                onClick={() => handleApply('global')}
+              >
+                应用到全局
+              </button>
+            </div>
           </div>
         </div>
-
-        <footer className="tpl-pager">
-          <button className="tpl-pager-btn" type="button" aria-label="上一页" disabled>
-            ‹
-          </button>
-          <span className="tpl-pager-count mono">
-            <span className="now">1</span>
-            {' '}
-            /
-            {' '}
-            1
-          </span>
-          <button className="tpl-pager-btn" type="button" aria-label="下一页" disabled>
-            ›
-          </button>
-        </footer>
-      </div>
+      </section>
     </section>
   );
 }

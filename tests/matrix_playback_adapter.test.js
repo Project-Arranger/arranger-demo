@@ -103,6 +103,15 @@ test('createChordNotes maps major chord roots to playable triads', () => {
 
 test('extractChordEvent reads chord cells into playable chord events', () => {
   assert.equal(extractChordEvent(null, 0, 0), null);
+  assert.equal(
+    extractChordEvent({
+      type: 'chord-source',
+      sourceChordLabel: 'C',
+      progressionTemplateId: 'doo-wop',
+      selectedGrooveTemplateId: 'block-basic',
+    }, 0, 0),
+    null,
+  );
   assert.deepEqual(extractChordEvent({ type: 'note', note: 'C', label: 'C' }, 2, 6), {
     type: 'chord',
     trackId: 'chord',

@@ -167,6 +167,9 @@ function createVolumeAwareChordSynthFactory(calls) {
       triggerAttackRelease(notes, duration, time) {
         calls.push(['chord.triggerAttackRelease', notes, duration, time, synth.volume.value]);
       },
+      releaseAll(time) {
+        calls.push(['chord.releaseAll', time]);
+      },
       toDestination() {
         calls.push(['chord.toDestination']);
         return synth;
@@ -191,6 +194,9 @@ function createVolumeAwareChordSamplerFactory(calls) {
           urls,
         ]);
       },
+      releaseAll(time) {
+        calls.push(['chordSampler.releaseAll', time]);
+      },
       toDestination() {
         calls.push(['chordSampler.toDestination']);
         return sampler;
@@ -198,6 +204,42 @@ function createVolumeAwareChordSamplerFactory(calls) {
     };
 
     return sampler;
+  };
+}
+
+function createManualTimers() {
+  let nextTimerId = 1;
+  const timers = new Map();
+  const cancelled = [];
+
+  return {
+    cancelTimeout(timerId) {
+      cancelled.push(timerId);
+      timers.delete(timerId);
+    },
+    cancelled,
+    getDelays() {
+      return [...timers.values()].map((timer) => timer.delay).sort((a, b) => a - b);
+    },
+    runThrough(maxDelay) {
+      const dueTimers = [...timers.entries()]
+        .filter(([, timer]) => timer.delay <= maxDelay)
+        .sort(([, left], [, right]) => left.delay - right.delay);
+      dueTimers.forEach(([timerId, timer]) => {
+        if (!timers.has(timerId)) return;
+        timers.delete(timerId);
+        timer.callback();
+      });
+    },
+    scheduleTimeout(callback, delay) {
+      const timerId = nextTimerId;
+      nextTimerId += 1;
+      timers.set(timerId, { callback, delay });
+      return timerId;
+    },
+    size() {
+      return timers.size;
+    },
   };
 }
 
@@ -753,6 +795,84 @@ test('AudioEngine previews chord groove patterns with sixteenth-step timing', as
     ['chordSampler.triggerAttackRelease', ['C4', 'E4', 'G4'], '2s', 13.25, -5, createChordSampleUrls()],
     ['chordSampler.triggerAttackRelease', ['C4', 'E4', 'G4'], '2s', 14, -5, createChordSampleUrls()],
   ]);
+});
+
+test('AudioEngine previews a cancelable four-clip chord sequence through the 64-step boundary', async () => {
+  const tone = createFakeTone();
+  const timers = createManualTimers();
+  const engine = new AudioEngine({
+    tone,
+    volumeSource: () => ({ chord: -4 }),
+    playerFactory: createPlayerFactory(tone.calls),
+    chordSamplerFactory: createVolumeAwareChordSamplerFactory(tone.calls),
+    chordSynthFactory: createVolumeAwareChordSynthFactory(tone.calls),
+    scheduleTimeout: timers.scheduleTimeout,
+    cancelTimeout: timers.cancelTimeout,
+  });
+  await engine.startAudio();
+
+  const previewPromise = engine.previewChordClipSequence([
+    { step: 0, notes: ['C3', 'E3', 'G3'], duration: '16n' },
+    { step: 16, notes: ['A3', 'C4', 'E3'], duration: '16n' },
+    { step: 32, notes: ['F3', 'A3', 'C3'], duration: '16n' },
+    { step: 48, notes: ['G3', 'B3', 'D3'], duration: '16n' },
+  ], { bpm: 120, totalSteps: 64 });
+  await Promise.resolve();
+
+  assert.deepEqual(timers.getDelays(), [0, 2000, 4000, 6000, 8000]);
+  timers.runThrough(6000);
+  assert.deepEqual(
+    tone.calls
+      .filter(([name]) => name === 'chordSampler.triggerAttackRelease')
+      .map((call) => [call[1], call[3], call[4]]),
+    [
+      [['C3', 'E3', 'G3'], 12.5, -4],
+      [['A3', 'C4', 'E3'], 12.5, -4],
+      [['F3', 'A3', 'C3'], 12.5, -4],
+      [['G3', 'B3', 'D3'], 12.5, -4],
+    ],
+  );
+
+  timers.runThrough(8000);
+  assert.equal(await previewPromise, 'completed');
+  assert.equal(timers.size(), 0);
+  assert.deepEqual(tone.calls.filter(([name]) => name.endsWith('releaseAll')), [
+    ['chordSampler.releaseAll', 12.5],
+    ['chord.releaseAll', 12.5],
+  ]);
+});
+
+test('AudioEngine stops and supersedes chord clip previews without leaving scheduled hits', async () => {
+  const tone = createFakeTone();
+  const timers = createManualTimers();
+  const engine = new AudioEngine({
+    tone,
+    playerFactory: createPlayerFactory(tone.calls),
+    chordSamplerFactory: createVolumeAwareChordSamplerFactory(tone.calls),
+    chordSynthFactory: createVolumeAwareChordSynthFactory(tone.calls),
+    scheduleTimeout: timers.scheduleTimeout,
+    cancelTimeout: timers.cancelTimeout,
+  });
+  await engine.startAudio();
+
+  const firstPreview = engine.previewChordClipSequence([
+    { step: 0, notes: ['C3', 'E3', 'G3'] },
+    { step: 16, notes: ['F3', 'A3', 'C3'] },
+  ], { bpm: 120, totalSteps: 64 });
+  await Promise.resolve();
+  timers.runThrough(0);
+
+  const secondPreview = engine.previewChordClipSequence([
+    { step: 0, notes: ['G3', 'B3', 'D3'] },
+  ], { bpm: 120, totalSteps: 64 });
+  assert.equal(await firstPreview, 'stopped');
+  await Promise.resolve();
+  assert.equal(engine.stopChordClipSequencePreview(), true);
+  assert.equal(await secondPreview, 'stopped');
+  assert.equal(timers.size(), 0);
+  assert.ok(timers.cancelled.length >= 3);
+  assert.equal(await engine.previewChordClipSequence([], { totalSteps: 64 }), 'empty');
+  assert.equal(engine.stopChordClipSequencePreview(), false);
 });
 
 test('AudioEngine previews bass groove patterns with sixteenth-step timing', async () => {

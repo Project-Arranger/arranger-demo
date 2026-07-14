@@ -4,8 +4,7 @@ import {
   createClipRecord,
 } from '../domain/clipHelpers.js';
 import { applyBassGrooveTemplateToExistingClips } from '../app/bassActions.js';
-import { applyChordTemplateToExistingClips } from '../app/chordActions.js';
-import { applyChordGrooveTemplateToExistingClips } from '../app/chordGrooveActions.js';
+import { applyChordTemplateWorkspaceToExistingClips } from '../app/chordGrooveActions.js';
 import { applyBasicDrumsAllBars } from '../app/drumsPatternActions.js';
 import { createTutorialState } from './drumsTutorialRuntime.js';
 import { DRUMS_TUTORIAL_STEPS } from './drumsTutorialSteps.js';
@@ -74,10 +73,7 @@ function createProgressForStepIndex(stepIndex) {
   if (shouldPrepareAtLeast(stepIndex, TUTORIAL_STEP_IDS.BASS_FILL_TRACK_CLIPS)) {
     progress.chordTrackClipsFilled = true;
     progress.chordTemplateSelected = true;
-    progress.chordGrooveSelected = true;
     progress.chordLoopPlaybackComplete = true;
-    progress.chordEnriched = true;
-    progress.chordPassingAdded = true;
   }
 
   if (shouldPrepareAtLeast(stepIndex, TUTORIAL_STEP_IDS.MELODY_FILL_TRACK_CLIPS)) {
@@ -100,8 +96,14 @@ function createDirectoryAppState(initialState, stepIndex) {
 
   if (shouldPrepareAtLeast(stepIndex, TUTORIAL_STEP_IDS.BASS_FILL_TRACK_CLIPS)) {
     clips = addTrackClips(clips, 'chord');
-    matrix = applyChordTemplateToExistingClips(matrix, clips, CHORD_TEMPLATE_ID);
-    matrix = applyChordGrooveTemplateToExistingClips(matrix, clips, CHORD_GROOVE_TEMPLATE_ID);
+    matrix = applyChordTemplateWorkspaceToExistingClips(
+      matrix,
+      clips,
+      {
+        progressionTemplateId: CHORD_TEMPLATE_ID,
+        grooveTemplateId: CHORD_GROOVE_TEMPLATE_ID,
+      },
+    );
   }
 
   if (shouldPrepareAtLeast(stepIndex, TUTORIAL_STEP_IDS.MELODY_FILL_TRACK_CLIPS)) {

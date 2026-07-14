@@ -1,5 +1,6 @@
 import { STEPS_PER_BAR } from '../domain/musicConstants.js';
 import {
+  CHORD_TEMPLATES,
   createChordCell,
   createChordNotesCell,
   createChordTonePitches,
@@ -8,6 +9,8 @@ import {
 import { getExistingChordClipBars } from './chordActions.js';
 
 const DEFAULT_GROOVE_CHORD = 'C';
+const CUSTOM_CHORD_GROOVE_ID = 'custom-rhythm';
+const CHORD_SOURCE_CELL_TYPE = 'chord-source';
 
 const CHORD_GROOVE_TEMPLATES = Object.freeze([
   Object.freeze({
@@ -65,7 +68,72 @@ function getSourceChordLabel(matrix, barIndex) {
   return chordBar.find((cell) => cell?.sourceChordLabel)?.sourceChordLabel ?? DEFAULT_GROOVE_CHORD;
 }
 
-function createGrooveChordCell(chordName, templateId) {
+function getChordProgressionTemplateId(matrix, barIndex) {
+  return matrix?.chord?.[barIndex]?.find((cell) => cell?.progressionTemplateId)
+    ?.progressionTemplateId ?? null;
+}
+
+function getChordRhythmSteps(matrix, barIndex) {
+  return (matrix?.chord?.[barIndex] ?? [])
+    .map((cell, step) => ({ cell, step }))
+    .filter(({ cell }) => cell?.type === 'chord')
+    .map(({ step }) => step);
+}
+
+function getChordSelectedGrooveTemplateId(matrix, barIndex) {
+  const chordBar = matrix?.chord?.[barIndex] ?? [];
+  const selectedId = chordBar.find((cell) => cell?.selectedGrooveTemplateId)
+    ?.selectedGrooveTemplateId;
+  if (selectedId) return selectedId;
+
+  const grooveIds = new Set(
+    chordBar
+      .filter((cell) => cell?.type === 'chord' && cell.duration === '16n')
+      .map((cell) => cell.grooveTemplateId)
+      .filter(Boolean),
+  );
+
+  return grooveIds.size === 1 ? [...grooveIds][0] : null;
+}
+
+function getAppliedChordProgressionTemplateId(matrix, clips, selectedBar) {
+  const explicitTemplateId = getChordProgressionTemplateId(matrix, selectedBar);
+  if (explicitTemplateId && CHORD_TEMPLATES[explicitTemplateId]) return explicitTemplateId;
+
+  const bars = getExistingChordClipBars(clips);
+  if (!bars.length) return null;
+  const matchingIds = Object.values(CHORD_TEMPLATES)
+    .filter((template) => bars.every((barIndex, index) => (
+      getSourceChordLabel(matrix, barIndex) === template.chords[index % template.chords.length]
+    )))
+    .map((template) => template.id);
+
+  return matchingIds.length === 1 ? matchingIds[0] : null;
+}
+
+function createChordSourceCell(
+  chordName,
+  progressionTemplateId = null,
+  selectedGrooveTemplateId = CUSTOM_CHORD_GROOVE_ID,
+) {
+  const chordCell = createChordCell(chordName) ?? createChordCell(DEFAULT_GROOVE_CHORD);
+  if (!chordCell) return null;
+
+  return {
+    type: CHORD_SOURCE_CELL_TYPE,
+    label: chordCell.label,
+    sourceChordLabel: chordCell.label,
+    ...(progressionTemplateId ? { progressionTemplateId } : {}),
+    ...(selectedGrooveTemplateId ? { selectedGrooveTemplateId } : {}),
+  };
+}
+
+function createGrooveChordCell(
+  chordName,
+  templateId,
+  progressionTemplateId = null,
+  selectedGrooveTemplateId = templateId,
+) {
   const cell = createChordCell(chordName) ?? createChordCell(DEFAULT_GROOVE_CHORD);
   if (!cell) return null;
 
@@ -74,6 +142,8 @@ function createGrooveChordCell(chordName, templateId) {
     duration: '16n',
     grooveTemplateId: templateId,
     sourceChordLabel: cell.label,
+    ...(progressionTemplateId ? { progressionTemplateId } : {}),
+    ...(selectedGrooveTemplateId ? { selectedGrooveTemplateId } : {}),
   };
 }
 
@@ -88,7 +158,7 @@ function createGrooveNoteCell(note, templateId, chordName) {
   };
 }
 
-function createGrooveBar(template, chordName) {
+function createGrooveBar(template, chordName, progressionTemplateId = null) {
   const notes = createChordNotes(chordName);
   const sourceChordName = notes.length ? chordName : DEFAULT_GROOVE_CHORD;
   const sourceNotes = notes.length ? notes : createChordNotes(DEFAULT_GROOVE_CHORD);
@@ -96,7 +166,11 @@ function createGrooveBar(template, chordName) {
 
   template.steps.forEach((step, index) => {
     if (template.kind === 'block') {
-      nextBar[step] = createGrooveChordCell(sourceChordName, template.id);
+      nextBar[step] = createGrooveChordCell(
+        sourceChordName,
+        template.id,
+        progressionTemplateId,
+      );
       return;
     }
 
@@ -107,6 +181,122 @@ function createGrooveBar(template, chordName) {
   return nextBar;
 }
 
+function createCustomRhythmBar(steps, chordName, progressionTemplateId = null) {
+  const nextBar = Array.from({ length: STEPS_PER_BAR }, () => null);
+  steps.forEach((step) => {
+    nextBar[step] = createGrooveChordCell(
+      chordName,
+      CUSTOM_CHORD_GROOVE_ID,
+      progressionTemplateId,
+      CUSTOM_CHORD_GROOVE_ID,
+    );
+  });
+
+  return nextBar;
+}
+
+function replaceChordBar(matrix, barIndex, nextBar) {
+  if (!matrix?.chord?.[barIndex] || !Array.isArray(nextBar)) return matrix;
+
+  const nextChord = [...matrix.chord];
+  nextChord[barIndex] = nextBar;
+
+  return {
+    ...matrix,
+    chord: nextChord,
+  };
+}
+
+function applyChordTemplateWorkspaceToBar(
+  matrix,
+  clips,
+  barIndex,
+  { progressionTemplateId, grooveTemplateId } = {},
+) {
+  const progression = CHORD_TEMPLATES[progressionTemplateId];
+  const groove = getChordGrooveTemplate(grooveTemplateId);
+  const clipBars = getExistingChordClipBars(clips);
+  const clipIndex = clipBars.indexOf(barIndex);
+  if (!progression || !groove || clipIndex === -1 || !matrix?.chord?.[barIndex]) return matrix;
+
+  const chordName = progression.chords[clipIndex % progression.chords.length];
+  return replaceChordBar(
+    matrix,
+    barIndex,
+    createGrooveBar(groove, chordName, progression.id),
+  );
+}
+
+function applyChordTemplateWorkspaceToExistingClips(
+  matrix,
+  clips,
+  { progressionTemplateId, grooveTemplateId } = {},
+) {
+  const progression = CHORD_TEMPLATES[progressionTemplateId];
+  const groove = getChordGrooveTemplate(grooveTemplateId);
+  if (!progression || !groove) return matrix;
+
+  return getExistingChordClipBars(clips).reduce((nextMatrix, barIndex, index) => {
+    if (!nextMatrix?.chord?.[barIndex]) return nextMatrix;
+    const chordName = progression.chords[index % progression.chords.length];
+    return replaceChordBar(
+      nextMatrix,
+      barIndex,
+      createGrooveBar(groove, chordName, progression.id),
+    );
+  }, matrix);
+}
+
+function toggleChordRhythmStep(matrix, barIndex, stepIndex) {
+  if (
+    !matrix?.chord?.[barIndex]
+    || !Number.isInteger(stepIndex)
+    || stepIndex < 0
+    || stepIndex >= STEPS_PER_BAR
+  ) {
+    return matrix;
+  }
+
+  const sourceChordLabel = getSourceChordLabel(matrix, barIndex);
+  const progressionTemplateId = getChordProgressionTemplateId(matrix, barIndex);
+  const activeSteps = new Set(getChordRhythmSteps(matrix, barIndex));
+  if (activeSteps.has(stepIndex)) activeSteps.delete(stepIndex);
+  else activeSteps.add(stepIndex);
+
+  if (!activeSteps.size) {
+    const nextBar = Array.from({ length: STEPS_PER_BAR }, () => null);
+    nextBar[0] = createChordSourceCell(
+      sourceChordLabel,
+      progressionTemplateId,
+      CUSTOM_CHORD_GROOVE_ID,
+    );
+    return replaceChordBar(matrix, barIndex, nextBar);
+  }
+
+  return replaceChordBar(
+    matrix,
+    barIndex,
+    createCustomRhythmBar([...activeSteps].sort((a, b) => a - b), sourceChordLabel, progressionTemplateId),
+  );
+}
+
+function clearChordRhythmBar(matrix, barIndex) {
+  if (!matrix?.chord?.[barIndex]) return matrix;
+
+  const sourceChordLabel = getSourceChordLabel(matrix, barIndex);
+  const progressionTemplateId = getChordProgressionTemplateId(matrix, barIndex);
+  const selectedGrooveTemplateId = getChordSelectedGrooveTemplateId(matrix, barIndex)
+    ?? CUSTOM_CHORD_GROOVE_ID;
+  const nextBar = Array.from({ length: STEPS_PER_BAR }, () => null);
+  nextBar[0] = createChordSourceCell(
+    sourceChordLabel,
+    progressionTemplateId,
+    selectedGrooveTemplateId,
+  );
+
+  return replaceChordBar(matrix, barIndex, nextBar);
+}
+
 function applyChordGrooveTemplateToExistingClips(matrix, clips, templateId) {
   const template = getChordGrooveTemplate(templateId);
   if (!template) return matrix;
@@ -115,13 +305,15 @@ function applyChordGrooveTemplateToExistingClips(matrix, clips, templateId) {
     if (!nextMatrix?.chord?.[barIndex]) return nextMatrix;
 
     const sourceChordLabel = getSourceChordLabel(nextMatrix, barIndex);
-    const nextChord = [...nextMatrix.chord];
-    nextChord[barIndex] = createGrooveBar(template, sourceChordLabel);
-
-    return {
-      ...nextMatrix,
-      chord: nextChord,
-    };
+    return replaceChordBar(
+      nextMatrix,
+      barIndex,
+      createGrooveBar(
+        template,
+        sourceChordLabel,
+        getChordProgressionTemplateId(nextMatrix, barIndex),
+      ),
+    );
   }, matrix);
 }
 
@@ -145,10 +337,37 @@ function createChordGroovePreviewEvents(templateId, chordName = DEFAULT_GROOVE_C
   }).filter((event) => event.notes.length);
 }
 
+function createChordTemplateWorkspacePreviewEvents({
+  progressionTemplateId,
+  grooveTemplateId,
+} = {}) {
+  const progression = CHORD_TEMPLATES[progressionTemplateId];
+  const groove = getChordGrooveTemplate(grooveTemplateId);
+  if (!progression || !groove) return [];
+
+  return progression.chords.slice(0, 4).flatMap((chordName, clipIndex) => (
+    createChordGroovePreviewEvents(groove.id, chordName).map((event) => ({
+      ...event,
+      step: event.step + clipIndex * STEPS_PER_BAR,
+    }))
+  ));
+}
+
 export {
+  CHORD_SOURCE_CELL_TYPE,
   CHORD_GROOVE_TEMPLATES,
+  CUSTOM_CHORD_GROOVE_ID,
+  applyChordTemplateWorkspaceToBar,
+  applyChordTemplateWorkspaceToExistingClips,
   applyChordGrooveTemplateToExistingClips,
+  clearChordRhythmBar,
   createChordGroovePreviewEvents,
+  createChordTemplateWorkspacePreviewEvents,
+  getAppliedChordProgressionTemplateId,
   getChordGrooveTemplate,
+  getChordProgressionTemplateId,
+  getChordRhythmSteps,
+  getChordSelectedGrooveTemplateId,
   getSourceChordLabel,
+  toggleChordRhythmStep,
 };

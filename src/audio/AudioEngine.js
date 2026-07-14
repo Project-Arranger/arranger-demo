@@ -170,6 +170,10 @@ export default class AudioEngine {
     this.fallbackSynthFactory = options.fallbackSynthFactory ?? null;
     this.chordSynthFactory = options.chordSynthFactory ?? null;
     this.now = options.now ?? (() => this.tone?.now?.() ?? 0);
+    this.scheduleTimeout = options.scheduleTimeout ?? ((callback, delay) => (
+      globalThis.setTimeout(callback, delay)
+    ));
+    this.cancelTimeout = options.cancelTimeout ?? ((timerId) => globalThis.clearTimeout(timerId));
     this.status = AUDIO_STATUSES.IDLE;
     this.drumPlayers = new Map();
     this.fallbackSynth = null;
@@ -182,6 +186,8 @@ export default class AudioEngine {
     this.transportFlatStep = 0;
     this.currentBar = 0;
     this.currentStep = 0;
+    this.chordClipPreviewRequestId = 0;
+    this.chordClipPreviewSession = null;
   }
 
   get transport() {
@@ -476,6 +482,89 @@ export default class AudioEngine {
     ));
   }
 
+  releaseChordPreviewVoices(time = this.now()) {
+    this.chordSampler?.releaseAll?.(time);
+    this.chordSynth?.releaseAll?.(time);
+  }
+
+  stopChordClipSequencePreview() {
+    this.chordClipPreviewRequestId += 1;
+    const session = this.chordClipPreviewSession;
+    if (!session) return false;
+
+    session.timerIds.forEach((timerId) => this.cancelTimeout(timerId));
+    this.chordClipPreviewSession = null;
+    this.releaseChordPreviewVoices();
+    session.resolve('stopped');
+    return true;
+  }
+
+  async previewChordClipSequence(events, options = {}) {
+    const {
+      bpm = DEFAULT_BPM,
+      totalSteps = STEPS_PER_BAR * 4,
+    } = options;
+    const normalizedEvents = Array.isArray(events)
+      ? events.filter((event) => (
+        Number.isFinite(event?.step)
+        && event.step >= 0
+        && event.step < totalSteps
+        && Array.isArray(event.notes)
+        && event.notes.length
+      ))
+      : [];
+
+    this.stopChordClipSequencePreview();
+    if (!normalizedEvents.length || !Number.isFinite(totalSteps) || totalSteps <= 0) {
+      return 'empty';
+    }
+
+    const requestId = ++this.chordClipPreviewRequestId;
+    await this.startAudio();
+    if (requestId !== this.chordClipPreviewRequestId) return 'stopped';
+
+    const normalizedBpm = Number.isFinite(bpm) && bpm > 0 ? bpm : DEFAULT_BPM;
+    const millisecondsPerSixteenth = (60 / normalizedBpm / 4) * 1000;
+    const volume = this.getTrackVolume('chord');
+
+    return new Promise((resolve) => {
+      const session = {
+        requestId,
+        resolve,
+        timerIds: new Set(),
+      };
+      this.chordClipPreviewSession = session;
+
+      const finish = (result) => {
+        if (this.chordClipPreviewSession !== session) return;
+        session.timerIds.forEach((timerId) => this.cancelTimeout(timerId));
+        this.chordClipPreviewSession = null;
+        this.releaseChordPreviewVoices();
+        resolve(result);
+      };
+
+      normalizedEvents.forEach((event) => {
+        const timerId = this.scheduleTimeout(() => {
+          session.timerIds.delete(timerId);
+          if (this.chordClipPreviewSession !== session) return;
+          this.triggerChordNotes(
+            event.notes,
+            event.duration ?? '16n',
+            this.now(),
+            volume,
+          );
+        }, event.step * millisecondsPerSixteenth);
+        session.timerIds.add(timerId);
+      });
+
+      const completionTimerId = this.scheduleTimeout(() => {
+        session.timerIds.delete(completionTimerId);
+        finish('completed');
+      }, totalSteps * millisecondsPerSixteenth);
+      session.timerIds.add(completionTimerId);
+    });
+  }
+
   async previewBassPattern(events, options = {}) {
     const {
       bpm = DEFAULT_BPM,
@@ -610,6 +699,7 @@ export default class AudioEngine {
   }
 
   async play(options = {}) {
+    this.stopChordClipSequencePreview();
     await this.startAudio();
     if (Object.hasOwn(options, 'volumeSource')) {
       this.setVolumeSource(options.volumeSource);
@@ -633,6 +723,7 @@ export default class AudioEngine {
   }
 
   async stop() {
+    this.stopChordClipSequencePreview();
     const transport = this.getStartedTransport();
     transport?.stop?.();
     if (transport) {

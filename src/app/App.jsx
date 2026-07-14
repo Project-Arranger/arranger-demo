@@ -7,7 +7,6 @@ import {
   useState,
 } from 'react';
 import audioEngine from '../audio/audioEngineSingleton.js';
-import { createChordNotes } from '../audio/matrixPlaybackAdapter.js';
 import { APP_COMMAND_TYPES } from '../input/appCommands.js';
 import useKeyboardCommands from '../input/useKeyboardCommands.js';
 import useMusicStore from '../store/useMusicStore.js';
@@ -45,20 +44,11 @@ import {
   toggleBassCell,
 } from './bassActions.js';
 import {
-  applyChordTemplateToExistingClips,
-  clearChordBar,
-  clearChordCell,
-  getChordCell,
-  hasExistingChordClipContent,
-  setChordCell,
-  setChordEnrichTarget,
-  setChordStepChord,
-  toggleChordNoteStep,
-} from './chordActions.js';
-import {
-  applyChordGrooveTemplateToExistingClips,
-  createChordGroovePreviewEvents,
-  getSourceChordLabel,
+  applyChordTemplateWorkspaceToBar,
+  applyChordTemplateWorkspaceToExistingClips,
+  clearChordRhythmBar,
+  createChordTemplateWorkspacePreviewEvents,
+  toggleChordRhythmStep,
 } from './chordGrooveActions.js';
 import {
   clearMelodyBar,
@@ -70,10 +60,6 @@ import { TopBar } from './components/TopBar.jsx';
 import { TracksColumn } from './components/TracksColumn.jsx';
 import { TutorialOverlay } from './components/TutorialOverlay.jsx';
 import { toggleInstrumentInCell } from './drumSequencerData.js';
-import {
-  getChordSpanStep,
-  toggleChordCell,
-} from '../domain/chordCells.js';
 import { createDrumsCell, getDrumsCellInstruments } from '../domain/drumsCells.js';
 import { createDrumsStepMovePatch } from '../domain/drumsStepMove.js';
 import {
@@ -186,10 +172,6 @@ export default function App() {
     matrix,
     selectedBar,
   });
-  const shouldConfirmChordTemplateApply = useMemo(() => (
-    hasExistingChordClipContent(matrix, clips)
-  ), [clips, matrix]);
-
   const {
     canRedo,
     canUndo,
@@ -920,165 +902,50 @@ export default function App() {
     withUndoCheckpoint,
   ]);
 
-  const handleChordCellSelect = useCallback((spanIndex, root) => {
-    const state = useMusicStore.getState();
-    const step = getChordSpanStep(spanIndex);
-    if (step === null) return;
-
-    const currentCell = getChordCell(state.matrix, selectedBar, spanIndex);
-    const nextCell = toggleChordCell(currentCell, root);
-
-    if (nextCell) {
-      withUndoCheckpoint(() => {
-        const nextMatrix = setChordCell(state.matrix, selectedBar, spanIndex, root);
-        for (let offset = 0; offset < 2; offset += 1) {
-          state.setCell('chord', selectedBar, step + offset, nextMatrix.chord[selectedBar][step + offset]);
-        }
-        void dispatchAppCommand({
-          type: APP_COMMAND_TYPES.CHORD_SET_CELL,
-          bar: selectedBar,
-          span: spanIndex,
-          root,
-        });
-      });
-      return;
-    }
-
-    withUndoCheckpoint(() => {
-      const nextMatrix = clearChordCell(state.matrix, selectedBar, spanIndex);
-      for (let offset = 0; offset < 4; offset += 1) {
-        state.setCell('chord', selectedBar, step + offset, nextMatrix.chord[selectedBar][step + offset]);
-      }
-      void dispatchAppCommand({
-        type: APP_COMMAND_TYPES.CHORD_CLEAR_CELL,
-        bar: selectedBar,
-        span: spanIndex,
-      });
+  const handleChordTemplateWorkspacePreview = useCallback(async ({
+    progressionTemplateId,
+    grooveTemplateId,
+  } = {}) => {
+    const events = createChordTemplateWorkspacePreviewEvents({
+      progressionTemplateId,
+      grooveTemplateId,
     });
-  }, [dispatchAppCommand, selectedBar, withUndoCheckpoint]);
+    if (!events.length) return 'empty';
 
-  const handleChordPick = useCallback((spanIndex, root) => {
-    const state = useMusicStore.getState();
-    const step = getChordSpanStep(spanIndex);
-    if (step === null) return;
-
-    const nextMatrix = setChordEnrichTarget(state.matrix, selectedBar, spanIndex, root);
-    const changedOffsets = [];
-    for (let offset = 0; offset < 4; offset += 1) {
-      const nextCell = nextMatrix.chord[selectedBar][step + offset];
-      if (nextCell !== state.matrix.chord[selectedBar][step + offset]) {
-        changedOffsets.push(offset);
-      }
+    if (useMusicStore.getState().isPlaying) {
+      await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
     }
-    if (!changedOffsets.length) return;
 
-    const tutorialAction = tutorialActive && currentTutorialStep?.id === TUTORIAL_STEP_IDS.CHORD_ENRICH_HARMONY
-      ? handleTutorialControlAction({
-        control: `chord-enrich-button:${spanIndex}`,
-        progress: tutorialProgress,
-        selectedBar,
-        step: currentTutorialStep,
-      })
-      : null;
-    if (tutorialAction && !tutorialAction.allowed) return;
+    return audioEngine.previewChordClipSequence(events, {
+      bpm,
+      totalSteps: 64,
+    });
+  }, [bpm, dispatchAppCommand]);
 
+  const handleChordTemplateWorkspacePreviewStop = useCallback(() => (
+    audioEngine.stopChordClipSequencePreview()
+  ), []);
+
+  const handleChordRhythmStepToggle = useCallback((stepIndex) => {
     withUndoCheckpoint(() => {
-      changedOffsets.forEach((offset) => {
-        const nextCell = nextMatrix.chord[selectedBar][step + offset];
-        state.setCell('chord', selectedBar, step + offset, nextCell);
-      });
-      void dispatchAppCommand({
-        type: APP_COMMAND_TYPES.CHORD_SET_CELL,
-        bar: selectedBar,
-        span: spanIndex,
-        root,
-      });
-      if (tutorialAction) applyTutorialActionProgress(tutorialAction);
-    }, { force: Boolean(tutorialAction) });
-  }, [
-    applyTutorialActionProgress,
-    currentTutorialStep,
-    dispatchAppCommand,
-    selectedBar,
-    tutorialActive,
-    tutorialProgress,
-    withUndoCheckpoint,
-  ]);
-
-  const handlePassingChordPick = useCallback((stepIndex, chordName) => {
-    const state = useMusicStore.getState();
-    const nextMatrix = setChordStepChord(state.matrix, selectedBar, stepIndex, chordName);
-    if (nextMatrix === state.matrix) return;
-
-    const tutorialAction = tutorialActive && currentTutorialStep?.id === TUTORIAL_STEP_IDS.CHORD_ADD_PASSING
-      ? handleTutorialControlAction({
-        control: 'chord-passing-button',
-        progress: tutorialProgress,
-        selectedBar,
-        step: currentTutorialStep,
-      })
-      : null;
-    if (tutorialAction && !tutorialAction.allowed) return;
-
-    withUndoCheckpoint(() => {
-      state.setCell('chord', selectedBar, stepIndex, nextMatrix.chord[selectedBar][stepIndex]);
-      if (tutorialAction) applyTutorialActionProgress(tutorialAction);
-    }, { force: Boolean(tutorialAction) });
-  }, [
-    applyTutorialActionProgress,
-    currentTutorialStep,
-    selectedBar,
-    tutorialActive,
-    tutorialProgress,
-    withUndoCheckpoint,
-  ]);
-
-  const previewChordNames = useCallback((chordNames) => {
-    const noteGroups = chordNames
-      .map((chordName) => createChordNotes(chordName))
-      .filter((notes) => notes.length);
-
-    if (!noteGroups.length) return;
-    void audioEngine.previewChordSequence(noteGroups);
-  }, []);
-
-  const handleChordPreview = useCallback((chordName) => {
-    previewChordNames([chordName]);
-  }, [previewChordNames]);
-
-  const handlePassingChordPreview = useCallback((chordNames) => {
-    previewChordNames(chordNames);
-  }, [previewChordNames]);
-
-  const handleChordTemplatePreview = useCallback((chords) => {
-    previewChordNames(chords);
-  }, [previewChordNames]);
-
-  const handleChordGrooveTemplatePreview = useCallback((templateId) => {
-    const state = useMusicStore.getState();
-    const sourceChordLabel = getSourceChordLabel(state.matrix, selectedBar);
-    const events = createChordGroovePreviewEvents(templateId, sourceChordLabel);
-    if (!events.length) return;
-
-    void audioEngine.previewChordPattern(events);
-  }, [selectedBar]);
-
-  const handleChordNoteSelect = useCallback((spanIndex, columnIndex, note) => {
-    const state = useMusicStore.getState();
-    const nextMatrix = toggleChordNoteStep(state.matrix, selectedBar, spanIndex, columnIndex, note);
-    const step = getChordSpanStep(spanIndex);
-    if (step === null) return;
-
-    withUndoCheckpoint(() => {
-      state.setCell('chord', selectedBar, step + columnIndex, nextMatrix.chord[selectedBar][step + columnIndex]);
+      const state = useMusicStore.getState();
+      const nextMatrix = toggleChordRhythmStep(state.matrix, selectedBar, stepIndex);
+      if (nextMatrix === state.matrix) return;
+      state.setTrackMatrix('chord', nextMatrix.chord);
     });
   }, [selectedBar, withUndoCheckpoint]);
 
-  const handleChordTemplateApply = useCallback((templateId) => {
+  const handleChordTemplateWorkspaceApply = useCallback(({
+    progressionTemplateId,
+    grooveTemplateId,
+    scope,
+  }) => {
     let tutorialAction = null;
     if (tutorialActive && currentTutorialStep?.id === TUTORIAL_STEP_IDS.CHORD_SELECT_PROGRESSION_TEMPLATE) {
       tutorialAction = handleTutorialControlAction({
-        control: `chord-template-card:${templateId}`,
+        control: scope === 'global'
+          ? TUTORIAL_CONTROL_TARGETS.CHORD_TEMPLATE_APPLY_GLOBAL
+          : TUTORIAL_CONTROL_TARGETS.CHORD_TEMPLATE_APPLY_CURRENT,
         progress: tutorialProgress,
         selectedBar,
         step: currentTutorialStep,
@@ -1087,51 +954,14 @@ export default function App() {
     }
 
     const state = useMusicStore.getState();
-    const nextMatrix = applyChordTemplateToExistingClips(state.matrix, state.clips, templateId);
+    const selection = { progressionTemplateId, grooveTemplateId };
+    const nextMatrix = scope === 'global'
+      ? applyChordTemplateWorkspaceToExistingClips(state.matrix, state.clips, selection)
+      : applyChordTemplateWorkspaceToBar(state.matrix, state.clips, selectedBar, selection);
+    if (nextMatrix === state.matrix) return;
 
     withUndoCheckpoint(() => {
-      state.clips.ids
-        .map((id) => state.clips.byId[id])
-        .filter((clip) => clip?.trackId === 'chord')
-        .forEach((clip) => {
-          state.setCell('chord', clip.bar, 0, nextMatrix.chord[clip.bar][0]);
-          state.setCell('chord', clip.bar, 1, nextMatrix.chord[clip.bar][1]);
-        });
-      if (tutorialAction) applyTutorialActionProgress(tutorialAction);
-    }, { force: Boolean(tutorialAction) });
-  }, [
-    applyTutorialActionProgress,
-    currentTutorialStep,
-    selectedBar,
-    tutorialActive,
-    tutorialProgress,
-    withUndoCheckpoint,
-  ]);
-
-  const handleChordGrooveTemplateApply = useCallback((templateId) => {
-    let tutorialAction = null;
-    if (tutorialActive && currentTutorialStep?.id === TUTORIAL_STEP_IDS.CHORD_SELECT_GROOVE_TEMPLATE) {
-      tutorialAction = handleTutorialControlAction({
-        control: `chord-groove-card:${templateId}`,
-        progress: tutorialProgress,
-        selectedBar,
-        step: currentTutorialStep,
-      });
-      if (!tutorialAction.allowed) return;
-    }
-
-    const state = useMusicStore.getState();
-    const nextMatrix = applyChordGrooveTemplateToExistingClips(state.matrix, state.clips, templateId);
-
-    withUndoCheckpoint(() => {
-      state.clips.ids
-        .map((id) => state.clips.byId[id])
-        .filter((clip) => clip?.trackId === 'chord')
-        .forEach((clip) => {
-          nextMatrix.chord[clip.bar].forEach((cell, step) => {
-            state.setCell('chord', clip.bar, step, cell);
-          });
-        });
+      state.setTrackMatrix('chord', nextMatrix.chord);
       if (tutorialAction) applyTutorialActionProgress(tutorialAction);
     }, { force: Boolean(tutorialAction) });
   }, [
@@ -1146,19 +976,11 @@ export default function App() {
   const handleClearChordBar = useCallback(() => {
     withUndoCheckpoint(() => {
       const state = useMusicStore.getState();
-      const nextMatrix = clearChordBar(state.matrix, selectedBar);
-
-      nextMatrix.chord[selectedBar].forEach((cell, step) => {
-        state.setCell('chord', selectedBar, step, cell);
-      });
+      const nextMatrix = clearChordRhythmBar(state.matrix, selectedBar);
+      if (nextMatrix === state.matrix) return;
+      state.setTrackMatrix('chord', nextMatrix.chord);
     });
   }, [selectedBar, withUndoCheckpoint]);
-
-  const handleClearChord = useCallback(() => {
-    withUndoCheckpoint(() => {
-      useMusicStore.getState().clearTrack('chord');
-    });
-  }, [withUndoCheckpoint]);
 
   const handleBassStepToggle = useCallback((step, note) => {
     withUndoCheckpoint(() => {
@@ -1629,17 +1451,10 @@ export default function App() {
           clips,
           melodyScaleId,
           selectedClipName: selectedClip?.name ?? '',
-          onChordCellSelect: handleChordCellSelect,
-          onChordNoteSelect: handleChordNoteSelect,
-          onChordPick: handleChordPick,
-          onChordPreview: handleChordPreview,
-          onChordGrooveTemplatePreview: handleChordGrooveTemplatePreview,
-          onChordGrooveTemplateApply: handleChordGrooveTemplateApply,
-          onChordTemplatePreview: handleChordTemplatePreview,
-          onChordTemplateApply: handleChordTemplateApply,
-          shouldConfirmChordTemplateApply,
-          onPassingChordPick: handlePassingChordPick,
-          onPassingChordPreview: handlePassingChordPreview,
+          onChordRhythmStepToggle: handleChordRhythmStepToggle,
+          onChordTemplateWorkspacePreview: handleChordTemplateWorkspacePreview,
+          onChordTemplateWorkspacePreviewStop: handleChordTemplateWorkspacePreviewStop,
+          onChordTemplateWorkspaceApply: handleChordTemplateWorkspaceApply,
           onBassPreview: handleBassPreview,
           onBassStepToggle: handleBassStepToggle,
           onBassGrooveTemplatePreview: handleBassGrooveTemplatePreview,
@@ -1655,7 +1470,6 @@ export default function App() {
           onRenameClip: handleRenameClip,
           onClearCurrentDrumsBar: handleClearCurrentDrumsBar,
           onClearChordBar: handleClearChordBar,
-          onClearChord: handleClearChord,
           onClearDrums: handleClearDrums,
           canPageBars,
           onGenerateAllDrumsBars: handleGenerateAllDrumsBars,
