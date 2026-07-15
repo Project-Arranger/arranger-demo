@@ -865,9 +865,15 @@ test('chord template workspace fits the editor at compact desktop heights', asyn
   assert.match(css, /\.chord-template-workspace-body\s*\{[^}]*grid-template-columns:\s*178px minmax\(0,\s*1fr\);/s);
   assert.match(css, /\.chord-template-progression-options,\s*\n\.chord-template-groove-options\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\);/s);
   assert.match(css, /\.chord-template-workspace-actions\s*\{[^}]*display:\s*flex;/s);
-  assert.match(css, /\.chord-rhythm-step-grid\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(128px,\s*1fr\)\);/s);
+  assert.match(css, /\.chord-rhythm-step-grid\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(152px,\s*1fr\)\);/s);
   assert.match(css, /\.chord-rhythm-beat-group\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(24px,\s*1fr\)\);/s);
   assert.match(css, /\.chord-rhythm-beat-group\s*\{[^}]*box-shadow:\s*[^}]*inset/s);
+  assert.match(css, /\.chord-rhythm-step-label\s*\{[^}]*font-family:\s*Georgia/s);
+  assert.match(css, /\.chord-step-harmony-popover\s*\{[^}]*position:\s*fixed;[^}]*z-index:\s*50;/s);
+  assert.match(css, /\.chord-step-harmony-options\.enrich\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\);/s);
+  assert.match(css, /\.chord-step-harmony-option-preview\s*\{[^}]*width:\s*40px;[^}]*height:\s*40px;/s);
+  assert.match(css, /\.chord-step-harmony-option-apply:disabled,\s*\n\.chord-step-harmony-option-preview:disabled\s*\{[^}]*cursor:\s*not-allowed;/s);
+  assert.match(css, /\.chord-step-harmony-popover\[data-side="above"\]/);
   assert.match(css, /\.chord-template-mini-groove\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\);/s);
   assert.match(css, /\.chord-template-mini-beat-group\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\);/s);
   assert.match(css, /\.app:has\(\.editor\[data-picker="chord"\]\),\s*\n\.app:has\(\.editor\[data-picker="groove"\]\)\s*\{[^}]*--app-editor-height:\s*clamp\(380px,\s*55vh,\s*560px\);/s);

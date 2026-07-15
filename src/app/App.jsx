@@ -46,7 +46,10 @@ import {
 import {
   applyChordTemplateWorkspaceToBar,
   applyChordTemplateWorkspaceToExistingClips,
+  applyChordRhythmStepEnrichment,
+  applyChordRhythmStepPassingChord,
   clearChordRhythmBar,
+  createChordStepHarmonyPreviewEvents,
   createChordTemplateWorkspacePreviewEvents,
   toggleChordRhythmStep,
 } from './chordGrooveActions.js';
@@ -926,11 +929,47 @@ export default function App() {
     audioEngine.stopChordClipSequencePreview()
   ), []);
 
+  const handleChordStepHarmonyPreview = useCallback(async ({ chordName } = {}) => {
+    const events = createChordStepHarmonyPreviewEvents(chordName);
+    if (!events.length) return 'empty';
+
+    if (useMusicStore.getState().isPlaying) {
+      await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
+    }
+
+    return audioEngine.previewChordClipSequence(events, {
+      bpm,
+      totalSteps: 8,
+    });
+  }, [bpm, dispatchAppCommand]);
+
   const handleChordRhythmStepToggle = useCallback((stepIndex) => {
     withUndoCheckpoint(() => {
       const state = useMusicStore.getState();
       const nextMatrix = toggleChordRhythmStep(state.matrix, selectedBar, stepIndex);
       if (nextMatrix === state.matrix) return;
+      state.setTrackMatrix('chord', nextMatrix.chord);
+    });
+  }, [selectedBar, withUndoCheckpoint]);
+
+  const handleChordStepHarmonyApply = useCallback(({
+    chordName,
+    mode,
+    stepIndex,
+  } = {}) => {
+    const state = useMusicStore.getState();
+    const nextMatrix = mode === 'passing'
+      ? applyChordRhythmStepPassingChord(
+        state.matrix,
+        state.clips,
+        selectedBar,
+        stepIndex,
+        chordName,
+      )
+      : applyChordRhythmStepEnrichment(state.matrix, selectedBar, stepIndex, chordName);
+    if (nextMatrix === state.matrix) return;
+
+    withUndoCheckpoint(() => {
       state.setTrackMatrix('chord', nextMatrix.chord);
     });
   }, [selectedBar, withUndoCheckpoint]);
@@ -1452,6 +1491,9 @@ export default function App() {
           melodyScaleId,
           selectedClipName: selectedClip?.name ?? '',
           onChordRhythmStepToggle: handleChordRhythmStepToggle,
+          onChordStepHarmonyApply: handleChordStepHarmonyApply,
+          onChordStepHarmonyPreview: handleChordStepHarmonyPreview,
+          onChordStepHarmonyPreviewStop: handleChordTemplateWorkspacePreviewStop,
           onChordTemplateWorkspacePreview: handleChordTemplateWorkspacePreview,
           onChordTemplateWorkspacePreviewStop: handleChordTemplateWorkspacePreviewStop,
           onChordTemplateWorkspaceApply: handleChordTemplateWorkspaceApply,

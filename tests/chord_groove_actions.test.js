@@ -4,16 +4,23 @@ import {
   CHORD_GROOVE_TEMPLATES,
   CHORD_SOURCE_CELL_TYPE,
   CUSTOM_CHORD_GROOVE_ID,
+  PASSING_CHORD_STEP_INDEX,
+  applyChordRhythmStepEnrichment,
+  applyChordRhythmStepPassingChord,
   applyChordGrooveTemplateToExistingClips,
   applyChordTemplateWorkspaceToBar,
   applyChordTemplateWorkspaceToExistingClips,
   clearChordRhythmBar,
   createChordGroovePreviewEvents,
+  createChordStepHarmonyPreviewEvents,
   createChordTemplateWorkspacePreviewEvents,
   getAppliedChordProgressionTemplateId,
   getChordGrooveTemplate,
   getChordRhythmSteps,
+  getChordRhythmStepLabel,
+  getChordRhythmStepSourceLabel,
   getChordSelectedGrooveTemplateId,
+  getSourceChordLabel,
   toggleChordRhythmStep,
 } from '../src/app/chordGrooveActions.js';
 import {
@@ -111,6 +118,20 @@ test('createChordGroovePreviewEvents returns timed playable notes for the reques
   ]);
   assert.deepEqual(createChordGroovePreviewEvents('arp-basic', 'C'), []);
   assert.deepEqual(createChordGroovePreviewEvents('missing', 'C'), []);
+});
+
+test('single-step harmony preview returns one sustained candidate chord without mutating data', () => {
+  assert.deepEqual(createChordStepHarmonyPreviewEvents('Cmaj7'), [{
+    step: 0,
+    notes: ['C3', 'E3', 'G3', 'B3'],
+    duration: '2n',
+  }]);
+  assert.deepEqual(createChordStepHarmonyPreviewEvents('E7'), [{
+    step: 0,
+    notes: ['E3', 'B2', 'D3', 'G#3'],
+    duration: '2n',
+  }]);
+  assert.deepEqual(createChordStepHarmonyPreviewEvents('missing'), []);
 });
 
 test('workspace preview combines the pending four-chord progression with the basic groove', () => {
@@ -251,4 +272,111 @@ test('clearChordRhythmBar preserves progression metadata without leaving playabl
   assert.equal(matrix.chord[4][0].sourceChordLabel, 'Am');
   assert.equal(matrix.chord[4][0].progressionTemplateId, 'andalusian');
   assert.equal(matrix.chord[4][0].selectedGrooveTemplateId, 'block-syncopated');
+});
+
+test('single-step chord enrichment keeps the bar source and sibling rhythm hits intact', () => {
+  const clips = createClips({ id: 'chord-bar-0', trackId: 'chord', bar: 0 });
+  let matrix = applyChordTemplateWorkspaceToBar(createInitialMatrix(), clips, 0, {
+    progressionTemplateId: 'doowop',
+    grooveTemplateId: 'block-syncopated',
+  });
+
+  matrix = applyChordRhythmStepEnrichment(matrix, 0, 6, 'Cmaj7');
+
+  assert.equal(getChordRhythmStepLabel(matrix, 0, 0), 'C');
+  assert.equal(getChordRhythmStepLabel(matrix, 0, 6), 'Cmaj7');
+  assert.equal(getChordRhythmStepSourceLabel(matrix, 0, 6), 'C');
+  assert.equal(matrix.chord[0][6].sourceChordLabel, 'C');
+  assert.equal(matrix.chord[0][6].duration, '16n');
+  assert.equal(matrix.chord[0][6].grooveTemplateId, 'block-syncopated');
+  assert.equal(matrix.chord[0][12].label, 'C');
+  assert.equal(getSourceChordLabel(matrix, 0), 'C');
+  assert.equal(getAppliedChordProgressionTemplateId(matrix, clips, 0), 'doowop');
+});
+
+test('single-step enrichment restores the root chord and rejects unrelated targets', () => {
+  let matrix = createInitialMatrix();
+  matrix = toggleChordRhythmStep(matrix, 1, 5);
+  matrix = applyChordRhythmStepEnrichment(matrix, 1, 5, 'Cmaj7');
+
+  const restored = applyChordRhythmStepEnrichment(matrix, 1, 5, 'C');
+  assert.equal(restored.chord[1][5].label, 'C');
+  assert.equal(restored.chord[1][5].sourceChordLabel, 'C');
+  assert.equal(applyChordRhythmStepEnrichment(restored, 1, 5, 'Fmaj7'), restored);
+  assert.equal(applyChordRhythmStepEnrichment(restored, 1, 4, 'Cmaj7'), restored);
+});
+
+test('passing chords replace only step fifteen and preserve a silent root source when needed', () => {
+  const clips = createClips(
+    { id: 'chord-bar-0', trackId: 'chord', bar: 0 },
+    { id: 'chord-bar-3', trackId: 'chord', bar: 3 },
+  );
+  let matrix = createInitialMatrix();
+  matrix = toggleChordRhythmStep(matrix, 0, PASSING_CHORD_STEP_INDEX);
+  matrix = setChordCell(matrix, 3, 0, 'Am');
+
+  const nextMatrix = applyChordRhythmStepPassingChord(
+    matrix,
+    clips,
+    0,
+    PASSING_CHORD_STEP_INDEX,
+    'E7',
+  );
+
+  assert.equal(nextMatrix.chord[0][PASSING_CHORD_STEP_INDEX].label, 'E7');
+  assert.equal(nextMatrix.chord[0][PASSING_CHORD_STEP_INDEX].grooveTemplateId, 'passing-shortcut');
+  assert.equal(nextMatrix.chord[0][0].type, CHORD_SOURCE_CELL_TYPE);
+  assert.equal(nextMatrix.chord[0][0].sourceChordLabel, 'C');
+  assert.equal(getSourceChordLabel(nextMatrix, 0), 'C');
+  assert.equal(nextMatrix.chord[3][0].label, 'Am');
+  const restored = applyChordRhythmStepEnrichment(
+    nextMatrix,
+    0,
+    PASSING_CHORD_STEP_INDEX,
+    'C',
+  );
+  assert.equal(restored.chord[0][PASSING_CHORD_STEP_INDEX].label, 'C');
+  assert.notEqual(restored.chord[0][PASSING_CHORD_STEP_INDEX].grooveTemplateId, 'passing-shortcut');
+  assert.equal(applyChordRhythmStepPassingChord(nextMatrix, clips, 0, 13, 'E7'), nextMatrix);
+  assert.equal(applyChordRhythmStepPassingChord(nextMatrix, clips, 0, PASSING_CHORD_STEP_INDEX, 'D7'), nextMatrix);
+});
+
+test('passing chords use the Doo-Wop target fallback when no next chord clip exists', () => {
+  const clips = createClips({ id: 'chord-bar-0', trackId: 'chord', bar: 0 });
+  let matrix = createInitialMatrix();
+  matrix = toggleChordRhythmStep(matrix, 0, PASSING_CHORD_STEP_INDEX);
+
+  const nextMatrix = applyChordRhythmStepPassingChord(
+    matrix,
+    clips,
+    0,
+    PASSING_CHORD_STEP_INDEX,
+    'E7',
+  );
+
+  assert.equal(nextMatrix.chord[0][PASSING_CHORD_STEP_INDEX].label, 'E7');
+});
+
+test('manual rhythm toggles preserve untouched enriched and passing chord steps', () => {
+  const clips = createClips(
+    { id: 'chord-bar-0', trackId: 'chord', bar: 0 },
+    { id: 'chord-bar-1', trackId: 'chord', bar: 1 },
+  );
+  let matrix = createInitialMatrix();
+  matrix = toggleChordRhythmStep(matrix, 0, 0);
+  matrix = toggleChordRhythmStep(matrix, 0, 6);
+  matrix = toggleChordRhythmStep(matrix, 0, PASSING_CHORD_STEP_INDEX);
+  matrix = setChordCell(matrix, 1, 0, 'Am');
+  matrix = applyChordRhythmStepEnrichment(matrix, 0, 6, 'Cmaj7');
+  matrix = applyChordRhythmStepPassingChord(matrix, clips, 0, PASSING_CHORD_STEP_INDEX, 'E7');
+
+  matrix = toggleChordRhythmStep(matrix, 0, 10);
+  assert.equal(matrix.chord[0][6].label, 'Cmaj7');
+  assert.equal(matrix.chord[0][6].sourceChordLabel, 'C');
+  assert.equal(matrix.chord[0][PASSING_CHORD_STEP_INDEX].label, 'E7');
+  assert.equal(matrix.chord[0][PASSING_CHORD_STEP_INDEX].grooveTemplateId, 'passing-shortcut');
+
+  matrix = toggleChordRhythmStep(matrix, 0, 10);
+  assert.equal(matrix.chord[0][6].label, 'Cmaj7');
+  assert.equal(matrix.chord[0][PASSING_CHORD_STEP_INDEX].label, 'E7');
 });

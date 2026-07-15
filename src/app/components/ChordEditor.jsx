@@ -7,12 +7,21 @@ import {
   useState,
 } from 'react';
 import { Square } from 'lucide-react';
-import { CHORD_TEMPLATES } from '../../domain/chordCells.js';
+import {
+  CHORD_TEMPLATES,
+  getChordToneRoots,
+  getChordVariantOptions,
+  getDoowopPassingTargetChord,
+  getPassingChordOptions,
+} from '../../domain/chordCells.js';
 import {
   CHORD_GROOVE_TEMPLATES,
   CUSTOM_CHORD_GROOVE_ID,
+  PASSING_CHORD_STEP_INDEX,
   getAppliedChordProgressionTemplateId,
   getChordRhythmSteps,
+  getChordRhythmStepLabel,
+  getChordRhythmStepSourceLabel,
   getChordSelectedGrooveTemplateId,
   getSourceChordLabel,
 } from '../chordGrooveActions.js';
@@ -33,6 +42,10 @@ const APPLY_BAR_CONTROL = 'chord-template-apply-current';
 const APPLY_GLOBAL_CONTROL = 'chord-template-apply-global';
 const ICON_PLAY_URL = `${import.meta.env.BASE_URL}assets/skeuo/icon-play.svg`;
 const ICON_CLOSE_URL = `${import.meta.env.BASE_URL}assets/skeuo/icon-x.svg`;
+const HARMONY_POPOVER_MARGIN = 16;
+const HARMONY_POPOVER_GAP = 12;
+const HARMONY_POPOVER_WIDTH = 940;
+const HARMONY_POPOVER_ESTIMATED_HEIGHT = 490;
 
 function isTutorialControlAllowed(role) {
   return role === 'target' || role === 'allowed';
@@ -68,12 +81,178 @@ function renderMiniGroove(template) {
   ));
 }
 
+function getHarmonyPopoverPosition(anchorRect) {
+  if (!anchorRect || typeof window === 'undefined') {
+    return { arrowX: 32, left: HARMONY_POPOVER_MARGIN, side: 'below', top: HARMONY_POPOVER_MARGIN };
+  }
+
+  const tutorialPanel = document.querySelector('.tutorial-panel');
+  const tutorialRect = tutorialPanel?.getBoundingClientRect();
+  const safeRight = tutorialRect?.width > 0 && tutorialRect.left > HARMONY_POPOVER_MARGIN
+    ? Math.min(window.innerWidth - HARMONY_POPOVER_MARGIN, tutorialRect.left - HARMONY_POPOVER_MARGIN)
+    : window.innerWidth - HARMONY_POPOVER_MARGIN;
+  const width = Math.min(HARMONY_POPOVER_WIDTH, Math.max(300, safeRight - HARMONY_POPOVER_MARGIN));
+  const anchorCenter = anchorRect.left + anchorRect.width / 2;
+  const left = Math.max(
+    HARMONY_POPOVER_MARGIN,
+    Math.min(safeRight - width, anchorCenter - width / 2),
+  );
+  const fitsBelow = anchorRect.bottom + HARMONY_POPOVER_GAP + HARMONY_POPOVER_ESTIMATED_HEIGHT
+    <= window.innerHeight - HARMONY_POPOVER_MARGIN;
+  const top = fitsBelow
+    ? anchorRect.bottom + HARMONY_POPOVER_GAP
+    : Math.max(HARMONY_POPOVER_MARGIN, anchorRect.top - HARMONY_POPOVER_GAP - HARMONY_POPOVER_ESTIMATED_HEIGHT);
+
+  return {
+    arrowX: Math.max(24, Math.min(width - 24, anchorCenter - left)),
+    left,
+    side: fitsBelow ? 'below' : 'above',
+    top,
+    width,
+  };
+}
+
+// JSX usage is tracked by the React compiler even though the base no-unused-vars rule is not JSX-aware.
+// eslint-disable-next-line no-unused-vars
+function ChordStepHarmonyPopover({
+  anchorRect,
+  currentLabel,
+  onApply,
+  onClose,
+  onPreview,
+  previewingOptionKey,
+  sourceChordLabel,
+  stepIndex,
+  targetChordLabel,
+}) {
+  const position = getHarmonyPopoverPosition(anchorRect);
+  const canApplyPassing = stepIndex === PASSING_CHORD_STEP_INDEX;
+  const enrichOptions = [
+    { desc: '恢复为本小节的主和弦。', name: sourceChordLabel, restore: true },
+    ...getChordVariantOptions(sourceChordLabel),
+  ].filter((option, index, options) => (
+    option.name && options.findIndex((candidate) => candidate.name === option.name) === index
+  ));
+  const passingOptions = getPassingChordOptions(sourceChordLabel, targetChordLabel);
+  const passingHintId = `chordPassingStepHint-${stepIndex}`;
+
+  const renderToneNames = (chordName) => (
+    <span className="chord-step-harmony-tones" aria-label="组成音">
+      {getChordToneRoots(chordName).map((tone) => <span key={tone}>{tone}</span>)}
+    </span>
+  );
+
+  const renderHarmonyOption = (option, mode, disabled = false) => {
+    const optionKey = `${mode}:${option.name}`;
+    const isPreviewing = previewingOptionKey === optionKey;
+    const describedBy = mode === 'passing' && disabled ? passingHintId : undefined;
+
+    return (
+      <div
+        className={[
+          'chord-step-harmony-option',
+          currentLabel === option.name ? 'is-current' : '',
+          option.restore ? 'restore' : '',
+          disabled ? 'is-disabled' : '',
+        ].filter(Boolean).join(' ')}
+        key={option.name}
+      >
+        <button
+          className="chord-step-harmony-option-apply"
+          aria-describedby={describedBy}
+          disabled={disabled}
+          type="button"
+          onClick={() => onApply({ chordName: option.name, mode, stepIndex })}
+        >
+          <strong>{option.name}</strong>
+          {renderToneNames(option.name)}
+          <span>{option.desc}</span>
+        </button>
+        <button
+          className={[
+            'chord-step-harmony-option-preview',
+            isPreviewing ? 'is-playing' : '',
+          ].filter(Boolean).join(' ')}
+          aria-describedby={describedBy}
+          aria-label={isPreviewing ? `停止试听 ${option.name}` : `试听 ${option.name}`}
+          aria-pressed={isPreviewing}
+          disabled={disabled}
+          title={isPreviewing ? `停止试听 ${option.name}` : `试听 ${option.name}`}
+          type="button"
+          onClick={() => onPreview({ chordName: option.name, mode, optionKey })}
+        >
+          {isPreviewing
+            ? renderIcon(Square)
+            : <img src={ICON_PLAY_URL} alt="" aria-hidden="true" />}
+        </button>
+      </div>
+    );
+  };
+
+  return (
+    <section
+      className="chord-step-harmony-popover"
+      data-side={position.side}
+      role="dialog"
+      aria-label={`编辑第 ${stepIndex + 1} 步和弦`}
+      style={{
+        '--harmony-arrow-x': `${position.arrowX}px`,
+        left: `${position.left}px`,
+        top: `${position.top}px`,
+        width: `${position.width}px`,
+      }}
+    >
+      <span className="chord-step-harmony-arrow" aria-hidden="true" />
+      <header className="chord-step-harmony-head">
+        <div>
+          <span>STEP {String(stepIndex + 1).padStart(2, '0')} · CHORD EDIT</span>
+          <h2>{currentLabel}</h2>
+        </div>
+        <button aria-label="关闭和弦编辑菜单" type="button" onClick={onClose}>×</button>
+      </header>
+
+      <section className="chord-step-harmony-section" aria-labelledby="chordEnrichmentTitle">
+        <div className="chord-step-harmony-section-head">
+          <div>
+            <h3 id="chordEnrichmentTitle">丰富和弦</h3>
+            <span>ROOT · {sourceChordLabel}</span>
+          </div>
+          <span>替换当前 Step</span>
+        </div>
+        <div className="chord-step-harmony-options enrich">
+          {enrichOptions.length
+            ? enrichOptions.map((option) => renderHarmonyOption(option, 'enrich'))
+            : <p className="chord-step-harmony-empty">暂无可用丰富和弦</p>}
+        </div>
+      </section>
+
+      <section className="chord-step-harmony-section passing" aria-labelledby="chordPassingTitle">
+        <div className="chord-step-harmony-section-head">
+          <div>
+            <h3 id="chordPassingTitle">经过和弦</h3>
+            <span>{sourceChordLabel} → {targetChordLabel ?? 'NEXT CHORD'}</span>
+          </div>
+          <span id={passingHintId}>
+            {canApplyPassing ? '第 15 步可用' : '仅第 15 步可用'}
+          </span>
+        </div>
+        <div className="chord-step-harmony-options passing">
+          {passingOptions.map((option) => renderHarmonyOption(option, 'passing', !canApplyPassing))}
+        </div>
+      </section>
+    </section>
+  );
+}
+
 function ChordEditor({
   canPageBars = false,
   clips,
   clipName,
   matrix,
   onChordRhythmStepToggle = () => {},
+  onChordStepHarmonyApply = () => {},
+  onChordStepHarmonyPreview = () => Promise.resolve('empty'),
+  onChordStepHarmonyPreviewStop = () => {},
   onChordTemplateWorkspacePreview = () => Promise.resolve('empty'),
   onChordTemplateWorkspacePreviewStop = () => {},
   onChordTemplateWorkspaceApply = () => {},
@@ -101,7 +280,10 @@ function ChordEditor({
   const [pendingTemplateId, setPendingTemplateId] = useState(DEFAULT_TEMPLATE_ID);
   const [pendingGrooveTemplateId, setPendingGrooveTemplateId] = useState(DEFAULT_GROOVE_TEMPLATE_ID);
   const [previewing, setPreviewing] = useState(false);
+  const [harmonyPanel, setHarmonyPanel] = useState(null);
+  const [harmonyPreviewOptionKey, setHarmonyPreviewOptionKey] = useState(null);
   const previewRunRef = useRef(0);
+  const harmonyPreviewRunRef = useRef(0);
   const workspaceButtonRole = getTutorialControlRole(tutorialTargets, WORKSPACE_BUTTON_CONTROL);
   const applyBarRole = getTutorialControlRole(tutorialTargets, APPLY_BAR_CONTROL);
   const applyGlobalRole = getTutorialControlRole(tutorialTargets, APPLY_GLOBAL_CONTROL);
@@ -121,22 +303,59 @@ function ChordEditor({
     setWorkspaceOpen(false);
   }, [stopPreview]);
 
+  const stopHarmonyPreview = useCallback(() => {
+    harmonyPreviewRunRef.current += 1;
+    onChordStepHarmonyPreviewStop();
+    setHarmonyPreviewOptionKey(null);
+  }, [onChordStepHarmonyPreviewStop]);
+
+  const closeHarmonyPanel = useCallback(() => {
+    stopHarmonyPreview();
+    setHarmonyPanel(null);
+  }, [stopHarmonyPreview]);
+
   useEffect(() => () => {
     previewRunRef.current += 1;
+    harmonyPreviewRunRef.current += 1;
     onChordTemplateWorkspacePreviewStop();
-  }, [onChordTemplateWorkspacePreviewStop]);
+    onChordStepHarmonyPreviewStop();
+  }, [onChordStepHarmonyPreviewStop, onChordTemplateWorkspacePreviewStop]);
+
+  useEffect(() => {
+    if (!harmonyPanel || harmonyPanel.bar === selectedBar) return undefined;
+    const timeoutId = window.setTimeout(closeHarmonyPanel, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [closeHarmonyPanel, harmonyPanel, selectedBar]);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
-      if (event.key === 'Escape' && workspaceOpen) closeWorkspace();
+      if (event.key !== 'Escape') return;
+      if (harmonyPanel) {
+        closeHarmonyPanel();
+        return;
+      }
+      if (workspaceOpen) closeWorkspace();
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [closeWorkspace, workspaceOpen]);
+  }, [closeHarmonyPanel, closeWorkspace, harmonyPanel, workspaceOpen]);
+
+  useEffect(() => {
+    const handlePointerDown = (event) => {
+      if (!harmonyPanel) return;
+      if (event.target.closest('.chord-step-harmony-popover')) return;
+      if (event.target.closest('.chord-rhythm-step-label')) return;
+      closeHarmonyPanel();
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, [closeHarmonyPanel, harmonyPanel]);
 
   const openWorkspace = () => {
     stopPreview();
+    closeHarmonyPanel();
     const nextTemplateId = appliedTemplateId ?? DEFAULT_TEMPLATE_ID;
     const nextTemplateIndex = Math.max(0, templates.findIndex((template) => template.id === nextTemplateId));
     setPendingTemplateId(nextTemplateId);
@@ -170,8 +389,28 @@ function ChordEditor({
     }
   };
 
+  const handleHarmonyPreview = async ({ chordName, mode, optionKey }) => {
+    if (harmonyPreviewOptionKey === optionKey) {
+      stopHarmonyPreview();
+      return;
+    }
+
+    stopHarmonyPreview();
+    const runId = harmonyPreviewRunRef.current + 1;
+    harmonyPreviewRunRef.current = runId;
+    setHarmonyPreviewOptionKey(optionKey);
+    try {
+      await onChordStepHarmonyPreview({ chordName, mode });
+    } catch {
+      // Harmony preview is optional UI feedback; applying the chord remains available.
+    } finally {
+      if (harmonyPreviewRunRef.current === runId) setHarmonyPreviewOptionKey(null);
+    }
+  };
+
   const handleApply = (scope) => {
     stopPreview();
+    closeHarmonyPanel();
     onChordTemplateWorkspaceApply({
       progressionTemplateId: pendingTemplateId,
       grooveTemplateId: pendingGrooveTemplateId,
@@ -190,6 +429,38 @@ function ChordEditor({
     if (templateId === pendingGrooveTemplateId) return;
     stopPreview();
     setPendingGrooveTemplateId(templateId);
+  };
+
+  const handleHarmonyPanelOpen = (stepIndex, element) => {
+    if (!activeSteps.has(stepIndex)) return;
+    stopPreview();
+    stopHarmonyPreview();
+    setHarmonyPanel({
+      anchorRect: element.getBoundingClientRect(),
+      bar: selectedBar,
+      stepIndex,
+    });
+  };
+
+  const handleHarmonyApply = (selection) => {
+    stopHarmonyPreview();
+    onChordStepHarmonyApply(selection);
+    setHarmonyPanel(null);
+  };
+
+  const handleRhythmStepToggle = (stepIndex) => {
+    closeHarmonyPanel();
+    onChordRhythmStepToggle(stepIndex);
+  };
+
+  const handleClearChordBar = () => {
+    closeHarmonyPanel();
+    onClearChordBar();
+  };
+
+  const handleCloseEditor = () => {
+    closeHarmonyPanel();
+    onClose();
   };
 
   const editorClassName = [
@@ -236,7 +507,7 @@ function ChordEditor({
             className="chord-rhythm-clear"
             disabled={tutorialLocked}
             type="button"
-            onClick={onClearChordBar}
+            onClick={handleClearChordBar}
           >
             清空本小节
           </button>
@@ -245,7 +516,7 @@ function ChordEditor({
             aria-label="关闭编辑器"
             title="关闭编辑器"
             type="button"
-            onClick={onClose}
+            onClick={handleCloseEditor}
           >
             <img src={ICON_CLOSE_URL} alt="" aria-hidden="true" />
           </button>
@@ -316,16 +587,33 @@ function ChordEditor({
               >
                 {Array.from({ length: STEPS_PER_BEAT }, (__, beatStep) => {
                   const step = beat * STEPS_PER_BEAT + beatStep;
+                  const isActive = activeSteps.has(step);
+                  const stepChordLabel = getChordRhythmStepLabel(matrix, selectedBar, step);
                   return (
                     <div className="chord-rhythm-step-wrap" key={`chord-rhythm-step-${step}`}>
-                      <span>{String(step + 1).padStart(2, '0')}</span>
+                      <div className="chord-rhythm-step-head">
+                        <span>{String(step + 1).padStart(2, '0')}</span>
+                        {isActive ? (
+                          <button
+                            aria-expanded={harmonyPanel?.bar === selectedBar && harmonyPanel?.stepIndex === step}
+                            aria-haspopup="dialog"
+                            aria-label={`编辑第 ${step + 1} 步和弦 ${stepChordLabel}`}
+                            className="chord-rhythm-step-label"
+                            disabled={tutorialLocked}
+                            type="button"
+                            onClick={(event) => handleHarmonyPanelOpen(step, event.currentTarget)}
+                          >
+                            {stepChordLabel}
+                          </button>
+                        ) : null}
+                      </div>
                       <button
                         className="chord-rhythm-step"
-                        aria-label={`切换第 ${step + 1} 步`}
-                        aria-pressed={activeSteps.has(step)}
+                        aria-label={`${isActive ? '关闭' : '开启'}第 ${step + 1} 步`}
+                        aria-pressed={isActive}
                         disabled={tutorialLocked}
                         type="button"
-                        onClick={() => onChordRhythmStepToggle(step)}
+                        onClick={() => handleRhythmStepToggle(step)}
                       />
                     </div>
                   );
@@ -340,6 +628,22 @@ function ChordEditor({
           </div>
         </section>
       ))}
+
+      {harmonyPanel?.bar === selectedBar && activeSteps.has(harmonyPanel.stepIndex) ? (
+        <ChordStepHarmonyPopover
+          anchorRect={harmonyPanel.anchorRect}
+          currentLabel={getChordRhythmStepLabel(matrix, selectedBar, harmonyPanel.stepIndex)}
+          onApply={handleHarmonyApply}
+          onClose={closeHarmonyPanel}
+          onPreview={handleHarmonyPreview}
+          previewingOptionKey={harmonyPreviewOptionKey}
+          sourceChordLabel={getChordRhythmStepSourceLabel(matrix, selectedBar, harmonyPanel.stepIndex)}
+          stepIndex={harmonyPanel.stepIndex}
+          targetChordLabel={nextChord ?? getDoowopPassingTargetChord(
+            getChordRhythmStepSourceLabel(matrix, selectedBar, harmonyPanel.stepIndex),
+          )}
+        />
+      ) : null}
 
       <section
         className="chord-template-workspace"

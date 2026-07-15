@@ -78,6 +78,19 @@ Final result: passed.
 
 final result: passed
 
+---
+
+## Chord Step Harmony Label Readability Follow-up
+
+- Final wide-screen evidence: `/Users/nora/Documents/arranger demo/.playwright-cli/page-2026-07-15T08-30-09-032Z.png`
+- Final compact-screen evidence: `/Users/nora/Documents/arranger demo/.playwright-cli/page-2026-07-15T08-30-43-905Z.png`
+- The 16 Chord Steps now reserve a two-layer label zone (step number plus chord-name button) and reduce the physical switch to `54px` (`48px` at compact height). This gives editable names such as `Cmaj7` a full, independently tappable label instead of squeezing them beside the number.
+- Beat groups use a `152px` minimum column so the larger labels remain readable without reducing the clear four-by-four rhythm grouping.
+- The harmony popover now uses larger title, section, card, chord-name, and tone-token scales. At both `1280×720` and `1024×720`, `Cmaj7` was fully visible in its Step label and the menu remained contained; at the compact viewport it flipped above the Step without page overflow.
+- Browser checks reported no layout overflow or console errors/warnings. `npm test` passed all `331` tests; `npm run lint` and `npm run build` completed successfully.
+
+final result: passed
+
 # Chord Preview Button Containment QA
 
 ## Source And State
@@ -441,5 +454,33 @@ final result: passed
 - At `1280x720`, the matching distances are `72.2px` and `73.3px`, differing by approximately `1.1px`. The `42px` controls and approximately `6.2px` within-beat gaps remain unchanged in character.
 - The `1024x720` stacked-label breakpoint intentionally retains full-width rows. All sixteen `44px` controls remain visible with no page or body horizontal overflow.
 - The clean browser session reported `0` errors and `0` warnings. All `325` tests passed; `npm run lint`, `npm run build`, and `git diff --check` completed successfully.
+
+final result: passed
+
+---
+
+## Chord Harmony Menu Large-format Follow-up
+
+- Final `1280x720` evidence: `/Users/nora/Documents/arranger demo/.playwright-cli/page-2026-07-15T08-47-16-343Z.png`
+- Final `1024x720` evidence: `/Users/nora/Documents/arranger demo/.playwright-cli/page-2026-07-15T08-48-06-681Z.png`
+- The harmony popover maximum width increased from `720px` to `940px`, giving the five enrichment cards materially wider reading columns while keeping the full menu inside both target viewports.
+- Enrichment and passing cards now measure at least `112px` high at the compact breakpoint and `124px` otherwise. Chord names use `18–20px`, descriptions use `11–12px`, and tone tokens use `11px`; the close control is `40px` square.
+- A dark modal scrim now separates the floating hardware panel from the Arranger underneath. The same Escape, outside-click, apply, and close behavior remains unchanged.
+- Both tested viewports displayed every enrichment and passing option without horizontal or vertical overflow. The browser console stayed free of application errors, all `332` tests passed, and `npm run lint`, `npm run build`, plus `git diff --check` completed successfully.
+
+final result: passed
+
+---
+
+## Chord Harmony Option Preview Follow-up
+
+- Final `1280x720` evidence: `/Users/nora/Documents/arranger demo/.playwright-cli/page-2026-07-15T09-15-21-608Z.png`
+- Final `1024x720` evidence: `/Users/nora/Documents/arranger demo/.playwright-cli/page-2026-07-15T09-18-38-236Z.png`
+- Every enrichment and passing-chord card now has a dedicated `40x40px` brass preview control. The apply region remains separate, so previewing never applies the candidate chord or writes to the matrix.
+- Harmony previews reuse the template workspace's cancelable sequence-preview path: they stop Arranger transport first, use the current project BPM, switch to the existing stop icon while active, and release the chord at the preview boundary.
+- Switching candidates, applying an option, changing a rhythm step, changing Clip, opening the template workspace, closing the popover, pressing Escape, clicking outside, closing the editor, or unmounting cancels the active preview. Stale completion callbacks cannot clear a newer preview state.
+- Passing-chord apply and preview controls remain visibly and semantically disabled outside Step 15. All controls expose candidate-specific labels and pressed state to assistive technology.
+- Both target viewports displayed all controls without panel or page overflow. A browser interaction confirmed that previewing `Cmaj7` left the current Step 15 value unchanged, and the clean browser session reported `0` errors and `0` warnings.
+- All `333` tests passed; `npm run lint`, `npm run build`, and the focused chord/UI suites completed successfully.
 
 final result: passed
