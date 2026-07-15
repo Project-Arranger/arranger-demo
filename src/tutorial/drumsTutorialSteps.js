@@ -221,7 +221,7 @@ const DRUMS_TUTORIAL_STEPS = [
     primaryLabel: '开始弹奏',
     completion: {
       type: 'melody-example-intro',
-      control: `${TUTORIAL_CONTROL_TARGETS.MELODY_EXAMPLE_KEYS_PREFIX}:4477887`,
+      control: `${TUTORIAL_CONTROL_TARGETS.MELODY_EXAMPLE_KEYS_PREFIX}:1188008`,
     },
   },
   {
@@ -229,11 +229,11 @@ const DRUMS_TUTORIAL_STEPS = [
     section: SECTION_TARGET_6,
     trigger: '点击[开始弹奏]',
     uiEvent: '出现示例旋律，示例旋律的按键指引在屏幕上比重最大',
-    copy: '尝试弹奏你喜欢的旋律乐句\n\n弹奏示例乐句\n跟着节奏，尝试让这段《小星星》的旋律乐句和你已有的乐曲配合在一起。当你想尝试下一个乐句时，点击[继续探索]\n示例乐句：\n4477887',
+    copy: '尝试弹奏你喜欢的旋律乐句\n\n弹奏示例乐句\n跟着节奏，尝试让这段《小星星》的旋律乐句和你已有的乐曲配合在一起。当你想尝试下一个乐句时，点击[继续探索]\n示例乐句：\n1188008',
     primaryLabel: '继续探索',
     completion: {
       type: 'melody-example',
-      control: `${TUTORIAL_CONTROL_TARGETS.MELODY_EXAMPLE_KEYS_PREFIX}:4477887`,
+      control: `${TUTORIAL_CONTROL_TARGETS.MELODY_EXAMPLE_KEYS_PREFIX}:1188008`,
     },
   },
   {
@@ -245,7 +245,7 @@ const DRUMS_TUTORIAL_STEPS = [
     primaryLabel: '开始弹奏',
     completion: {
       type: 'melody-example-intro',
-      control: `${TUTORIAL_CONTROL_TARGETS.MELODY_EXAMPLE_KEYS_PREFIX}:890--098-098`,
+      control: `${TUTORIAL_CONTROL_TARGETS.MELODY_EXAMPLE_KEYS_PREFIX}:013553105310`,
     },
   },
   {
@@ -253,11 +253,11 @@ const DRUMS_TUTORIAL_STEPS = [
     section: SECTION_TARGET_6,
     trigger: '点击[开始弹奏]',
     uiEvent: '出现示例旋律，示例旋律的按键指引在屏幕上比重最大',
-    copy: '尝试弹奏你喜欢的旋律乐句\n\n弹奏示例乐句\n跟着节奏，尝试让这段经典民歌《小河淌水》的旋律乐句和你已有的乐曲配合在一起。当你想尝试下一个乐句时，点击[继续探索]\n示例乐句：\n890- -098 -0 98',
+    copy: '尝试弹奏你喜欢的旋律乐句\n\n弹奏示例乐句\n跟着节奏，尝试让这段经典民歌《小河淌水》的旋律乐句和你已有的乐曲配合在一起。当你想尝试下一个乐句时，点击[继续探索]\n示例乐句：\n0135 5310 53 10',
     primaryLabel: '继续探索',
     completion: {
       type: 'melody-example',
-      control: `${TUTORIAL_CONTROL_TARGETS.MELODY_EXAMPLE_KEYS_PREFIX}:890--098-098`,
+      control: `${TUTORIAL_CONTROL_TARGETS.MELODY_EXAMPLE_KEYS_PREFIX}:013553105310`,
     },
   },
   {
@@ -265,11 +265,11 @@ const DRUMS_TUTORIAL_STEPS = [
     section: SECTION_TARGET_6,
     trigger: '点击继续探索',
     uiEvent: '出现示例旋律，示例旋律的按键指引在屏幕上比重最大',
-    copy: '尝试弹奏你喜欢的旋律乐句\n\n弹奏示例乐句\n跟着节奏，尝试让这段陶喆《小镇姑娘》的旋律乐句和你已有的乐曲配合在一起。当你想尝试下一个乐句时，点击[继续探索]\n示例乐句：\n236 235 234 3434 54',
+    copy: '尝试弹奏你喜欢的旋律乐句\n\n弹奏示例乐句\n跟着节奏，尝试让这段陶喆《小镇姑娘》的旋律乐句和你已有的乐曲配合在一起。当你想尝试下一个乐句时，点击[继续探索]\n示例乐句：\n805 803 801 0101 31',
     primaryLabel: '继续探索',
     completion: {
       type: 'melody-example',
-      control: `${TUTORIAL_CONTROL_TARGETS.MELODY_EXAMPLE_KEYS_PREFIX}:236235234343454`,
+      control: `${TUTORIAL_CONTROL_TARGETS.MELODY_EXAMPLE_KEYS_PREFIX}:805803801010131`,
     },
   },
   {

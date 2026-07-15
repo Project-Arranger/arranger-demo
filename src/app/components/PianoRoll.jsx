@@ -1,6 +1,7 @@
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import {
   createElement,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -22,6 +23,7 @@ function PianoRollRowIndicator() {
 function PianoRollNoteKey({
   active,
   disabled,
+  highlighted,
   note,
   onNotePreview,
   rowIndex,
@@ -32,6 +34,7 @@ function PianoRollNoteKey({
     `${trackId}-note-key`,
     note.sharp ? 'sharp' : '',
     note.root ? 'root' : '',
+    highlighted ? 'scale-tone' : '',
     active ? 'playing' : '',
   ].filter(Boolean).join(' ');
   const commonProps = {
@@ -62,6 +65,7 @@ function PianoRoll({
   ariaLabel,
   autoRevealActiveNote = false,
   disabled = false,
+  highlightedNoteIds = EMPTY_ACTIVE_NOTE_IDS,
   initialTopNote,
   isCellActive,
   notes,
@@ -98,6 +102,14 @@ function PianoRoll({
     pianoRollRef,
   } = usePianoRollRowIndicator();
 
+  useEffect(() => {
+    const pianoRoll = pianoRollRef.current;
+    if (!pianoRoll) return undefined;
+
+    pianoRoll.addEventListener('wheel', handlePitchWheel, { passive: false });
+    return () => pianoRoll.removeEventListener('wheel', handlePitchWheel);
+  }, [handlePitchWheel, pianoRollRef]);
+
   useLayoutEffect(() => {
     const nextActiveNoteIds = activeNoteIds instanceof Set
       ? activeNoteIds
@@ -123,11 +135,11 @@ function PianoRoll({
       role="group"
       aria-label={ariaLabel}
       data-track-id={trackId}
+      style={{ '--piano-roll-total-rows': notes.length }}
       onBlurCapture={handleBlurCapture}
       onFocusCapture={handleFocusCapture}
       onPointerLeave={handlePointerLeave}
       onPointerOver={handlePointerOver}
-      onWheel={handlePitchWheel}
     >
       <aside className={`scale-rail ${trackId}-scale-rail`} aria-label={`${ariaLabel} note ruler`}>
         <button
@@ -151,6 +163,7 @@ function PianoRoll({
               createElement(PianoRollNoteKey, {
                 active: activeNoteIds.has(note.note),
                 disabled,
+                highlighted: highlightedNoteIds.has(note.note),
                 key: note.note,
                 note,
                 onNotePreview,
@@ -193,6 +206,7 @@ function PianoRoll({
                     BEAT_NUMBERS.map((stepNumber, colIndex) => {
                       const step = beatIndex * 4 + colIndex;
                       const active = isCellActive(step, note.note);
+                      const highlighted = highlightedNoteIds.has(note.note);
                       const previewing = activeNoteIds.has(note.note);
 
                       return (
@@ -201,6 +215,7 @@ function PianoRoll({
                             'pitch-step-cell',
                             `${trackId}-cell`,
                             note.sharp ? 'sharp' : '',
+                            highlighted ? 'scale-tone' : '',
                             active ? 'active' : '',
                             previewing ? 'previewing' : '',
                           ].filter(Boolean).join(' ')}

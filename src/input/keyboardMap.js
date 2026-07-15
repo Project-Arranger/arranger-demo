@@ -31,7 +31,7 @@ function mapNumberKeyToCommand(eventType, key, state) {
   const number = Number.parseInt(key, 10);
 
   if (state.activeTrackId === 'melody') {
-    const note = getMelodyKeyNote(state.melodyScaleId, key);
+    const note = getMelodyKeyNote(key);
     if (!note || eventType === 'keypress') return null;
     return {
       type: eventType === 'keyup' ? APP_COMMAND_TYPES.MELODY_NOTE_OFF : APP_COMMAND_TYPES.MELODY_NOTE_ON,
@@ -119,7 +119,7 @@ function mapKeyboardEventToCommand(event, state = {}) {
     return mapArrowKeyToCommand(key, state);
   }
 
-  if (/^[·`~0-9\-=]$/.test(key)) {
+  if (/^[0-9+=-]$/.test(key)) {
     return mapNumberKeyToCommand(eventType, key, state);
   }
 

@@ -654,6 +654,10 @@ test('bass and melody share the reusable PianoRoll component', async () => {
     new URL('../src/app/components/PianoRoll.jsx', import.meta.url),
     'utf8',
   );
+  const pitchScrollSource = await readFile(
+    new URL('../src/app/usePitchScrollSync.js', import.meta.url),
+    'utf8',
+  );
   assert.match(pianoRollSource, /className=\{`piano-roll-grid \$\{trackId\}-grid`\}/);
   assert.match(pianoRollSource, /'pitch-step-cell'/);
   assert.match(pianoRollSource, /`\$\{trackId\}-cell`/);
@@ -661,6 +665,14 @@ test('bass and melody share the reusable PianoRoll component', async () => {
   assert.match(pianoRollSource, /useLayoutEffect\(\(\) => \{/);
   assert.match(pianoRollSource, /nextActiveNoteIds\.forEach/);
   assert.match(pianoRollSource, /revealPitchRow\(noteIndexById\.get\(latestAddedNoteId\)\)/);
+  assert.match(pianoRollSource, /highlightedNoteIds = EMPTY_ACTIVE_NOTE_IDS/);
+  assert.match(pianoRollSource, /'--piano-roll-total-rows': notes\.length/);
+  assert.match(pianoRollSource, /highlightedNoteIds\.has\(note\.note\)/);
+  assert.match(pianoRollSource, /highlighted \? 'scale-tone' : ''/);
+  assert.match(pianoRollSource, /addEventListener\('wheel',\s*handlePitchWheel,\s*\{ passive: false \}\)/);
+  assert.match(pianoRollSource, /removeEventListener\('wheel',\s*handlePitchWheel\)/);
+  assert.doesNotMatch(pianoRollSource, /onWheel=\{handlePitchWheel\}/);
+  assert.match(pitchScrollSource, /if \(!hasPitchScrollRows\(noteCount, visibleRowCount\)\) return;/);
 
   const chordEditorSource = await readFile(
     new URL('../src/app/components/ChordEditor.jsx', import.meta.url),
@@ -716,6 +728,17 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(melodyEditorSource, /data-tutorial-role=\{scaleCardRole/);
   assert.match(melodyEditorSource, /aria-disabled=\{scaleCardDisabled\}/);
   assert.match(melodyEditorSource, /Scale Picker/);
+  assert.match(melodyEditorSource, /className="scale-picker melody-scale-workspace"/);
+  assert.match(melodyEditorSource, /className="melody-scale-workspace-panel"/);
+  assert.match(melodyEditorSource, /className="melody-scale-workspace-head"/);
+  assert.match(melodyEditorSource, /className="melody-scale-workspace-body"/);
+  assert.match(melodyEditorSource, /className="melody-scale-workspace-label"/);
+  assert.match(melodyEditorSource, /className="melody-scale-options"/);
+  assert.match(melodyEditorSource, /className="melody-scale-workspace-icon-button close"/);
+  assert.match(melodyEditorSource, /aria-labelledby="melodyScaleWorkspaceTitle"/);
+  assert.match(melodyEditorSource, /aria-modal="true"/);
+  assert.match(melodyEditorSource, /className="melody-scale-card-select"[\s\S]*aria-pressed=\{scale\.id === activeScale\.id\}/);
+  assert.doesNotMatch(melodyEditorSource, /className="tpl-head"|className="tpl-body"|className="tpl-list"/);
   assert.doesNotMatch(melodyEditorSource, /className="melody-beat-number-row"/);
   assert.doesNotMatch(melodyEditorSource, /className="beat-num mono"/);
   assert.doesNotMatch(melodyEditorSource, /const \[melodyRailOctave,\s*setMelodyRailOctave\]/);
@@ -728,6 +751,7 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(melodyEditorSource, /flushSync\(\(\) => \{\s*setPlayingKeys/s);
   assert.match(melodyEditorSource, /initialTopNote:\s*'B4'/);
   assert.match(melodyEditorSource, /notes:\s*MELODY_NOTES/);
+  assert.match(melodyEditorSource, /highlightedNoteIds:\s*activeScaleNoteIds/);
   assert.match(melodyEditorSource, /onCellToggle:\s*onMelodyStepToggle/);
   assert.doesNotMatch(melodyEditorSource, /usePitchRowHover|getMelodyScaleRailNotes|setHoveredPitchRow/);
   assert.doesNotMatch(melodyEditorSource, /usePitchScrollSync/);
@@ -747,6 +771,10 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(melodyEditorSource, /createElement\(TrackBarPager,\s*\{[\s\S]*className:\s*'melody-editor-pager-shell'/);
   assert.match(melodyEditorSource, /createElement\(TrackBarPager,\s*\{[\s\S]*contentClassName:\s*'melody-editor-scroll'/);
   assert.match(melodyEditorSource, /MELODY_KEY_SEQUENCE/);
+  assert.match(melodyEditorSource, /MELODY_PITCH_CLASSES/);
+  assert.match(melodyEditorSource, /getMelodyScalePreviewNotes/);
+  assert.match(melodyEditorSource, /isMelodyScalePitchClass/);
+  assert.match(melodyEditorSource, /scaleTone \? 'scale-tone' : ''/);
   assert.match(melodyEditorSource, /isMelodyCellActive/);
   assert.doesNotMatch(melodyEditorSource, /pitch-step-cell|melody-cell|colIndex === 0 \? 'downbeat'/);
   assert.match(melodyEditorSource, /setPlayingKeys/);
@@ -821,13 +849,22 @@ test('app exposes the bass editor and existing-clip groove template workflow', a
   assert.match(bassEditorSource, /Bass Groove Template Picker/);
   assert.match(bassEditorSource, /getBassGroovePreviewSteps/);
   assert.match(bassEditorSource, /const previewHitStepSet = new Set\(getBassGroovePreviewSteps\(template\)\);/);
-  assert.match(bassEditorSource, /const isHit = previewHitStepSet\.has\(step\);/);
-  assert.match(bassEditorSource, /gtpl-step/);
-  assert.match(bassEditorSource, /hit-root/);
-  assert.match(bassEditorSource, /data-len/);
+  assert.match(bassEditorSource, /className="chord-template-workspace bass-template-workspace"/);
+  assert.match(bassEditorSource, /className="chord-template-workspace-panel bass-template-workspace-panel"/);
+  assert.match(bassEditorSource, /className="chord-template-workspace-body bass-template-workspace-body"/);
+  assert.match(bassEditorSource, /className="bass-template-groove-options"/);
+  assert.match(bassEditorSource, /className="chord-template-mini-beat-group"/);
+  assert.match(bassEditorSource, /previewHitStepSet\.has\(step\) \? 'on' : ''/);
+  assert.match(bassEditorSource, /aria-labelledby="bassTemplateWorkspaceTitle"/);
+  assert.match(bassEditorSource, /aria-modal="true"/);
+  assert.match(bassEditorSource, /aria-pressed=\{selectedGrooveTemplateId === template\.id\}/);
+  assert.match(bassEditorSource, /className="bass-template-card-select"/);
+  assert.match(bassEditorSource, /className="chord-template-workspace-icon-button preview bass-template-card-preview"/);
+  assert.match(bassEditorSource, /icon-play\.svg/);
+  assert.match(bassEditorSource, /icon-x\.svg/);
   assert.match(bassEditorSource, /onBassGrooveTemplatePreview\(template\.id\)/);
   assert.match(bassEditorSource, /onBassGrooveTemplateApply\(templateId\)/);
-  assert.match(bassEditorSource, /closest\?\.\('\[data-action="bgpreview"\]'\)/);
+  assert.match(bassEditorSource, /onClick=\{\(\) => handleGrooveTemplateApply\(template\.id\)\}/);
   assert.match(bassEditorSource, /清空本小节/);
   assert.match(bassEditorSource, /清空整轨/);
   assert.doesNotMatch(bassEditorSource, /清空 Bass/);

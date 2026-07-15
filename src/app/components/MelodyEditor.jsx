@@ -16,8 +16,11 @@ import {
   getMelodyKeyboardKey,
   getMelodyKeyNote,
   getMelodyScale,
+  getMelodyScalePreviewNotes,
+  isMelodyScalePitchClass,
   MELODY_KEY_SEQUENCE,
   MELODY_NOTES,
+  MELODY_PITCH_CLASSES,
   MELODY_SCALES,
 } from '../../data/melodyScales.js';
 import { isMelodyCellActive } from '../melodyActions.js';
@@ -29,9 +32,9 @@ import { PianoRoll } from './PianoRoll.jsx';
 import { TrackBarPager } from './TrackBarPager.jsx';
 
 const MELODY_EXAMPLE_DISPLAY_BY_TARGET = Object.freeze({
-  '4477887': '4477887',
-  '890--098-098': '890- -098 -0 98',
-  '236235234343454': '236 235 234 3434 54',
+  '1188008': '1188008',
+  '013553105310': '0135 5310 53 10',
+  '805803801010131': '805 803 801 0101 31',
 });
 
 function addSetValue(set, value) {
@@ -90,23 +93,27 @@ function MelodyEditor({
   const exampleKeysId = exampleKeysTarget?.name?.slice('melody-example-keys:'.length) ?? '';
   const exampleKeysLabel = MELODY_EXAMPLE_DISPLAY_BY_TARGET[exampleKeysId] ?? exampleKeysId;
   const activeScale = getMelodyScale(melodyScaleId);
+  const activeScaleNoteIds = useMemo(
+    () => new Set(getMelodyScalePreviewNotes(melodyScaleId)),
+    [melodyScaleId],
+  );
   const activePlayedNotes = useMemo(() => new Set(
     [...playingKeys]
-      .map((key) => getMelodyKeyNote(melodyScaleId, key))
+      .map((key) => getMelodyKeyNote(key))
       .filter(Boolean),
-  ), [melodyScaleId, playingKeys]);
+  ), [playingKeys]);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.repeat || isEditableKeyboardTarget(event.target)) return;
-      const note = getMelodyKeyNote(melodyScaleId, event.key);
+      const note = getMelodyKeyNote(event.key);
       if (!note) return;
       flushSync(() => {
         setPlayingKeys((keys) => addSetValue(keys, getMelodyKeyboardKey(event.key)));
       });
     };
     const handleKeyUp = (event) => {
-      if (!getMelodyKeyNote(melodyScaleId, event.key)) return;
+      if (!getMelodyKeyNote(event.key)) return;
       setPlayingKeys((keys) => deleteSetValue(keys, getMelodyKeyboardKey(event.key)));
     };
 
@@ -117,7 +124,7 @@ function MelodyEditor({
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [melodyScaleId]);
+  }, []);
 
   const handlePreviewStart = (key, note) => {
     flushSync(() => {
@@ -210,14 +217,22 @@ function MelodyEditor({
           </div>
 
           <div className="ks-keys" data-scale={activeScale.id} aria-label="按键 ↔ 音符 对应表">
-            {MELODY_KEY_SEQUENCE.map((key) => {
-              const note = getMelodyKeyNote(activeScale.id, key);
+            {MELODY_KEY_SEQUENCE.map((key, index) => {
+              const note = getMelodyKeyNote(key);
               const { name, octave } = formatMelodyNoteParts(note);
               const playing = playingKeys.has(key);
+              const scaleTone = isMelodyScalePitchClass(
+                activeScale.id,
+                MELODY_PITCH_CLASSES[index],
+              );
 
               return (
                 <button
-                  className={['ks-key', playing ? 'playing' : ''].filter(Boolean).join(' ')}
+                  className={[
+                    'ks-key',
+                    scaleTone ? 'scale-tone' : '',
+                    playing ? 'playing' : '',
+                  ].filter(Boolean).join(' ')}
                   type="button"
                   data-key={key}
                   data-note={name}
@@ -265,6 +280,7 @@ function MelodyEditor({
           ariaLabel: 'Melody piano roll',
           autoRevealActiveNote: true,
           disabled: tutorialLocked,
+          highlightedNoteIds: activeScaleNoteIds,
           initialTopNote: 'B4',
           isCellActive: (step, note) => (
             isMelodyCellActive(matrix, selectedBar, step, note)
@@ -276,31 +292,41 @@ function MelodyEditor({
         </>
       ))}
 
-      <div className="scale-picker" role="dialog" aria-label="选择音阶" data-screen-label="Scale Picker" hidden={pickerMode !== 'scale'}>
-        <header className="tpl-head">
-          <div className="tpl-head-left">
-            <button className="btn-template-scale-active" aria-label="关闭选择音阶" type="button" onClick={() => setPickerMode(null)}>
-              {renderIcon(ChevronUp)}
-              选择音阶
-            </button>
-            <span className="tpl-meta">
-              音阶库 ·
-              {' '}
-              <span className="mono">{Object.keys(MELODY_SCALES).length}</span>
-              {' '}
-              个
-            </span>
-          </div>
-          <div className="tpl-head-right">
-            <button className="tpl-close" aria-label="关闭" type="button" onClick={() => setPickerMode(null)}>
+      <section
+        className="scale-picker melody-scale-workspace"
+        aria-labelledby="melodyScaleWorkspaceTitle"
+        aria-modal="true"
+        data-screen-label="Scale Picker"
+        hidden={pickerMode !== 'scale'}
+        role="dialog"
+      >
+        <div className="melody-scale-workspace-panel">
+          <header className="melody-scale-workspace-head">
+            <div>
+              <h2 id="melodyScaleWorkspaceTitle">旋律音阶</h2>
+              <span>
+                音阶库 · {Object.keys(MELODY_SCALES).length} 个
+              </span>
+            </div>
+            <button
+              className="melody-scale-workspace-icon-button close"
+              aria-label="关闭二级菜单"
+              title="关闭二级菜单"
+              type="button"
+              onClick={() => setPickerMode(null)}
+            >
               {renderIcon(X)}
             </button>
-          </div>
-        </header>
+          </header>
 
-        <div className="tpl-body">
-          <div className="tpl-viewport">
-            <div className="tpl-list" id="scaleList">
+          <div className="melody-scale-workspace-body">
+            <div className="melody-scale-workspace-label">
+              <strong>选择旋律音阶</strong>
+              <span>MELODY SCALE</span>
+              <p>音阶只改变高亮和试听，十二个半音始终可以编辑。</p>
+            </div>
+
+            <div className="melody-scale-options" id="scaleList" aria-label="选择旋律音阶">
               {Object.values(MELODY_SCALES).map((scale) => {
                 const scaleCardRole = getTutorialControlRole(tutorialTargets, `melody-scale-card:${scale.id}`);
                 const scaleCardDisabled = tutorialLocked && scaleCardRole !== 'target';
@@ -309,6 +335,7 @@ function MelodyEditor({
                   <article
                     className={[
                       'sctpl-card',
+                      'melody-scale-card',
                       scale.id === activeScale.id ? 'selected' : '',
                       scaleCardRole === 'target' ? 'tutorial-control-target' : '',
                     ].filter(Boolean).join(' ')}
@@ -316,26 +343,40 @@ function MelodyEditor({
                     data-scale={scale.id}
                     data-tutorial-role={scaleCardRole ?? undefined}
                     key={scale.id}
-                    onClick={() => {
-                      if (scaleCardDisabled) return;
-                      onMelodyScaleChange(scale.id);
-                      setPickerMode(null);
-                    }}
                   >
-                    <div className="sctpl-name-row">
-                      <h3 className="sctpl-name">{scale.label}</h3>
-                      {scale.tag ? <span className="sctpl-default-tag">{scale.tag}</span> : null}
-                    </div>
-                    <div className="sctpl-notes" aria-label="音阶包含的音符">
-                      {scale.notes.map((note, index) => (
-                        note ? (
-                          <span className="sctpl-note" key={`${scale.id}-${note}-${index}`}>{note}</span>
-                        ) : (
-                          <span className="sctpl-note gap" aria-hidden="true" key={`${scale.id}-gap-${index}`} />
-                        )
-                      ))}
-                    </div>
-                    <p className="sctpl-desc">{scale.description}</p>
+                    <button
+                      className="melody-scale-card-select"
+                      aria-label={`选择${scale.label}`}
+                      aria-pressed={scale.id === activeScale.id}
+                      disabled={scaleCardDisabled}
+                      type="button"
+                      onClick={() => {
+                        onMelodyScaleChange(scale.id);
+                        setPickerMode(null);
+                      }}
+                    >
+                      <span className="sctpl-name-row">
+                        <strong className="sctpl-name">{scale.label}</strong>
+                        {scale.tag ? <span className="sctpl-default-tag">{scale.tag}</span> : null}
+                      </span>
+                      <span className="sctpl-notes" aria-label="音阶包含的音符">
+                        {MELODY_PITCH_CLASSES.map((pitchClass) => {
+                          const scaleTone = isMelodyScalePitchClass(scale.id, pitchClass);
+                          return (
+                            <span
+                              className={[
+                                'sctpl-note',
+                                scaleTone ? 'scale-tone' : '',
+                              ].filter(Boolean).join(' ')}
+                              key={`${scale.id}-${pitchClass}`}
+                            >
+                              {pitchClass}
+                            </span>
+                          );
+                        })}
+                      </span>
+                      <span className="sctpl-desc">{scale.description}</span>
+                    </button>
                     <div className="sctpl-foot">
                       <span className="sctpl-foot-label">{scale.footLabel}</span>
                       <button
@@ -344,11 +385,7 @@ function MelodyEditor({
                         data-action="preview"
                         type="button"
                         disabled={scaleCardDisabled}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          if (scaleCardDisabled) return;
-                          onMelodyPreview(scale.keyNotes);
-                        }}
+                        onClick={() => onMelodyPreview(getMelodyScalePreviewNotes(scale.id))}
                       >
                         {renderPlayGlyph()}
                         试听
@@ -360,7 +397,7 @@ function MelodyEditor({
             </div>
           </div>
         </div>
-      </div>
+      </section>
     </section>
   );
 }

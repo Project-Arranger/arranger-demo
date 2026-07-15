@@ -34,7 +34,7 @@ test('app command constants use drums naming', () => {
   assert.equal(MELODY_NOTE_IDS.includes('A4'), true);
   assert.equal(MELODY_NOTE_IDS.includes('C5'), true);
   assert.equal(MELODY_NOTE_IDS.includes('G5'), true);
-  assert.equal(MELODY_NOTE_IDS.includes('C2'), false);
+  assert.equal(MELODY_NOTE_IDS.includes('B3'), true);
   assert.equal(MELODY_NOTE_IDS.includes('A5'), true);
   assert.equal(MELODY_NOTE_IDS.includes('C6'), false);
   assert.equal(MELODY_NOTE_IDS.at(-1), 'C3');
@@ -115,16 +115,17 @@ test('drums command validates track step and known instruments', () => {
 });
 
 test('melody note commands only accept configured melody notes', () => {
-  assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'D3' }), true);
-  assert.equal(isValidAppCommand({ type: 'melody.noteOff', note: 'E5' }), true);
+  assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'D4' }), true);
+  assert.equal(isValidAppCommand({ type: 'melody.noteOff', note: 'E4' }), true);
   assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'C#4' }), true);
   assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'G5' }), true);
-  assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'C2' }), false);
+  assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'B3' }), true);
   assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'A5' }), true);
-  assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'B5' }), true);
-  assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'C3' }), true);
+  assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'B2' }), false);
+  assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'B4' }), true);
+  assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'C4' }), true);
   assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'C6' }), false);
-  assert.equal(isValidAppCommand({ type: 'melody.noteOff', note: 'D3', velocity: 100 }), false);
+  assert.equal(isValidAppCommand({ type: 'melody.noteOff', note: 'D4', velocity: 100 }), false);
 });
 
 test('unknown or malformed commands are invalid', () => {

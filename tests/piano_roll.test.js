@@ -14,6 +14,7 @@ import {
   getPitchPageStartRow,
   getPitchRowStride,
   getPitchScrollTopForRow,
+  hasPitchScrollRows,
   isPitchRowFullyVisible,
 } from '../src/app/usePitchScrollSync.js';
 
@@ -56,7 +57,7 @@ test('piano-roll note generator returns a frozen descending chromatic range', ()
   assert.throws(() => createPianoRollNotes({ lowestOctave: 1, octaveCount: 0 }), RangeError);
 });
 
-test('bass and melody share the same three-octave shape and retain their own ranges', () => {
+test('bass and melody keep scrollable three-octave ranges with their own default windows', () => {
   assert.equal(BASS_NOTES.length, 36);
   assert.equal(BASS_NOTES.at(0).note, 'B2');
   assert.equal(BASS_NOTES.at(-1).note, 'C0');
@@ -91,4 +92,11 @@ test('piano-roll scroll math moves by twelve logical rows and clamps at either e
   assert.equal(isPitchRowFullyVisible(DEFAULT_VIEWPORT, bassDefaultTop, 32), true);
   assert.equal(isPitchRowFullyVisible(DEFAULT_VIEWPORT, bassDefaultTop, 20), false);
   assert.equal(isPitchRowFullyVisible(DEFAULT_VIEWPORT, bassDefaultTop, 33), false);
+});
+
+test('pitch wheel handling only captures ranges taller than the visible octave', () => {
+  assert.equal(hasPitchScrollRows(BASS_NOTES.length), true);
+  assert.equal(hasPitchScrollRows(MELODY_NOTES.length), true);
+  assert.equal(hasPitchScrollRows(PIANO_ROLL_VISIBLE_ROWS), false);
+  assert.equal(hasPitchScrollRows(PIANO_ROLL_VISIBLE_ROWS - 1), false);
 });

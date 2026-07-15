@@ -72,7 +72,7 @@ test('extractMelodyEvent reads melody cells into playable melody events', () => 
   assert.equal(extractMelodyEvent({ type: 'melody', note: 'H4' }, 3, 8), null);
 });
 
-test('extractMelodyEvent plays every semitone in the three-octave melody roll', () => {
+test('extractMelodyEvent plays every semitone in the scrollable melody roll', () => {
   MELODY_NOTE_IDS.forEach((note) => {
     assert.deepEqual(extractMelodyEvent({ type: 'melody', note }, 0, 0), {
       type: 'melody',
@@ -83,6 +83,9 @@ test('extractMelodyEvent plays every semitone in the three-octave melody roll', 
       duration: '16n',
     });
   });
+
+  assert.equal(extractMelodyEvent({ type: 'melody', note: 'B2' }, 0, 0), null);
+  assert.equal(extractMelodyEvent({ type: 'melody', note: 'C6' }, 0, 0), null);
 });
 
 test('createChordNotes maps major chord roots to playable triads', () => {

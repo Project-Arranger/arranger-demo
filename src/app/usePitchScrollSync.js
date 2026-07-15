@@ -18,6 +18,13 @@ function getMaxPitchScroll(viewport) {
   return viewport ? Math.max(0, viewport.scrollHeight - viewport.clientHeight) : 0;
 }
 
+function hasPitchScrollRows(
+  noteCount,
+  visibleRowCount = PIANO_ROLL_VISIBLE_ROWS,
+) {
+  return noteCount > visibleRowCount;
+}
+
 function getPitchRowStride(
   viewport,
   noteCount = DEFAULT_NOTE_COUNT,
@@ -176,11 +183,12 @@ function usePitchScrollSync(options = {}) {
 
   const handlePitchWheel = useCallback((event) => {
     if (!event.deltaY || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
+    if (!hasPitchScrollRows(noteCount, visibleRowCount)) return;
 
     event.preventDefault();
     onPitchInteraction();
     syncPitchScroll(pitchScrollTopRef.current + event.deltaY);
-  }, [onPitchInteraction, syncPitchScroll]);
+  }, [noteCount, onPitchInteraction, syncPitchScroll, visibleRowCount]);
 
   const scrollPitchByOctave = useCallback((direction) => {
     const viewport = scalePitchViewportRef.current
@@ -262,6 +270,7 @@ export {
   getPitchPageStartRow,
   getPitchRowStride,
   getPitchScrollTopForRow,
+  hasPitchScrollRows,
   isPitchRowFullyVisible,
   usePitchScrollSync,
 };

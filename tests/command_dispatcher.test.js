@@ -165,8 +165,8 @@ test('domain commands dispatch to injected handlers with drums naming', async ()
   await dispatchCommand({ type: 'chord.confirm' }, { handlers });
   await dispatchCommand({ type: 'chord.setCell', bar: 2, span: 1, root: 'G#' }, { handlers });
   await dispatchCommand({ type: 'chord.clearCell', bar: 2, span: 1 }, { handlers });
-  await dispatchCommand({ type: 'melody.noteOn', note: 'D3' }, { handlers });
-  await dispatchCommand({ type: 'melody.noteOff', note: 'D3' }, { handlers });
+  await dispatchCommand({ type: 'melody.noteOn', note: 'D4' }, { handlers });
+  await dispatchCommand({ type: 'melody.noteOff', note: 'D4' }, { handlers });
 
   assert.deepEqual(calls, [
     ['app.undo'],
@@ -178,7 +178,7 @@ test('domain commands dispatch to injected handlers with drums naming', async ()
     ['chord.confirm'],
     ['chord.setCell', 2, 1, 'G#'],
     ['chord.clearCell', 2, 1],
-    ['melody.noteOff', 'D3'],
+    ['melody.noteOff', 'D4'],
   ]);
   assert.deepEqual(audioCalls, [
     ['audio.triggerDrumsStep', ['kick', 'hihat']],
@@ -304,29 +304,25 @@ test('keyboard map turns common keys into app commands', () => {
     mapKeyboardEventToCommand({ type: 'keydown', key: 'ArrowLeft' }, { seekBar: 0, seekStep: 0 }),
     { type: 'transport.seek', bar: 0, step: 0 },
   );
-  assert.deepEqual(
-    mapKeyboardEventToCommand({ type: 'keydown', key: '·' }, { activeTrackId: 'melody', melodyScaleId: 'major' }),
-    { type: 'melody.noteOn', note: 'G3' },
-  );
-  assert.deepEqual(
-    mapKeyboardEventToCommand({ type: 'keydown', key: '`' }, { activeTrackId: 'melody', melodyScaleId: 'major' }),
-    { type: 'melody.noteOn', note: 'G3' },
-  );
-  assert.deepEqual(
-    mapKeyboardEventToCommand({ type: 'keydown', key: '~' }, { activeTrackId: 'melody', melodyScaleId: 'major' }),
-    { type: 'melody.noteOn', note: 'G3' },
-  );
   assert.equal(
-    mapKeyboardEventToCommand({ type: 'keydown', key: '.' }, { activeTrackId: 'melody', melodyScaleId: 'major' }),
+    mapKeyboardEventToCommand({ type: 'keydown', key: '·' }, { activeTrackId: 'melody', melodyScaleId: 'major' }),
     null,
   );
   assert.deepEqual(
-    mapKeyboardEventToCommand({ type: 'keydown', key: '4' }, { activeTrackId: 'melody', melodyScaleId: 'pentatonic' }),
+    mapKeyboardEventToCommand({ type: 'keydown', key: '1' }, { activeTrackId: 'melody', melodyScaleId: 'major' }),
     { type: 'melody.noteOn', note: 'C4' },
   );
   assert.deepEqual(
     mapKeyboardEventToCommand({ type: 'keyup', key: '=' }, { activeTrackId: 'melody', melodyScaleId: 'pentatonic' }),
-    { type: 'melody.noteOff', note: 'G5' },
+    { type: 'melody.noteOff', note: 'B4' },
+  );
+  assert.deepEqual(
+    mapKeyboardEventToCommand({ type: 'keydown', key: '+' }, { activeTrackId: 'melody', melodyScaleId: 'major' }),
+    { type: 'melody.noteOn', note: 'B4' },
+  );
+  assert.deepEqual(
+    mapKeyboardEventToCommand({ type: 'keydown', key: '5' }, { activeTrackId: 'melody', melodyScaleId: 'major' }),
+    mapKeyboardEventToCommand({ type: 'keydown', key: '5' }, { activeTrackId: 'melody', melodyScaleId: 'pentatonic' }),
   );
   assert.deepEqual(
     mapKeyboardEventToCommand({ type: 'keydown', key: '4' }, { activeTrackId: 'chord' }),

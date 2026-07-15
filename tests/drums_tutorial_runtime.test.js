@@ -942,7 +942,7 @@ test('target 6 melody examples advance by primary buttons and then end tutorial'
   assert.equal(intro1ViewModel.showCompleteButton, true);
   assert.equal(intro1ViewModel.primaryLabel, '开始弹奏');
   assert.deepEqual(intro1ViewModel.targets.controls, [
-    { name: 'melody-example-keys:4477887', role: 'target' },
+    { name: 'melody-example-keys:1188008', role: 'target' },
   ]);
 
   const startExample = completeTutorialPrimaryAction({ progress, step: intro1Step });
@@ -961,7 +961,7 @@ test('target 6 melody examples advance by primary buttons and then end tutorial'
   });
   assert.equal(play1ViewModel.primaryLabel, '继续探索');
   assert.deepEqual(play1ViewModel.targets.controls, [
-    { name: 'melody-example-keys:4477887', role: 'target' },
+    { name: 'melody-example-keys:1188008', role: 'target' },
   ]);
   const nextToIntro2 = completeTutorialPrimaryAction({ progress, step: play1Step });
   assert.equal(nextToIntro2.allowed, true);
@@ -978,7 +978,7 @@ test('target 6 melody examples advance by primary buttons and then end tutorial'
   });
   assert.equal(intro2ViewModel.primaryLabel, '开始弹奏');
   assert.deepEqual(intro2ViewModel.targets.controls, [
-    { name: 'melody-example-keys:890--098-098', role: 'target' },
+    { name: 'melody-example-keys:013553105310', role: 'target' },
   ]);
   const startSecondExample = completeTutorialPrimaryAction({ progress, step: intro2Step });
   assert.equal(startSecondExample.allowed, true);
@@ -993,7 +993,7 @@ test('target 6 melody examples advance by primary buttons and then end tutorial'
     step: play2Step,
   });
   assert.deepEqual(play2ViewModel.targets.controls, [
-    { name: 'melody-example-keys:890--098-098', role: 'target' },
+    { name: 'melody-example-keys:013553105310', role: 'target' },
   ]);
   const nextToThird = completeTutorialPrimaryAction({ progress, step: play2Step });
   assert.equal(nextToThird.allowed, true);
@@ -1009,7 +1009,7 @@ test('target 6 melody examples advance by primary buttons and then end tutorial'
     step: play3Step,
   });
   assert.deepEqual(play3ViewModel.targets.controls, [
-    { name: 'melody-example-keys:236235234343454', role: 'target' },
+    { name: 'melody-example-keys:805803801010131', role: 'target' },
   ]);
   const nextToFree = completeTutorialPrimaryAction({ progress, step: play3Step });
   assert.equal(nextToFree.allowed, true);

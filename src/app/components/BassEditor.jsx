@@ -1,7 +1,5 @@
 import {
   AudioWaveform,
-  ChevronDown,
-  ChevronUp,
   MoreHorizontal,
   Trash2,
   X,
@@ -26,20 +24,25 @@ import { renderIcon } from './icons.js';
 import { PianoRoll } from './PianoRoll.jsx';
 import { TrackBarPager } from './TrackBarPager.jsx';
 
-function renderPlayGlyph() {
-  return <span className="play-glyph" aria-hidden="true" />;
-}
+const ICON_PLAY_URL = `${import.meta.env.BASE_URL}assets/skeuo/icon-play.svg`;
+const ICON_CLOSE_URL = `${import.meta.env.BASE_URL}assets/skeuo/icon-x.svg`;
 
-function getTemplateStepLength(template) {
-  return template.duration === '8n' ? '8' : '16';
-}
+function renderBassMiniGroove(template) {
+  const previewHitStepSet = new Set(getBassGroovePreviewSteps(template));
 
-function getGrooveStepClass(isHit, step) {
-  return [
-    'gtpl-step',
-    step % 4 === 0 ? 'downbeat' : '',
-    isHit ? 'hit-root' : '',
-  ].filter(Boolean).join(' ');
+  return BEAT_NUMBERS.map((beatNumber) => (
+    <span className="chord-template-mini-beat-group" key={`${template.id}-beat-${beatNumber}`}>
+      {BEAT_NUMBERS.map((stepNumber) => {
+        const step = (beatNumber - 1) * 4 + stepNumber - 1;
+        return (
+          <span
+            className={previewHitStepSet.has(step) ? 'on' : ''}
+            key={`${template.id}-step-${step}`}
+          />
+        );
+      })}
+    </span>
+  ));
 }
 
 function isTutorialControlAllowed(role) {
@@ -84,11 +87,6 @@ function BassEditor({
     setSelectedGrooveTemplateId(templateId);
     onBassGrooveTemplateApply(templateId);
     setPickerMode(null);
-  };
-
-  const handleGrooveTemplateCardClick = (event, templateId) => {
-    if (event.target.closest?.('[data-action="bgpreview"]')) return;
-    handleGrooveTemplateApply(templateId);
   };
 
   const handleClose = () => {
@@ -192,126 +190,94 @@ function BassEditor({
         })
       ))}
 
-      <div className="gtpl-picker" role="dialog" aria-label="选择Bass弹奏律动模板" data-screen-label="Bass Groove Template Picker" hidden={!groovePickerOpen}>
-        <header className="tpl-head">
-          <div className="tpl-head-left">
-            <button className="btn-template-groove-active" aria-label="关闭Bass弹奏律动模板" type="button" onClick={() => setPickerMode(null)}>
-              {renderIcon(AudioWaveform)}
-              选择Bass弹奏律动模板
+      <section
+        className="chord-template-workspace bass-template-workspace"
+        aria-labelledby="bassTemplateWorkspaceTitle"
+        aria-modal="true"
+        data-screen-label="Bass Groove Template Picker"
+        hidden={!groovePickerOpen}
+        role="dialog"
+      >
+        <div className="chord-template-workspace-panel bass-template-workspace-panel">
+          <header className="chord-template-workspace-head bass-template-workspace-head">
+            <h2 id="bassTemplateWorkspaceTitle">Bass 弹奏律动模板</h2>
+            <button
+              className="chord-template-workspace-icon-button close"
+              aria-label="关闭Bass弹奏律动模板"
+              title="关闭二级菜单"
+              type="button"
+              onClick={closeBassPicker}
+            >
+              <img src={ICON_CLOSE_URL} alt="" aria-hidden="true" />
             </button>
-            <span className="tpl-meta">
-              Bass 律动模板库 ·
-              {' '}
-              <span className="mono">{BASS_GROOVE_TEMPLATES.length}</span>
-              {' '}
-              个
-            </span>
-          </div>
-          <div className="tpl-head-right">
-            <label className="tpl-search">
-              <input type="text" placeholder="搜索律动名称 / 音型..." />
-            </label>
-            <button className="tpl-close" aria-label="关闭" type="button" onClick={() => setPickerMode(null)}>
-              {renderIcon(X)}
-            </button>
-          </div>
-        </header>
+          </header>
 
-        <div className="tpl-body">
-          <div className="tpl-list" id="bgtplList">
-            {BASS_GROOVE_TEMPLATES.map((template) => {
-              const previewHitStepSet = new Set(getBassGroovePreviewSteps(template));
-              const templateCardRole = getTutorialControlRole(
-                tutorialTargets,
-                `bass-groove-card:${template.id}`,
-              );
-              const templateCardDisabled = tutorialLocked && !isTutorialControlAllowed(templateCardRole);
-              const templateCardClassName = [
-                'gtpl-card',
-                selectedGrooveTemplateId === template.id ? 'selected' : '',
-                templateCardRole === 'target' ? 'tutorial-control-target' : '',
-              ].filter(Boolean).join(' ');
+          <div className="chord-template-workspace-body bass-template-workspace-body">
+            <div className="chord-template-workspace-label bass-template-workspace-label">
+              <strong>选择 Bass 弹奏律动</strong>
+              <span>BASS GROOVE</span>
+              <p>点击卡片后，立即应用到已有 Bass Clips。</p>
+            </div>
 
-              return (
-                <article
-                  className={templateCardClassName}
-                  aria-disabled={templateCardDisabled}
-                  data-gtpl={template.id}
-                  data-tutorial-role={templateCardRole}
-                  key={template.id}
-                  onClick={(event) => {
-                    if (templateCardDisabled) return;
-                    handleGrooveTemplateCardClick(event, template.id);
-                  }}
-                >
-                  <div className="gtpl-name-row">
-                    <h3 className="gtpl-name">{template.name}</h3>
-                    {template.default ? <span className="gtpl-default-tag">默认</span> : null}
-                  </div>
-                  <div className="gtpl-rhythm" aria-label={`律动预览·${template.name}`}>
-                    <div className="gtpl-rhythm-grid">
-                      {BEAT_NUMBERS.map((beatNumber) => (
-                        <div className="gtpl-beat" key={`${template.id}-beat-${beatNumber}`}>
-                          {BEAT_NUMBERS.map((stepNumber) => {
-                            const step = (beatNumber - 1) * 4 + stepNumber - 1;
-                            const isHit = previewHitStepSet.has(step);
+            <div className="bass-template-groove-options" aria-label="选择Bass弹奏律动模板">
+              {BASS_GROOVE_TEMPLATES.map((template) => {
+                const templateCardRole = getTutorialControlRole(
+                  tutorialTargets,
+                  `bass-groove-card:${template.id}`,
+                );
+                const templateCardDisabled = tutorialLocked && !isTutorialControlAllowed(templateCardRole);
+                const templateCardClassName = [
+                  'bass-template-groove-card',
+                  selectedGrooveTemplateId === template.id ? 'selected' : '',
+                  templateCardDisabled ? 'is-disabled' : '',
+                  templateCardRole === 'target' ? 'tutorial-control-target' : '',
+                ].filter(Boolean).join(' ');
 
-                            return (
-                              <span
-                                className={getGrooveStepClass(isHit, step)}
-                                data-len={isHit ? getTemplateStepLength(template) : undefined}
-                                key={`${template.id}-${step}`}
-                              />
-                            );
-                          })}
-                        </div>
-                      ))}
-                    </div>
-                    <div className="gtpl-beat-num mono">
-                      {BEAT_NUMBERS.map((beatNumber) => (
-                        <span key={`${template.id}-num-${beatNumber}`}>{beatNumber}</span>
-                      ))}
-                    </div>
-                  </div>
-                  <p className="gtpl-desc">{template.desc}</p>
-                  <p className="gtpl-detail">{template.detail}</p>
-                  <div className="gtpl-foot">
-                    <span className="gtpl-foot-label mono">{template.hitLabel}</span>
+                return (
+                  <article
+                    className={templateCardClassName}
+                    aria-disabled={templateCardDisabled}
+                    data-gtpl={template.id}
+                    data-tutorial-role={templateCardRole}
+                    key={template.id}
+                  >
                     <button
-                      className="gtpl-play"
-                      type="button"
-                      aria-label={`试听 ${template.name}`}
-                      data-action="bgpreview"
+                      className="bass-template-card-select"
+                      aria-label={`应用 ${template.name}`}
+                      aria-pressed={selectedGrooveTemplateId === template.id}
                       disabled={templateCardDisabled}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onBassGrooveTemplatePreview(template.id);
-                      }}
+                      type="button"
+                      onClick={() => handleGrooveTemplateApply(template.id)}
                     >
-                      {renderPlayGlyph()}
-                      试听
+                      <span className="chord-template-card-head">
+                        <strong>{template.name}</strong>
+                        {template.default ? <span>默认</span> : null}
+                      </span>
+                      <span className="chord-template-mini-groove" aria-label={`律动预览·${template.name}`}>
+                        {renderBassMiniGroove(template)}
+                      </span>
+                      <span className="chord-template-card-description">{template.desc}</span>
+                      <span className="bass-template-card-detail">{template.detail}</span>
                     </button>
-                  </div>
-                </article>
-              );
-            })}
+                    <div className="bass-template-card-footer">
+                      <span className="chord-template-groove-meta">{template.hitLabel}</span>
+                      <button
+                        className="chord-template-workspace-icon-button preview bass-template-card-preview"
+                        type="button"
+                        aria-label={`试听 ${template.name}`}
+                        disabled={templateCardDisabled}
+                        onClick={() => onBassGrooveTemplatePreview(template.id)}
+                      >
+                        <img src={ICON_PLAY_URL} alt="" aria-hidden="true" />
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
           </div>
         </div>
-
-        <footer className="tpl-pager">
-          <button className="tpl-pager-btn" type="button" aria-label="上一页" disabled>
-            {renderIcon(ChevronUp)}
-          </button>
-          <span className="tpl-pager-count mono">
-            <span className="now">1</span>
-            {' '}
-            / 1
-          </span>
-          <button className="tpl-pager-btn" type="button" aria-label="下一页" disabled>
-            {renderIcon(ChevronDown)}
-          </button>
-        </footer>
-      </div>
+      </section>
     </section>
   );
 }
