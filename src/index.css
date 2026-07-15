@@ -10960,3 +10960,9 @@ body {
     font-size: 11px;
   }
 }
+
+@media (min-width: 981px) and (max-width: 1100px) and (max-height: 720px) {
+  .melody-seq-body {
+    --piano-roll-viewport-height: 218px;
+  }
+}

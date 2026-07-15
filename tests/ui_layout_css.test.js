@@ -784,6 +784,7 @@ test('melody editor mirrors the reference keyboard strip and scale picker layout
   assert.match(css, /\.melody-seq-body\s*\{[^}]*--piano-roll-beat-gap:\s*0px;[^}]*--pitch-rail-head-height:\s*20px;/s);
   assert.match(css, /\.melody-seq-body\s*\{[^}]*--piano-roll-viewport-height:\s*clamp\(\s*220px,\s*calc\(var\(--app-editor-height\) - 215px\),\s*345px\s*\);/s);
   assert.match(css, /@media\s*\(max-height:\s*720px\)\s*\{[\s\S]*?\.app:has\(\.editor\[data-screen-label="Melody Editor"\]:not\(\[data-picker="scale"\]\)\)\s*\{[^}]*--app-editor-height:\s*clamp\(372px,\s*calc\(52vh \+ 12px\),\s*402px\);/s);
+  assert.match(css, /@media\s*\(min-width:\s*981px\)\s*and\s*\(max-width:\s*1100px\)\s*and\s*\(max-height:\s*720px\)\s*\{[^}]*\.melody-seq-body\s*\{[^}]*--piano-roll-viewport-height:\s*218px;/s);
   assert.match(css, /\.melody-seq-body\s*\{[^}]*--pitch-row-hover:\s*var\(--c-melody\);/s);
   assert.match(css, /\.melody-seq-body\s*\{[^}]*--pitch-row-hover-ink:\s*var\(--c-melody-ink\);/s);
   assert.match(css, /\.melody-seq-body \.scale-rail,\s*\n\.melody-seq-body \.piano-roll-grid\s*\{[^}]*padding-top:\s*0;[^}]*padding-bottom:\s*0;/s);
