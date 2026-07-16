@@ -1,6 +1,5 @@
 import {
   AudioWaveform,
-  MoreHorizontal,
   Trash2,
   X,
 } from 'lucide-react';
@@ -153,9 +152,6 @@ function BassEditor({
             onClick={onClearBassBar}
           >
             {renderIcon(Trash2)}
-          </button>
-          <button className="tool-icon" aria-label="More" title="More" type="button" disabled={tutorialLocked}>
-            {renderIcon(MoreHorizontal)}
           </button>
           <button
             className="editor-close"

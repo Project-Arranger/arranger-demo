@@ -1,8 +1,6 @@
 import {
   ChevronUp,
-  Circle,
   Keyboard,
-  MoreHorizontal,
   SlidersHorizontal,
   X,
 } from 'lucide-react';
@@ -36,6 +34,7 @@ import {
 } from '../melodyRhythmTemplates.js';
 import { MELODY_RECORDING_PHASES } from '../useMelodyRecordingController.js';
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
+import { BEAT_NUMBERS } from '../uiShellData.js';
 import { ClipNameInput } from './ClipNameInput.jsx';
 import { EditorTrackIdentity } from './EditorTrackIdentity.jsx';
 import { renderIcon } from './icons.js';
@@ -47,6 +46,28 @@ const MELODY_EXAMPLE_DISPLAY_BY_TARGET = Object.freeze({
   '013553105310': '0135 5310 53 10',
   '805803801010131': '805 803 801 0101 31',
 });
+
+const ICON_CLOSE_URL = `${import.meta.env.BASE_URL}assets/skeuo/icon-x.svg`;
+
+function renderMelodyMiniGroove(template) {
+  return BEAT_NUMBERS.map((beatNumber) => (
+    <span
+      className="chord-template-mini-beat-group"
+      key={`${template.id}-beat-${beatNumber}`}
+    >
+      {BEAT_NUMBERS.map((stepNumber) => {
+        const step = (beatNumber - 1) * 4 + stepNumber - 1;
+
+        return (
+          <span
+            className={template.steps.includes(step) ? 'on' : ''}
+            key={`${template.id}-step-${step}`}
+          />
+        );
+      })}
+    </span>
+  ));
+}
 
 function addSetValue(set, value) {
   if (!value || set.has(value)) return set;
@@ -119,13 +140,16 @@ function MelodyEditor({
   const recordingPhase = melodyRecordingState?.phase ?? MELODY_RECORDING_PHASES.IDLE;
   const recordingActive = recordingPhase === MELODY_RECORDING_PHASES.COUNT_IN
     || recordingPhase === MELODY_RECORDING_PHASES.RECORDING;
+  const activeRhythmRecordingStep = recordingPhase === MELODY_RECORDING_PHASES.RECORDING
+    ? activeRhythmTemplate?.steps[melodyRecordingState?.recordedNotes] ?? null
+    : null;
   const activeScaleNoteIds = useMemo(
     () => new Set(getMelodyScaleNoteIds(melodyScaleId)),
     [melodyScaleId],
   );
   const highlightedStepIds = useMemo(
-    () => new Set(activeRhythmTemplate?.steps ?? []),
-    [activeRhythmTemplate],
+    () => new Set(getMelodyRhythmTemplate(melodyRhythmTemplateId)?.steps ?? []),
+    [melodyRhythmTemplateId],
   );
   const activePlayedNotes = useMemo(() => new Set(
     [...playingKeys]
@@ -223,31 +247,28 @@ function MelodyEditor({
           </button>
           <button
             className={[
+              'btn-template',
               'melody-record-button',
               recordingActive ? 'recording' : '',
             ].filter(Boolean).join(' ')}
-            aria-label={recordingActive ? '停止旋律录制' : '开始旋律录制'}
+            aria-label={recordingActive ? '停止旋律写入' : '开始旋律写入'}
             type="button"
             disabled={tutorialLocked}
             onClick={onMelodyRecordToggle}
           >
-            {renderIcon(Circle)}
             {recordingPhase === MELODY_RECORDING_PHASES.COUNT_IN
               ? `预拍 ${melodyRecordingState.countInBeat}`
               : recordingPhase === MELODY_RECORDING_PHASES.RECORDING
                 ? activeRhythmTemplate
-                  ? `${melodyRecordingState.recordedNotes}/${melodyRecordingState.totalNotes}`
-                  : '录制中'
-                : '录制'}
+                  ? `写入 ${melodyRecordingState.recordedNotes}/${melodyRecordingState.totalNotes}`
+                  : '写入中'
+                : '写入'}
           </button>
           <button className="btn-template drum-clear-action" type="button" disabled={tutorialLocked} onClick={onClearMelodyBar}>
             清空本小节
           </button>
           <button className="btn-template drum-clear-action" type="button" disabled={tutorialLocked} onClick={onClearMelody}>
             清空整轨
-          </button>
-          <button className="tool-icon" aria-label="More" title="More" type="button" disabled={tutorialLocked}>
-            {renderIcon(MoreHorizontal)}
           </button>
           <button
             className="editor-close"
@@ -342,6 +363,7 @@ function MelodyEditor({
         ) : null}
 
         {createElement(PianoRoll, {
+          activeHighlightedStep: activeRhythmRecordingStep,
           activeNoteIds: activePlayedNotes,
           ariaLabel: 'Melody piano roll',
           autoRevealActiveNote: true,
@@ -483,41 +505,38 @@ function MelodyEditor({
       </section>
 
       <section
-        className="scale-picker melody-rhythm-workspace"
+        className="chord-template-workspace melody-rhythm-workspace"
         aria-labelledby="melodyRhythmWorkspaceTitle"
         aria-modal="true"
         data-screen-label="Melody Rhythm Picker"
         hidden={pickerMode !== 'rhythm'}
         role="dialog"
       >
-        <div className="melody-rhythm-workspace-panel">
-          <header className="melody-scale-workspace-head">
-            <div>
-              <h2 id="melodyRhythmWorkspaceTitle">旋律律动模板</h2>
-              <span>律动库 · {MELODY_RHYTHM_TEMPLATES.length} 个</span>
-            </div>
+        <div className="chord-template-workspace-panel melody-rhythm-workspace-panel">
+          <header className="chord-template-workspace-head melody-rhythm-workspace-head">
+            <h2 id="melodyRhythmWorkspaceTitle">旋律律动模板</h2>
             <button
-              className="melody-scale-workspace-icon-button close"
+              className="chord-template-workspace-icon-button close"
               aria-label="关闭律动菜单"
+              title="关闭二级菜单"
               type="button"
               onClick={() => setPickerMode(null)}
             >
-              {renderIcon(X)}
+              <img src={ICON_CLOSE_URL} alt="" aria-hidden="true" />
             </button>
           </header>
-          <div className="melody-rhythm-workspace-body">
-            <div className="melody-scale-workspace-label">
+          <div className="chord-template-workspace-body melody-rhythm-workspace-body">
+            <div className="chord-template-workspace-label melody-rhythm-workspace-label">
               <strong>选择律动节奏</strong>
               <span>MELODY RHYTHM</span>
               <p>先选择模板，再决定应用到当前小节或所有已有 Melody Clips。</p>
             </div>
-            <div className="melody-rhythm-options" aria-label="选择旋律律动模板">
+            <div
+              className="chord-template-groove-options melody-rhythm-options"
+              aria-label="选择旋律律动模板"
+            >
               {MELODY_RHYTHM_TEMPLATES.map((template) => (
                 <button
-                  className={[
-                    'melody-rhythm-card',
-                    template.id === selectedRhythmTemplateId ? 'selected' : '',
-                  ].filter(Boolean).join(' ')}
                   aria-pressed={template.id === selectedRhythmTemplateId}
                   data-template-id={template.id}
                   key={template.id}
@@ -525,42 +544,43 @@ function MelodyEditor({
                   onClick={() => setSelectedRhythmTemplateId(template.id)}
                 >
                   <strong>{template.name}</strong>
-                  <span className="melody-rhythm-mini-grid" aria-hidden="true">
-                    {Array.from({ length: 16 }, (_, step) => (
-                      <span
-                        className={template.steps.includes(step) ? 'hit' : ''}
-                        key={`${template.id}-${step}`}
-                      />
-                    ))}
+                  <span className="chord-template-mini-groove" aria-hidden="true">
+                    {renderMelodyMiniGroove(template)}
                   </span>
-                  <span>{template.steps.length} 个音 / 小节</span>
+                  <span className="chord-template-card-description">
+                    第 {template.steps.map((step) => step + 1).join('、')} 格
+                  </span>
+                  <span className="chord-template-groove-meta">
+                    {template.steps.length} 个音 / 小节
+                  </span>
                 </button>
               ))}
             </div>
+            <div aria-hidden="true" />
+            <div className="chord-template-workspace-actions melody-rhythm-actions">
+              <button
+                className="primary"
+                type="button"
+                disabled={!getMelodyRhythmTemplate(selectedRhythmTemplateId)}
+                onClick={() => {
+                  onMelodyRhythmTemplateApply(selectedRhythmTemplateId, 'bar');
+                  setPickerMode(null);
+                }}
+              >
+                应用到本小节
+              </button>
+              <button
+                type="button"
+                disabled={!getMelodyRhythmTemplate(selectedRhythmTemplateId)}
+                onClick={() => {
+                  onMelodyRhythmTemplateApply(selectedRhythmTemplateId, 'global');
+                  setPickerMode(null);
+                }}
+              >
+                应用到全局
+              </button>
+            </div>
           </div>
-          <footer className="melody-rhythm-actions">
-            <button
-              className="primary"
-              type="button"
-              disabled={!getMelodyRhythmTemplate(selectedRhythmTemplateId)}
-              onClick={() => {
-                onMelodyRhythmTemplateApply(selectedRhythmTemplateId, 'bar');
-                setPickerMode(null);
-              }}
-            >
-              应用到本小节
-            </button>
-            <button
-              type="button"
-              disabled={!getMelodyRhythmTemplate(selectedRhythmTemplateId)}
-              onClick={() => {
-                onMelodyRhythmTemplateApply(selectedRhythmTemplateId, 'global');
-                setPickerMode(null);
-              }}
-            >
-              应用到全局
-            </button>
-          </footer>
         </div>
       </section>
 
@@ -572,13 +592,13 @@ function MelodyEditor({
             aria-modal="true"
             aria-labelledby="melodyRecordConfirmTitle"
           >
-            <span>MELODY RECORD</span>
-            <h2 id="melodyRecordConfirmTitle">本次录制会清空当前小节</h2>
+            <span>MELODY WRITE</span>
+            <h2 id="melodyRecordConfirmTitle">本次写入会清空当前小节</h2>
             <p>确认后会删除当前 Melody 音符，但保留已经应用的律动模板。</p>
             <div>
               <button type="button" onClick={onMelodyRecordCancel}>取消</button>
               <button className="primary" type="button" onClick={onMelodyRecordConfirm}>
-                清空并录制
+                清空并写入
               </button>
             </div>
           </section>

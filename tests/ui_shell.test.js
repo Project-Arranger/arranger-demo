@@ -648,6 +648,7 @@ test('bass and melody share the reusable PianoRoll component', async () => {
     assert.match(source, /import \{ PianoRoll \} from '\.\/PianoRoll\.jsx';/);
     assert.match(source, /createElement\(PianoRoll,/);
     assert.doesNotMatch(source, /notes\.flatMap|className="scale-notes-viewport"|pitch-step-cell/);
+    assert.doesNotMatch(source, /MoreHorizontal|aria-label="More"/);
   }
 
   const pianoRollSource = await readFile(
@@ -702,6 +703,11 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
     new URL('../src/store/slices/contextSlice.js', import.meta.url),
     'utf8',
   );
+  const pianoRollSource = await readFile(
+    new URL('../src/app/components/PianoRoll.jsx', import.meta.url),
+    'utf8',
+  );
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
   assert.match(uiDataSource, /melody:\s*'Melody'/);
   assert.match(contextSliceSource, /melodyScaleId:\s*'major'/);
@@ -766,6 +772,7 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(melodyDataSource, /五声音阶/);
   assert.match(melodyEditorSource, /清空本小节/);
   assert.match(melodyEditorSource, /清空整轨/);
+  assert.match(melodyEditorSource, /'btn-template',\s*'melody-record-button'/);
   assert.doesNotMatch(melodyEditorSource, /清空 Melody/);
   assert.doesNotMatch(melodyEditorSource, /Clear phrase/);
   assert.match(melodyEditorSource, /createElement\(TrackBarPager,\s*\{[\s\S]*className:\s*'melody-editor-pager-shell'/);
@@ -782,7 +789,50 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(melodyEditorSource, /onMelodyNoteOn\(note\)/);
   assert.match(melodyEditorSource, /onMelodyNoteOff\(note\)/);
   assert.match(melodyEditorSource, /Melody Rhythm Picker/);
-  assert.match(melodyEditorSource, /清空并录制/);
+  assert.match(
+    melodyEditorSource,
+    /className="chord-template-workspace melody-rhythm-workspace"/,
+  );
+  assert.match(
+    melodyEditorSource,
+    /className="chord-template-workspace-panel melody-rhythm-workspace-panel"/,
+  );
+  assert.match(
+    melodyEditorSource,
+    /className="chord-template-groove-options melody-rhythm-options"/,
+  );
+  assert.match(melodyEditorSource, /function renderMelodyMiniGroove\(template\)/);
+  assert.match(melodyEditorSource, /className="chord-template-mini-beat-group"/);
+  assert.match(melodyEditorSource, /className="chord-template-mini-groove"/);
+  assert.doesNotMatch(melodyEditorSource, /melody-rhythm-mini-grid/);
+  assert.match(
+    melodyEditorSource,
+    /activeRhythmTemplate\?\.steps\[melodyRecordingState\?\.recordedNotes\]/,
+  );
+  assert.match(melodyEditorSource, /activeHighlightedStep:\s*activeRhythmRecordingStep/);
+  assert.match(pianoRollSource, /data-rhythm-template=/);
+  assert.match(pianoRollSource, /rhythm-step-marker/);
+  assert.match(pianoRollSource, /rhythm-column-next/);
+  assert.match(css, /\.melody-rhythm-workspace\s*\{[^}]*display:\s*block;/s);
+  assert.match(
+    css,
+    /\.melody-rhythm-workspace-body\s*\{[^}]*grid-template-rows:\s*minmax\(0,\s*1fr\) auto;/s,
+  );
+  assert.match(css, /\.melody-seq-body \.rhythm-step-marker\.highlighted/);
+  assert.match(
+    css,
+    /\.melody-seq-body \.rhythm-step-marker\.highlighted::before\s*\{[^}]*var\(--melody-amethyst\)/s,
+  );
+  assert.doesNotMatch(css, /\.melody-rhythm-options > button(?:\[[^\]]+\])?\s*\{/s);
+  assert.match(css, /\.chord-template-groove-options > button\[aria-pressed="true"\]/);
+  assert.match(css, /\.melody-rhythm-options \.chord-template-mini-beat-group > span\.on/);
+  assert.doesNotMatch(css, /\.melody-rhythm-mini-grid/);
+  assert.match(css, /\.melody-cell\.rhythm-column::before/);
+  assert.match(css, /@keyframes melody-rhythm-guide-pulse/);
+  assert.match(css, /@keyframes melody-rhythm-target-pulse/);
+  assert.match(melodyEditorSource, /清空并写入/);
+  assert.match(melodyEditorSource, /开始旋律写入/);
+  assert.doesNotMatch(melodyEditorSource, /renderIcon\(Circle\)|录制中|MELODY RECORD/);
   assert.match(melodyEditorSource, /melody-example-keys/);
   assert.match(melodyEditorSource, /data-tutorial-role=\{exampleKeysRole/);
   assert.doesNotMatch(melodyEditorSource, /recordMelodyKeyInput/);
