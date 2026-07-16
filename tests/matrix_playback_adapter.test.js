@@ -70,6 +70,18 @@ test('extractMelodyEvent reads melody cells into playable melody events', () => 
     duration: '16n',
   });
   assert.equal(extractMelodyEvent({ type: 'melody', note: 'H4' }, 3, 8), null);
+  assert.deepEqual(
+    extractMelodyEvent({ type: 'melody', note: 'D4', durationSteps: 3 }, 1, 6),
+    {
+      type: 'melody',
+      trackId: 'melody',
+      bar: 1,
+      step: 6,
+      note: 'D4',
+      duration: '16n',
+      durationSteps: 3,
+    },
+  );
 });
 
 test('extractMelodyEvent plays every semitone in the scrollable melody roll', () => {

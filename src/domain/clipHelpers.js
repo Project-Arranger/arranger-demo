@@ -20,12 +20,15 @@ function formatClipName(trackId, bar) {
 }
 
 function createClipRecord(trackId, bar) {
-  return {
+  const clip = {
     id: createClipId(trackId, bar),
     trackId,
     bar,
     name: formatClipName(trackId, bar),
   };
+
+  if (trackId === 'melody') clip.melodyRhythmTemplateId = null;
+  return clip;
 }
 
 export {

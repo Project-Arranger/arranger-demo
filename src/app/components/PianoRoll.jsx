@@ -15,6 +15,7 @@ import { BEAT_NUMBERS } from '../uiShellData.js';
 import { renderIcon } from './icons.js';
 
 const EMPTY_ACTIVE_NOTE_IDS = new Set();
+const EMPTY_HIGHLIGHTED_STEP_IDS = new Set();
 
 function PianoRollRowIndicator() {
   return <span className="piano-roll-row-indicator" aria-hidden="true" />;
@@ -66,9 +67,13 @@ function PianoRoll({
   autoRevealActiveNote = false,
   disabled = false,
   highlightedNoteIds = EMPTY_ACTIVE_NOTE_IDS,
+  highlightedStepIds = EMPTY_HIGHLIGHTED_STEP_IDS,
   initialTopNote,
+  getCellRenderState,
   isCellActive,
   notes,
+  onCellPressEnd,
+  onCellPressStart,
   onCellToggle,
   onNotePreview,
   onPitchInteraction,
@@ -205,8 +210,12 @@ function PianoRoll({
                   {notes.flatMap((note, rowIndex) => (
                     BEAT_NUMBERS.map((stepNumber, colIndex) => {
                       const step = beatIndex * 4 + colIndex;
-                      const active = isCellActive(step, note.note);
+                      const renderState = getCellRenderState?.(step, note.note) ?? null;
+                      const active = renderState?.active ?? isCellActive(step, note.note);
+                      const noteStart = renderState?.start ?? active;
+                      const sustained = active && !noteStart;
                       const highlighted = highlightedNoteIds.has(note.note);
+                      const rhythmHighlighted = highlightedStepIds.has(step);
                       const previewing = activeNoteIds.has(note.note);
 
                       return (
@@ -216,18 +225,39 @@ function PianoRoll({
                             `${trackId}-cell`,
                             note.sharp ? 'sharp' : '',
                             highlighted ? 'scale-tone' : '',
+                            rhythmHighlighted ? 'rhythm-column' : '',
                             active ? 'active' : '',
+                            noteStart ? 'note-start' : '',
+                            sustained ? 'note-sustain' : '',
                             previewing ? 'previewing' : '',
                           ].filter(Boolean).join(' ')}
+                          data-duration-steps={noteStart && renderState?.durationSteps > 1
+                            ? renderState.durationSteps
+                            : undefined}
                           data-row={rowIndex}
                           data-col={colIndex}
                           data-note={note.note}
+                          data-step={step}
                           key={`${note.note}-${step}`}
                           type="button"
                           aria-label={`${note.note} beat ${beatNumber}.${stepNumber}`}
                           aria-pressed={active}
                           disabled={disabled}
-                          onClick={() => onCellToggle(step, note.note)}
+                          onClick={() => {
+                            if (onCellPressStart) return;
+                            onCellToggle(step, note.note);
+                          }}
+                          onPointerDown={(event) => {
+                            if (!onCellPressStart) return;
+                            event.currentTarget.setPointerCapture?.(event.pointerId);
+                            onCellPressStart(step, note.note);
+                          }}
+                          onPointerUp={(event) => {
+                            if (!onCellPressEnd) return;
+                            event.currentTarget.releasePointerCapture?.(event.pointerId);
+                            onCellPressEnd(step, note.note);
+                          }}
+                          onPointerCancel={() => onCellPressEnd?.(step, note.note)}
                         />
                       );
                     })

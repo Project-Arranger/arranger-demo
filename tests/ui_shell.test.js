@@ -779,7 +779,10 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.doesNotMatch(melodyEditorSource, /pitch-step-cell|melody-cell|colIndex === 0 \? 'downbeat'/);
   assert.match(melodyEditorSource, /setPlayingKeys/);
   assert.match(melodyEditorSource, /activePlayedNotes/);
-  assert.match(melodyEditorSource, /onMelodyPreview\(note\)/);
+  assert.match(melodyEditorSource, /onMelodyNoteOn\(note\)/);
+  assert.match(melodyEditorSource, /onMelodyNoteOff\(note\)/);
+  assert.match(melodyEditorSource, /Melody Rhythm Picker/);
+  assert.match(melodyEditorSource, /清空并录制/);
   assert.match(melodyEditorSource, /melody-example-keys/);
   assert.match(melodyEditorSource, /data-tutorial-role=\{exampleKeysRole/);
   assert.doesNotMatch(melodyEditorSource, /recordMelodyKeyInput/);

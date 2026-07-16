@@ -169,7 +169,7 @@ function extractChordEvent(cell, bar, step) {
 function extractMelodyEvent(cell, bar, step) {
   if (cell?.type !== 'melody' || !isValidMelodyNote(cell.note)) return null;
 
-  return {
+  const event = {
     type: 'melody',
     trackId: 'melody',
     bar,
@@ -177,6 +177,8 @@ function extractMelodyEvent(cell, bar, step) {
     note: cell.note,
     duration: cell.duration ?? '16n',
   };
+  if (Number.isInteger(cell.durationSteps)) event.durationSteps = cell.durationSteps;
+  return event;
 }
 
 function extractBassEvent(cell, bar, step) {
