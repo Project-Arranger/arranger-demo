@@ -58,6 +58,17 @@ function getMelodyScalePreviewNotes(scaleId) {
   ));
 }
 
+function getMelodyScaleNoteIds(scaleId) {
+  return MELODY_NOTES
+    .filter(({ rootName }) => isMelodyScalePitchClass(scaleId, rootName))
+    .map(({ note }) => note);
+}
+
+function isMelodyNoteInScale(scaleId, note) {
+  const pitchClass = /^([A-G]#?)\d$/.exec(note)?.[1];
+  return Boolean(pitchClass && isMelodyScalePitchClass(scaleId, pitchClass));
+}
+
 function formatMelodyNoteParts(note) {
   const [, name, octave] = /^([A-G]#?)(\d)$/.exec(note) ?? [];
   return {
@@ -71,7 +82,9 @@ export {
   getMelodyKeyboardKey,
   getMelodyKeyNote,
   getMelodyScale,
+  getMelodyScaleNoteIds,
   getMelodyScalePreviewNotes,
+  isMelodyNoteInScale,
   isMelodyScalePitchClass,
   MELODY_KEY_SEQUENCE,
   MELODY_NOTES,

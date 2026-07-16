@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   getMelodyKeyNote,
+  getMelodyScaleNoteIds,
   getMelodyScalePreviewNotes,
+  isMelodyNoteInScale,
   isMelodyScalePitchClass,
   MELODY_KEY_SEQUENCE,
   MELODY_NOTES,
@@ -13,8 +15,11 @@ import {
 import {
   clearMelodyBar,
   createMelodyCell,
+  getMelodyCellRenderState,
   isMelodyCellActive,
   isValidMelodyNote,
+  setMelodyCell,
+  setMelodyCellDuration,
   toggleMelodyCell,
 } from '../src/app/melodyActions.js';
 import createInitialMatrix from '../src/store/createInitialMatrix.js';
@@ -42,6 +47,12 @@ test('melody scale templates derive highlights and previews from the chromatic o
   assert.equal(isMelodyScalePitchClass('major', 'F'), true);
   assert.equal(isMelodyScalePitchClass('pentatonic', 'F'), false);
   assert.equal(isMelodyScalePitchClass('pentatonic', 'F#'), false);
+  assert.equal(getMelodyScaleNoteIds('major').length, 21);
+  assert.equal(getMelodyScaleNoteIds('pentatonic').length, 15);
+  assert.equal(getMelodyScaleNoteIds('major').includes('C3'), true);
+  assert.equal(getMelodyScaleNoteIds('major').includes('B5'), true);
+  assert.equal(isMelodyNoteInScale('pentatonic', 'G5'), true);
+  assert.equal(isMelodyNoteInScale('pentatonic', 'F5'), false);
 });
 
 test('melody piano roll exposes three chromatic octaves with C4-B4 as its default window', () => {
@@ -109,4 +120,32 @@ test('clearMelodyBar clears only the selected melody bar', () => {
   assert.equal(nextMatrix.melody[1].every((cell) => cell === null), true);
   assert.deepEqual(nextMatrix.melody[2][0], { type: 'melody', note: 'E4' });
   assert.deepEqual(nextMatrix.drums[1][0], { instruments: ['kick'] });
+});
+
+test('melody cells store quantized durations and expose continuation render state', () => {
+  const matrix = createInitialMatrix();
+  const withNote = setMelodyCell(matrix, 0, 4, 'C4', 5);
+
+  assert.deepEqual(withNote.melody[0][4], {
+    type: 'melody',
+    note: 'C4',
+    durationSteps: 5,
+  });
+  assert.deepEqual(getMelodyCellRenderState(withNote, 0, 4, 'C4'), {
+    active: true,
+    durationSteps: 5,
+    start: true,
+    startStep: 4,
+  });
+  assert.deepEqual(getMelodyCellRenderState(withNote, 0, 8, 'C4'), {
+    active: true,
+    durationSteps: 5,
+    start: false,
+    startStep: 4,
+  });
+  assert.equal(getMelodyCellRenderState(withNote, 0, 9, 'C4').active, false);
+
+  const clamped = setMelodyCellDuration(withNote, 0, 4, 99);
+  assert.equal(clamped.melody[0][4].durationSteps, 12);
+  assert.deepEqual(createMelodyCell('D4', 1), { type: 'melody', note: 'D4' });
 });

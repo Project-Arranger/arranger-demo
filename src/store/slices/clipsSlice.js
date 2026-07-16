@@ -61,6 +61,9 @@ function findClipForTrackBar(clips, trackId, bar) {
 
 function createPastedClipRecord(snapshot, targetTrackId, targetBar) {
   const clip = createClipRecord(targetTrackId, targetBar);
+  if (targetTrackId === 'melody') {
+    clip.melodyRhythmTemplateId = snapshot?.melodyRhythmTemplateId ?? null;
+  }
   if (snapshot?.customName === true) {
     return {
       ...clip,
@@ -92,6 +95,9 @@ export default function createClipsSlice(set, get) {
         sourceBar: clip.bar,
         name: clip.name,
         customName: clip.customName === true,
+        melodyRhythmTemplateId: clip.trackId === 'melody'
+          ? clip.melodyRhythmTemplateId ?? null
+          : undefined,
         barData: cloneBarData(barData),
       };
     },

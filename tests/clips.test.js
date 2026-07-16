@@ -199,6 +199,18 @@ test('pasteClipClipboardSnapshot overwrites same-track targets and preserves cop
   state.setCell('melody', 0, 0, { type: 'melody', note: 'C4' });
   state.createClip('melody', 0);
   state.renameClip('melody-bar-0', 'Hook Lead');
+  useMusicStore.setState((current) => ({
+    clips: {
+      ids: current.clips.ids,
+      byId: {
+        ...current.clips.byId,
+        'melody-bar-0': {
+          ...current.clips.byId['melody-bar-0'],
+          melodyRhythmTemplateId: 'syncopation',
+        },
+      },
+    },
+  }));
   const snapshot = useMusicStore.getState().createClipClipboardSnapshot('melody-bar-0');
   useMusicStore.getState().createClip('melody', 3);
   useMusicStore.getState().setCell('melody', 3, 0, { type: 'melody', note: 'G4' });
@@ -210,6 +222,7 @@ test('pasteClipClipboardSnapshot overwrites same-track targets and preserves cop
     trackId: 'melody',
     bar: 3,
     name: 'Hook Lead',
+    melodyRhythmTemplateId: 'syncopation',
     customName: true,
   });
   assert.deepEqual(useMusicStore.getState().clips.ids.filter((id) => id === 'melody-bar-3'), ['melody-bar-3']);
@@ -321,6 +334,7 @@ test('createEmptyClipsForTrack skips existing clips and preserves matrix content
     trackId: 'melody',
     bar: 3,
     name: 'Custom Melody',
+    melodyRhythmTemplateId: null,
     customName: true,
   });
   assert.deepEqual(nextState.matrix.melody[3][4], { type: 'melody', note: 'E4' });

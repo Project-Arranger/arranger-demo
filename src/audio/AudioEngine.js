@@ -15,7 +15,6 @@ const DRUMS_SAMPLE_FILES = Object.freeze({
 });
 const SAMPLE_ASSET_VERSION = 'sample-refresh-20260608';
 const CHORD_SAMPLE_DURATION = '2s';
-const MELODY_SAMPLE_DURATION = '2s';
 
 function createRootOctaveSampleFiles({ directory, prefix, roots, octaves, sampleVersion = 'v0.22' }) {
   return Object.freeze(Object.fromEntries(
@@ -393,12 +392,11 @@ export default class AudioEngine {
   }
 
   triggerMelodySampler(note, duration = '16n', time = this.now(), volume = this.getTrackVolume('melody')) {
-    void duration;
     if (!this.melodySampler?.triggerAttackRelease) return false;
 
     try {
       applyVolume(this.melodySampler, volume);
-      this.melodySampler.triggerAttackRelease(note, MELODY_SAMPLE_DURATION, time);
+      this.melodySampler.triggerAttackRelease(note, duration, time);
       return true;
     } catch {
       return false;
@@ -663,9 +661,13 @@ export default class AudioEngine {
           this.triggerChordEvent(event, time);
         }
         if (event.type === 'melody') {
+          const transportBpm = Number(transport?.bpm?.value) || DEFAULT_BPM;
+          const melodyDuration = Number.isInteger(event.durationSteps)
+            ? event.durationSteps * (60 / transportBpm / 4)
+            : event.duration;
           this.triggerMelodySampler(
             event.note,
-            event.duration,
+            melodyDuration,
             time,
             this.getTrackVolume(event.trackId ?? 'melody'),
           );
