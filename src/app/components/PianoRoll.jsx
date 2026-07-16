@@ -62,6 +62,7 @@ function PianoRollNoteKey({
 }
 
 function PianoRoll({
+  activeHighlightedStep = null,
   activeNoteIds = EMPTY_ACTIVE_NOTE_IDS,
   ariaLabel,
   autoRevealActiveNote = false,
@@ -139,6 +140,7 @@ function PianoRoll({
       ref={pianoRollRef}
       role="group"
       aria-label={ariaLabel}
+      data-rhythm-template={highlightedStepIds.size > 0 ? 'true' : undefined}
       data-track-id={trackId}
       style={{ '--piano-roll-total-rows': notes.length }}
       onBlurCapture={handleBlurCapture}
@@ -199,7 +201,28 @@ function PianoRoll({
               className={`beat-group piano-roll-beat-group ${trackId}-beat-group`}
               key={beatNumber}
             >
-              <div className="pitch-grid-head-spacer" aria-hidden="true" />
+              <div
+                className="pitch-grid-head-spacer rhythm-step-ruler"
+                aria-hidden="true"
+              >
+                {BEAT_NUMBERS.map((_stepNumber, colIndex) => {
+                  const step = beatIndex * 4 + colIndex;
+                  const rhythmHighlighted = highlightedStepIds.has(step);
+                  const activeRhythmStep = rhythmHighlighted && activeHighlightedStep === step;
+
+                  return (
+                    <span
+                      className={[
+                        'rhythm-step-marker',
+                        rhythmHighlighted ? 'highlighted' : '',
+                        activeRhythmStep ? 'next' : '',
+                      ].filter(Boolean).join(' ')}
+                      data-step={step}
+                      key={step}
+                    />
+                  );
+                })}
+              </div>
               <div
                 className="beat-cells-viewport"
                 ref={(viewport) => setBeatCellsViewportRef(beatIndex, viewport)}
@@ -226,6 +249,9 @@ function PianoRoll({
                             note.sharp ? 'sharp' : '',
                             highlighted ? 'scale-tone' : '',
                             rhythmHighlighted ? 'rhythm-column' : '',
+                            rhythmHighlighted && activeHighlightedStep === step
+                              ? 'rhythm-column-next'
+                              : '',
                             active ? 'active' : '',
                             noteStart ? 'note-start' : '',
                             sustained ? 'note-sustain' : '',

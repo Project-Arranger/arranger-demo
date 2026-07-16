@@ -5150,8 +5150,12 @@ button {
   --c-bass-ink: #11294c;
   --c-chord: #d7925e;
   --c-chord-ink: #4c1f10;
-  --c-melody: #d67bd6;
-  --c-melody-ink: #451443;
+  --c-melody: #b889c4;
+  --c-melody-ink: #33203e;
+  --melody-amethyst: #9870a8;
+  --melody-amethyst-light: #d9c5df;
+  --melody-plum: #49334f;
+  --melody-plum-deep: #211923;
   --c-pad: #a47ae4;
   --c-pad-ink: #2b184b;
   --c-vocal: #ef8f73;
@@ -7711,16 +7715,20 @@ body {
 
 .melody-note-key.scale-tone:not(.playing) {
   color: var(--c-melody-ink);
-  background: color-mix(in oklab, var(--c-melody) 42%, #f0d5ad);
-  border-color: color-mix(in oklab, var(--c-melody-ink) 44%, rgb(84 48 24 / 0.32));
+  background: color-mix(in oklab, var(--c-melody) 58%, #f0d5ad);
+  border-color: color-mix(in oklab, var(--c-melody-ink) 52%, rgb(84 48 24 / 0.32));
   box-shadow:
     inset 2px 0 0 var(--c-melody-ink),
-    inset 0 1px 0 rgb(255 255 255 / 0.42);
+    inset 0 1px 0 rgb(255 255 255 / 0.46),
+    inset 0 -1px 0 color-mix(in oklab, var(--c-melody-ink) 22%, transparent);
 }
 
 .melody-cell.scale-tone:not(.active):not(.previewing) {
-  background: color-mix(in oklab, var(--c-melody) 26%, #f0d5ad);
-  border-color: color-mix(in oklab, var(--c-melody-ink) 30%, rgb(72 38 17 / 0.26));
+  background: color-mix(in oklab, var(--c-melody) 44%, #f0d5ad);
+  border-color: color-mix(in oklab, var(--c-melody-ink) 40%, rgb(72 38 17 / 0.26));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.38),
+    inset 0 -1px 0 color-mix(in oklab, var(--c-melody-ink) 18%, transparent);
 }
 
 .bass-note-key {
@@ -10614,39 +10622,129 @@ body {
   align-items: center;
   justify-content: center;
   min-width: 78px;
-  height: 34px;
-  gap: 7px;
-  padding: 0 12px;
-  color: #f0d8b4;
-  background:
-    linear-gradient(180deg, rgb(255 231 192 / 0.15), rgb(25 12 7 / 0.38)),
-    #3c281c;
-  border: 1px solid rgb(255 219 157 / 0.28);
-  border-radius: 9px;
-  font-size: 11px;
-  font-weight: 850;
-}
-
-.melody-record-button svg {
-  width: 13px;
-  height: 13px;
-  color: #d45d51;
-  fill: currentColor;
 }
 
 .melody-record-button.recording {
-  color: #fff1d8;
-  background:
-    linear-gradient(180deg, rgb(255 235 198 / 0.2), rgb(52 10 8 / 0.38)),
-    #8c302c;
-  border-color: rgb(255 190 158 / 0.7);
-  box-shadow: 0 0 14px rgb(214 67 54 / 0.28);
+  box-shadow:
+    inset 0 3px 8px rgb(0 0 0 / 0.46),
+    inset 0 1px 0 rgb(255 246 218 / 0.08),
+    0 1px 2px rgb(0 0 0 / 0.28);
+  transform: translateY(1px);
 }
 
-.melody-cell.rhythm-column:not(.active):not(.previewing) {
+.melody-seq-body .rhythm-step-ruler {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: center;
+  gap: var(--piano-roll-row-gap);
+  box-sizing: border-box;
+  padding: 1px var(--piano-roll-row-padding) 2px;
+}
+
+.melody-seq-body .rhythm-step-marker {
+  position: relative;
+  height: 15px;
+}
+
+.melody-seq-body .rhythm-step-marker.highlighted::before {
+  position: absolute;
+  top: 1px;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  background: linear-gradient(145deg, #ddc5e3 0 24%, var(--melody-amethyst) 52%, #694774 100%);
+  border: 1px solid rgb(64 38 71 / 0.82);
+  border-radius: 50% 50% 50% 2px;
   box-shadow:
-    inset 0 0 0 2px color-mix(in oklab, var(--c-melody-ink) 44%, transparent),
-    inset 0 1px 0 rgb(255 255 255 / 0.32);
+    inset 1px 1px 0 rgb(255 247 255 / 0.48),
+    0 2px 4px rgb(45 26 50 / 0.34);
+  content: "";
+  transform: translateX(-50%) rotate(-45deg);
+}
+
+.melody-seq-body .rhythm-step-marker.highlighted::after {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  width: 2px;
+  height: 5px;
+  background: rgb(104 69 115 / 0.76);
+  border-radius: 999px;
+  content: "";
+  transform: translateX(-50%);
+}
+
+.melody-cell.rhythm-column::before {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 50%;
+  width: 2px;
+  z-index: 1;
+  background: repeating-linear-gradient(
+    180deg,
+    rgb(98 63 109 / 0.62) 0 3px,
+    transparent 3px 6px
+  );
+  border-radius: 999px;
+  content: "";
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.melody-cell.rhythm-column.active::before,
+.melody-cell.rhythm-column.previewing::before {
+  background: repeating-linear-gradient(
+    180deg,
+    rgb(248 231 251 / 0.82) 0 3px,
+    transparent 3px 6px
+  );
+}
+
+.melody-seq-body .rhythm-step-marker.next::before {
+  animation: melody-rhythm-target-pulse 820ms ease-in-out infinite;
+}
+
+.melody-cell.rhythm-column-next:not(.active):not(.previewing)::before {
+  animation: melody-rhythm-guide-pulse 820ms ease-in-out infinite;
+}
+
+@keyframes melody-rhythm-target-pulse {
+  0%,
+  100% {
+    filter: brightness(1);
+    transform: translateX(-50%) rotate(-45deg) scale(1);
+  }
+
+  50% {
+    filter: brightness(1.24);
+    transform: translateX(-50%) rotate(-45deg) scale(1.16);
+  }
+}
+
+@keyframes melody-rhythm-guide-pulse {
+  0%,
+  100% {
+    opacity: 0.62;
+  }
+
+  50% {
+    opacity: 1;
+    filter: brightness(1.32);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .melody-seq-body .rhythm-step-marker.next::before {
+    animation: none;
+    filter: brightness(1.18);
+  }
+
+  .melody-cell.rhythm-column-next:not(.active):not(.previewing)::before {
+    animation: none;
+    opacity: 1;
+    filter: brightness(1.24);
+  }
 }
 
 .melody-cell.note-sustain {
@@ -10692,107 +10790,39 @@ body {
 }
 
 .melody-rhythm-workspace {
-  position: absolute;
   inset: 54px 0 0;
-  z-index: 20;
-  padding: 16px clamp(16px, 1.7vw, 24px) 20px;
-  background:
-    linear-gradient(180deg, rgb(69 37 17 / 0.12), rgb(24 12 6 / 0.24)),
-    var(--asset-wood) center / cover,
-    #714c2f;
-}
-
-.melody-rhythm-workspace-panel {
-  display: grid;
-  grid-template-rows: 46px minmax(0, 1fr) 54px;
-  height: 100%;
-  overflow: hidden;
-  background:
-    linear-gradient(180deg, rgb(255 225 174 / 0.04), rgb(0 0 0 / 0.2)),
-    var(--asset-grid-panel) center / cover,
-    #1b130e;
-  border: 1px solid rgb(255 221 160 / 0.28);
-  border-radius: 12px;
-  box-shadow:
-    inset 0 1px 0 rgb(255 244 214 / 0.12),
-    0 5px 14px rgb(0 0 0 / 0.32);
+  display: block;
+  box-sizing: border-box;
 }
 
 .melody-rhythm-workspace-body {
-  display: grid;
-  grid-template-columns: 178px minmax(0, 1fr);
-  gap: 24px;
-  min-height: 0;
-  padding: 16px 20px 14px;
+  grid-template-rows: minmax(0, 1fr) auto;
 }
 
 .melody-rhythm-options {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   align-content: center;
-  gap: 12px;
-  min-width: 0;
+  align-items: stretch;
 }
 
-.melody-rhythm-card {
-  display: grid;
-  gap: 12px;
-  min-width: 0;
-  min-height: 104px;
-  padding: 14px;
-  color: #b9936a;
+.melody-rhythm-options .chord-template-mini-beat-group > span.on {
   background:
-    linear-gradient(180deg, rgb(255 225 176 / 0.11), rgb(10 6 4 / 0.42)),
-    #28180f;
-  border: 1px solid rgb(255 219 157 / 0.24);
-  border-radius: 10px;
-  text-align: left;
+    linear-gradient(180deg, rgb(245 232 248 / 0.72), rgb(117 77 130 / 0.78)),
+    var(--melody-amethyst);
+  border-color: rgb(230 207 236 / 0.5);
+  box-shadow:
+    inset 0 1px 0 rgb(255 249 255 / 0.54),
+    inset 0 -4px 6px rgb(42 22 48 / 0.22),
+    0 0 5px rgb(127 84 139 / 0.22);
 }
 
-.melody-rhythm-card strong {
-  color: #f4d6aa;
-  font-family: Georgia, "Times New Roman", "Songti SC", serif;
-  font-size: 15px;
+.melody-rhythm-workspace-label > p {
+  max-width: 156px;
+  margin: 18px 0 0;
+  font-size: 9px;
+  line-height: 1.55;
 }
 
-.melody-rhythm-card.selected {
-  background:
-    linear-gradient(180deg, rgb(255 226 181 / 0.2), rgb(15 8 4 / 0.42)),
-    #5c4436;
-  border-color: rgb(255 220 153 / 0.82);
-  box-shadow: 0 0 0 2px rgb(229 154 69 / 0.26);
-}
-
-.melody-rhythm-mini-grid {
-  display: grid;
-  grid-template-columns: repeat(16, minmax(0, 1fr));
-  gap: 2px;
-}
-
-.melody-rhythm-mini-grid > span {
-  height: 22px;
-  background: rgb(255 231 190 / 0.08);
-  border: 1px solid rgb(255 225 175 / 0.12);
-  border-radius: 2px;
-}
-
-.melody-rhythm-mini-grid > span.hit {
-  background: var(--c-melody);
-  border-color: color-mix(in oklab, var(--c-melody-ink) 50%, transparent);
-  box-shadow: 0 0 6px color-mix(in oklab, var(--c-melody) 46%, transparent);
-}
-
-.melody-rhythm-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 8px 18px;
-  background: rgb(9 6 4 / 0.36);
-  border-top: 1px solid rgb(255 221 160 / 0.18);
-}
-
-.melody-rhythm-actions button,
 .melody-record-confirm-dialog button {
   min-width: 126px;
   height: 34px;
@@ -10804,7 +10834,6 @@ body {
   font-weight: 850;
 }
 
-.melody-rhythm-actions button.primary,
 .melody-record-confirm-dialog button.primary {
   color: #29170c;
   background:
@@ -10865,6 +10894,10 @@ body {
   .melody-rhythm-workspace-body {
     grid-template-columns: 1fr;
     gap: 10px;
+  }
+
+  .melody-rhythm-workspace-body > [aria-hidden="true"] {
+    display: none;
   }
 
   .melody-rhythm-options {
