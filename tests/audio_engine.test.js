@@ -108,6 +108,13 @@ function createChordSamplerFactory(calls) {
 
 function createSamplerFactory(calls) {
   return (urls) => ({
+    releaseAll: (time) => calls.push(['sampler.releaseAll', time, urls]),
+    triggerAttack: (note, time) => calls.push([
+      'sampler.triggerAttack',
+      note,
+      time,
+      urls,
+    ]),
     triggerAttackRelease: (note, duration, time) => calls.push([
       'sampler.triggerAttackRelease',
       note,
@@ -123,6 +130,15 @@ function createVolumeAwareSamplerFactory(calls) {
   return (urls) => {
     const sampler = {
       volume: { value: 0 },
+      triggerAttack(note, time) {
+        calls.push([
+          'sampler.triggerAttack',
+          note,
+          time,
+          sampler.volume.value,
+          urls,
+        ]);
+      },
       triggerAttackRelease(note, duration, time) {
         calls.push([
           'sampler.triggerAttackRelease',
@@ -375,7 +391,7 @@ test('AudioEngine falls back to chord synth when chord sampler is unavailable', 
   ]);
 });
 
-test('AudioEngine starts audio and triggers melody sampler notes using UI note pitch', async () => {
+test('AudioEngine starts audio and triggers complete Melody one-shots using UI note pitch', async () => {
   const tone = createFakeTone();
   const engine = new AudioEngine({
     tone,
@@ -386,15 +402,180 @@ test('AudioEngine starts audio and triggers melody sampler notes using UI note p
   assert.equal(await engine.startAudio(), AUDIO_STATUSES.READY);
   assert.equal(await engine.triggerMelodyNote('G5', '16n'), true);
 
-  assert.deepEqual(tone.calls.filter(([name]) => name.startsWith('sampler.')), [
-    ['sampler.toDestination'],
+  assert.deepEqual(tone.calls.filter(([name]) => name === 'sampler.triggerAttack'), [
     [
-      'sampler.triggerAttackRelease',
+      'sampler.triggerAttack',
       'G5',
-      '16n',
       12.5,
       createMelodySampleUrls(),
     ],
+  ]);
+});
+
+test('AudioEngine plays every Matrix Melody duration as overlapping one-shots', async () => {
+  const tone = createFakeTone();
+  const matrix = createInitialMatrix();
+  matrix.melody[0][0] = { type: 'melody', note: 'C4' };
+  matrix.melody[0][1] = { type: 'melody', note: 'C4', durationSteps: 1 };
+  matrix.melody[0][2] = { type: 'melody', note: 'C4', durationSteps: 2 };
+  const gatedSampler = {
+    releaseAll: (time) => tone.calls.push(['gated.releaseAll', time]),
+    toDestination: () => gatedSampler,
+    triggerAttackRelease: (note, duration, time) => (
+      tone.calls.push(['gated.triggerAttackRelease', note, duration, time])
+    ),
+  };
+  const oneShotSampler = {
+    releaseAll: (time) => tone.calls.push(['oneShot.releaseAll', time]),
+    toDestination: () => oneShotSampler,
+    triggerAttack: (note, time) => tone.calls.push(['oneShot.triggerAttack', note, time]),
+  };
+  const engine = new AudioEngine({
+    tone,
+    matrixSource: matrix,
+    melodyOneShotSamplerFactory: () => oneShotSampler,
+    playerFactory: createPlayerFactory(tone.calls),
+    samplerFactory: () => gatedSampler,
+  });
+
+  await engine.play({ bpm: 120 });
+  tone.Transport.scheduledCallback(24);
+  tone.Transport.scheduledCallback(24.125);
+  tone.Transport.scheduledCallback(24.25);
+
+  assert.deepEqual(tone.calls.filter(([name]) => name.includes('.trigger')), [
+    ['oneShot.triggerAttack', 'C4', 24],
+    ['oneShot.triggerAttack', 'C4', 24.125],
+    ['oneShot.triggerAttack', 'C4', 24.25],
+  ]);
+
+  await engine.pause();
+  assert.equal(tone.calls.some(([name]) => name.endsWith('.releaseAll')), false);
+
+  await engine.stop();
+  assert.deepEqual(tone.calls.filter(([name]) => name.endsWith('.releaseAll')), [
+    ['gated.releaseAll', 12.5],
+    ['oneShot.releaseAll', 12.5],
+  ]);
+});
+
+test('AudioEngine leaves Melody input one-shots alone on Note Off and releases them on Stop', async () => {
+  const tone = createFakeTone();
+  const matrixSampler = {
+    releaseAll: (time) => tone.calls.push(['matrix.releaseAll', time]),
+    toDestination: () => matrixSampler,
+    triggerAttackRelease: (note) => tone.calls.push(['matrix.triggerAttackRelease', note]),
+  };
+  const inputSampler = {
+    releaseAll: (time) => tone.calls.push(['input.releaseAll', time]),
+    toDestination: () => inputSampler,
+    triggerAttack: (note, time) => tone.calls.push(['input.triggerAttack', note, time]),
+  };
+  const oneShotSampler = {
+    releaseAll: (time) => tone.calls.push(['oneShot.releaseAll', time]),
+    toDestination: () => oneShotSampler,
+    triggerAttack: (note, time) => tone.calls.push(['oneShot.triggerAttack', note, time]),
+  };
+  const engine = new AudioEngine({
+    tone,
+    melodyOneShotSamplerFactory: () => oneShotSampler,
+    playerFactory: createPlayerFactory(tone.calls),
+    melodyInputSamplerFactory: () => inputSampler,
+    samplerFactory: () => matrixSampler,
+  });
+
+  await engine.startAudio();
+  await engine.triggerMelodyInputNote('C4');
+  engine.releaseMelodyInputNote('C4');
+  engine.triggerMelodySampler('G4');
+
+  assert.deepEqual(tone.calls.filter(([name]) => name.startsWith('input.')), [
+    ['input.triggerAttack', 'C4', 12.5],
+  ]);
+  assert.deepEqual(tone.calls.filter(([name]) => name.startsWith('oneShot.')), [
+    ['oneShot.triggerAttack', 'G4', 12.5],
+  ]);
+
+  await engine.stop();
+  assert.deepEqual(tone.calls.filter(([name]) => name.endsWith('.releaseAll')), [
+    ['matrix.releaseAll', 12.5],
+    ['input.releaseAll', 12.5],
+    ['oneShot.releaseAll', 12.5],
+  ]);
+});
+
+test('AudioEngine lets free-audition input samples play as one-shots', async () => {
+  const tone = createFakeTone();
+  const inputSampler = {
+    releaseAll: (time) => tone.calls.push(['input.releaseAll', time]),
+    toDestination: () => inputSampler,
+    triggerAttack: (note, time) => tone.calls.push(['input.triggerAttack', note, time]),
+  };
+  const engine = new AudioEngine({
+    tone,
+    melodyInputSamplerFactory: () => inputSampler,
+    playerFactory: createPlayerFactory(tone.calls),
+    samplerFactory: createSamplerFactory(tone.calls),
+  });
+
+  assert.equal(await engine.triggerMelodyInputOneShot('E4'), true);
+  assert.deepEqual(tone.calls.filter(([name]) => name.startsWith('input.')), [
+    ['input.triggerAttack', 'E4', 12.5],
+  ]);
+
+  engine.releaseAllMelodyInputNotes();
+  assert.deepEqual(tone.calls.filter(([name]) => name.startsWith('input.')), [
+    ['input.triggerAttack', 'E4', 12.5],
+    ['input.releaseAll', 12.5],
+  ]);
+});
+
+test('AudioEngine cancels pending free-audition attacks when input voices are cleared', async () => {
+  const tone = createFakeTone();
+  const inputSampler = {
+    toDestination: () => inputSampler,
+    triggerAttack: (note, time) => tone.calls.push(['input.triggerAttack', note, time]),
+  };
+  const engine = new AudioEngine({
+    tone,
+    melodyInputSamplerFactory: () => inputSampler,
+    playerFactory: createPlayerFactory(tone.calls),
+    samplerFactory: createSamplerFactory(tone.calls),
+  });
+  let finishAudioStart;
+  engine.startAudio = () => new Promise((resolve) => {
+    finishAudioStart = resolve;
+  });
+
+  const pendingAttack = engine.triggerMelodyInputOneShot('G4');
+  engine.releaseAllMelodyInputNotes();
+  finishAudioStart(AUDIO_STATUSES.READY);
+
+  assert.equal(await pendingAttack, false);
+  assert.deepEqual(tone.calls.filter(([name]) => name.startsWith('input.')), []);
+});
+
+test('AudioEngine previews Melody sequences as timed input one-shots', async () => {
+  const tone = createFakeTone();
+  const inputSampler = {
+    toDestination: () => inputSampler,
+    triggerAttack: (note, time) => tone.calls.push(['input.triggerAttack', note, time]),
+  };
+  const engine = new AudioEngine({
+    tone,
+    melodyInputSamplerFactory: () => inputSampler,
+    playerFactory: createPlayerFactory(tone.calls),
+    samplerFactory: createSamplerFactory(tone.calls),
+  });
+
+  assert.deepEqual(await engine.previewMelodySequence(
+    ['C4', 'E4', 'G4'],
+    { duration: '32n', intervalSeconds: 0.2 },
+  ), [true, true, true]);
+  assert.deepEqual(tone.calls.filter(([name]) => name.startsWith('input.')), [
+    ['input.triggerAttack', 'C4', 12.5],
+    ['input.triggerAttack', 'E4', 12.7],
+    ['input.triggerAttack', 'G4', 12.9],
   ]);
 });
 
@@ -438,7 +619,7 @@ test('AudioEngine starts audio and triggers transposed bass sampler notes from a
   ]);
 });
 
-test('AudioEngine schedules melody preview after audio startup completes', async () => {
+test('AudioEngine schedules Melody one-shot preview after audio startup completes', async () => {
   let now = 7;
   const tone = createFakeTone();
   tone.now = () => now;
@@ -454,18 +635,17 @@ test('AudioEngine schedules melody preview after audio startup completes', async
 
   assert.equal(await engine.triggerMelodyNote('C4', '16n'), true);
 
-  assert.deepEqual(tone.calls.filter(([name]) => name === 'sampler.triggerAttackRelease'), [
+  assert.deepEqual(tone.calls.filter(([name]) => name === 'sampler.triggerAttack'), [
     [
-      'sampler.triggerAttackRelease',
+      'sampler.triggerAttack',
       'C4',
-      '16n',
       8,
       createMelodySampleUrls(),
     ],
   ]);
 });
 
-test('AudioEngine respects explicit melody preview times', async () => {
+test('AudioEngine respects explicit Melody one-shot preview times', async () => {
   let now = 7;
   const tone = createFakeTone();
   tone.now = () => now;
@@ -481,11 +661,10 @@ test('AudioEngine respects explicit melody preview times', async () => {
 
   assert.equal(await engine.triggerMelodyNote('C4', '16n', 12), true);
 
-  assert.deepEqual(tone.calls.filter(([name]) => name === 'sampler.triggerAttackRelease'), [
+  assert.deepEqual(tone.calls.filter(([name]) => name === 'sampler.triggerAttack'), [
     [
-      'sampler.triggerAttackRelease',
+      'sampler.triggerAttack',
       'C4',
-      '16n',
       12,
       createMelodySampleUrls(),
     ],
@@ -641,6 +820,7 @@ test('AudioEngine matrix playback triggers drums bass chord and melody events', 
   assert.deepEqual(tone.calls.filter(([name]) => (
     name === 'player.start'
     || name === 'chordSampler.triggerAttackRelease'
+    || name === 'sampler.triggerAttack'
     || name === 'sampler.triggerAttackRelease'
   )), [
     ['player.start', 'kick', versioned('/samples/Drums/Kick_v0.22.wav'), 24],
@@ -652,13 +832,7 @@ test('AudioEngine matrix playback triggers drums bass chord and melody events', 
       createBassSampleUrls(),
     ],
     ['chordSampler.triggerAttackRelease', ['C4', 'E4', 'G4'], '2s', 24, createChordSampleUrls()],
-    [
-      'sampler.triggerAttackRelease',
-      'G4',
-      0.5,
-      24,
-      createMelodySampleUrls(),
-    ],
+    ['sampler.triggerAttack', 'G4', 24, createMelodySampleUrls()],
   ]);
 });
 
@@ -707,6 +881,7 @@ test('AudioEngine applies current track volumes to matrix playback events', asyn
   assert.deepEqual(tone.calls.filter(([name]) => (
     name === 'player.start'
     || name === 'chordSampler.triggerAttackRelease'
+    || name === 'sampler.triggerAttack'
     || name === 'sampler.triggerAttackRelease'
   )), [
     ['player.start', 'kick', versioned('/samples/Drums/Kick_v0.22.wav'), 24, -18],
@@ -720,9 +895,8 @@ test('AudioEngine applies current track volumes to matrix playback events', asyn
     ],
     ['chordSampler.triggerAttackRelease', ['C4', 'E4', 'G4'], '2s', 24, -9, createChordSampleUrls()],
     [
-      'sampler.triggerAttackRelease',
+      'sampler.triggerAttack',
       'A4',
-      '16n',
       24,
       -4,
       createMelodySampleUrls(),

@@ -10,12 +10,18 @@ import {
   MELODY_RHYTHM_TEMPLATES,
 } from '../src/app/melodyRhythmTemplates.js';
 import {
+  appendMelodySequenceNote,
+  captureMelodySequenceNote,
+  createTemplateRecordingState,
   getMelodyRecordingMode,
+  getMelodyRecordingRestState,
   getRecordedMelodyDurationSteps,
   hasMelodyBarNotes,
   MELODY_RECORDING_MODES,
+  MELODY_RECORDING_PHASES,
   recordTemplateMelodyNote,
 } from '../src/app/useMelodyRecordingController.js';
+import { replaceMelodyBarWithSequence } from '../src/app/melodyActions.js';
 import createInitialMatrix from '../src/store/createInitialMatrix.js';
 
 function createClips() {
@@ -131,4 +137,108 @@ test('free recording helpers quantize duration and choose mode from clip templat
   assert.equal(hasMelodyBarNotes(matrix, 0), false);
   matrix.melody[0][4] = { type: 'melody', note: 'C4' };
   assert.equal(hasMelodyBarNotes(matrix, 0), true);
+});
+
+test('template workflow exposes overview, audition, step-edit, and capture state', () => {
+  const templateClip = {
+    id: 'melody-bar-0',
+    trackId: 'melody',
+    melodyRhythmTemplateId: 'syncopation',
+  };
+  assert.equal(getMelodyRecordingRestState({
+    activeTrackId: 'melody',
+    selectedClip: templateClip,
+  }).phase, MELODY_RECORDING_PHASES.OVERVIEW);
+  assert.equal(getMelodyRecordingRestState({
+    activeTrackId: 'drums',
+    selectedClip: templateClip,
+  }).phase, MELODY_RECORDING_PHASES.IDLE);
+  assert.deepEqual(
+    createTemplateRecordingState('syncopation', MELODY_RECORDING_PHASES.SEQUENCE_CAPTURE),
+    {
+      countInBeat: null,
+      mode: MELODY_RECORDING_MODES.TEMPLATE,
+      phase: MELODY_RECORDING_PHASES.SEQUENCE_CAPTURE,
+      recordedNotes: 0,
+      selectedStep: null,
+      sequenceNotes: [],
+      totalNotes: 3,
+    },
+  );
+  assert.equal(MELODY_RECORDING_PHASES.PREVIEW, undefined);
+});
+
+test('sequence capture keeps the matrix unchanged until one atomic bar replacement', () => {
+  const matrix = createInitialMatrix();
+  matrix.melody[0][3] = { type: 'melody', note: 'A4', durationSteps: 4 };
+  const originalBar = matrix.melody[0];
+
+  const incomplete = replaceMelodyBarWithSequence(
+    matrix,
+    0,
+    [0, 6, 12],
+    ['C4', 'D4'],
+  );
+  assert.equal(incomplete, matrix);
+  assert.equal(incomplete.melody[0], originalBar);
+
+  const complete = replaceMelodyBarWithSequence(
+    matrix,
+    0,
+    [0, 6, 12],
+    ['C4', 'D4', 'E4'],
+  );
+  assert.notEqual(complete, matrix);
+  assert.deepEqual(
+    complete.melody[0]
+      .map((cell, step) => cell ? [step, cell] : null)
+      .filter(Boolean),
+    [
+      [0, { type: 'melody', note: 'C4' }],
+      [6, { type: 'melody', note: 'D4' }],
+      [12, { type: 'melody', note: 'E4' }],
+    ],
+  );
+  assert.deepEqual(matrix.melody[0][3], {
+    type: 'melody',
+    note: 'A4',
+    durationSteps: 4,
+  });
+});
+
+test('sequence capture accepts overlapping new presses and keeps duplicates', () => {
+  const first = appendMelodySequenceNote([], 'C4', 3);
+  assert.deepEqual(first, {
+    accepted: true,
+    complete: false,
+    sequenceNotes: ['C4'],
+  });
+  const duplicate = appendMelodySequenceNote(first.sequenceNotes, 'C4', 3);
+  assert.deepEqual(duplicate.sequenceNotes, ['C4', 'C4']);
+  assert.equal(appendMelodySequenceNote(duplicate.sequenceNotes, 'G4', 3).complete, true);
+});
+
+test('sequence capture session records four rapid events synchronously and commits once', () => {
+  const session = {
+    completed: false,
+    sequenceNotes: [],
+    templateSteps: [0, 4, 8, 12],
+  };
+
+  const results = ['C4', 'E4', 'G4', 'C5']
+    .map((note) => captureMelodySequenceNote(session, note));
+
+  assert.deepEqual(results.map(({ accepted, complete }) => ({ accepted, complete })), [
+    { accepted: true, complete: false },
+    { accepted: true, complete: false },
+    { accepted: true, complete: false },
+    { accepted: true, complete: true },
+  ]);
+  assert.deepEqual(session.sequenceNotes, ['C4', 'E4', 'G4', 'C5']);
+  assert.equal(session.completed, true);
+  assert.deepEqual(captureMelodySequenceNote(session, 'D5'), {
+    accepted: false,
+    complete: false,
+    sequenceNotes: ['C4', 'E4', 'G4', 'C5'],
+  });
 });

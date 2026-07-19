@@ -103,6 +103,23 @@ function clearMelodyBar(matrix, bar) {
   return nextMatrix;
 }
 
+function replaceMelodyBarWithSequence(matrix, bar, steps, notes) {
+  if (!matrix?.melody?.[bar] || !Array.isArray(steps) || !Array.isArray(notes)) {
+    return matrix;
+  }
+  if (steps.length === 0 || steps.length !== notes.length) return matrix;
+  if (steps.some((step) => (
+    !Number.isInteger(step) || step < 0 || step >= STEPS_PER_BAR
+  ))) return matrix;
+  if (notes.some((note) => !isValidMelodyNote(note))) return matrix;
+
+  let nextMatrix = clearMelodyBar(matrix, bar);
+  steps.forEach((step, index) => {
+    nextMatrix = setMelodyCell(nextMatrix, bar, step, notes[index], 1);
+  });
+  return nextMatrix;
+}
+
 export {
   clearMelodyBar,
   createMelodyCell,
@@ -111,6 +128,7 @@ export {
   isMelodyCellActive,
   isValidMelodyNote,
   normalizeMelodyDurationSteps,
+  replaceMelodyBarWithSequence,
   setMelodyCell,
   setMelodyCellDuration,
   toggleMelodyCell,

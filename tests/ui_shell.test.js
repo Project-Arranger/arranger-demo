@@ -830,8 +830,15 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(css, /\.melody-cell\.rhythm-column::before/);
   assert.match(css, /@keyframes melody-rhythm-guide-pulse/);
   assert.match(css, /@keyframes melody-rhythm-target-pulse/);
-  assert.match(melodyEditorSource, /清空并写入/);
+  assert.match(melodyEditorSource, /开始顺序写入/);
+  assert.match(melodyEditorSource, /原旋律会保留到全部音符收集完成/);
+  assert.match(melodyEditorSource, /自由试奏/);
+  assert.match(melodyEditorSource, /aria-pressed=\{auditionActive\}/);
+  assert.match(melodyEditorSource, /onClick=\{onMelodyAuditionToggle\}/);
+  assert.match(melodyEditorSource, /onClick=\{onMelodyWriteToggle\}/);
+  assert.match(melodyEditorSource, /已收集/);
   assert.match(melodyEditorSource, /开始旋律写入/);
+  assert.doesNotMatch(melodyEditorSource, /MELODY_RECORDING_PHASES\.PREVIEW|试听中 · 当前小节播放一次/);
   assert.doesNotMatch(melodyEditorSource, /renderIcon\(Circle\)|录制中|MELODY RECORD/);
   assert.match(melodyEditorSource, /melody-example-keys/);
   assert.match(melodyEditorSource, /data-tutorial-role=\{exampleKeysRole/);

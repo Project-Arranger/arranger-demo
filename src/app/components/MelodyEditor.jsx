@@ -112,7 +112,8 @@ function MelodyEditor({
   onMelodyNoteOn = () => {},
   onMelodyRecordCancel = () => {},
   onMelodyRecordConfirm = () => {},
-  onMelodyRecordToggle = () => {},
+  onMelodyAuditionToggle = () => {},
+  onMelodyWriteToggle = () => {},
   onMelodyRhythmTemplateApply = () => {},
   onMelodyScaleChange = () => {},
   onMelodyStepToggle = () => {},
@@ -140,9 +141,42 @@ function MelodyEditor({
   const recordingPhase = melodyRecordingState?.phase ?? MELODY_RECORDING_PHASES.IDLE;
   const recordingActive = recordingPhase === MELODY_RECORDING_PHASES.COUNT_IN
     || recordingPhase === MELODY_RECORDING_PHASES.RECORDING;
-  const activeRhythmRecordingStep = recordingPhase === MELODY_RECORDING_PHASES.RECORDING
-    ? activeRhythmTemplate?.steps[melodyRecordingState?.recordedNotes] ?? null
-    : null;
+  const sequenceCaptureActive = recordingPhase === MELODY_RECORDING_PHASES.SEQUENCE_CAPTURE;
+  const recordButtonActive = recordingActive || sequenceCaptureActive;
+  const scaleChangeLocked = recordingActive || [
+    MELODY_RECORDING_PHASES.CONFIRM,
+    MELODY_RECORDING_PHASES.SEQUENCE_CAPTURE,
+  ].includes(recordingPhase);
+  const workflowLocked = recordingActive
+    || scaleChangeLocked
+    || sequenceCaptureActive;
+  const activeRhythmRecordingStep = recordingPhase === MELODY_RECORDING_PHASES.STEP_EDIT
+    ? melodyRecordingState?.selectedStep ?? null
+    : sequenceCaptureActive
+      ? activeRhythmTemplate?.steps[melodyRecordingState?.recordedNotes] ?? null
+      : null;
+  const auditionActive = recordingPhase === MELODY_RECORDING_PHASES.AUDITION;
+  const auditionAvailable = Boolean(activeRhythmTemplate) && [
+    MELODY_RECORDING_PHASES.AUDITION,
+    MELODY_RECORDING_PHASES.OVERVIEW,
+  ].includes(recordingPhase);
+  const melodyInputStatus = (() => {
+    if (!activeRhythmTemplate) return null;
+    if (recordingPhase === MELODY_RECORDING_PHASES.AUDITION) {
+      return '自由试奏 · 写入可直接开始顺序收集音符';
+    }
+    if (recordingPhase === MELODY_RECORDING_PHASES.STEP_EDIT) {
+      return `Step ${(melodyRecordingState?.selectedStep ?? 0) + 1} · 请选择音高`;
+    }
+    if (sequenceCaptureActive) {
+      return `已收集 ${melodyRecordingState?.recordedNotes ?? 0}/${melodyRecordingState?.totalNotes ?? 0}`;
+    }
+    if (recordingPhase === MELODY_RECORDING_PHASES.CONFIRM) return '确认重写 · 原旋律仍然保留';
+    if (recordingPhase === MELODY_RECORDING_PHASES.OVERVIEW) {
+      return '选择高亮 Step 手动编辑，或按写入开始顺序收集';
+    }
+    return null;
+  })();
   const activeScaleNoteIds = useMemo(
     () => new Set(getMelodyScaleNoteIds(melodyScaleId)),
     [melodyScaleId],
@@ -221,7 +255,7 @@ function MelodyEditor({
             ].filter(Boolean).join(' ')}
             aria-label="选择旋律律动"
             type="button"
-            disabled={tutorialLocked || recordingActive}
+            disabled={tutorialLocked || workflowLocked}
             onClick={() => {
               setSelectedRhythmTemplateId(melodyRhythmTemplateId);
               setPickerMode('rhythm');
@@ -236,10 +270,10 @@ function MelodyEditor({
               scaleButtonRole === 'target' ? 'tutorial-control-target' : '',
             ].filter(Boolean).join(' ')}
             aria-label="选择音阶"
-            aria-disabled={scaleButtonDisabled}
+            aria-disabled={scaleButtonDisabled || scaleChangeLocked}
             data-tutorial-role={scaleButtonRole ?? undefined}
             type="button"
-            disabled={scaleButtonDisabled}
+            disabled={scaleButtonDisabled || scaleChangeLocked}
             onClick={() => setPickerMode('scale')}
           >
             {renderIcon(ChevronUp)}
@@ -248,21 +282,36 @@ function MelodyEditor({
           <button
             className={[
               'btn-template',
-              'melody-record-button',
-              recordingActive ? 'recording' : '',
+              'melody-audition-button',
+              auditionActive ? 'active' : '',
             ].filter(Boolean).join(' ')}
-            aria-label={recordingActive ? '停止旋律写入' : '开始旋律写入'}
+            aria-pressed={auditionActive}
+            type="button"
+            disabled={tutorialLocked || !auditionAvailable}
+            onClick={onMelodyAuditionToggle}
+          >
+            {auditionActive ? '结束试奏' : '自由试奏'}
+          </button>
+          <button
+            className={[
+              'btn-template',
+              'melody-record-button',
+              recordButtonActive ? 'recording' : '',
+            ].filter(Boolean).join(' ')}
+            aria-label={recordButtonActive ? '控制旋律写入' : '开始旋律写入'}
             type="button"
             disabled={tutorialLocked}
-            onClick={onMelodyRecordToggle}
+            onClick={onMelodyWriteToggle}
           >
             {recordingPhase === MELODY_RECORDING_PHASES.COUNT_IN
               ? `预拍 ${melodyRecordingState.countInBeat}`
               : recordingPhase === MELODY_RECORDING_PHASES.RECORDING
-                ? activeRhythmTemplate
-                  ? `写入 ${melodyRecordingState.recordedNotes}/${melodyRecordingState.totalNotes}`
-                  : '写入中'
-                : '写入'}
+                ? '写入中'
+                : recordingPhase === MELODY_RECORDING_PHASES.SEQUENCE_CAPTURE
+                    ? `取消 ${melodyRecordingState.recordedNotes}/${melodyRecordingState.totalNotes}`
+                    : recordingPhase === MELODY_RECORDING_PHASES.CONFIRM
+                      ? '确认重写'
+                      : '写入'}
           </button>
           <button className="btn-template drum-clear-action" type="button" disabled={tutorialLocked} onClick={onClearMelodyBar}>
             清空本小节
@@ -340,6 +389,12 @@ function MelodyEditor({
             })}
           </div>
         </div>
+
+        {melodyInputStatus ? (
+          <div className="melody-template-input-status" role="status" aria-live="polite">
+            {melodyInputStatus}
+          </div>
+        ) : null}
 
         {exampleKeysTarget ? (
           <div
@@ -593,12 +648,12 @@ function MelodyEditor({
             aria-labelledby="melodyRecordConfirmTitle"
           >
             <span>MELODY WRITE</span>
-            <h2 id="melodyRecordConfirmTitle">本次写入会清空当前小节</h2>
-            <p>确认后会删除当前 Melody 音符，但保留已经应用的律动模板。</p>
+            <h2 id="melodyRecordConfirmTitle">确认按模板重写当前小节？</h2>
+            <p>原旋律会保留到全部音符收集完成；中途取消不会改变当前小节。</p>
             <div>
               <button type="button" onClick={onMelodyRecordCancel}>取消</button>
               <button className="primary" type="button" onClick={onMelodyRecordConfirm}>
-                清空并写入
+                开始顺序写入
               </button>
             </div>
           </section>

@@ -282,8 +282,9 @@ export default function App() {
 
   const handleStop = useCallback(() => {
     clearTutorialCountIn();
+    melodyRecording.stopRecording({ stopTransport: false });
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
-  }, [clearTutorialCountIn, dispatchAppCommand]);
+  }, [clearTutorialCountIn, dispatchAppCommand, melodyRecording]);
 
   const handleNewSong = useCallback(() => {
     withUndoCheckpoint(() => {
@@ -565,8 +566,9 @@ export default function App() {
   }, []);
 
   const handleCloseEditor = useCallback(() => {
+    melodyRecording.stopRecording();
     useMusicStore.getState().setSelectedClipId(null);
-  }, []);
+  }, [melodyRecording]);
 
   const handleRenameClip = useCallback((name) => {
     if (!selectedClipId) return;
@@ -1122,7 +1124,7 @@ export default function App() {
       const state = useMusicStore.getState();
       const nextMatrix = toggleMelodyCell(state.matrix, selectedBar, step, note);
       state.setCell('melody', selectedBar, step, nextMatrix.melody[selectedBar][step]);
-      void audioEngine.triggerMelodyNote(note, '16n');
+      void audioEngine.triggerMelodyInputOneShot(note);
     });
   }, [selectedBar, withUndoCheckpoint]);
 
@@ -1132,7 +1134,7 @@ export default function App() {
       return;
     }
 
-    void audioEngine.triggerMelodyNote(noteOrNotes, '16n');
+    void audioEngine.triggerMelodyInputOneShot(noteOrNotes);
   }, []);
 
   const handleMelodyScaleChange = useCallback((scaleId) => {
@@ -1147,7 +1149,7 @@ export default function App() {
       if (!tutorialAction.allowed) return;
     }
 
-    melodyRecording.stopRecording();
+    melodyRecording.clearActiveNotes();
     withUndoCheckpoint(() => {
       useMusicStore.getState().setMelodyScaleId(scaleId);
       if (tutorialAction) applyTutorialActionProgress(tutorialAction);
@@ -1163,7 +1165,7 @@ export default function App() {
   ]);
 
   const handleMelodyRhythmTemplateApply = useCallback((templateId, scope) => {
-    melodyRecording.stopRecording();
+    melodyRecording.clearActiveNotes();
     withUndoCheckpoint(() => {
       const state = useMusicStore.getState();
       const nextClips = scope === 'global'
@@ -1171,6 +1173,7 @@ export default function App() {
         : applyMelodyRhythmTemplateToBar(state.clips, selectedBar, templateId);
       if (nextClips !== state.clips) useMusicStore.setState({ clips: nextClips });
     });
+    melodyRecording.stopRecording({ stopTransport: false });
   }, [melodyRecording, selectedBar, withUndoCheckpoint]);
 
   const handleClearMelodyBar = useCallback(() => {
@@ -1559,7 +1562,8 @@ export default function App() {
           onMelodyNoteOn: melodyRecording.handleNoteOn,
           onMelodyRecordCancel: melodyRecording.cancelRecord,
           onMelodyRecordConfirm: melodyRecording.confirmRecord,
-          onMelodyRecordToggle: melodyRecording.requestRecordToggle,
+          onMelodyAuditionToggle: melodyRecording.toggleAudition,
+          onMelodyWriteToggle: melodyRecording.requestWriteToggle,
           onMelodyRhythmTemplateApply: handleMelodyRhythmTemplateApply,
           onMelodyScaleChange: handleMelodyScaleChange,
           onMelodyStepToggle: handleMelodyStepToggle,
