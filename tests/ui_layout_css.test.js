@@ -777,9 +777,10 @@ test('melody editor mirrors the reference keyboard strip and scale picker layout
   assert.match(css, /\.ks-letter\s*\{[^}]*background:\s*\n\s*linear-gradient\(180deg,\s*rgb\(67 48 36 \/ 0\.98\)/s);
   assert.match(css, /\.ks-note\s*\{[^}]*color:\s*#7a4a25;/s);
   assert.match(css, /\.ks-note \.oct\s*\{[^}]*color:\s*#a97948;/s);
-  assert.match(css, /\.ks-keys\s*\{[^}]*grid-template-columns:\s*repeat\(12,\s*minmax\(0,\s*1fr\)\);/s);
+  assert.match(css, /\.ks-keys\s*\{[^}]*grid-template-columns:\s*repeat\(8,\s*minmax\(0,\s*1fr\)\);/s);
   assert.match(css, /\.ks-key\.scale-tone:not\(\.playing\)\s*\{[^}]*border-color:\s*var\(--c-melody-ink\);/s);
   assert.match(css, /\.ks-key\.playing\s*\{[^}]*background:\s*var\(--c-melody\);/s);
+  assert.match(css, /\.ks-key\.disabled,[\s\S]*\.ks-key:disabled\s*\{[^}]*opacity:\s*0\.52;/s);
   assert.match(css, /\.piano-roll-grid\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(128px,\s*1fr\)\);/s);
   assert.match(css, /\.melody-seq-body\s*\{[^}]*--piano-roll-beat-gap:\s*0px;[^}]*--pitch-rail-head-height:\s*20px;/s);
   assert.match(css, /\.melody-seq-body\s*\{[^}]*--piano-roll-viewport-height:\s*clamp\(\s*220px,\s*calc\(var\(--app-editor-height\) - 215px\),\s*345px\s*\);/s);

@@ -167,8 +167,8 @@ test('createUiAudioDispatcher previews melody key presses without recording note
     },
   });
 
-  await dispatch({ type: 'melody.noteOn', note: 'C4' });
-  await dispatch({ type: 'melody.noteOff', note: 'C4' });
+  await dispatch({ type: 'melody.noteOn', inputId: 'keyboard:KeyA', note: 'C4', source: 'keyboard' });
+  await dispatch({ type: 'melody.noteOff', inputId: 'keyboard:KeyA', note: 'C4' });
 
   assert.equal(store.getState().matrix.melody[1][5], null);
   assert.deepEqual(store.calls, []);
@@ -190,7 +190,7 @@ test('createUiAudioDispatcher does not fall back to recording melody notes witho
     audio: {},
   });
 
-  await dispatch({ type: 'melody.noteOn', note: 'D4' });
+  await dispatch({ type: 'melody.noteOn', inputId: 'keyboard:KeyS', note: 'D4', source: 'keyboard' });
 
   assert.deepEqual(store.calls, []);
   assert.equal(store.getState().matrix.melody[0][3], null);

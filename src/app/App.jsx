@@ -747,12 +747,12 @@ export default function App() {
     }
 
     if (command?.type === APP_COMMAND_TYPES.MELODY_NOTE_ON) {
-      melodyRecording.handleNoteOn(command.note);
+      melodyRecording.handleNoteOn(command);
       return;
     }
 
     if (command?.type === APP_COMMAND_TYPES.MELODY_NOTE_OFF) {
-      melodyRecording.handleNoteOff(command.note);
+      melodyRecording.handleNoteOff(command);
       return;
     }
 
@@ -1538,6 +1538,7 @@ export default function App() {
           matrix,
           clips,
           melodyScaleId,
+          melodyActiveInputNotes: melodyRecording.activeInputNotes,
           melodyRecordingState: melodyRecording.recordingState,
           melodyRhythmTemplateId: selectedClip?.melodyRhythmTemplateId ?? null,
           selectedClipName: selectedClip?.name ?? '',

@@ -64,7 +64,7 @@ const COMMAND_GROUPS = Object.freeze({
  * @typedef {{ type: 'tutorial.next' } | { type: 'tutorial.completeTask' }} TutorialCommand
  * @typedef {{ type: 'drums.toggle', bar: number, step: number, instrument: 'kick' | 'snare' | 'hihat', previewInstruments?: Array<'kick' | 'snare' | 'hihat'> }} DrumsCommand
  * @typedef {{ type: 'chord.selectOption', optionIndex: number } | { type: 'chord.confirm' } | { type: 'chord.setCell', bar: number, span: number, root: string } | { type: 'chord.clearCell', bar: number, span: number }} ChordCommand
- * @typedef {{ type: 'melody.noteOn', note: string } | { type: 'melody.noteOff', note: string }} MelodyCommand
+ * @typedef {{ type: 'melody.noteOn', note: string, inputId: string, source: 'keyboard' | 'virtual' | 'launchpad' } | { type: 'melody.noteOff', inputId: string, note?: string }} MelodyCommand
  * @typedef {AppUiCommand | TransportCommand | ClipCommand | TutorialCommand | DrumsCommand | ChordCommand | MelodyCommand} AppCommand
  */
 

@@ -6,24 +6,25 @@ import {
 } from 'lucide-react';
 import {
   createElement,
-  useEffect,
   useMemo,
   useState,
 } from 'react';
-import { flushSync } from 'react-dom';
 import {
   formatMelodyNoteParts,
-  getMelodyKeyboardKey,
-  getMelodyKeyNote,
   getMelodyScale,
   getMelodyScaleNoteIds,
   getMelodyScalePreviewNotes,
   isMelodyScalePitchClass,
-  MELODY_KEY_SEQUENCE,
   MELODY_NOTES,
   MELODY_PITCH_CLASSES,
   MELODY_SCALES,
 } from '../../data/melodyScales.js';
+import {
+  getMelodyInputGrid,
+  getVirtualMelodyInputId,
+  isMelodyInputAreaVisible,
+  MELODY_INPUT_SOURCES,
+} from '../../input/melodyInputLayout.js';
 import {
   getMelodyCellRenderState,
   isMelodyCellActive,
@@ -42,9 +43,9 @@ import { PianoRoll } from './PianoRoll.jsx';
 import { TrackBarPager } from './TrackBarPager.jsx';
 
 const MELODY_EXAMPLE_DISPLAY_BY_TARGET = Object.freeze({
-  '1188008': '1188008',
-  '013553105310': '0135 5310 53 10',
-  '805803801010131': '805 803 801 0101 31',
+  AAFFGGF: 'AAFFGGF',
+  GASDDSAGDSAG: 'GASD DSAG DS AG',
+  FGDFGSFGAGAGASA: 'FGD FGS FGA GAGA SA',
 });
 
 const ICON_CLOSE_URL = `${import.meta.env.BASE_URL}assets/skeuo/icon-x.svg`;
@@ -69,33 +70,12 @@ function renderMelodyMiniGroove(template) {
   ));
 }
 
-function addSetValue(set, value) {
-  if (!value || set.has(value)) return set;
-  const nextSet = new Set(set);
-  nextSet.add(value);
-  return nextSet;
-}
-
-function deleteSetValue(set, value) {
-  if (!set.has(value)) return set;
-  const nextSet = new Set(set);
-  nextSet.delete(value);
-  return nextSet;
-}
-
-function isEditableKeyboardTarget(target) {
-  if (!target) return false;
-  if (target.isContentEditable) return true;
-
-  const tagName = typeof target.tagName === 'string' ? target.tagName.toLowerCase() : '';
-  return tagName === 'input' || tagName === 'textarea' || tagName === 'select';
-}
-
 function renderPlayGlyph() {
   return <span className="play-glyph" aria-hidden="true" />;
 }
 
 function MelodyEditor({
+  activeInputNotes = new Set(),
   canPageBars = false,
   clipName,
   matrix,
@@ -124,7 +104,6 @@ function MelodyEditor({
   tutorialTargets,
 }) {
   const [pickerMode, setPickerMode] = useState(null);
-  const [playingKeys, setPlayingKeys] = useState(() => new Set());
   const [selectedRhythmTemplateId, setSelectedRhythmTemplateId] = useState(
     melodyRhythmTemplateId,
   );
@@ -139,6 +118,10 @@ function MelodyEditor({
   const activeScale = getMelodyScale(melodyScaleId);
   const activeRhythmTemplate = getMelodyRhythmTemplate(melodyRhythmTemplateId);
   const recordingPhase = melodyRecordingState?.phase ?? MELODY_RECORDING_PHASES.IDLE;
+  const melodyInputVisible = isMelodyInputAreaVisible({
+    hasTemplate: Boolean(activeRhythmTemplate),
+    phase: recordingPhase,
+  });
   const recordingActive = recordingPhase === MELODY_RECORDING_PHASES.COUNT_IN
     || recordingPhase === MELODY_RECORDING_PHASES.RECORDING;
   const sequenceCaptureActive = recordingPhase === MELODY_RECORDING_PHASES.SEQUENCE_CAPTURE;
@@ -185,44 +168,33 @@ function MelodyEditor({
     () => new Set(getMelodyRhythmTemplate(melodyRhythmTemplateId)?.steps ?? []),
     [melodyRhythmTemplateId],
   );
-  const activePlayedNotes = useMemo(() => new Set(
-    [...playingKeys]
-      .map((key) => getMelodyKeyNote(key))
-      .filter(Boolean),
-  ), [playingKeys]);
+  const melodyInputGrid = useMemo(
+    () => getMelodyInputGrid(melodyScaleId),
+    [melodyScaleId],
+  );
+  const activePlayedNotes = useMemo(
+    () => new Set(activeInputNotes),
+    [activeInputNotes],
+  );
 
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      if (event.repeat || isEditableKeyboardTarget(event.target)) return;
-      const note = getMelodyKeyNote(event.key);
-      if (!note) return;
-      flushSync(() => {
-        setPlayingKeys((keys) => addSetValue(keys, getMelodyKeyboardKey(event.key)));
-      });
-    };
-    const handleKeyUp = (event) => {
-      if (!getMelodyKeyNote(event.key)) return;
-      setPlayingKeys((keys) => deleteSetValue(keys, getMelodyKeyboardKey(event.key)));
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
-  }, []);
-
-  const handlePreviewStart = (key, note) => {
-    flushSync(() => {
-      setPlayingKeys((keys) => addSetValue(keys, key));
+  const handlePreviewStart = (event, cell) => {
+    if (!cell.enabled) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    onMelodyNoteOn({
+      inputId: getVirtualMelodyInputId(cell.rowIndex, cell.column, event.pointerId),
+      note: cell.note,
+      source: MELODY_INPUT_SOURCES.VIRTUAL,
     });
-    onMelodyNoteOn(note);
   };
-  const handlePreviewEnd = (key, note) => {
-    setPlayingKeys((keys) => deleteSetValue(keys, key));
-    onMelodyNoteOff(note);
+  const handlePreviewEnd = (event, cell) => {
+    onMelodyNoteOff({
+      inputId: getVirtualMelodyInputId(cell.rowIndex, cell.column, event.pointerId),
+      note: cell.note ?? undefined,
+    });
+    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
   };
   const handleClose = () => {
     setPickerMode(null);
@@ -340,7 +312,8 @@ function MelodyEditor({
         trackId,
       }, (
         <>
-        <div className="keyboard-strip" role="group" aria-label="QWERTY ↔ 音阶 对应关系">
+        {melodyInputVisible ? (
+        <div className="keyboard-strip" role="group" aria-label="QWERTY、网页与 Launchpad 音阶对应关系">
           <div className="ks-intro">
             <div className="ks-glyph">
               {renderIcon(Keyboard)}
@@ -352,43 +325,39 @@ function MelodyEditor({
             </div>
           </div>
 
-          <div className="ks-keys" data-scale={activeScale.id} aria-label="按键 ↔ 音符 对应表">
-            {MELODY_KEY_SEQUENCE.map((key, index) => {
-              const note = getMelodyKeyNote(key);
-              const { name, octave } = formatMelodyNoteParts(note);
-              const playing = playingKeys.has(key);
-              const scaleTone = isMelodyScalePitchClass(
-                activeScale.id,
-                MELODY_PITCH_CLASSES[index],
-              );
-
+          <div className="ks-keys" data-scale={activeScale.id} aria-label="三八度按键与音符对应表">
+            {melodyInputGrid.flat().map((cell) => {
+              const { name, octave } = formatMelodyNoteParts(cell.note ?? '');
+              const playing = cell.note ? activePlayedNotes.has(cell.note) : false;
               return (
                 <button
                   className={[
                     'ks-key',
-                    scaleTone ? 'scale-tone' : '',
+                    cell.enabled ? 'scale-tone' : 'disabled',
                     playing ? 'playing' : '',
                   ].filter(Boolean).join(' ')}
                   type="button"
-                  data-key={key}
-                  data-note={name}
+                  data-key={cell.keyLabel}
+                  data-note={cell.note ?? ''}
                   data-oct={octave}
-                  key={key}
-                  aria-label={`${note} - 按 ${key}`}
-                  onPointerDown={() => handlePreviewStart(key, note)}
-                  onPointerLeave={() => handlePreviewEnd(key, note)}
-                  onPointerUp={() => handlePreviewEnd(key, note)}
+                  disabled={!cell.enabled}
+                  key={`${cell.rowId}-${cell.column}`}
+                  aria-label={cell.enabled ? `${cell.note} - 按 ${cell.keyLabel}` : `${cell.keyLabel} - 当前音阶未使用`}
+                  onPointerCancel={(event) => handlePreviewEnd(event, cell)}
+                  onPointerDown={(event) => handlePreviewStart(event, cell)}
+                  onPointerUp={(event) => handlePreviewEnd(event, cell)}
                 >
-                  <span className="ks-letter">{key}</span>
+                  <span className="ks-letter">{cell.keyLabel}</span>
                   <span className="ks-note">
-                    {name}
-                    <span className="oct">{octave}</span>
+                    {cell.enabled ? name : '—'}
+                    {cell.enabled ? <span className="oct">{octave}</span> : null}
                   </span>
                 </button>
               );
             })}
           </div>
         </div>
+        ) : null}
 
         {melodyInputStatus ? (
           <div className="melody-template-input-status" role="status" aria-live="polite">
@@ -434,10 +403,14 @@ function MelodyEditor({
           ),
           notes: MELODY_NOTES,
           onCellPressEnd: recordingActive
-            ? (_step, note) => onMelodyNoteOff(note)
+            ? (_step, note) => onMelodyNoteOff({ inputId: `virtual:piano-roll:${note}`, note })
             : undefined,
           onCellPressStart: recordingActive
-            ? (_step, note) => onMelodyNoteOn(note)
+            ? (_step, note) => onMelodyNoteOn({
+              inputId: `virtual:piano-roll:${note}`,
+              note,
+              source: MELODY_INPUT_SOURCES.VIRTUAL,
+            })
             : undefined,
           onCellToggle: onMelodyStepToggle,
           trackId,

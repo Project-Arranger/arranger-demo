@@ -1,6 +1,11 @@
 import { STEPS_PER_BAR, TOTAL_BARS } from '../domain/musicConstants.js';
-import { getMelodyKeyNote } from '../data/melodyScales.js';
 import { APP_COMMAND_TYPES, CHORD_OPTION_COUNT } from './appCommands.js';
+import {
+  getKeyboardMelodyInputId,
+  getMelodyInputCellByCode,
+  isMelodyInputKeyboardCode,
+  MELODY_INPUT_SOURCES,
+} from './melodyInputLayout.js';
 
 function getEventKey(event) {
   if (event.code === 'Space') return ' ';
@@ -27,18 +32,8 @@ function mapArrowKeyToCommand(key, state) {
   return { type: APP_COMMAND_TYPES.TRANSPORT_SEEK, ...next };
 }
 
-function mapNumberKeyToCommand(eventType, key, state) {
+function mapNumberKeyToCommand(eventType, key) {
   const number = Number.parseInt(key, 10);
-
-  if (state.activeTrackId === 'melody') {
-    const note = getMelodyKeyNote(key);
-    if (!note || eventType === 'keypress') return null;
-    return {
-      type: eventType === 'keyup' ? APP_COMMAND_TYPES.MELODY_NOTE_OFF : APP_COMMAND_TYPES.MELODY_NOTE_ON,
-      note,
-    };
-  }
-
   if (!Number.isInteger(number) || number < 1 || number > CHORD_OPTION_COUNT) return null;
   if (eventType !== 'keydown') return null;
   return {
@@ -59,8 +54,14 @@ function mapKeyboardEventToCommand(event, state = {}) {
   const key = getEventKey(event);
   const eventType = event.type ?? 'keydown';
 
-  if (event.repeat) return null;
-  if (isEditableKeyboardTarget(event.target)) return null;
+  if (eventType === 'keyup' && isMelodyInputKeyboardCode(event.code)) {
+    return {
+      type: APP_COMMAND_TYPES.MELODY_NOTE_OFF,
+      inputId: getKeyboardMelodyInputId(event.code),
+    };
+  }
+
+  if (event.repeat || isEditableKeyboardTarget(event.target)) return null;
 
   if (
     eventType === 'keydown'
@@ -119,8 +120,26 @@ function mapKeyboardEventToCommand(event, state = {}) {
     return mapArrowKeyToCommand(key, state);
   }
 
-  if (/^[0-9+=-]$/.test(key)) {
-    return mapNumberKeyToCommand(eventType, key, state);
+  if (
+    eventType === 'keydown'
+    && state.activeTrackId === 'melody'
+    && !event.ctrlKey
+    && !event.metaKey
+    && !event.altKey
+  ) {
+    const cell = getMelodyInputCellByCode(event.code, state.melodyScaleId);
+    if (cell?.enabled) {
+      return {
+        type: APP_COMMAND_TYPES.MELODY_NOTE_ON,
+        inputId: getKeyboardMelodyInputId(event.code),
+        note: cell.note,
+        source: MELODY_INPUT_SOURCES.KEYBOARD,
+      };
+    }
+  }
+
+  if (state.activeTrackId === 'chord' && /^[0-9]$/.test(key)) {
+    return mapNumberKeyToCommand(eventType, key);
   }
 
   return null;

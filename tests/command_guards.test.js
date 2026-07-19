@@ -115,17 +115,25 @@ test('drums command validates track step and known instruments', () => {
 });
 
 test('melody note commands only accept configured melody notes', () => {
-  assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'D4' }), true);
-  assert.equal(isValidAppCommand({ type: 'melody.noteOff', note: 'E4' }), true);
-  assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'C#4' }), true);
-  assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'G5' }), true);
-  assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'B3' }), true);
-  assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'A5' }), true);
-  assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'B2' }), false);
-  assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'B4' }), true);
-  assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'C4' }), true);
-  assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'C6' }), false);
-  assert.equal(isValidAppCommand({ type: 'melody.noteOff', note: 'D4', velocity: 100 }), false);
+  const noteOn = (note, overrides = {}) => ({
+    type: 'melody.noteOn',
+    inputId: 'keyboard:KeyA',
+    note,
+    source: 'keyboard',
+    ...overrides,
+  });
+  assert.equal(isValidAppCommand(noteOn('D4')), true);
+  assert.equal(isValidAppCommand({ type: 'melody.noteOff', inputId: 'keyboard:KeyA' }), true);
+  assert.equal(isValidAppCommand({ type: 'melody.noteOff', inputId: 'virtual:1:0:4', note: 'E4' }), true);
+  assert.equal(isValidAppCommand(noteOn('C#4')), true);
+  assert.equal(isValidAppCommand(noteOn('G5', { source: 'launchpad', inputId: 'launchpad:54' })), true);
+  assert.equal(isValidAppCommand(noteOn('B3', { source: 'virtual' })), true);
+  assert.equal(isValidAppCommand(noteOn('B2')), false);
+  assert.equal(isValidAppCommand(noteOn('C6')), false);
+  assert.equal(isValidAppCommand(noteOn('C4', { source: 'mouse' })), false);
+  assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'C4' }), false);
+  assert.equal(isValidAppCommand({ type: 'melody.noteOff', inputId: '', note: 'D4' }), false);
+  assert.equal(isValidAppCommand({ type: 'melody.noteOff', inputId: 'keyboard:KeyA', velocity: 100 }), false);
 });
 
 test('unknown or malformed commands are invalid', () => {

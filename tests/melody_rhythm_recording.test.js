@@ -20,6 +20,8 @@ import {
   MELODY_RECORDING_MODES,
   MELODY_RECORDING_PHASES,
   recordTemplateMelodyNote,
+  registerActiveMelodyInput,
+  releaseActiveMelodyInput,
 } from '../src/app/useMelodyRecordingController.js';
 import { replaceMelodyBarWithSequence } from '../src/app/melodyActions.js';
 import createInitialMatrix from '../src/store/createInitialMatrix.js';
@@ -240,5 +242,36 @@ test('sequence capture session records four rapid events synchronously and commi
     accepted: false,
     complete: false,
     sequenceNotes: ['C4', 'E4', 'G4', 'C5'],
+  });
+});
+
+test('active melody inputs reference-count the same note across sources', () => {
+  const activeInputs = new Map();
+  assert.deepEqual(registerActiveMelodyInput(activeInputs, 'keyboard:KeyA', 'C4'), {
+    accepted: true,
+    firstSourceForNote: true,
+  });
+  assert.deepEqual(registerActiveMelodyInput(activeInputs, 'launchpad:41', 'C4'), {
+    accepted: true,
+    firstSourceForNote: false,
+  });
+  assert.deepEqual(registerActiveMelodyInput(activeInputs, 'keyboard:KeyA', 'C4'), {
+    accepted: false,
+    firstSourceForNote: false,
+  });
+  assert.deepEqual(releaseActiveMelodyInput(activeInputs, 'keyboard:KeyA'), {
+    accepted: true,
+    note: 'C4',
+    noteStillActive: true,
+  });
+  assert.deepEqual(releaseActiveMelodyInput(activeInputs, 'launchpad:41'), {
+    accepted: true,
+    note: 'C4',
+    noteStillActive: false,
+  });
+  assert.deepEqual(releaseActiveMelodyInput(activeInputs, 'launchpad:41'), {
+    accepted: false,
+    note: null,
+    noteStillActive: false,
   });
 });

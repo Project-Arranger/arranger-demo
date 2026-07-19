@@ -1,6 +1,7 @@
 import { DRUMS_INSTRUMENT_IDS, STEPS_PER_BAR, TOTAL_BARS } from '../domain/musicConstants.js';
 import { isChordName, isChordSpan } from '../domain/chordCells.js';
 import { APP_COMMAND_TYPES, CHORD_OPTION_COUNT, MELODY_NOTE_IDS } from './appCommands.js';
+import { MELODY_INPUT_SOURCES } from './melodyInputLayout.js';
 
 function isPlainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -64,9 +65,21 @@ function hasValidChordClearCellPayload(command) {
 }
 
 function hasValidMelodyPayload(command) {
+  if (command.type === APP_COMMAND_TYPES.MELODY_NOTE_ON) {
+    return (
+      hasOnlyKeys(command, ['type', 'note', 'inputId', 'source'])
+      && MELODY_NOTE_IDS.includes(command.note)
+      && typeof command.inputId === 'string'
+      && command.inputId.length > 0
+      && Object.values(MELODY_INPUT_SOURCES).includes(command.source)
+    );
+  }
+
   return (
-    hasOnlyKeys(command, ['type', 'note']) &&
-    MELODY_NOTE_IDS.includes(command.note)
+    hasOnlyKeys(command, ['type', 'inputId', 'note'])
+    && typeof command.inputId === 'string'
+    && command.inputId.length > 0
+    && (!('note' in command) || MELODY_NOTE_IDS.includes(command.note))
   );
 }
 

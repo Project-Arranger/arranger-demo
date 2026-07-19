@@ -8,6 +8,7 @@ import {
 import { isMelodyNoteInScale } from '../data/melodyScales.js';
 import { STEPS_PER_BAR } from '../domain/musicConstants.js';
 import { APP_COMMAND_TYPES } from '../input/appCommands.js';
+import { isMelodyInputAreaVisible } from '../input/melodyInputLayout.js';
 import useMusicStore from '../store/useMusicStore.js';
 import {
   clearMelodyBar,
@@ -162,6 +163,42 @@ function captureMelodySequenceNote(session, note) {
   return appendResult;
 }
 
+function normalizeMelodyNoteOnInput(input) {
+  if (typeof input === 'string') {
+    return { inputId: `legacy:${input}`, note: input, source: 'legacy' };
+  }
+  return input ?? {};
+}
+
+function normalizeMelodyNoteOffInput(input) {
+  if (typeof input === 'string') {
+    return { inputId: `legacy:${input}`, note: input };
+  }
+  return input ?? {};
+}
+
+function registerActiveMelodyInput(activeInputMap, inputId, note) {
+  if (!(activeInputMap instanceof Map) || activeInputMap.has(inputId)) {
+    return { accepted: false, firstSourceForNote: false };
+  }
+  const firstSourceForNote = ![...activeInputMap.values()].includes(note);
+  activeInputMap.set(inputId, note);
+  return { accepted: true, firstSourceForNote };
+}
+
+function releaseActiveMelodyInput(activeInputMap, inputId) {
+  if (!(activeInputMap instanceof Map) || !activeInputMap.has(inputId)) {
+    return { accepted: false, note: null, noteStillActive: false };
+  }
+  const note = activeInputMap.get(inputId);
+  activeInputMap.delete(inputId);
+  return {
+    accepted: true,
+    note,
+    noteStillActive: [...activeInputMap.values()].includes(note),
+  };
+}
+
 function useMelodyRecordingController({
   activeTrackId,
   audioEngine,
@@ -172,8 +209,9 @@ function useMelodyRecordingController({
   withUndoCheckpoint,
 }) {
   const [recordingState, setRecordingState] = useState(IDLE_MELODY_RECORDING_STATE);
+  const [activeInputNotes, setActiveInputNotes] = useState(() => new Set());
   const activeFreeNoteRef = useRef(null);
-  const activeInputNotesRef = useRef(new Set());
+  const activeInputMapRef = useRef(new Map());
   const countInTimerRef = useRef(null);
   const freeStopTimerRef = useRef(null);
   const generationRef = useRef(0);
@@ -211,8 +249,13 @@ function useMelodyRecordingController({
     useMusicStore.getState().setTrackMatrix('melody', nextMatrix.melody);
   }, []);
 
+  const syncActiveInputNotes = useCallback(() => {
+    setActiveInputNotes(new Set(activeInputMapRef.current.values()));
+  }, []);
+
   const clearActiveNotes = useCallback(() => {
-    activeInputNotesRef.current.clear();
+    activeInputMapRef.current.clear();
+    setActiveInputNotes(new Set());
   }, []);
 
   const stopActiveNotes = useCallback(() => {
@@ -604,18 +647,38 @@ function useMelodyRecordingController({
     })();
   }, [clearActiveNotes, dispatchAppCommand, pauseTransport, updateRecordingState, withUndoCheckpoint]);
 
-  const handleNoteOn = useCallback((note) => {
-    const activeInputNotes = activeInputNotesRef.current;
-    if (activeInputNotes.has(note)) return { recorded: false };
+  const handleNoteOn = useCallback((input) => {
+    const { inputId, note } = normalizeMelodyNoteOnInput(input);
+    if (typeof inputId !== 'string' || !inputId || typeof note !== 'string') {
+      return { recorded: false };
+    }
+
     const current = recordingStateRef.current;
-    activeInputNotes.add(note);
+    const state = useMusicStore.getState();
+    const clip = state.clips.byId[state.selectedClipId];
+    const hasTemplate = Boolean(getMelodyRhythmTemplate(
+      state.activeTrackId === 'melody' && clip?.trackId === 'melody'
+        ? clip.melodyRhythmTemplateId
+        : null,
+    ));
+    if (
+      state.activeTrackId !== 'melody'
+      || clip?.trackId !== 'melody'
+      || !isMelodyInputAreaVisible({ hasTemplate, phase: current.phase })
+      || !isMelodyNoteInScale(melodyScaleId, note)
+    ) {
+      return { recorded: false };
+    }
+
+    const activeInputMap = activeInputMapRef.current;
+    const registration = registerActiveMelodyInput(activeInputMap, inputId, note);
+    if (!registration.accepted) return { recorded: false };
+    syncActiveInputNotes();
+    if (!registration.firstSourceForNote) return { recorded: false };
+
     void audioEngine.triggerMelodyInputOneShot(note);
 
-    if (!isMelodyNoteInScale(melodyScaleId, note)) return { recorded: false };
-
     if (current.phase === MELODY_RECORDING_PHASES.STEP_EDIT) {
-      const state = useMusicStore.getState();
-      const clip = state.clips.byId[state.selectedClipId];
       const template = getMelodyRhythmTemplate(clip?.melodyRhythmTemplateId);
       if (
         clip?.trackId !== 'melody'
@@ -675,7 +738,6 @@ function useMelodyRecordingController({
       return { recorded: false };
     }
 
-    const state = useMusicStore.getState();
     if (state.currentBar !== session.bar) return { recorded: false };
     const step = Math.max(0, Math.min(STEPS_PER_BAR - 1, state.currentStep));
     if (activeFreeNoteRef.current) {
@@ -703,18 +765,25 @@ function useMelodyRecordingController({
     commitTemplateSequence,
     finalizeActiveNote,
     melodyScaleId,
+    syncActiveInputNotes,
     updateRecordingState,
     withUndoCheckpoint,
     writeMelodyMatrix,
   ]);
 
-  const handleNoteOff = useCallback((note) => {
-    activeInputNotesRef.current.delete(note);
+  const handleNoteOff = useCallback((input) => {
+    const { inputId, note: fallbackNote } = normalizeMelodyNoteOffInput(input);
+    if (typeof inputId !== 'string' || !inputId) return { recorded: false };
+    const release = releaseActiveMelodyInput(activeInputMapRef.current, inputId);
+    const note = release.note ?? fallbackNote;
+    if (!release.accepted || !note) return { recorded: false };
+    syncActiveInputNotes();
+    if (release.noteStillActive) return { recorded: false };
     const activeNote = activeFreeNoteRef.current;
     if (!activeNote || activeNote.note !== note) return { recorded: false };
     finalizeActiveNote();
     return { recorded: true, step: activeNote.startStep };
-  }, [finalizeActiveNote]);
+  }, [finalizeActiveNote, syncActiveInputNotes]);
 
   useEffect(() => {
     const contextKey = `${activeTrackId}:${selectedClip?.id ?? ''}`;
@@ -729,6 +798,12 @@ function useMelodyRecordingController({
     clearActiveNotes();
   }, [clearActiveNotes, melodyScaleId]);
 
+  useEffect(() => {
+    const handleWindowBlur = () => clearActiveNotes();
+    window.addEventListener('blur', handleWindowBlur);
+    return () => window.removeEventListener('blur', handleWindowBlur);
+  }, [clearActiveNotes]);
+
   useEffect(() => () => {
     generationRef.current += 1;
     clearTimers();
@@ -736,6 +811,7 @@ function useMelodyRecordingController({
   }, [clearTimers, stopActiveNotes]);
 
   return {
+    activeInputNotes,
     cancelRecord,
     confirmRecord,
     handleNoteOff,
@@ -761,5 +837,7 @@ export {
   MELODY_RECORDING_MODES,
   MELODY_RECORDING_PHASES,
   recordTemplateMelodyNote,
+  registerActiveMelodyInput,
+  releaseActiveMelodyInput,
   useMelodyRecordingController,
 };

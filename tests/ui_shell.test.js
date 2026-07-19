@@ -725,7 +725,7 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(melodyEditorSource, /Melody · Phrase/);
   assert.match(melodyEditorSource, /MELODY EDITOR - BAR/);
   assert.match(melodyEditorSource, /keyboard-strip/);
-  assert.match(melodyEditorSource, /QWERTY ↔ 音阶 对应关系/);
+  assert.match(melodyEditorSource, /QWERTY、网页与 Launchpad 音阶对应关系/);
   assert.match(melodyEditorSource, /选择音阶/);
   assert.match(melodyEditorSource, /melody-scale-button/);
   assert.match(melodyEditorSource, /melody-scale-card:\$\{scale\.id\}/);
@@ -753,8 +753,10 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(melodyEditorSource, /createElement\(PianoRoll,\s*\{/);
   assert.match(melodyEditorSource, /activeNoteIds:\s*activePlayedNotes/);
   assert.match(melodyEditorSource, /autoRevealActiveNote:\s*true/);
-  assert.match(melodyEditorSource, /import \{ flushSync \} from 'react-dom';/);
-  assert.match(melodyEditorSource, /flushSync\(\(\) => \{\s*setPlayingKeys/s);
+  assert.doesNotMatch(melodyEditorSource, /flushSync|setPlayingKeys/);
+  assert.match(melodyEditorSource, /getMelodyInputGrid/);
+  assert.match(melodyEditorSource, /getVirtualMelodyInputId/);
+  assert.match(melodyEditorSource, /setPointerCapture/);
   assert.match(melodyEditorSource, /initialTopNote:\s*'B4'/);
   assert.match(melodyEditorSource, /notes:\s*MELODY_NOTES/);
   assert.match(melodyEditorSource, /highlightedNoteIds:\s*activeScaleNoteIds/);
@@ -777,17 +779,16 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.doesNotMatch(melodyEditorSource, /Clear phrase/);
   assert.match(melodyEditorSource, /createElement\(TrackBarPager,\s*\{[\s\S]*className:\s*'melody-editor-pager-shell'/);
   assert.match(melodyEditorSource, /createElement\(TrackBarPager,\s*\{[\s\S]*contentClassName:\s*'melody-editor-scroll'/);
-  assert.match(melodyEditorSource, /MELODY_KEY_SEQUENCE/);
+  assert.match(melodyEditorSource, /melodyInputGrid\.flat\(\)/);
   assert.match(melodyEditorSource, /MELODY_PITCH_CLASSES/);
   assert.match(melodyEditorSource, /getMelodyScalePreviewNotes/);
   assert.match(melodyEditorSource, /isMelodyScalePitchClass/);
-  assert.match(melodyEditorSource, /scaleTone \? 'scale-tone' : ''/);
+  assert.match(melodyEditorSource, /cell\.enabled \? 'scale-tone' : 'disabled'/);
   assert.match(melodyEditorSource, /isMelodyCellActive/);
   assert.doesNotMatch(melodyEditorSource, /pitch-step-cell|melody-cell|colIndex === 0 \? 'downbeat'/);
-  assert.match(melodyEditorSource, /setPlayingKeys/);
   assert.match(melodyEditorSource, /activePlayedNotes/);
-  assert.match(melodyEditorSource, /onMelodyNoteOn\(note\)/);
-  assert.match(melodyEditorSource, /onMelodyNoteOff\(note\)/);
+  assert.match(melodyEditorSource, /onMelodyNoteOn\(\{/);
+  assert.match(melodyEditorSource, /onMelodyNoteOff\(\{/);
   assert.match(melodyEditorSource, /Melody Rhythm Picker/);
   assert.match(
     melodyEditorSource,

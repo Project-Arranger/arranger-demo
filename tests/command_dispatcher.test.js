@@ -10,6 +10,14 @@ import {
 } from '../src/input/keyboardMap.js';
 import useMusicStore from '../src/store/useMusicStore.js';
 
+function createMelodyNoteOn(note, inputId = 'keyboard:KeyA') {
+  return { type: 'melody.noteOn', inputId, note, source: 'keyboard' };
+}
+
+function createMelodyNoteOff(inputId = 'keyboard:KeyA', note) {
+  return { type: 'melody.noteOff', inputId, ...(note ? { note } : {}) };
+}
+
 function createMockStore(initial = {}) {
   const calls = [];
   const state = {
@@ -165,8 +173,8 @@ test('domain commands dispatch to injected handlers with drums naming', async ()
   await dispatchCommand({ type: 'chord.confirm' }, { handlers });
   await dispatchCommand({ type: 'chord.setCell', bar: 2, span: 1, root: 'G#' }, { handlers });
   await dispatchCommand({ type: 'chord.clearCell', bar: 2, span: 1 }, { handlers });
-  await dispatchCommand({ type: 'melody.noteOn', note: 'D4' }, { handlers });
-  await dispatchCommand({ type: 'melody.noteOff', note: 'D4' }, { handlers });
+  await dispatchCommand(createMelodyNoteOn('D4'), { handlers });
+  await dispatchCommand(createMelodyNoteOff('keyboard:KeyA', 'D4'), { handlers });
 
   assert.deepEqual(calls, [
     ['app.undo'],
@@ -199,7 +207,7 @@ test('melody noteOn previews audio without calling editor recording handlers', a
     ]),
   };
 
-  await dispatchCommand({ type: 'melody.noteOn', note: 'C4' }, { handlers, audio });
+  await dispatchCommand(createMelodyNoteOn('C4'), { handlers, audio });
 
   assert.deepEqual(calls, [
     ['audio.triggerMelodyInputOneShot', 'C4'],
@@ -214,7 +222,7 @@ test('melody noteOn does not fall back to editor recording when audio preview is
     },
   };
 
-  assert.deepEqual(await dispatchCommand({ type: 'melody.noteOn', note: 'C4' }, { handlers }), { ok: true });
+  assert.deepEqual(await dispatchCommand(createMelodyNoteOn('C4'), { handlers }), { ok: true });
 
   assert.deepEqual(calls, []);
 });
@@ -312,20 +320,24 @@ test('keyboard map turns common keys into app commands', () => {
     null,
   );
   assert.deepEqual(
-    mapKeyboardEventToCommand({ type: 'keydown', key: '1' }, { activeTrackId: 'melody', melodyScaleId: 'major' }),
-    { type: 'melody.noteOn', note: 'C4' },
+    mapKeyboardEventToCommand({ type: 'keydown', code: 'KeyQ', key: 'q' }, { activeTrackId: 'melody', melodyScaleId: 'major' }),
+    createMelodyNoteOn('C5', 'keyboard:KeyQ'),
   );
   assert.deepEqual(
-    mapKeyboardEventToCommand({ type: 'keyup', key: '=' }, { activeTrackId: 'melody', melodyScaleId: 'pentatonic' }),
-    { type: 'melody.noteOff', note: 'B4' },
+    mapKeyboardEventToCommand({ type: 'keyup', code: 'KeyQ', key: 'й' }, { activeTrackId: 'drums', melodyScaleId: 'pentatonic' }),
+    createMelodyNoteOff('keyboard:KeyQ'),
   );
   assert.deepEqual(
-    mapKeyboardEventToCommand({ type: 'keydown', key: '+' }, { activeTrackId: 'melody', melodyScaleId: 'major' }),
-    { type: 'melody.noteOn', note: 'B4' },
+    mapKeyboardEventToCommand({ type: 'keydown', code: 'KeyF', key: 'ф' }, { activeTrackId: 'melody', melodyScaleId: 'pentatonic' }),
+    createMelodyNoteOn('G4', 'keyboard:KeyF'),
   );
-  assert.deepEqual(
-    mapKeyboardEventToCommand({ type: 'keydown', key: '5' }, { activeTrackId: 'melody', melodyScaleId: 'major' }),
-    mapKeyboardEventToCommand({ type: 'keydown', key: '5' }, { activeTrackId: 'melody', melodyScaleId: 'pentatonic' }),
+  assert.equal(
+    mapKeyboardEventToCommand({ type: 'keydown', code: 'KeyY', key: 'y' }, { activeTrackId: 'melody', melodyScaleId: 'pentatonic' }),
+    null,
+  );
+  assert.equal(
+    mapKeyboardEventToCommand({ type: 'keydown', code: 'KeyA', key: 'a', ctrlKey: true }, { activeTrackId: 'melody', melodyScaleId: 'major' }),
+    null,
   );
   assert.deepEqual(
     mapKeyboardEventToCommand({ type: 'keydown', key: '4' }, { activeTrackId: 'chord' }),
@@ -347,8 +359,12 @@ test('keyboard map turns common keys into app commands', () => {
     ),
     null,
   );
-  assert.equal(mapKeyboardEventToCommand({ type: 'keydown', key: 'q' }, { activeTrackId: 'melody' }), null);
-  assert.equal(mapKeyboardEventToCommand({ type: 'keydown', key: '4', repeat: true }, { activeTrackId: 'melody' }), null);
+  assert.equal(mapKeyboardEventToCommand({ type: 'keydown', code: 'KeyA', key: 'a', target: { tagName: 'INPUT' } }, { activeTrackId: 'melody' }), null);
+  assert.equal(mapKeyboardEventToCommand({ type: 'keydown', code: 'KeyA', key: 'a', repeat: true }, { activeTrackId: 'melody' }), null);
+  assert.deepEqual(
+    mapKeyboardEventToCommand({ type: 'keyup', code: 'KeyA', key: 'a', target: { tagName: 'INPUT' } }, { activeTrackId: 'melody' }),
+    createMelodyNoteOff('keyboard:KeyA'),
+  );
 });
 
 test('keyboard mapped commands should prevent browser defaults', () => {

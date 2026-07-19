@@ -1,17 +1,22 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  getMelodyKeyNote,
   getMelodyScaleNoteIds,
   getMelodyScalePreviewNotes,
   isMelodyNoteInScale,
   isMelodyScalePitchClass,
-  MELODY_KEY_SEQUENCE,
   MELODY_NOTES,
   MELODY_NOTE_IDS,
   MELODY_PITCH_CLASSES,
   MELODY_SCALES,
 } from '../src/data/melodyScales.js';
+import {
+  getMelodyInputCellByCode,
+  getMelodyInputCellByLaunchpadNote,
+  getMelodyInputGrid,
+  isMelodyInputAreaVisible,
+  MELODY_INPUT_ROWS,
+} from '../src/input/melodyInputLayout.js';
 import {
   clearMelodyBar,
   createMelodyCell,
@@ -24,18 +29,37 @@ import {
 } from '../src/app/melodyActions.js';
 import createInitialMatrix from '../src/store/createInitialMatrix.js';
 
-test('melody keyboard maps 1 through plus to a fixed chromatic octave', () => {
-  assert.deepEqual(MELODY_KEY_SEQUENCE, ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '+']);
+test('melody input layout maps three QWERTY and Launchpad rows to dynamic scale octaves', () => {
   assert.deepEqual(MELODY_PITCH_CLASSES, [
     'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B',
   ]);
-  assert.deepEqual(MELODY_KEY_SEQUENCE.map(getMelodyKeyNote), [
-    'C4', 'C#4', 'D4', 'D#4', 'E4', 'F4',
-    'F#4', 'G4', 'G#4', 'A4', 'A#4', 'B4',
+  assert.deepEqual(MELODY_INPUT_ROWS.map(({ octave }) => octave), [5, 4, 3]);
+  assert.deepEqual(MELODY_INPUT_ROWS.map(({ launchpadNoteStart }) => launchpadNoteStart), [51, 41, 31]);
+  assert.deepEqual(getMelodyInputGrid('major').map((row) => row.map(({ note }) => note)), [
+    ['C5', 'D5', 'E5', 'F5', 'G5', 'A5', 'B5', null],
+    ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', null],
+    ['C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3', null],
   ]);
-  assert.equal(getMelodyKeyNote('='), 'B4');
-  assert.equal(getMelodyKeyNote('·'), null);
-  assert.equal(getMelodyKeyNote('missing'), null);
+  assert.deepEqual(getMelodyInputGrid('pentatonic').map((row) => row.map(({ note }) => note)), [
+    ['C5', 'D5', 'E5', 'G5', 'A5', null, null, null],
+    ['C4', 'D4', 'E4', 'G4', 'A4', null, null, null],
+    ['C3', 'D3', 'E3', 'G3', 'A3', null, null, null],
+  ]);
+  assert.equal(getMelodyInputCellByCode('KeyQ', 'major').note, 'C5');
+  assert.equal(getMelodyInputCellByCode('Comma', 'major').note, null);
+  assert.equal(getMelodyInputCellByLaunchpadNote(47, 'major').note, 'B4');
+  assert.equal(getMelodyInputCellByLaunchpadNote(48, 'major').note, null);
+  assert.equal(getMelodyInputCellByCode('Digit1', 'major'), null);
+});
+
+test('melody input visibility follows template workflow phases', () => {
+  assert.equal(isMelodyInputAreaVisible({ hasTemplate: false, phase: 'idle' }), true);
+  assert.equal(isMelodyInputAreaVisible({ hasTemplate: true, phase: 'idle' }), false);
+  assert.equal(isMelodyInputAreaVisible({ hasTemplate: true, phase: 'overview' }), false);
+  assert.equal(isMelodyInputAreaVisible({ hasTemplate: true, phase: 'confirm' }), false);
+  ['audition', 'step-edit', 'sequence-capture', 'count-in', 'recording'].forEach((phase) => {
+    assert.equal(isMelodyInputAreaVisible({ hasTemplate: true, phase }), true);
+  });
 });
 
 test('melody scale templates derive highlights and previews from the chromatic octave', () => {
