@@ -161,7 +161,9 @@ test('createUiAudioDispatcher previews melody key presses without recording note
   const dispatch = createUiAudioDispatcher({
     store,
     audio: {
-      triggerMelodyNote: (note, duration) => audioCalls.push(['melody', note, duration]),
+      triggerMelodyInputOneShot: (note) => (
+        audioCalls.push(['melody-input-one-shot', note])
+      ),
     },
   });
 
@@ -172,7 +174,7 @@ test('createUiAudioDispatcher previews melody key presses without recording note
   assert.deepEqual(store.calls, []);
   assert.equal(store.getState().currentStep, 5);
   assert.deepEqual(audioCalls, [
-    ['melody', 'C4', '16n'],
+    ['melody-input-one-shot', 'C4'],
   ]);
 });
 

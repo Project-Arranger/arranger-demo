@@ -193,13 +193,16 @@ test('melody noteOn previews audio without calling editor recording handlers', a
     },
   };
   const audio = {
-    triggerMelodyNote: (note, duration) => calls.push(['audio.triggerMelodyNote', note, duration]),
+    triggerMelodyInputOneShot: (note) => calls.push([
+      'audio.triggerMelodyInputOneShot',
+      note,
+    ]),
   };
 
   await dispatchCommand({ type: 'melody.noteOn', note: 'C4' }, { handlers, audio });
 
   assert.deepEqual(calls, [
-    ['audio.triggerMelodyNote', 'C4', '16n'],
+    ['audio.triggerMelodyInputOneShot', 'C4'],
   ]);
 });
 

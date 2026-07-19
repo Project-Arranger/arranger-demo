@@ -1122,7 +1122,7 @@ export default function App() {
       const state = useMusicStore.getState();
       const nextMatrix = toggleMelodyCell(state.matrix, selectedBar, step, note);
       state.setCell('melody', selectedBar, step, nextMatrix.melody[selectedBar][step]);
-      void audioEngine.triggerMelodyNote(note, '16n');
+      void audioEngine.triggerMelodyInputOneShot(note);
     });
   }, [selectedBar, withUndoCheckpoint]);
 
@@ -1132,7 +1132,7 @@ export default function App() {
       return;
     }
 
-    void audioEngine.triggerMelodyNote(noteOrNotes, '16n');
+    void audioEngine.triggerMelodyInputOneShot(noteOrNotes);
   }, []);
 
   const handleMelodyScaleChange = useCallback((scaleId) => {

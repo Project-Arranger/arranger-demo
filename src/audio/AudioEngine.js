@@ -165,6 +165,8 @@ export default class AudioEngine {
     this.onPositionChange = options.onPositionChange ?? null;
     this.playerFactory = options.playerFactory ?? null;
     this.samplerFactory = options.samplerFactory ?? null;
+    this.melodyInputSamplerFactory = options.melodyInputSamplerFactory ?? null;
+    this.melodyOneShotSamplerFactory = options.melodyOneShotSamplerFactory ?? null;
     this.chordSamplerFactory = options.chordSamplerFactory ?? null;
     this.fallbackSynthFactory = options.fallbackSynthFactory ?? null;
     this.chordSynthFactory = options.chordSynthFactory ?? null;
@@ -179,6 +181,9 @@ export default class AudioEngine {
     this.chordSampler = null;
     this.chordSynth = null;
     this.melodySampler = null;
+    this.melodyInputSampler = null;
+    this.melodyOneShotSampler = null;
+    this.melodyInputRequestId = 0;
     this.bassSampler = null;
     this.matrixAdapter = null;
     this.transportEventId = null;
@@ -262,6 +267,24 @@ export default class AudioEngine {
   createMelodySampler() {
     const urls = this.getMelodySampleUrls();
     if (this.samplerFactory) return callToDestination(this.samplerFactory(urls));
+    if (!this.tone?.Sampler) return null;
+
+    return callToDestination(new this.tone.Sampler({ urls }));
+  }
+
+  createMelodyInputSampler() {
+    const urls = this.getMelodySampleUrls();
+    const factory = this.melodyInputSamplerFactory ?? this.samplerFactory;
+    if (factory) return callToDestination(factory(urls));
+    if (!this.tone?.Sampler) return null;
+
+    return callToDestination(new this.tone.Sampler({ urls }));
+  }
+
+  createMelodyOneShotSampler() {
+    const urls = this.getMelodySampleUrls();
+    const factory = this.melodyOneShotSamplerFactory ?? this.samplerFactory;
+    if (factory) return callToDestination(factory(urls));
     if (!this.tone?.Sampler) return null;
 
     return callToDestination(new this.tone.Sampler({ urls }));
@@ -392,11 +415,18 @@ export default class AudioEngine {
   }
 
   triggerMelodySampler(note, duration = '16n', time = this.now(), volume = this.getTrackVolume('melody')) {
-    if (!this.melodySampler?.triggerAttackRelease) return false;
+    void duration;
+    return this.triggerMelodyOneShot(note, time, volume);
+  }
+
+  triggerMelodyOneShot(note, time = this.now(), volume = this.getTrackVolume('melody')) {
+    this.melodyOneShotSampler = this.melodyOneShotSampler
+      ?? this.createMelodyOneShotSampler();
+    if (!this.melodyOneShotSampler?.triggerAttack) return false;
 
     try {
-      applyVolume(this.melodySampler, volume);
-      this.melodySampler.triggerAttackRelease(note, duration, time);
+      applyVolume(this.melodyOneShotSampler, volume);
+      this.melodyOneShotSampler.triggerAttack(note, time);
       return true;
     } catch {
       return false;
@@ -405,7 +435,65 @@ export default class AudioEngine {
 
   async triggerMelodyNote(note, duration = '16n', time) {
     await this.startAudio();
-    return this.triggerMelodySampler(note, duration, time ?? this.now());
+    void duration;
+    return this.triggerMelodyOneShot(note, time ?? this.now());
+  }
+
+  triggerMelodyInputSampler(
+    note,
+    duration = '16n',
+    time = this.now(),
+    volume = this.getTrackVolume('melody'),
+  ) {
+    void duration;
+    return this.triggerMelodyInputOneShotSampler(note, time, volume);
+  }
+
+  triggerMelodyInputOneShotSampler(
+    note,
+    time = this.now(),
+    volume = this.getTrackVolume('melody'),
+  ) {
+    this.melodyInputSampler = this.melodyInputSampler ?? this.createMelodyInputSampler();
+    if (!this.melodyInputSampler?.triggerAttack) return false;
+
+    try {
+      applyVolume(this.melodyInputSampler, volume);
+      this.melodyInputSampler.triggerAttack(note, time);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async triggerMelodyInputNote(note, duration = '16n', time) {
+    const requestId = this.melodyInputRequestId;
+    await this.startAudio();
+    if (requestId !== this.melodyInputRequestId) return false;
+    void duration;
+    return this.triggerMelodyInputSampler(note, duration, time ?? this.now());
+  }
+
+  async triggerMelodyInputOneShot(note, time) {
+    const requestId = this.melodyInputRequestId;
+    await this.startAudio();
+    if (requestId !== this.melodyInputRequestId) return false;
+    return this.triggerMelodyInputOneShotSampler(note, time ?? this.now());
+  }
+
+  releaseMelodyInputNote() {
+    return false;
+  }
+
+  releaseAllMelodyInputNotes(time = this.now()) {
+    this.melodyInputRequestId += 1;
+    this.melodyInputSampler?.releaseAll?.(time);
+  }
+
+  stopMelodyVoices(time = this.now()) {
+    this.melodySampler?.releaseAll?.(time);
+    this.releaseAllMelodyInputNotes(time);
+    this.melodyOneShotSampler?.releaseAll?.(time);
   }
 
   triggerBassSampler(note, duration = '16n', time = this.now(), volume = this.getTrackVolume('bass')) {
@@ -428,7 +516,6 @@ export default class AudioEngine {
 
   async previewMelodySequence(notes, options = {}) {
     const {
-      duration = '16n',
       intervalSeconds = 0.16,
     } = options;
 
@@ -436,9 +523,8 @@ export default class AudioEngine {
 
     const startTime = this.now();
     const volume = this.getTrackVolume('melody');
-    return notes.map((note, index) => this.triggerMelodySampler(
+    return notes.map((note, index) => this.triggerMelodyInputOneShotSampler(
       note,
-      duration,
       startTime + index * intervalSeconds,
       volume,
     ));
@@ -661,16 +747,8 @@ export default class AudioEngine {
           this.triggerChordEvent(event, time);
         }
         if (event.type === 'melody') {
-          const transportBpm = Number(transport?.bpm?.value) || DEFAULT_BPM;
-          const melodyDuration = Number.isInteger(event.durationSteps)
-            ? event.durationSteps * (60 / transportBpm / 4)
-            : event.duration;
-          this.triggerMelodySampler(
-            event.note,
-            melodyDuration,
-            time,
-            this.getTrackVolume(event.trackId ?? 'melody'),
-          );
+          const melodyVolume = this.getTrackVolume(event.trackId ?? 'melody');
+          this.triggerMelodyOneShot(event.note, time, melodyVolume);
         }
       }
 
@@ -728,6 +806,7 @@ export default class AudioEngine {
     this.stopChordClipSequencePreview();
     const transport = this.getStartedTransport();
     transport?.stop?.();
+    this.stopMelodyVoices(this.now());
     if (transport) {
       transport.position = formatToneTransportPosition(this.currentBar, this.currentStep);
     }
