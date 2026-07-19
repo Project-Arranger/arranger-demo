@@ -54,12 +54,10 @@ test('melody input layout maps three QWERTY and Launchpad rows to dynamic scale 
 
 test('melody input visibility follows template workflow phases', () => {
   assert.equal(isMelodyInputAreaVisible({ hasTemplate: false, phase: 'idle' }), true);
-  assert.equal(isMelodyInputAreaVisible({ hasTemplate: true, phase: 'idle' }), false);
-  assert.equal(isMelodyInputAreaVisible({ hasTemplate: true, phase: 'overview' }), false);
-  assert.equal(isMelodyInputAreaVisible({ hasTemplate: true, phase: 'confirm' }), false);
-  ['audition', 'step-edit', 'sequence-capture', 'count-in', 'recording'].forEach((phase) => {
+  ['idle', 'overview', 'confirm', 'step-edit', 'sequence-capture', 'count-in', 'recording'].forEach((phase) => {
     assert.equal(isMelodyInputAreaVisible({ hasTemplate: true, phase }), true);
   });
+  assert.equal(isMelodyInputAreaVisible({ hasTemplate: true, phase: 'unknown' }), false);
 });
 
 test('melody scale templates derive highlights and previews from the chromatic octave', () => {

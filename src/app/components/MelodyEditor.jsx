@@ -1,6 +1,5 @@
 import {
   ChevronUp,
-  Keyboard,
   SlidersHorizontal,
   X,
 } from 'lucide-react';
@@ -92,7 +91,6 @@ function MelodyEditor({
   onMelodyNoteOn = () => {},
   onMelodyRecordCancel = () => {},
   onMelodyRecordConfirm = () => {},
-  onMelodyAuditionToggle = () => {},
   onMelodyWriteToggle = () => {},
   onMelodyRhythmTemplateApply = () => {},
   onMelodyScaleChange = () => {},
@@ -138,16 +136,8 @@ function MelodyEditor({
     : sequenceCaptureActive
       ? activeRhythmTemplate?.steps[melodyRecordingState?.recordedNotes] ?? null
       : null;
-  const auditionActive = recordingPhase === MELODY_RECORDING_PHASES.AUDITION;
-  const auditionAvailable = Boolean(activeRhythmTemplate) && [
-    MELODY_RECORDING_PHASES.AUDITION,
-    MELODY_RECORDING_PHASES.OVERVIEW,
-  ].includes(recordingPhase);
   const melodyInputStatus = (() => {
     if (!activeRhythmTemplate) return null;
-    if (recordingPhase === MELODY_RECORDING_PHASES.AUDITION) {
-      return '自由试奏 · 写入可直接开始顺序收集音符';
-    }
     if (recordingPhase === MELODY_RECORDING_PHASES.STEP_EDIT) {
       return `Step ${(melodyRecordingState?.selectedStep ?? 0) + 1} · 请选择音高`;
     }
@@ -156,7 +146,7 @@ function MelodyEditor({
     }
     if (recordingPhase === MELODY_RECORDING_PHASES.CONFIRM) return '确认重写 · 原旋律仍然保留';
     if (recordingPhase === MELODY_RECORDING_PHASES.OVERVIEW) {
-      return '选择高亮 Step 手动编辑，或按写入开始顺序收集';
+      return '自由弹奏 · 不会写入；点击写入开始收集';
     }
     return null;
   })();
@@ -210,11 +200,22 @@ function MelodyEditor({
             <div className="crumb">Melody · Phrase</div>
             {createElement(ClipNameInput, { clipName, onRenameClip })}
             <div className="clip-name-meta">
-              MELODY EDITOR - BAR
-              {' '}
-              {selectedBar + 1}
-              {' · '}
-              {activeScale.label}
+              <span>
+                MELODY EDITOR - BAR
+                {' '}
+                {selectedBar + 1}
+                {' · '}
+                {activeScale.label}
+              </span>
+              {melodyInputStatus ? (
+                <span
+                  className="melody-input-status-inline"
+                  role="status"
+                  aria-live="polite"
+                >
+                  {melodyInputStatus}
+                </span>
+              ) : null}
             </div>
           </div>
         </div>
@@ -250,19 +251,6 @@ function MelodyEditor({
           >
             {renderIcon(ChevronUp)}
             选择音阶
-          </button>
-          <button
-            className={[
-              'btn-template',
-              'melody-audition-button',
-              auditionActive ? 'active' : '',
-            ].filter(Boolean).join(' ')}
-            aria-pressed={auditionActive}
-            type="button"
-            disabled={tutorialLocked || !auditionAvailable}
-            onClick={onMelodyAuditionToggle}
-          >
-            {auditionActive ? '结束试奏' : '自由试奏'}
           </button>
           <button
             className={[
@@ -306,7 +294,10 @@ function MelodyEditor({
       {createElement(TrackBarPager, {
         canPageBars,
         className: 'melody-editor-pager-shell',
-        contentClassName: 'melody-editor-scroll',
+        contentClassName: [
+          'melody-editor-scroll',
+          melodyInputVisible ? 'has-input-dock' : '',
+        ].filter(Boolean).join(' '),
         onNextBar,
         onPreviousBar,
         trackId,
@@ -314,55 +305,44 @@ function MelodyEditor({
         <>
         {melodyInputVisible ? (
         <div className="keyboard-strip" role="group" aria-label="QWERTY、网页与 Launchpad 音阶对应关系">
-          <div className="ks-intro">
-            <div className="ks-glyph">
-              {renderIcon(Keyboard)}
-            </div>
-            <div className="ks-copy">
-              <span className="ks-eyebrow">Play · 试奏</span>
-              <span className="ks-title">键盘奏响音符</span>
-              <span className="ks-scale">{activeScale.label}</span>
-            </div>
-          </div>
-
           <div className="ks-keys" data-scale={activeScale.id} aria-label="三八度按键与音符对应表">
-            {melodyInputGrid.flat().map((cell) => {
-              const { name, octave } = formatMelodyNoteParts(cell.note ?? '');
-              const playing = cell.note ? activePlayedNotes.has(cell.note) : false;
-              return (
-                <button
-                  className={[
-                    'ks-key',
-                    cell.enabled ? 'scale-tone' : 'disabled',
-                    playing ? 'playing' : '',
-                  ].filter(Boolean).join(' ')}
-                  type="button"
-                  data-key={cell.keyLabel}
-                  data-note={cell.note ?? ''}
-                  data-oct={octave}
-                  disabled={!cell.enabled}
-                  key={`${cell.rowId}-${cell.column}`}
-                  aria-label={cell.enabled ? `${cell.note} - 按 ${cell.keyLabel}` : `${cell.keyLabel} - 当前音阶未使用`}
-                  onPointerCancel={(event) => handlePreviewEnd(event, cell)}
-                  onPointerDown={(event) => handlePreviewStart(event, cell)}
-                  onPointerUp={(event) => handlePreviewEnd(event, cell)}
-                >
-                  <span className="ks-letter">{cell.keyLabel}</span>
-                  <span className="ks-note">
-                    {cell.enabled ? name : '—'}
-                    {cell.enabled ? <span className="oct">{octave}</span> : null}
-                  </span>
-                </button>
-              );
-            })}
+            {melodyInputGrid.map((row) => (
+              <div className="ks-row" key={row[0].rowId}>
+                <span className="ks-octave" aria-hidden="true">{row[0].octave}</span>
+                {row.map((cell) => {
+                  const { name, octave } = formatMelodyNoteParts(cell.note ?? '');
+                  const playing = cell.note ? activePlayedNotes.has(cell.note) : false;
+                  return (
+                    <button
+                      className={[
+                        'ks-key',
+                        cell.enabled ? 'scale-tone' : 'disabled',
+                        playing ? 'playing' : '',
+                      ].filter(Boolean).join(' ')}
+                      type="button"
+                      data-key={cell.keyLabel}
+                      data-note={cell.note ?? ''}
+                      data-oct={octave}
+                      disabled={!cell.enabled}
+                      key={`${cell.rowId}-${cell.column}`}
+                      aria-label={cell.enabled ? `${cell.note} - 按 ${cell.keyLabel}` : `${cell.keyLabel} - 当前音阶未使用`}
+                      onPointerCancel={(event) => handlePreviewEnd(event, cell)}
+                      onPointerDown={(event) => handlePreviewStart(event, cell)}
+                      onPointerUp={(event) => handlePreviewEnd(event, cell)}
+                    >
+                      <span className="ks-letter">{cell.keyLabel}</span>
+                      <span className="ks-divider" aria-hidden="true">·</span>
+                      <span className="ks-note">
+                        {cell.enabled ? name : '—'}
+                        {cell.enabled ? <span className="oct">{octave}</span> : null}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
           </div>
         </div>
-        ) : null}
-
-        {melodyInputStatus ? (
-          <div className="melody-template-input-status" role="status" aria-live="polite">
-            {melodyInputStatus}
-          </div>
         ) : null}
 
         {exampleKeysTarget ? (

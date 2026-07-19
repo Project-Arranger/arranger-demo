@@ -31,8 +31,10 @@ const MELODY_INPUT_ROWS = Object.freeze([
 ]);
 
 const MELODY_INPUT_VISIBLE_PHASES = new Set([
-  'audition',
+  'confirm',
   'count-in',
+  'idle',
+  'overview',
   'recording',
   'sequence-capture',
   'step-edit',
@@ -97,7 +99,7 @@ function isMelodyInputKeyboardCode(code) {
 }
 
 function isMelodyInputAreaVisible({ hasTemplate = false, phase = 'idle' } = {}) {
-  if (phase === 'idle') return !hasTemplate;
+  if (!hasTemplate) return true;
   return MELODY_INPUT_VISIBLE_PHASES.has(phase);
 }
 

@@ -504,7 +504,7 @@ test('AudioEngine leaves Melody input one-shots alone on Note Off and releases t
   ]);
 });
 
-test('AudioEngine lets free-audition input samples play as one-shots', async () => {
+test('AudioEngine lets free-playing input samples play as one-shots', async () => {
   const tone = createFakeTone();
   const inputSampler = {
     releaseAll: (time) => tone.calls.push(['input.releaseAll', time]),
@@ -530,7 +530,7 @@ test('AudioEngine lets free-audition input samples play as one-shots', async () 
   ]);
 });
 
-test('AudioEngine cancels pending free-audition attacks when input voices are cleared', async () => {
+test('AudioEngine cancels pending free-playing attacks when input voices are cleared', async () => {
   const tone = createFakeTone();
   const inputSampler = {
     toDestination: () => inputSampler,

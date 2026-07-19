@@ -1563,7 +1563,6 @@ export default function App() {
           onMelodyNoteOn: melodyRecording.handleNoteOn,
           onMelodyRecordCancel: melodyRecording.cancelRecord,
           onMelodyRecordConfirm: melodyRecording.confirmRecord,
-          onMelodyAuditionToggle: melodyRecording.toggleAudition,
           onMelodyWriteToggle: melodyRecording.requestWriteToggle,
           onMelodyRhythmTemplateApply: handleMelodyRhythmTemplateApply,
           onMelodyScaleChange: handleMelodyScaleChange,

@@ -630,10 +630,9 @@ test('track editors reuse the full track-select identity style in editor-left he
     new URL('../src/app/components/MelodyEditor.jsx', import.meta.url),
     'utf8',
   );
-  const keyboardIntro = melodyEditorSource.match(/className="ks-glyph"[\s\S]*?<\/div>/)?.[0] ?? '';
 
-  assert.match(keyboardIntro, /renderIcon\(Keyboard\)/);
-  assert.doesNotMatch(keyboardIntro, /TRACK_ICONS\.melody/);
+  assert.match(melodyEditorSource, /className="ks-octave"/);
+  assert.doesNotMatch(melodyEditorSource, /renderIcon\(Keyboard\)|className="ks-glyph"/);
 });
 
 test('bass and melody share the reusable PianoRoll component', async () => {
@@ -778,8 +777,8 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.doesNotMatch(melodyEditorSource, /清空 Melody/);
   assert.doesNotMatch(melodyEditorSource, /Clear phrase/);
   assert.match(melodyEditorSource, /createElement\(TrackBarPager,\s*\{[\s\S]*className:\s*'melody-editor-pager-shell'/);
-  assert.match(melodyEditorSource, /createElement\(TrackBarPager,\s*\{[\s\S]*contentClassName:\s*'melody-editor-scroll'/);
-  assert.match(melodyEditorSource, /melodyInputGrid\.flat\(\)/);
+  assert.match(melodyEditorSource, /contentClassName:\s*\[[\s\S]*'melody-editor-scroll'[\s\S]*melodyInputVisible \? 'has-input-dock' : ''/);
+  assert.match(melodyEditorSource, /melodyInputGrid\.map\(\(row\)/);
   assert.match(melodyEditorSource, /MELODY_PITCH_CLASSES/);
   assert.match(melodyEditorSource, /getMelodyScalePreviewNotes/);
   assert.match(melodyEditorSource, /isMelodyScalePitchClass/);
@@ -833,9 +832,8 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(css, /@keyframes melody-rhythm-target-pulse/);
   assert.match(melodyEditorSource, /开始顺序写入/);
   assert.match(melodyEditorSource, /原旋律会保留到全部音符收集完成/);
-  assert.match(melodyEditorSource, /自由试奏/);
-  assert.match(melodyEditorSource, /aria-pressed=\{auditionActive\}/);
-  assert.match(melodyEditorSource, /onClick=\{onMelodyAuditionToggle\}/);
+  assert.match(melodyEditorSource, /自由弹奏 · 不会写入；点击写入开始收集/);
+  assert.doesNotMatch(melodyEditorSource, /自由试奏|auditionActive|onMelodyAuditionToggle/);
   assert.match(melodyEditorSource, /onClick=\{onMelodyWriteToggle\}/);
   assert.match(melodyEditorSource, /已收集/);
   assert.match(melodyEditorSource, /开始旋律写入/);

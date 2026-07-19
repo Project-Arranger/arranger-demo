@@ -20,7 +20,6 @@ import {
 import { getMelodyRhythmTemplate } from './melodyRhythmTemplates.js';
 
 const MELODY_RECORDING_PHASES = Object.freeze({
-  AUDITION: 'audition',
   COUNT_IN: 'count-in',
   CONFIRM: 'confirm',
   IDLE: 'idle',
@@ -467,32 +466,6 @@ function useMelodyRecordingController({
     return true;
   }, [clearActiveNotes, clearTimers, updateRecordingState]);
 
-  const toggleAudition = useCallback(() => {
-    const currentPhase = recordingStateRef.current.phase;
-    if (currentPhase === MELODY_RECORDING_PHASES.AUDITION) {
-      return setTemplateOverview();
-    }
-    if (currentPhase !== MELODY_RECORDING_PHASES.OVERVIEW) return false;
-
-    const state = useMusicStore.getState();
-    const clip = state.clips.byId[state.selectedClipId];
-    const template = state.activeTrackId === 'melody' && clip?.trackId === 'melody'
-      ? getMelodyRhythmTemplate(clip.melodyRhythmTemplateId)
-      : null;
-    if (!template) return false;
-
-    generationRef.current += 1;
-    clearTimers();
-    pendingSessionRef.current = null;
-    sessionRef.current = null;
-    clearActiveNotes();
-    updateRecordingState(createTemplateRecordingState(
-      template.id,
-      MELODY_RECORDING_PHASES.AUDITION,
-    ));
-    return true;
-  }, [clearActiveNotes, clearTimers, setTemplateOverview, updateRecordingState]);
-
   const requestWriteToggle = useCallback(() => {
     const currentPhase = recordingStateRef.current.phase;
     if (currentPhase === MELODY_RECORDING_PHASES.CONFIRM) {
@@ -526,7 +499,6 @@ function useMelodyRecordingController({
     if (
       pendingSession.mode === MELODY_RECORDING_MODES.TEMPLATE
       && [
-        MELODY_RECORDING_PHASES.AUDITION,
         MELODY_RECORDING_PHASES.OVERVIEW,
         MELODY_RECORDING_PHASES.STEP_EDIT,
       ].includes(currentPhase)
@@ -820,7 +792,6 @@ function useMelodyRecordingController({
     clearActiveNotes,
     requestWriteToggle,
     selectTemplateStep,
-    toggleAudition,
     stopRecording,
   };
 }

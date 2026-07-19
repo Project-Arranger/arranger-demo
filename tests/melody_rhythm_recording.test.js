@@ -141,7 +141,7 @@ test('free recording helpers quantize duration and choose mode from clip templat
   assert.equal(hasMelodyBarNotes(matrix, 0), true);
 });
 
-test('template workflow exposes overview, audition, step-edit, and capture state', () => {
+test('template workflow exposes overview, step-edit, and capture state', () => {
   const templateClip = {
     id: 'melody-bar-0',
     trackId: 'melody',
@@ -167,6 +167,7 @@ test('template workflow exposes overview, audition, step-edit, and capture state
       totalNotes: 3,
     },
   );
+  assert.equal(MELODY_RECORDING_PHASES.AUDITION, undefined);
   assert.equal(MELODY_RECORDING_PHASES.PREVIEW, undefined);
 });
 
