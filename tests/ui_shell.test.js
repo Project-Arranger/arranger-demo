@@ -1219,7 +1219,9 @@ test('app routes drums tutorial tasks through guards and target props', async ()
   assert.match(source, /completeTutorialPrimaryAction/);
   assert.doesNotMatch(source, /completeTutorialTask4/);
   assert.match(source, /getDrumsCellInstruments/);
-  assert.match(source, /previewInstruments:\s*getDrumsCellInstruments\(nextCell\)/);
+  assert.match(source, /const preview = !getDrumsCellInstruments\(currentCell\)\.includes\(instrument\)/);
+  assert.match(source, /instrument,\n {8}preview,/);
+  assert.match(source, /instrument,\n {8}preview: true,/);
   assert.match(tutorialControllerSource, /tutorialViewModel\.targets/);
   assert.match(tutorialControllerSource, /tutorialViewModel\.locked/);
   assert.match(source, /tutorialViewModel\.primaryLabel/);

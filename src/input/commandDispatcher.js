@@ -117,11 +117,9 @@ async function dispatchHandlerCommand(command, deps) {
 
     case APP_COMMAND_TYPES.DRUMS_TOGGLE:
       await maybeCall(handlers.drums?.toggle, command);
-      await maybeCallMethod(
-        deps.audio,
-        'triggerDrumsStep',
-        command.previewInstruments ?? command.instrument,
-      );
+      if (command.preview) {
+        await maybeCallMethod(deps.audio, 'triggerDrumsStep', command.instrument);
+      }
       return { ok: true };
 
     case APP_COMMAND_TYPES.CHORD_SELECT_OPTION:

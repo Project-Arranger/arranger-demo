@@ -167,7 +167,14 @@ test('domain commands dispatch to injected handlers with drums naming', async ()
     bar: 0,
     step: 4,
     instrument: 'kick',
-    previewInstruments: ['kick', 'hihat'],
+    preview: true,
+  }, { handlers, audio });
+  await dispatchCommand({
+    type: 'drums.toggle',
+    bar: 0,
+    step: 4,
+    instrument: 'hihat',
+    preview: false,
   }, { handlers, audio });
   await dispatchCommand({ type: 'chord.selectOption', optionIndex: 3 }, { handlers });
   await dispatchCommand({ type: 'chord.confirm' }, { handlers });
@@ -182,6 +189,7 @@ test('domain commands dispatch to injected handlers with drums naming', async ()
     ['tutorial.next'],
     ['tutorial.completeTask'],
     ['drums.toggle', 0, 4, 'kick'],
+    ['drums.toggle', 0, 4, 'hihat'],
     ['chord.selectOption', 3],
     ['chord.confirm'],
     ['chord.setCell', 2, 1, 'G#'],
@@ -189,7 +197,7 @@ test('domain commands dispatch to injected handlers with drums naming', async ()
     ['melody.noteOff', 'D4'],
   ]);
   assert.deepEqual(audioCalls, [
-    ['audio.triggerDrumsStep', ['kick', 'hihat']],
+    ['audio.triggerDrumsStep', 'kick'],
   ]);
 });
 

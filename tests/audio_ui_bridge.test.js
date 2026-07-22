@@ -93,7 +93,7 @@ test('createUiAudioDispatcher connects transport commands and drums preview audi
     bar: 0,
     step: 0,
     instrument: 'kick',
-    previewInstruments: ['kick', 'hihat'],
+    preview: true,
   });
   await dispatch({ type: 'transport.stop' });
 
@@ -111,7 +111,7 @@ test('createUiAudioDispatcher connects transport commands and drums preview audi
   assert.equal(store.getState().currentBar, 1);
   assert.equal(store.getState().currentStep, 5);
   assert.deepEqual(audioCalls.slice(1), [
-    ['preview', ['kick', 'hihat']],
+    ['preview', 'kick'],
     ['stop'],
   ]);
 });

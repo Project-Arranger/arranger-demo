@@ -862,6 +862,7 @@ export default function App() {
 
     withUndoCheckpoint(() => {
       const currentCell = state.matrix.drums[selectedBar]?.[step] ?? null;
+      const preview = !getDrumsCellInstruments(currentCell).includes(instrument);
       const nextCell = toggleInstrumentInCell(currentCell, instrument);
       state.setCell('drums', selectedBar, step, nextCell);
       void dispatchAppCommand({
@@ -869,7 +870,7 @@ export default function App() {
         bar: selectedBar,
         step,
         instrument,
-        previewInstruments: getDrumsCellInstruments(nextCell),
+        preview,
       });
 
       applyTutorialActionProgress(tutorialAction);
@@ -911,15 +912,12 @@ export default function App() {
       moveAction.nextMatrixPatch.forEach((patch) => {
         state.setCell('drums', patch.bar, patch.step, patch.cell);
       });
-      const targetPatch = moveAction.nextMatrixPatch.find((patch) => (
-        patch.bar === selectedBar && patch.step === toStep
-      ));
       void dispatchAppCommand({
         type: APP_COMMAND_TYPES.DRUMS_TOGGLE,
         bar: selectedBar,
         step: toStep,
         instrument,
-        previewInstruments: getDrumsCellInstruments(targetPatch?.cell ?? null),
+        preview: true,
       });
 
       if (tutorialAction) {

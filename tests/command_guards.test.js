@@ -93,24 +93,60 @@ test('clip commands validate exact payloads', () => {
 });
 
 test('drums command validates track step and known instruments', () => {
-  assert.equal(isValidAppCommand({ type: 'drums.toggle', bar: 0, step: 0, instrument: 'kick' }), true);
   assert.equal(isValidAppCommand({
     type: 'drums.toggle',
     bar: 0,
     step: 0,
     instrument: 'kick',
-    previewInstruments: ['kick', 'hihat'],
+    preview: true,
   }), true);
-  assert.equal(isValidAppCommand({ type: 'drums.toggle', bar: 0, step: 0, instrument: 'snare' }), true);
-  assert.equal(isValidAppCommand({ type: 'drums.toggle', bar: 0, step: 0, instrument: 'hihat' }), true);
-  assert.equal(isValidAppCommand({ type: 'unknown.toggle', bar: 0, step: 0, instrument: 'kick' }), false);
-  assert.equal(isValidAppCommand({ type: 'drums.toggle', bar: 0, step: 0, instrument: 'tom' }), false);
   assert.equal(isValidAppCommand({
     type: 'drums.toggle',
     bar: 0,
     step: 0,
     instrument: 'kick',
-    previewInstruments: ['kick', 'tom'],
+    preview: false,
+  }), true);
+  assert.equal(isValidAppCommand({
+    type: 'drums.toggle',
+    bar: 0,
+    step: 0,
+    instrument: 'snare',
+    preview: true,
+  }), true);
+  assert.equal(isValidAppCommand({
+    type: 'drums.toggle',
+    bar: 0,
+    step: 0,
+    instrument: 'hihat',
+    preview: true,
+  }), true);
+  assert.equal(isValidAppCommand({
+    type: 'unknown.toggle',
+    bar: 0,
+    step: 0,
+    instrument: 'kick',
+    preview: true,
+  }), false);
+  assert.equal(isValidAppCommand({
+    type: 'drums.toggle',
+    bar: 0,
+    step: 0,
+    instrument: 'tom',
+    preview: true,
+  }), false);
+  assert.equal(isValidAppCommand({
+    type: 'drums.toggle',
+    bar: 0,
+    step: 0,
+    instrument: 'kick',
+  }), false);
+  assert.equal(isValidAppCommand({
+    type: 'drums.toggle',
+    bar: 0,
+    step: 0,
+    instrument: 'kick',
+    preview: 'yes',
   }), false);
 });
 

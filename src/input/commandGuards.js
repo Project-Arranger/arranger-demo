@@ -25,18 +25,12 @@ function hasValidSeekPayload(command) {
 }
 
 function hasValidDrumsPayload(command) {
-  const hasValidPreviewInstruments = !('previewInstruments' in command)
-    || (
-      Array.isArray(command.previewInstruments)
-      && command.previewInstruments.every((instrument) => DRUMS_INSTRUMENT_IDS.includes(instrument))
-    );
-
   return (
-    hasOnlyKeys(command, ['type', 'bar', 'step', 'instrument', 'previewInstruments']) &&
+    hasOnlyKeys(command, ['type', 'bar', 'step', 'instrument', 'preview']) &&
     isIntegerInRange(command.bar, 0, TOTAL_BARS - 1) &&
     isIntegerInRange(command.step, 0, STEPS_PER_BAR - 1) &&
     DRUMS_INSTRUMENT_IDS.includes(command.instrument) &&
-    hasValidPreviewInstruments
+    typeof command.preview === 'boolean'
   );
 }
 
