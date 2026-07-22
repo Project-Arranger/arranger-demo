@@ -44,7 +44,6 @@ import {
   toggleBassCell,
 } from './bassActions.js';
 import {
-  applyChordTemplateWorkspaceToBar,
   applyChordTemplateWorkspaceToExistingClips,
   applyChordRhythmStepEnrichment,
   applyChordRhythmStepPassingChord,
@@ -1006,14 +1005,11 @@ export default function App() {
   const handleChordTemplateWorkspaceApply = useCallback(({
     progressionTemplateId,
     grooveTemplateId,
-    scope,
   }) => {
     let tutorialAction = null;
     if (tutorialActive && currentTutorialStep?.id === TUTORIAL_STEP_IDS.CHORD_SELECT_PROGRESSION_TEMPLATE) {
       tutorialAction = handleTutorialControlAction({
-        control: scope === 'global'
-          ? TUTORIAL_CONTROL_TARGETS.CHORD_TEMPLATE_APPLY_GLOBAL
-          : TUTORIAL_CONTROL_TARGETS.CHORD_TEMPLATE_APPLY_CURRENT,
+        control: TUTORIAL_CONTROL_TARGETS.CHORD_TEMPLATE_APPLY,
         progress: tutorialProgress,
         selectedBar,
         step: currentTutorialStep,
@@ -1023,9 +1019,11 @@ export default function App() {
 
     const state = useMusicStore.getState();
     const selection = { progressionTemplateId, grooveTemplateId };
-    const nextMatrix = scope === 'global'
-      ? applyChordTemplateWorkspaceToExistingClips(state.matrix, state.clips, selection)
-      : applyChordTemplateWorkspaceToBar(state.matrix, state.clips, selectedBar, selection);
+    const nextMatrix = applyChordTemplateWorkspaceToExistingClips(
+      state.matrix,
+      state.clips,
+      selection,
+    );
     if (nextMatrix === state.matrix) return;
 
     withUndoCheckpoint(() => {

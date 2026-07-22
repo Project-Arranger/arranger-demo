@@ -303,7 +303,12 @@ function getPassingChordContext(matrix, clips, selectedBar) {
 
 function hasExistingChordClipContent(matrix, clips) {
   return getExistingChordClipBars(clips).some((barIndex) => (
-    matrix?.chord?.[barIndex]?.some((cell) => Boolean(cell))
+    matrix?.chord?.[barIndex]?.some((cell) => (
+      cell?.type === 'chord'
+      || cell?.type === 'note'
+      || cell?.type === 'notes'
+      || (!cell?.type && Boolean(cell?.root || cell?.label))
+    ))
   ));
 }
 

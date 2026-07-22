@@ -25,7 +25,10 @@ import {
   getChordSelectedGrooveTemplateId,
   getSourceChordLabel,
 } from '../chordGrooveActions.js';
-import { getExistingChordClipBars } from '../chordActions.js';
+import {
+  getExistingChordClipBars,
+  hasExistingChordClipContent,
+} from '../chordActions.js';
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
 import { ClipNameInput } from './ClipNameInput.jsx';
 import { EditorTrackIdentity } from './EditorTrackIdentity.jsx';
@@ -38,8 +41,7 @@ const STEPS_PER_BEAT = 4;
 const DEFAULT_TEMPLATE_ID = 'doowop';
 const DEFAULT_GROOVE_TEMPLATE_ID = 'block-basic';
 const WORKSPACE_BUTTON_CONTROL = 'chord-template-workspace-button';
-const APPLY_BAR_CONTROL = 'chord-template-apply-current';
-const APPLY_GLOBAL_CONTROL = 'chord-template-apply-global';
+const APPLY_CONTROL = 'chord-template-apply';
 const ICON_PLAY_URL = `${import.meta.env.BASE_URL}assets/skeuo/icon-play.svg`;
 const ICON_CLOSE_URL = `${import.meta.env.BASE_URL}assets/skeuo/icon-x.svg`;
 const HARMONY_POPOVER_MARGIN = 16;
@@ -281,13 +283,13 @@ function ChordEditor({
   const [pendingTemplateId, setPendingTemplateId] = useState(DEFAULT_TEMPLATE_ID);
   const [pendingGrooveTemplateId, setPendingGrooveTemplateId] = useState(DEFAULT_GROOVE_TEMPLATE_ID);
   const [previewing, setPreviewing] = useState(false);
+  const [confirmApplyOpen, setConfirmApplyOpen] = useState(false);
   const [harmonyPanel, setHarmonyPanel] = useState(null);
   const [harmonyPreviewOptionKey, setHarmonyPreviewOptionKey] = useState(null);
   const previewRunRef = useRef(0);
   const harmonyPreviewRunRef = useRef(0);
   const workspaceButtonRole = getTutorialControlRole(tutorialTargets, WORKSPACE_BUTTON_CONTROL);
-  const applyBarRole = getTutorialControlRole(tutorialTargets, APPLY_BAR_CONTROL);
-  const applyGlobalRole = getTutorialControlRole(tutorialTargets, APPLY_GLOBAL_CONTROL);
+  const applyRole = getTutorialControlRole(tutorialTargets, APPLY_CONTROL);
   const visibleTemplates = templates.slice(
     templatePage * TEMPLATE_PAGE_SIZE,
     templatePage * TEMPLATE_PAGE_SIZE + TEMPLATE_PAGE_SIZE,
@@ -301,8 +303,9 @@ function ChordEditor({
 
   const closeWorkspace = useCallback(() => {
     stopPreview();
+    setConfirmApplyOpen(false);
     setWorkspaceOpen(false);
-  }, [stopPreview]);
+  }, [setConfirmApplyOpen, stopPreview]);
 
   const stopHarmonyPreview = useCallback(() => {
     harmonyPreviewRunRef.current += 1;
@@ -331,6 +334,10 @@ function ChordEditor({
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key !== 'Escape') return;
+      if (confirmApplyOpen) {
+        setConfirmApplyOpen(false);
+        return;
+      }
       if (harmonyPanel) {
         closeHarmonyPanel();
         return;
@@ -340,7 +347,7 @@ function ChordEditor({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [closeHarmonyPanel, closeWorkspace, harmonyPanel, workspaceOpen]);
+  }, [closeHarmonyPanel, closeWorkspace, confirmApplyOpen, harmonyPanel, workspaceOpen]);
 
   useEffect(() => {
     const handlePointerDown = (event) => {
@@ -366,6 +373,7 @@ function ChordEditor({
         : DEFAULT_GROOVE_TEMPLATE_ID,
     );
     setTemplatePage(Math.floor(nextTemplateIndex / TEMPLATE_PAGE_SIZE));
+    setConfirmApplyOpen(false);
     setWorkspaceOpen(true);
   };
 
@@ -409,15 +417,26 @@ function ChordEditor({
     }
   };
 
-  const handleApply = (scope) => {
+  const applyWorkspaceSelection = () => {
     stopPreview();
     closeHarmonyPanel();
     onChordTemplateWorkspaceApply({
       progressionTemplateId: pendingTemplateId,
       grooveTemplateId: pendingGrooveTemplateId,
-      scope,
     });
+    setConfirmApplyOpen(false);
     setWorkspaceOpen(false);
+  };
+
+  const handleApply = () => {
+    stopPreview();
+    closeHarmonyPanel();
+    if (hasExistingChordClipContent(matrix, clips)) {
+      setConfirmApplyOpen(true);
+      return;
+    }
+
+    applyWorkspaceSelection();
   };
 
   const handleProgressionSelect = (templateId) => {
@@ -783,27 +802,61 @@ function ChordEditor({
               <button
                 className={[
                   'primary',
-                  applyBarRole === 'target' ? 'tutorial-control-target' : '',
+                  applyRole === 'target' ? 'tutorial-control-target' : '',
                 ].filter(Boolean).join(' ')}
-                data-tutorial-role={applyBarRole}
-                disabled={tutorialLocked && !isTutorialControlAllowed(applyBarRole)}
+                data-tutorial-role={applyRole}
+                disabled={tutorialLocked && !isTutorialControlAllowed(applyRole)}
                 type="button"
-                onClick={() => handleApply('bar')}
+                onClick={handleApply}
               >
-                应用到本小节
-              </button>
-              <button
-                className={applyGlobalRole === 'target' ? 'tutorial-control-target' : ''}
-                data-tutorial-role={applyGlobalRole}
-                disabled={tutorialLocked && !isTutorialControlAllowed(applyGlobalRole)}
-                type="button"
-                onClick={() => handleApply('global')}
-              >
-                应用到全局
+                应用
               </button>
             </div>
           </div>
         </div>
+
+        {confirmApplyOpen ? (
+          <div className="tpl-confirm-overlay">
+            <section
+              className="tpl-confirm-dialog"
+              aria-labelledby="chordTemplateConfirmTitle"
+              aria-modal="true"
+              role="dialog"
+            >
+              <span className="tpl-confirm-kicker">CHORD TEMPLATE</span>
+              <h3 className="tpl-confirm-title" id="chordTemplateConfirmTitle">
+                是否覆盖已有内容的小节？
+              </h3>
+              <p className="tpl-confirm-copy">
+                所选模板会覆盖已有内容的小节，并应用到全部已有 Chord Clips。
+              </p>
+              <div className="tpl-confirm-template">
+                <strong className="tpl-confirm-template-name">
+                  {CHORD_TEMPLATES[pendingTemplateId]?.name ?? '所选和弦模板'}
+                </strong>
+                <span className="tpl-confirm-template-chords">
+                  {CHORD_TEMPLATES[pendingTemplateId]?.chords.join(' · ')}
+                </span>
+              </div>
+              <div className="tpl-confirm-actions">
+                <button
+                  className="tpl-confirm-cancel"
+                  type="button"
+                  onClick={() => setConfirmApplyOpen(false)}
+                >
+                  取消
+                </button>
+                <button
+                  className="tpl-confirm-apply"
+                  type="button"
+                  onClick={applyWorkspaceSelection}
+                >
+                  覆盖并应用
+                </button>
+              </div>
+            </section>
+          </div>
+        ) : null}
       </section>
     </section>
   );

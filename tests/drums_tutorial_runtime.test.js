@@ -491,7 +491,7 @@ test('target 4 starts by filling chord clips from the chord track control', () =
   assert.equal(filled.nextProgress.chordTrackClipsFilled, true);
 });
 
-test('target 4 template workspace completes only after applying Doo-wop and a groove globally', () => {
+test('target 4 template workspace completes only after applying Doo-wop and a groove', () => {
   const step = getStep(TUTORIAL_STEP_IDS.CHORD_SELECT_PROGRESSION_TEMPLATE);
   const progress = {
     ...createTutorialState(),
@@ -510,18 +510,18 @@ test('target 4 template workspace completes only after applying Doo-wop and a gr
     { name: 'chord-template-card:doowop', role: 'target' },
     { name: 'chord-groove-card:block-basic', role: 'target' },
     { name: 'chord-groove-card:block-syncopated', role: 'target' },
-    { name: 'chord-template-apply-global', role: 'target' },
+    { name: 'chord-template-apply', role: 'target' },
   ]);
 
-  const wrongScope = handleTutorialControlAction({
-    control: 'chord-template-apply-current',
+  const legacyScope = handleTutorialControlAction({
+    control: 'chord-template-apply-global',
     progress,
     step,
   });
-  assert.equal(wrongScope.allowed, false);
+  assert.equal(legacyScope.allowed, false);
 
   const selected = handleTutorialControlAction({
-    control: 'chord-template-apply-global',
+    control: 'chord-template-apply',
     progress,
     step,
   });
@@ -558,8 +558,7 @@ test('target 4 chord listen step enables next after the first four bars', () => 
     { name: 'chord-template-card:jazz251', role: 'allowed' },
     { name: 'chord-groove-card:block-basic', role: 'allowed' },
     { name: 'chord-groove-card:block-syncopated', role: 'allowed' },
-    { name: 'chord-template-apply-current', role: 'allowed' },
-    { name: 'chord-template-apply-global', role: 'allowed' },
+    { name: 'chord-template-apply', role: 'allowed' },
   ]);
 
   const blockedNext = completeTutorialPrimaryAction({

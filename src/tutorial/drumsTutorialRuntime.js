@@ -332,7 +332,7 @@ function getTutorialViewModel({
         name: `${TUTORIAL_CONTROL_TARGETS.CHORD_GROOVE_CARD_PREFIX}:${template.id}`,
         role: 'target',
       })),
-      { name: TUTORIAL_CONTROL_TARGETS.CHORD_TEMPLATE_APPLY_GLOBAL, role: 'target' },
+      { name: TUTORIAL_CONTROL_TARGETS.CHORD_TEMPLATE_APPLY, role: 'target' },
     ];
   }
 
@@ -348,8 +348,7 @@ function getTutorialViewModel({
         name: `${TUTORIAL_CONTROL_TARGETS.CHORD_GROOVE_CARD_PREFIX}:${template.id}`,
         role: 'allowed',
       })),
-      { name: TUTORIAL_CONTROL_TARGETS.CHORD_TEMPLATE_APPLY_CURRENT, role: 'allowed' },
-      { name: TUTORIAL_CONTROL_TARGETS.CHORD_TEMPLATE_APPLY_GLOBAL, role: 'allowed' },
+      { name: TUTORIAL_CONTROL_TARGETS.CHORD_TEMPLATE_APPLY, role: 'allowed' },
     ];
   }
 

@@ -112,13 +112,13 @@ test('drums tutorial v0.2 targets 1-6 keep exact table source columns', () => {
     {
       section: '目标4\n编辑所有Chord Clips，对和弦进行概念建立感性认识，并得到一段自己觉得好听的和弦进行Loop',
       trigger: '点击Chord轨填充整轨按钮',
-      uiEvent: '选择和弦模板与律动按钮、Doo-Wop、律动卡片和应用到全局按钮闪烁',
-      copy: '创建完整的和弦进行音轨\n\n选择和弦进行与弹奏律动\n打开模板工作区，选择 Doo-Wop 和一个你喜欢的弹奏律动，然后点击“应用到全局”，一次完成整轨和弦与节奏设置。',
+      uiEvent: '选择和弦模板与律动按钮、Doo-Wop、律动卡片和应用按钮闪烁',
+      copy: '创建完整的和弦进行音轨\n\n选择和弦进行与弹奏律动\n打开模板工作区，选择 Doo-Wop 和一个你喜欢的弹奏律动，然后点击“应用”，一次完成已有和弦乐句与节奏设置。',
       primaryLabel: '下一步',
     },
     {
       section: '目标4\n编辑所有Chord Clips，对和弦进行概念建立感性认识，并得到一段自己觉得好听的和弦进行Loop',
-      trigger: '在二级菜单应用到全局',
+      trigger: '在二级菜单点击应用',
       uiEvent: '播放按钮闪烁',
       copy: '创建完整的和弦进行音轨\n\n选择如何弹奏你所选择的和弦进行\n和弦可以听起来舒缓或密集；通过选择节奏型，为你的乐曲决定整体听觉和情绪氛围。\n完成选择后，听听看效果如何。',
       primaryLabel: '下一步',
