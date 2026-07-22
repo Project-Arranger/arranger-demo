@@ -82,7 +82,13 @@ test('transport commands dispatch to store and optional audio dependencies', asy
     seekToStep: (bar, step) => audioCalls.push(['audio.seekToStep', bar, step]),
   };
 
-  assert.deepEqual(await dispatchCommand({ type: 'transport.togglePlay' }, { store, audio }), { ok: true });
+  assert.deepEqual(await dispatchCommand({
+    type: 'transport.togglePlay',
+    audibleTrackIds: ['melody'],
+    maxPlaybackSteps: 48,
+  }, { store, audio }), { ok: true });
+  assert.deepEqual(playOptions.audibleTrackIds, ['melody']);
+  assert.equal(playOptions.maxPlaybackSteps, 48);
   playOptions.onPositionChange(1, 5);
   store.getState().isPlaying = true;
   assert.deepEqual(await dispatchCommand({ type: 'transport.togglePlay' }, { store, audio }), { ok: true });

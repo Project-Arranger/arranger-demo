@@ -353,3 +353,35 @@ test('createEmptyClipsForTrack ignores invalid track ids without changing state'
   assert.deepEqual(useMusicStore.getState().clips, beforeClips);
   assert.deepEqual(useMusicStore.getState().matrix, beforeMatrix);
 });
+
+test('ensureMelodyClipsInRange creates only missing clips without changing selection or content', () => {
+  const state = useMusicStore.getState();
+  state.createClip('melody', 3);
+  state.renameClip('melody-bar-3', 'Keep Me');
+  state.setCell('melody', 3, 6, { type: 'melody', note: 'E4' });
+  state.selectClip('drums-bar-0');
+  const existingClip = useMusicStore.getState().clips.byId['melody-bar-3'];
+
+  const created = useMusicStore.getState().ensureMelodyClipsInRange(2, 5);
+  const nextState = useMusicStore.getState();
+
+  assert.deepEqual(created.map((clip) => clip.bar), [2, 4, 5]);
+  assert.deepEqual(
+    [2, 3, 4, 5].map((bar) => nextState.getClipForTrackBar('melody', bar)?.id),
+    ['melody-bar-2', 'melody-bar-3', 'melody-bar-4', 'melody-bar-5'],
+  );
+  assert.equal(nextState.clips.byId['melody-bar-3'], existingClip);
+  assert.deepEqual(nextState.matrix.melody[3][6], { type: 'melody', note: 'E4' });
+  assert.equal(nextState.selectedClipId, 'drums-bar-0');
+  assert.equal(nextState.activeTrackId, 'drums');
+  assert.equal(nextState.selectedBar, 0);
+});
+
+test('ensureMelodyClipsInRange rejects invalid ranges without changing clips', () => {
+  const before = useMusicStore.getState().clips;
+
+  assert.deepEqual(useMusicStore.getState().ensureMelodyClipsInRange(-1, 3), []);
+  assert.deepEqual(useMusicStore.getState().ensureMelodyClipsInRange(5, 4), []);
+  assert.deepEqual(useMusicStore.getState().ensureMelodyClipsInRange(0, 8), []);
+  assert.equal(useMusicStore.getState().clips, before);
+});

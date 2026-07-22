@@ -6,7 +6,7 @@ import {
 } from 'react';
 
 import { isMelodyNoteInScale } from '../data/melodyScales.js';
-import { STEPS_PER_BAR } from '../domain/musicConstants.js';
+import { STEPS_PER_BAR, TOTAL_BARS } from '../domain/musicConstants.js';
 import { APP_COMMAND_TYPES } from '../input/appCommands.js';
 import { isMelodyInputAreaVisible } from '../input/melodyInputLayout.js';
 import useMusicStore from '../store/useMusicStore.js';
@@ -35,12 +35,19 @@ const MELODY_RECORDING_MODES = Object.freeze({
 });
 
 const IDLE_MELODY_RECORDING_STATE = Object.freeze({
+  barRecordedNotes: 0,
+  completedBars: Object.freeze([]),
   countInBeat: null,
+  currentBar: null,
+  endBar: null,
   mode: null,
   phase: MELODY_RECORDING_PHASES.IDLE,
   recordedNotes: 0,
   selectedStep: null,
   sequenceNotes: Object.freeze([]),
+  startBar: null,
+  templateId: null,
+  totalBars: 0,
   totalNotes: 0,
 });
 
@@ -52,6 +59,25 @@ function hasMelodyBarNotes(matrix, bar) {
   return matrix?.melody?.[bar]?.some((cell) => cell?.type === 'melody') ?? false;
 }
 
+function getMelodyWriteBarRange(startBar, endBar = TOTAL_BARS - 1) {
+  if (
+    !Number.isInteger(startBar)
+    || !Number.isInteger(endBar)
+    || startBar < 0
+    || endBar >= TOTAL_BARS
+    || startBar > endBar
+  ) {
+    return [];
+  }
+
+  return Array.from({ length: endBar - startBar + 1 }, (_, offset) => startBar + offset);
+}
+
+function hasMelodyNotesInRange(matrix, startBar, endBar = TOTAL_BARS - 1) {
+  return getMelodyWriteBarRange(startBar, endBar)
+    .some((bar) => hasMelodyBarNotes(matrix, bar));
+}
+
 function getMelodyRecordingMode(templateId) {
   return getMelodyRhythmTemplate(templateId)
     ? MELODY_RECORDING_MODES.TEMPLATE
@@ -61,15 +87,25 @@ function getMelodyRecordingMode(templateId) {
 function createTemplateRecordingState(templateId, phase, overrides = {}) {
   const template = getMelodyRhythmTemplate(templateId);
   if (!template) return { ...IDLE_MELODY_RECORDING_STATE };
+  const totalBars = Number.isInteger(overrides.totalBars) && overrides.totalBars > 0
+    ? overrides.totalBars
+    : 1;
 
   return {
+    barRecordedNotes: 0,
+    completedBars: [],
     countInBeat: null,
+    currentBar: null,
+    endBar: null,
     mode: MELODY_RECORDING_MODES.TEMPLATE,
     phase,
     recordedNotes: 0,
     selectedStep: null,
     sequenceNotes: [],
-    totalNotes: template.steps.length,
+    startBar: null,
+    templateId: template.id,
+    totalBars,
+    totalNotes: template.steps.length * totalBars,
     ...overrides,
   };
 }
@@ -78,8 +114,15 @@ function getMelodyRecordingRestState({ activeTrackId, selectedClip } = {}) {
   const templateId = activeTrackId === 'melody' && selectedClip?.trackId === 'melody'
     ? selectedClip.melodyRhythmTemplateId
     : null;
+  const startBar = selectedClip?.bar;
+  const targetBars = getMelodyWriteBarRange(startBar);
   return getMelodyRhythmTemplate(templateId)
-    ? createTemplateRecordingState(templateId, MELODY_RECORDING_PHASES.OVERVIEW)
+    ? createTemplateRecordingState(templateId, MELODY_RECORDING_PHASES.OVERVIEW, {
+      currentBar: startBar,
+      endBar: targetBars.at(-1) ?? null,
+      startBar,
+      totalBars: targetBars.length,
+    })
     : { ...IDLE_MELODY_RECORDING_STATE };
 }
 
@@ -212,7 +255,6 @@ function useMelodyRecordingController({
   const activeFreeNoteRef = useRef(null);
   const activeInputMapRef = useRef(new Map());
   const countInTimerRef = useRef(null);
-  const freeStopTimerRef = useRef(null);
   const generationRef = useRef(0);
   const pendingSessionRef = useRef(null);
   const recordingStateRef = useRef(recordingState);
@@ -237,10 +279,6 @@ function useMelodyRecordingController({
     if (countInTimerRef.current !== null) {
       window.clearTimeout(countInTimerRef.current);
       countInTimerRef.current = null;
-    }
-    if (freeStopTimerRef.current !== null) {
-      window.clearTimeout(freeStopTimerRef.current);
-      freeStopTimerRef.current = null;
     }
   }, []);
 
@@ -284,7 +322,7 @@ function useMelodyRecordingController({
     const state = useMusicStore.getState();
     const nextMatrix = setMelodyCellDuration(
       state.matrix,
-      session.bar,
+      activeNote.bar,
       activeNote.startStep,
       durationSteps,
     );
@@ -306,6 +344,10 @@ function useMelodyRecordingController({
     await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY });
   }, [dispatchAppCommand]);
 
+  const stopTransportPlayback = useCallback(async () => {
+    await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
+  }, [dispatchAppCommand]);
+
   const stopRecording = useCallback(({
     stopTransport = true,
   } = {}) => {
@@ -314,6 +356,7 @@ function useMelodyRecordingController({
     generationRef.current += 1;
     clearTimers();
     if (session?.mode === MELODY_RECORDING_MODES.FREE) finalizeActiveNote();
+    audioEngine.setPlaybackCompleteHandler?.(null);
     if (
       stopTransport
       && [
@@ -321,29 +364,54 @@ function useMelodyRecordingController({
         MELODY_RECORDING_PHASES.RECORDING,
       ].includes(currentPhase)
     ) {
-      void pauseTransport();
+      void stopTransportPlayback();
     }
     activeFreeNoteRef.current = null;
     pendingSessionRef.current = null;
     sessionRef.current = null;
     clearActiveNotes();
-    updateRecordingState(getCurrentRestState());
+    if (session?.mode === MELODY_RECORDING_MODES.TEMPLATE) {
+      const state = useMusicStore.getState();
+      const startClip = state.getClipForTrackBar('melody', session.startBar);
+      if (startClip && state.selectedClipId !== startClip.id) state.selectClip(startClip.id);
+    }
+    updateRecordingState(session?.mode === MELODY_RECORDING_MODES.TEMPLATE
+      ? createTemplateRecordingState(
+        session.templateId,
+        MELODY_RECORDING_PHASES.OVERVIEW,
+        {
+          currentBar: session.startBar,
+          endBar: session.endBar,
+          startBar: session.startBar,
+          totalBars: session.targetBars.length,
+        },
+      )
+      : getCurrentRestState());
   }, [
+    audioEngine,
     clearActiveNotes,
     clearTimers,
     finalizeActiveNote,
     getCurrentRestState,
-    pauseTransport,
+    stopTransportPlayback,
     updateRecordingState,
   ]);
 
-  const prepareMelodyBar = useCallback((bar) => {
+  const initializeWriteSession = useCallback((pendingSession) => {
     withUndoCheckpoint(() => {
       const state = useMusicStore.getState();
-      const nextMatrix = clearMelodyBar(state.matrix, bar);
-      state.setTrackMatrix('melody', nextMatrix.melody);
+      state.ensureMelodyClipsInRange(pendingSession.startBar, pendingSession.endBar);
     }, { force: true });
   }, [withUndoCheckpoint]);
+
+  const prepareFreeRecordingBar = useCallback((session, bar) => {
+    if (!session || session.preparedBars.has(bar)) return false;
+    const state = useMusicStore.getState();
+    const nextMatrix = clearMelodyBar(state.matrix, bar);
+    state.setTrackMatrix('melody', nextMatrix.melody);
+    session.preparedBars.add(bar);
+    return true;
+  }, []);
 
   const beginTemplateSequenceCapture = useCallback((pendingSession) => {
     const template = getMelodyRhythmTemplate(pendingSession.templateId);
@@ -352,55 +420,97 @@ function useMelodyRecordingController({
     generationRef.current += 1;
     clearTimers();
     clearActiveNotes();
+    initializeWriteSession(pendingSession);
     sessionRef.current = {
-      bar: pendingSession.bar,
       bpm: pendingSession.bpm,
       completed: false,
+      completedBars: [],
+      currentBar: pendingSession.startBar,
+      endBar: pendingSession.endBar,
       mode: MELODY_RECORDING_MODES.TEMPLATE,
       sequenceNotes: [],
+      startBar: pendingSession.startBar,
+      targetBars: [...pendingSession.targetBars],
       templateId: template.id,
       templateSteps: [...template.steps],
     };
     updateRecordingState(createTemplateRecordingState(
       template.id,
       MELODY_RECORDING_PHASES.SEQUENCE_CAPTURE,
+      {
+        currentBar: pendingSession.startBar,
+        endBar: pendingSession.endBar,
+        startBar: pendingSession.startBar,
+        totalBars: pendingSession.targetBars.length,
+      },
     ));
-  }, [clearActiveNotes, clearTimers, updateRecordingState]);
+    void dispatchAppCommand({
+      type: APP_COMMAND_TYPES.TRANSPORT_SEEK,
+      bar: pendingSession.startBar,
+      step: 0,
+    });
+  }, [
+    clearActiveNotes,
+    clearTimers,
+    dispatchAppCommand,
+    initializeWriteSession,
+    updateRecordingState,
+  ]);
 
   const beginFreeRecording = useCallback(async (pendingSession, generation) => {
     if (generationRef.current !== generation) return;
-    prepareMelodyBar(pendingSession.bar);
+    initializeWriteSession(pendingSession);
     await dispatchAppCommand({
       type: APP_COMMAND_TYPES.TRANSPORT_SEEK,
-      bar: pendingSession.bar,
+      bar: pendingSession.startBar,
       step: 0,
     });
     if (generationRef.current !== generation) return;
 
-    sessionRef.current = {
-      bar: pendingSession.bar,
+    const session = {
       bpm: pendingSession.bpm,
+      completedBars: [],
+      currentBar: pendingSession.startBar,
+      endBar: pendingSession.endBar,
       mode: MELODY_RECORDING_MODES.FREE,
+      preparedBars: new Set(),
+      startBar: pendingSession.startBar,
       startedAt: nowMilliseconds(),
+      targetBars: [...pendingSession.targetBars],
     };
+    sessionRef.current = session;
+    prepareFreeRecordingBar(session, pendingSession.startBar);
     updateRecordingState({
       ...IDLE_MELODY_RECORDING_STATE,
+      currentBar: pendingSession.startBar,
+      endBar: pendingSession.endBar,
       mode: MELODY_RECORDING_MODES.FREE,
       phase: MELODY_RECORDING_PHASES.RECORDING,
+      startBar: pendingSession.startBar,
+      totalBars: pendingSession.targetBars.length,
     });
-    await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY });
-    if (generationRef.current !== generation) return;
-
-    const barDurationMilliseconds = (60000 / pendingSession.bpm) * 4;
-    freeStopTimerRef.current = window.setTimeout(() => {
-      finalizeActiveNote({
-        maxDurationSteps: activeFreeNoteRef.current
-          ? STEPS_PER_BAR - activeFreeNoteRef.current.startStep
-          : STEPS_PER_BAR,
+    const onPlaybackComplete = () => {
+      queueMicrotask(() => {
+        if (generationRef.current !== generation) return;
+        stopRecording();
       });
-      stopRecording();
-    }, barDurationMilliseconds);
-  }, [dispatchAppCommand, finalizeActiveNote, prepareMelodyBar, stopRecording, updateRecordingState]);
+    };
+    audioEngine.setPlaybackCompleteHandler?.(onPlaybackComplete);
+    await dispatchAppCommand({
+      type: APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY,
+      audibleTrackIds: ['melody'],
+      maxPlaybackSteps: pendingSession.targetBars.length * STEPS_PER_BAR,
+    });
+    if (generationRef.current !== generation) void stopTransportPlayback();
+  }, [
+    audioEngine,
+    dispatchAppCommand,
+    initializeWriteSession,
+    prepareFreeRecordingBar,
+    stopRecording,
+    stopTransportPlayback,
+    updateRecordingState,
+  ]);
 
   const beginCountIn = useCallback(async (pendingSession) => {
     const generation = generationRef.current + 1;
@@ -408,7 +518,7 @@ function useMelodyRecordingController({
     await pauseTransport();
     await dispatchAppCommand({
       type: APP_COMMAND_TYPES.TRANSPORT_SEEK,
-      bar: pendingSession.bar,
+      bar: pendingSession.startBar,
       step: 0,
     });
     if (generationRef.current !== generation) return;
@@ -425,8 +535,12 @@ function useMelodyRecordingController({
       updateRecordingState({
         ...IDLE_MELODY_RECORDING_STATE,
         countInBeat: beat,
+        currentBar: pendingSession.startBar,
+        endBar: pendingSession.endBar,
         mode: MELODY_RECORDING_MODES.FREE,
         phase: MELODY_RECORDING_PHASES.COUNT_IN,
+        startBar: pendingSession.startBar,
+        totalBars: pendingSession.targetBars.length,
       });
       void audioEngine.triggerDrumsStep(beat === 4 ? ['kick', 'hihat'] : 'hihat');
       countInTimerRef.current = window.setTimeout(() => tick(beat - 1), beatDurationMilliseconds);
@@ -446,25 +560,50 @@ function useMelodyRecordingController({
     void beginCountIn(pendingSession);
   }, [beginCountIn, beginTemplateSequenceCapture]);
 
-  const setTemplateOverview = useCallback(() => {
+  const setTemplateOverview = useCallback((templateIdOverride = null) => {
     const state = useMusicStore.getState();
     const clip = state.clips.byId[state.selectedClipId];
-    const template = state.activeTrackId === 'melody' && clip?.trackId === 'melody'
-      ? getMelodyRhythmTemplate(clip.melodyRhythmTemplateId)
-      : null;
+    const session = sessionRef.current;
+    const currentRecordingState = recordingStateRef.current;
+    const template = getMelodyRhythmTemplate(
+      templateIdOverride
+      ?? session?.templateId
+      ?? currentRecordingState.templateId
+      ?? (state.activeTrackId === 'melody' && clip?.trackId === 'melody'
+        ? clip.melodyRhythmTemplateId
+        : null),
+    );
     if (!template) return false;
+    const startBar = session?.startBar ?? currentRecordingState.startBar ?? clip?.bar;
+    const targetBars = getMelodyWriteBarRange(
+      startBar,
+      session?.endBar ?? currentRecordingState.endBar ?? TOTAL_BARS - 1,
+    );
 
     generationRef.current += 1;
     clearTimers();
     pendingSessionRef.current = null;
     sessionRef.current = null;
     clearActiveNotes();
+    const overviewClip = state.getClipForTrackBar('melody', startBar);
+    if (overviewClip && state.selectedClipId !== overviewClip.id) state.selectClip(overviewClip.id);
     updateRecordingState(createTemplateRecordingState(
       template.id,
       MELODY_RECORDING_PHASES.OVERVIEW,
+      {
+        currentBar: startBar,
+        endBar: targetBars.at(-1) ?? null,
+        startBar,
+        totalBars: targetBars.length,
+      },
     ));
+    void dispatchAppCommand({
+      type: APP_COMMAND_TYPES.TRANSPORT_SEEK,
+      bar: startBar,
+      step: 0,
+    });
     return true;
-  }, [clearActiveNotes, clearTimers, updateRecordingState]);
+  }, [clearActiveNotes, clearTimers, dispatchAppCommand, updateRecordingState]);
 
   const requestWriteToggle = useCallback(() => {
     const currentPhase = recordingStateRef.current.phase;
@@ -473,7 +612,7 @@ function useMelodyRecordingController({
       return;
     }
     if (currentPhase === MELODY_RECORDING_PHASES.SEQUENCE_CAPTURE) {
-      setTemplateOverview();
+      setTemplateOverview(sessionRef.current?.templateId);
       return;
     }
     if (
@@ -488,10 +627,13 @@ function useMelodyRecordingController({
     const clip = state.clips.byId[state.selectedClipId];
     if (state.activeTrackId !== 'melody' || clip?.trackId !== 'melody') return;
     const templateId = clip.melodyRhythmTemplateId ?? null;
+    const targetBars = getMelodyWriteBarRange(clip.bar);
     const pendingSession = {
-      bar: clip.bar,
       bpm: Number.isFinite(state.bpm) && state.bpm > 0 ? state.bpm : bpm,
+      endBar: targetBars.at(-1),
       mode: getMelodyRecordingMode(templateId),
+      startBar: clip.bar,
+      targetBars,
       templateId,
     };
     clearActiveNotes();
@@ -504,10 +646,16 @@ function useMelodyRecordingController({
       ].includes(currentPhase)
     ) {
       pendingSessionRef.current = pendingSession;
-      if (hasMelodyBarNotes(state.matrix, clip.bar)) {
+      if (hasMelodyNotesInRange(state.matrix, pendingSession.startBar, pendingSession.endBar)) {
         updateRecordingState(createTemplateRecordingState(
           templateId,
           MELODY_RECORDING_PHASES.CONFIRM,
+          {
+            currentBar: pendingSession.startBar,
+            endBar: pendingSession.endBar,
+            startBar: pendingSession.startBar,
+            totalBars: pendingSession.targetBars.length,
+          },
         ));
         return;
       }
@@ -517,11 +665,15 @@ function useMelodyRecordingController({
 
     if (currentPhase !== MELODY_RECORDING_PHASES.IDLE) return;
     pendingSessionRef.current = pendingSession;
-    if (hasMelodyBarNotes(state.matrix, clip.bar)) {
+    if (hasMelodyNotesInRange(state.matrix, pendingSession.startBar, pendingSession.endBar)) {
       updateRecordingState({
         ...IDLE_MELODY_RECORDING_STATE,
+        currentBar: pendingSession.startBar,
+        endBar: pendingSession.endBar,
         mode: pendingSession.mode,
         phase: MELODY_RECORDING_PHASES.CONFIRM,
+        startBar: pendingSession.startBar,
+        totalBars: pendingSession.targetBars.length,
       });
       return;
     }
@@ -544,7 +696,7 @@ function useMelodyRecordingController({
     if (recordingStateRef.current.phase !== MELODY_RECORDING_PHASES.CONFIRM) return;
     pendingSessionRef.current = null;
     if (recordingStateRef.current.mode === MELODY_RECORDING_MODES.TEMPLATE) {
-      setTemplateOverview();
+      setTemplateOverview(recordingStateRef.current.templateId);
       return;
     }
     updateRecordingState({ ...IDLE_MELODY_RECORDING_STATE });
@@ -591,33 +743,48 @@ function useMelodyRecordingController({
   }, [clearActiveNotes, updateRecordingState]);
 
   const commitTemplateSequence = useCallback((session, sequenceNotes) => {
-    withUndoCheckpoint(() => {
-      const state = useMusicStore.getState();
-      const nextMatrix = replaceMelodyBarWithSequence(
-        state.matrix,
-        session.bar,
-        session.templateSteps,
-        sequenceNotes,
-      );
-      state.setTrackMatrix('melody', nextMatrix.melody);
-    }, { force: true });
-
-    generationRef.current += 1;
-    sessionRef.current = null;
+    const state = useMusicStore.getState();
+    const completedBar = session.currentBar;
+    const nextMatrix = replaceMelodyBarWithSequence(
+      state.matrix,
+      completedBar,
+      session.templateSteps,
+      sequenceNotes,
+    );
+    state.setTrackMatrix('melody', nextMatrix.melody);
+    session.completedBars.push(completedBar);
     clearActiveNotes();
+
+    if (completedBar >= session.endBar) {
+      setTemplateOverview(session.templateId);
+      return;
+    }
+
+    const nextBar = completedBar + 1;
+    session.completed = false;
+    session.currentBar = nextBar;
+    session.sequenceNotes = [];
+    const nextClip = state.getClipForTrackBar('melody', nextBar);
+    if (nextClip) state.selectClip(nextClip.id);
+    const recordedNotes = session.completedBars.length * session.templateSteps.length;
     updateRecordingState(createTemplateRecordingState(
       session.templateId,
-      MELODY_RECORDING_PHASES.OVERVIEW,
+      MELODY_RECORDING_PHASES.SEQUENCE_CAPTURE,
+      {
+        completedBars: [...session.completedBars],
+        currentBar: nextBar,
+        endBar: session.endBar,
+        recordedNotes,
+        startBar: session.startBar,
+        totalBars: session.targetBars.length,
+      },
     ));
-    void (async () => {
-      await pauseTransport();
-      await dispatchAppCommand({
-        type: APP_COMMAND_TYPES.TRANSPORT_SEEK,
-        bar: session.bar,
-        step: 0,
-      });
-    })();
-  }, [clearActiveNotes, dispatchAppCommand, pauseTransport, updateRecordingState, withUndoCheckpoint]);
+    void dispatchAppCommand({
+      type: APP_COMMAND_TYPES.TRANSPORT_SEEK,
+      bar: nextBar,
+      step: 0,
+    });
+  }, [clearActiveNotes, dispatchAppCommand, setTemplateOverview, updateRecordingState]);
 
   const handleNoteOn = useCallback((input) => {
     const { inputId, note } = normalizeMelodyNoteOnInput(input);
@@ -629,9 +796,10 @@ function useMelodyRecordingController({
     const state = useMusicStore.getState();
     const clip = state.clips.byId[state.selectedClipId];
     const hasTemplate = Boolean(getMelodyRhythmTemplate(
-      state.activeTrackId === 'melody' && clip?.trackId === 'melody'
+      current.templateId
+      ?? (state.activeTrackId === 'melody' && clip?.trackId === 'melody'
         ? clip.melodyRhythmTemplateId
-        : null,
+        : null),
     ));
     if (
       state.activeTrackId !== 'melody'
@@ -687,9 +855,12 @@ function useMelodyRecordingController({
       const appendResult = captureMelodySequenceNote(session, note);
       if (!appendResult.accepted) return { recorded: false };
       const { sequenceNotes } = appendResult;
-      const recordedNotes = sequenceNotes.length;
+      const barRecordedNotes = sequenceNotes.length;
+      const recordedNotes = session.completedBars.length * session.templateSteps.length
+        + barRecordedNotes;
       updateRecordingState((state) => ({
         ...state,
+        barRecordedNotes,
         recordedNotes,
         sequenceNotes: [...sequenceNotes],
       }));
@@ -698,7 +869,7 @@ function useMelodyRecordingController({
       }
       return {
         recorded: true,
-        step: session.templateSteps[recordedNotes - 1],
+        step: session.templateSteps[barRecordedNotes - 1],
       };
     }
 
@@ -710,7 +881,12 @@ function useMelodyRecordingController({
       return { recorded: false };
     }
 
-    if (state.currentBar !== session.bar) return { recorded: false };
+    if (
+      state.currentBar !== session.currentBar
+      || !session.preparedBars.has(session.currentBar)
+    ) {
+      return { recorded: false };
+    }
     const step = Math.max(0, Math.min(STEPS_PER_BAR - 1, state.currentStep));
     if (activeFreeNoteRef.current) {
       const previousStartStep = activeFreeNoteRef.current.startStep;
@@ -719,9 +895,16 @@ function useMelodyRecordingController({
       });
     }
     const currentState = useMusicStore.getState();
-    const nextMatrix = setMelodyCell(currentState.matrix, session.bar, step, note, 1);
+    const nextMatrix = setMelodyCell(
+      currentState.matrix,
+      session.currentBar,
+      step,
+      note,
+      1,
+    );
     writeMelodyMatrix(nextMatrix);
     activeFreeNoteRef.current = {
+      bar: session.currentBar,
       note,
       startedAt: nowMilliseconds(),
       startStep: step,
@@ -757,12 +940,60 @@ function useMelodyRecordingController({
     return { recorded: true, step: activeNote.startStep };
   }, [finalizeActiveNote, syncActiveInputNotes]);
 
+  const handleTransportPosition = useCallback((bar, step) => {
+    const session = sessionRef.current;
+    if (
+      recordingStateRef.current.phase !== MELODY_RECORDING_PHASES.RECORDING
+      || session?.mode !== MELODY_RECORDING_MODES.FREE
+      || step !== 0
+      || !session.targetBars.includes(bar)
+    ) {
+      return false;
+    }
+
+    if (bar !== session.currentBar) {
+      if (activeFreeNoteRef.current) {
+        finalizeActiveNote({
+          maxDurationSteps: STEPS_PER_BAR - activeFreeNoteRef.current.startStep,
+        });
+      }
+      if (!session.completedBars.includes(session.currentBar)) {
+        session.completedBars.push(session.currentBar);
+      }
+      session.currentBar = bar;
+    }
+
+    prepareFreeRecordingBar(session, bar);
+    const state = useMusicStore.getState();
+    const clip = state.getClipForTrackBar('melody', bar);
+    if (clip && state.selectedClipId !== clip.id) state.selectClip(clip.id);
+    updateRecordingState((current) => ({
+      ...current,
+      completedBars: [...session.completedBars],
+      currentBar: bar,
+    }));
+    return true;
+  }, [finalizeActiveNote, prepareFreeRecordingBar, updateRecordingState]);
+
   useEffect(() => {
     const contextKey = `${activeTrackId}:${selectedClip?.id ?? ''}`;
     if (contextKeyRef.current === contextKey) return;
     contextKeyRef.current = contextKey;
+    const session = sessionRef.current;
+    if (
+      session
+      && activeTrackId === 'melody'
+      && selectedClip?.trackId === 'melody'
+      && session.targetBars.includes(selectedClip.bar)
+      && [
+        MELODY_RECORDING_PHASES.RECORDING,
+        MELODY_RECORDING_PHASES.SEQUENCE_CAPTURE,
+      ].includes(recordingStateRef.current.phase)
+    ) {
+      return;
+    }
     stopRecording();
-  }, [activeTrackId, selectedClip?.id, stopRecording]);
+  }, [activeTrackId, selectedClip, stopRecording]);
 
   useEffect(() => {
     if (scaleIdRef.current === melodyScaleId) return;
@@ -779,8 +1010,9 @@ function useMelodyRecordingController({
   useEffect(() => () => {
     generationRef.current += 1;
     clearTimers();
+    audioEngine.setPlaybackCompleteHandler?.(null);
     stopActiveNotes();
-  }, [clearTimers, stopActiveNotes]);
+  }, [audioEngine, clearTimers, stopActiveNotes]);
 
   return {
     activeInputNotes,
@@ -788,6 +1020,7 @@ function useMelodyRecordingController({
     confirmRecord,
     handleNoteOff,
     handleNoteOn,
+    handleTransportPosition,
     recordingState,
     clearActiveNotes,
     requestWriteToggle,
@@ -803,7 +1036,9 @@ export {
   getMelodyRecordingMode,
   getMelodyRecordingRestState,
   getRecordedMelodyDurationSteps,
+  getMelodyWriteBarRange,
   hasMelodyBarNotes,
+  hasMelodyNotesInRange,
   IDLE_MELODY_RECORDING_STATE,
   MELODY_RECORDING_MODES,
   MELODY_RECORDING_PHASES,

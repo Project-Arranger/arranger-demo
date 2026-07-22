@@ -17,6 +17,8 @@ import {
   getMelodyRecordingRestState,
   getRecordedMelodyDurationSteps,
   hasMelodyBarNotes,
+  hasMelodyNotesInRange,
+  getMelodyWriteBarRange,
   MELODY_RECORDING_MODES,
   MELODY_RECORDING_PHASES,
   recordTemplateMelodyNote,
@@ -60,6 +62,30 @@ test('melody rhythm templates expose the five requested one-based patterns', () 
       { name: '四十六', steps: [1, 5, 9, 13] },
       { name: '附点', steps: [1, 13] },
     ],
+  );
+  assert.deepEqual(
+    createTemplateRecordingState('syncopation', MELODY_RECORDING_PHASES.SEQUENCE_CAPTURE, {
+      currentBar: 5,
+      endBar: 7,
+      startBar: 5,
+      totalBars: 3,
+    }),
+    {
+      barRecordedNotes: 0,
+      completedBars: [],
+      countInBeat: null,
+      currentBar: 5,
+      endBar: 7,
+      mode: MELODY_RECORDING_MODES.TEMPLATE,
+      phase: MELODY_RECORDING_PHASES.SEQUENCE_CAPTURE,
+      recordedNotes: 0,
+      selectedStep: null,
+      sequenceNotes: [],
+      startBar: 5,
+      templateId: 'syncopation',
+      totalBars: 3,
+      totalNotes: 9,
+    },
   );
 });
 
@@ -139,6 +165,10 @@ test('free recording helpers quantize duration and choose mode from clip templat
   assert.equal(hasMelodyBarNotes(matrix, 0), false);
   matrix.melody[0][4] = { type: 'melody', note: 'C4' };
   assert.equal(hasMelodyBarNotes(matrix, 0), true);
+  assert.deepEqual(getMelodyWriteBarRange(5), [5, 6, 7]);
+  assert.deepEqual(getMelodyWriteBarRange(-1), []);
+  assert.equal(hasMelodyNotesInRange(matrix, 0, 7), true);
+  assert.equal(hasMelodyNotesInRange(matrix, 1, 7), false);
 });
 
 test('template workflow exposes overview, step-edit, and capture state', () => {
@@ -158,12 +188,19 @@ test('template workflow exposes overview, step-edit, and capture state', () => {
   assert.deepEqual(
     createTemplateRecordingState('syncopation', MELODY_RECORDING_PHASES.SEQUENCE_CAPTURE),
     {
+      barRecordedNotes: 0,
+      completedBars: [],
       countInBeat: null,
+      currentBar: null,
+      endBar: null,
       mode: MELODY_RECORDING_MODES.TEMPLATE,
       phase: MELODY_RECORDING_PHASES.SEQUENCE_CAPTURE,
       recordedNotes: 0,
       selectedStep: null,
       sequenceNotes: [],
+      startBar: null,
+      templateId: 'syncopation',
+      totalBars: 1,
       totalNotes: 3,
     },
   );

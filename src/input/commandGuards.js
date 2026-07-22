@@ -1,4 +1,9 @@
-import { DRUMS_INSTRUMENT_IDS, STEPS_PER_BAR, TOTAL_BARS } from '../domain/musicConstants.js';
+import {
+  DRUMS_INSTRUMENT_IDS,
+  STEPS_PER_BAR,
+  TOTAL_BARS,
+  TRACK_IDS,
+} from '../domain/musicConstants.js';
 import { isChordName, isChordSpan } from '../domain/chordCells.js';
 import { APP_COMMAND_TYPES, CHORD_OPTION_COUNT, MELODY_NOTE_IDS } from './appCommands.js';
 import { MELODY_INPUT_SOURCES } from './melodyInputLayout.js';
@@ -22,6 +27,27 @@ function hasValidSeekPayload(command) {
     isIntegerInRange(command.bar, 0, TOTAL_BARS - 1) &&
     isIntegerInRange(command.step, 0, STEPS_PER_BAR - 1)
   );
+}
+
+function hasValidTogglePlayPayload(command) {
+  if (!hasOnlyKeys(command, ['type', 'audibleTrackIds', 'maxPlaybackSteps'])) return false;
+  if (
+    'audibleTrackIds' in command
+    && (
+      !Array.isArray(command.audibleTrackIds)
+      || new Set(command.audibleTrackIds).size !== command.audibleTrackIds.length
+      || !command.audibleTrackIds.every((trackId) => TRACK_IDS.includes(trackId))
+    )
+  ) {
+    return false;
+  }
+  if (
+    'maxPlaybackSteps' in command
+    && !isIntegerInRange(command.maxPlaybackSteps, 1, TOTAL_BARS * STEPS_PER_BAR)
+  ) {
+    return false;
+  }
+  return true;
 }
 
 function hasValidDrumsPayload(command) {
@@ -83,7 +109,6 @@ function isValidAppCommand(command) {
   switch (command.type) {
     case APP_COMMAND_TYPES.APP_REDO:
     case APP_COMMAND_TYPES.APP_UNDO:
-    case APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY:
     case APP_COMMAND_TYPES.TRANSPORT_STOP:
     case APP_COMMAND_TYPES.CLIP_COPY_SELECTED:
     case APP_COMMAND_TYPES.CLIP_DELETE_SELECTED:
@@ -92,6 +117,9 @@ function isValidAppCommand(command) {
     case APP_COMMAND_TYPES.TUTORIAL_COMPLETE_TASK:
     case APP_COMMAND_TYPES.CHORD_CONFIRM:
       return hasOnlyKeys(command, ['type']);
+
+    case APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY:
+      return hasValidTogglePlayPayload(command);
 
     case APP_COMMAND_TYPES.TRANSPORT_SEEK:
       return hasValidSeekPayload(command);

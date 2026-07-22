@@ -3,6 +3,7 @@ import {
   DRUMS_INSTRUMENT_IDS,
   STEPS_PER_BAR,
   TOTAL_BARS,
+  TRACK_IDS,
 } from '../domain/musicConstants.js';
 import { clampTrackVolume } from '../domain/trackVolume.js';
 import { AUDIO_STATUSES } from './audioStatus.js';
@@ -154,6 +155,17 @@ function applyVolume(node, volume) {
   node.set?.({ volume });
 }
 
+function normalizeAudibleTrackIds(trackIds) {
+  if (!Array.isArray(trackIds)) return null;
+  return new Set(trackIds.filter((trackId) => TRACK_IDS.includes(trackId)));
+}
+
+function normalizeMaxPlaybackSteps(maxPlaybackSteps) {
+  return Number.isInteger(maxPlaybackSteps) && maxPlaybackSteps > 0
+    ? maxPlaybackSteps
+    : null;
+}
+
 export default class AudioEngine {
   constructor(options = {}) {
     this.tone = options.tone ?? null;
@@ -163,6 +175,7 @@ export default class AudioEngine {
     this.matrixSource = options.matrixSource ?? null;
     this.volumeSource = options.volumeSource ?? null;
     this.onPositionChange = options.onPositionChange ?? null;
+    this.onPlaybackComplete = options.onPlaybackComplete ?? null;
     this.playerFactory = options.playerFactory ?? null;
     this.samplerFactory = options.samplerFactory ?? null;
     this.melodyInputSamplerFactory = options.melodyInputSamplerFactory ?? null;
@@ -188,6 +201,9 @@ export default class AudioEngine {
     this.matrixAdapter = null;
     this.transportEventId = null;
     this.transportFlatStep = 0;
+    this.audibleTrackIds = null;
+    this.maxPlaybackSteps = null;
+    this.playedSteps = 0;
     this.currentBar = 0;
     this.currentStep = 0;
     this.chordClipPreviewRequestId = 0;
@@ -685,6 +701,10 @@ export default class AudioEngine {
     this.volumeSource = volumeSource;
   }
 
+  setPlaybackCompleteHandler(handler) {
+    this.onPlaybackComplete = typeof handler === 'function' ? handler : null;
+  }
+
   hasTransportEvent() {
     return this.transportEventId !== null && this.transportEventId !== undefined;
   }
@@ -732,6 +752,7 @@ export default class AudioEngine {
       this.onPositionChange?.(position.bar, position.step);
 
       for (const event of adapter.getEventsForStep(position.bar, position.step)) {
+        if (this.audibleTrackIds && !this.audibleTrackIds.has(event.trackId)) continue;
         if (event.type === 'drums') {
           this.triggerDrumsInstrument(event.instrument, time);
         }
@@ -753,6 +774,17 @@ export default class AudioEngine {
       }
 
       this.transportFlatStep = (this.transportFlatStep + 1) % adapter.totalSteps;
+      this.playedSteps += 1;
+      if (this.maxPlaybackSteps !== null && this.playedSteps >= this.maxPlaybackSteps) {
+        const onPlaybackComplete = this.onPlaybackComplete;
+        const completion = {
+          bar: position.bar,
+          playedSteps: this.playedSteps,
+          step: position.step,
+        };
+        void this.stop(time);
+        onPlaybackComplete?.(completion);
+      }
     }, '16n');
 
     return this.transportEventId;
@@ -789,6 +821,14 @@ export default class AudioEngine {
         ? options.onPositionChange
         : null;
     }
+    if (Object.hasOwn(options, 'onPlaybackComplete')) {
+      this.onPlaybackComplete = typeof options.onPlaybackComplete === 'function'
+        ? options.onPlaybackComplete
+        : null;
+    }
+    this.audibleTrackIds = normalizeAudibleTrackIds(options.audibleTrackIds);
+    this.maxPlaybackSteps = normalizeMaxPlaybackSteps(options.maxPlaybackSteps);
+    this.playedSteps = 0;
     this.syncTransport(options);
 
     if (options.matrixSource || this.matrixSource) {
@@ -802,11 +842,11 @@ export default class AudioEngine {
     this.getStartedTransport()?.pause?.();
   }
 
-  async stop() {
+  async stop(time = this.now()) {
     this.stopChordClipSequencePreview();
     const transport = this.getStartedTransport();
-    transport?.stop?.();
-    this.stopMelodyVoices(this.now());
+    transport?.stop?.(time);
+    this.stopMelodyVoices(time);
     if (transport) {
       transport.position = formatToneTransportPosition(this.currentBar, this.currentStep);
     }

@@ -215,6 +215,40 @@ export default function createClipsSlice(set, get) {
       return createdClips;
     },
 
+    ensureMelodyClipsInRange: (startBar, endBar = TOTAL_BARS - 1) => {
+      if (
+        !Number.isInteger(startBar)
+        || !Number.isInteger(endBar)
+        || startBar < 0
+        || endBar >= TOTAL_BARS
+        || startBar > endBar
+      ) {
+        return [];
+      }
+
+      const state = get();
+      const createdClips = Array.from(
+        { length: endBar - startBar + 1 },
+        (_, offset) => startBar + offset,
+      )
+        .filter((bar) => !findClipForTrackBar(state.clips, 'melody', bar))
+        .map((bar) => createClipRecord('melody', bar));
+
+      if (!createdClips.length) return createdClips;
+
+      set({
+        clips: {
+          ids: [...state.clips.ids, ...createdClips.map((clip) => clip.id)],
+          byId: {
+            ...state.clips.byId,
+            ...Object.fromEntries(createdClips.map((clip) => [clip.id, clip])),
+          },
+        },
+      });
+
+      return createdClips;
+    },
+
     renameClip: (clipId, name) => {
       if (typeof name !== 'string') return null;
 

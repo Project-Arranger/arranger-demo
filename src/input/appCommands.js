@@ -59,7 +59,7 @@ const COMMAND_GROUPS = Object.freeze({
 
 /**
  * @typedef {{ type: 'app.undo' } | { type: 'app.redo' }} AppUiCommand
- * @typedef {{ type: 'transport.togglePlay' } | { type: 'transport.stop' } | { type: 'transport.seek', bar: number, step: number }} TransportCommand
+ * @typedef {{ type: 'transport.togglePlay', audibleTrackIds?: string[], maxPlaybackSteps?: number } | { type: 'transport.stop' } | { type: 'transport.seek', bar: number, step: number }} TransportCommand
  * @typedef {{ type: 'clip.copySelected' } | { type: 'clip.deleteSelected' } | { type: 'clip.paste' }} ClipCommand
  * @typedef {{ type: 'tutorial.next' } | { type: 'tutorial.completeTask' }} TutorialCommand
  * @typedef {{ type: 'drums.toggle', bar: number, step: number, instrument: 'kick' | 'snare' | 'hihat', preview: boolean }} DrumsCommand

@@ -42,6 +42,20 @@ test('app command constants use drums naming', () => {
 
 test('transport commands validate exact payloads', () => {
   assert.equal(isValidAppCommand({ type: 'transport.togglePlay' }), true);
+  assert.equal(isValidAppCommand({
+    type: 'transport.togglePlay',
+    audibleTrackIds: ['melody'],
+    maxPlaybackSteps: 64,
+  }), true);
+  assert.equal(isValidAppCommand({
+    type: 'transport.togglePlay',
+    audibleTrackIds: ['melody', 'melody'],
+  }), false);
+  assert.equal(isValidAppCommand({
+    type: 'transport.togglePlay',
+    audibleTrackIds: ['unknown'],
+  }), false);
+  assert.equal(isValidAppCommand({ type: 'transport.togglePlay', maxPlaybackSteps: 0 }), false);
   assert.equal(isValidAppCommand({ type: 'transport.stop' }), true);
   assert.equal(isValidAppCommand({ type: 'transport.togglePlay', extra: true }), false);
   assert.equal(isValidAppCommand({ type: 'transport.seek', bar: 0, step: 0 }), true);

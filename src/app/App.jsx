@@ -247,6 +247,20 @@ export default function App() {
     selectedClip,
     withUndoCheckpoint,
   });
+  const handleMelodyRecordingTransportPosition = melodyRecording.handleTransportPosition;
+  const stopMelodyRecording = melodyRecording.stopRecording;
+  const handleUndoWithMelodyStop = useCallback(() => {
+    stopMelodyRecording();
+    handleUndo();
+  }, [handleUndo, stopMelodyRecording]);
+  const handleRedoWithMelodyStop = useCallback(() => {
+    stopMelodyRecording();
+    handleRedo();
+  }, [handleRedo, stopMelodyRecording]);
+  const handlePasteClipRequestWithMelodyStop = useCallback(() => {
+    stopMelodyRecording();
+    handlePasteClipRequest();
+  }, [handlePasteClipRequest, stopMelodyRecording]);
 
   useEffect(() => {
     if (!melodyEditorIsOpen) return;
@@ -276,8 +290,9 @@ export default function App() {
 
   const handleBackToStart = useCallback(() => {
     clearTutorialCountIn();
+    stopMelodyRecording();
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_SEEK, bar: 0, step: 0 });
-  }, [clearTutorialCountIn, dispatchAppCommand]);
+  }, [clearTutorialCountIn, dispatchAppCommand, stopMelodyRecording]);
 
   const handleStop = useCallback(() => {
     clearTutorialCountIn();
@@ -286,6 +301,7 @@ export default function App() {
   }, [clearTutorialCountIn, dispatchAppCommand, melodyRecording]);
 
   const handleNewSong = useCallback(() => {
+    stopMelodyRecording();
     withUndoCheckpoint(() => {
       const initialAppState = useMusicStore.getInitialState();
       const initialTutorialProgress = createTutorialState();
@@ -317,6 +333,7 @@ export default function App() {
     setTutorialSidebarCollapsed,
     setTutorialStepCheckpoints,
     setTutorialVisible,
+    stopMelodyRecording,
     stopTutorialPreviewPlayback,
     withUndoCheckpoint,
   ]);
@@ -353,14 +370,16 @@ export default function App() {
 
   const seekTransportToBarStart = useCallback((bar) => {
     if (!Number.isInteger(bar)) return;
+    stopMelodyRecording();
     void dispatchAppCommand({
       type: APP_COMMAND_TYPES.TRANSPORT_SEEK,
       bar,
       step: 0,
     });
-  }, [dispatchAppCommand]);
+  }, [dispatchAppCommand, stopMelodyRecording]);
 
   const handleTrackSelect = useCallback((trackId, barIndex) => {
+    stopMelodyRecording();
     const state = useMusicStore.getState();
     const hasExplicitBar = Number.isInteger(barIndex);
     const targetBar = hasExplicitBar ? barIndex : state.selectedBar;
@@ -376,9 +395,10 @@ export default function App() {
     setSelectedBar(targetBar);
     setSelectedClipId(null);
     if (hasExplicitBar) seekTransportToBarStart(targetBar);
-  }, [seekTransportToBarStart]);
+  }, [seekTransportToBarStart, stopMelodyRecording]);
 
   const handleAddClip = useCallback((trackId, barIndex) => {
+    stopMelodyRecording();
     const state = useMusicStore.getState();
     let clip;
     if (state.getClipForTrackBar(trackId, barIndex)) {
@@ -388,7 +408,7 @@ export default function App() {
     }
 
     if (clip) seekTransportToBarStart(clip.bar);
-  }, [seekTransportToBarStart, withUndoCheckpoint]);
+  }, [seekTransportToBarStart, stopMelodyRecording, withUndoCheckpoint]);
 
   const applyTutorialStepSetup = useCallback((step, knownAppliedSetups = appliedTutorialSetups) => {
     const setupType = step?.setup?.type;
@@ -517,6 +537,7 @@ export default function App() {
   ]);
 
   const handleFillEmptyTrackClips = useCallback((trackId) => {
+    stopMelodyRecording();
     let tutorialAction = null;
     if (tutorialActive) {
       tutorialAction = handleTutorialControlAction({
@@ -547,20 +568,23 @@ export default function App() {
     selectedBar,
     tutorialActive,
     tutorialProgress,
+    stopMelodyRecording,
     withUndoCheckpoint,
   ]);
 
   const handleAddTrack = useCallback((trackId) => {
+    stopMelodyRecording();
     withUndoCheckpoint(() => {
       useMusicStore.getState().addVisibleTrack(trackId);
     });
-  }, [withUndoCheckpoint]);
+  }, [stopMelodyRecording, withUndoCheckpoint]);
 
   const handleTrackVolumeChange = useCallback((trackId, volume) => {
     useMusicStore.getState().setTrackVolume(trackId, volume);
   }, []);
 
   const handleMoveClip = useCallback((clipId, targetBar) => {
+    stopMelodyRecording();
     const state = useMusicStore.getState();
     const sourceClip = state.clips.byId[clipId];
     if (!sourceClip || sourceClip.bar === targetBar) {
@@ -571,12 +595,13 @@ export default function App() {
     withUndoCheckpoint(() => {
       state.moveClipToBar(clipId, targetBar);
     });
-  }, [withUndoCheckpoint]);
+  }, [stopMelodyRecording, withUndoCheckpoint]);
 
   const handleOpenClip = useCallback((clipId) => {
+    stopMelodyRecording();
     const clip = useMusicStore.getState().selectClip(clipId);
     if (clip) seekTransportToBarStart(clip.bar);
-  }, [seekTransportToBarStart]);
+  }, [seekTransportToBarStart, stopMelodyRecording]);
 
   const handleCloseEditor = useCallback(() => {
     melodyRecording.stopRecording();
@@ -675,6 +700,7 @@ export default function App() {
   }, [withUndoCheckpoint]);
 
   const handlePageTrackBar = useCallback((direction) => {
+    stopMelodyRecording();
     const state = useMusicStore.getState();
     const nextBar = getAdjacentTrackClipBar(
       state.clips,
@@ -689,7 +715,7 @@ export default function App() {
       state.selectClip(clip.id);
       seekTransportToBarStart(clip.bar);
     }
-  }, [seekTransportToBarStart]);
+  }, [seekTransportToBarStart, stopMelodyRecording]);
 
   const handlePreviousBar = useCallback(() => {
     handlePageTrackBar('previous');
@@ -700,8 +726,9 @@ export default function App() {
   }, [handlePageTrackBar]);
 
   const handleTransportSeek = useCallback((bar, step) => {
+    stopMelodyRecording();
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_SEEK, bar, step });
-  }, [dispatchAppCommand]);
+  }, [dispatchAppCommand, stopMelodyRecording]);
 
   const handlePlayToggle = useCallback(() => {
     if (tutorialActive) {
@@ -717,31 +744,37 @@ export default function App() {
       }
     }
 
+    stopMelodyRecording({ stopTransport: false });
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY });
   }, [
     applyTutorialActionProgress,
     currentTutorialStep,
     dispatchAppCommand,
     selectedBar,
+    stopMelodyRecording,
     tutorialActive,
     tutorialProgress,
   ]);
 
   const dispatchKeyboardCommand = useCallback((command) => {
     if (command?.type === APP_COMMAND_TYPES.APP_UNDO) {
-      melodyRecording.stopRecording();
-      handleUndo();
+      handleUndoWithMelodyStop();
       return;
     }
 
     if (command?.type === APP_COMMAND_TYPES.APP_REDO) {
-      melodyRecording.stopRecording();
-      handleRedo();
+      handleRedoWithMelodyStop();
       return;
     }
 
     if (command?.type === APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY) {
       handlePlayToggle();
+      return;
+    }
+
+    if (command?.type === APP_COMMAND_TYPES.TRANSPORT_SEEK) {
+      stopMelodyRecording();
+      void dispatchAppCommand(command);
       return;
     }
 
@@ -751,11 +784,12 @@ export default function App() {
     }
 
     if (command?.type === APP_COMMAND_TYPES.CLIP_PASTE) {
-      handlePasteClipRequest();
+      handlePasteClipRequestWithMelodyStop();
       return;
     }
 
     if (command?.type === APP_COMMAND_TYPES.CLIP_DELETE_SELECTED) {
+      stopMelodyRecording();
       withUndoCheckpoint(() => {
         useMusicStore.getState().deleteSelectedClip();
       });
@@ -776,11 +810,12 @@ export default function App() {
   }, [
     dispatchAppCommand,
     handleCopySelectedClip,
-    handlePasteClipRequest,
+    handlePasteClipRequestWithMelodyStop,
     handlePlayToggle,
-    handleRedo,
-    handleUndo,
+    handleRedoWithMelodyStop,
+    handleUndoWithMelodyStop,
     melodyRecording,
+    stopMelodyRecording,
     withUndoCheckpoint,
   ]);
 
@@ -789,6 +824,7 @@ export default function App() {
   useEffect(() => {
     audioEngine.onPositionChange = (bar, step) => {
       useMusicStore.getState().setTransportPosition(bar, step);
+      handleMelodyRecordingTransportPosition(bar, step);
 
       if (
         tutorialActive
@@ -830,6 +866,7 @@ export default function App() {
   }, [
     applyTutorialActionProgress,
     currentTutorialStep,
+    handleMelodyRecordingTransportPosition,
     setTutorialProgress,
     tutorialActive,
     tutorialProgress,
@@ -1133,13 +1170,14 @@ export default function App() {
   }, [withUndoCheckpoint]);
 
   const handleMelodyStepToggle = useCallback((step, note) => {
+    melodyRecording.stopRecording();
     withUndoCheckpoint(() => {
       const state = useMusicStore.getState();
       const nextMatrix = toggleMelodyCell(state.matrix, selectedBar, step, note);
       state.setCell('melody', selectedBar, step, nextMatrix.melody[selectedBar][step]);
       void audioEngine.triggerMelodyInputOneShot(note);
     });
-  }, [selectedBar, withUndoCheckpoint]);
+  }, [melodyRecording, selectedBar, withUndoCheckpoint]);
 
   const handleMelodyPreview = useCallback((noteOrNotes) => {
     if (Array.isArray(noteOrNotes)) {
@@ -1178,6 +1216,7 @@ export default function App() {
   ]);
 
   const handleMelodyRhythmTemplateApply = useCallback((templateId, scope) => {
+    melodyRecording.stopRecording();
     melodyRecording.clearActiveNotes();
     withUndoCheckpoint(() => {
       const state = useMusicStore.getState();
@@ -1186,7 +1225,6 @@ export default function App() {
         : applyMelodyRhythmTemplateToBar(state.clips, selectedBar, templateId);
       if (nextClips !== state.clips) useMusicStore.setState({ clips: nextClips });
     });
-    melodyRecording.stopRecording({ stopTransport: false });
   }, [melodyRecording, selectedBar, withUndoCheckpoint]);
 
   const handleClearMelodyBar = useCallback(() => {
@@ -1410,12 +1448,12 @@ export default function App() {
           onBackToStart: handleBackToStart,
           onCopyClip: handleCopySelectedClip,
           onNewSong: requestNewSong,
-          onPasteClip: handlePasteClipRequest,
+          onPasteClip: handlePasteClipRequestWithMelodyStop,
           onPlayToggle: handlePlayToggle,
           onStop: handleStop,
           onTutorialToggle: handleTutorialSidebarToggle,
-          onRedo: handleRedo,
-          onUndo: handleUndo,
+          onRedo: handleRedoWithMelodyStop,
+          onUndo: handleUndoWithMelodyStop,
           rootKey,
           scale,
           showTutorialToggle: tutorialVisible,

@@ -40,8 +40,8 @@ function createFakeTone() {
     pause() {
       calls.push(['transport.pause']);
     },
-    stop() {
-      calls.push(['transport.stop']);
+    stop(time) {
+      calls.push(['transport.stop', time]);
     },
   };
 
@@ -753,7 +753,7 @@ test('AudioEngine syncs transport play pause stop and seek', async () => {
     ['transport.scheduleRepeat', '16n'],
     ['transport.start'],
     ['transport.pause'],
-    ['transport.stop'],
+    ['transport.stop', 12.5],
     ['transport.clear', 'repeat-id'],
   ]);
 });
@@ -834,6 +834,97 @@ test('AudioEngine matrix playback triggers drums bass chord and melody events', 
     ['chordSampler.triggerAttackRelease', ['C4', 'E4', 'G4'], '2s', 24, createChordSampleUrls()],
     ['sampler.triggerAttack', 'G4', 24, createMelodySampleUrls()],
   ]);
+});
+
+test('AudioEngine filters matrix playback tracks and stops after the requested step count', async () => {
+  const tone = createFakeTone();
+  const matrix = createInitialMatrix();
+  const completions = [];
+  matrix.drums[0][0] = { instruments: ['kick'] };
+  matrix.bass[0][0] = { type: 'bass', note: 'C1' };
+  matrix.chord[0][0] = { root: 'C', quality: 'maj', label: 'C' };
+  matrix.melody[0][0] = { type: 'melody', note: 'G4' };
+  const engine = new AudioEngine({
+    tone,
+    matrixSource: matrix,
+    onPlaybackComplete: (result) => completions.push(result),
+    playerFactory: createPlayerFactory(tone.calls),
+    chordSamplerFactory: createChordSamplerFactory(tone.calls),
+    samplerFactory: createSamplerFactory(tone.calls),
+  });
+
+  await engine.play({
+    audibleTrackIds: ['melody'],
+    bpm: 120,
+    maxPlaybackSteps: 2,
+  });
+  tone.Transport.scheduledCallback(24);
+  tone.Transport.scheduledCallback(24.125);
+
+  assert.deepEqual(tone.calls.filter(([name]) => (
+    name === 'player.start'
+    || name === 'chordSampler.triggerAttackRelease'
+    || name === 'sampler.triggerAttack'
+    || name === 'sampler.triggerAttackRelease'
+  )), [
+    ['sampler.triggerAttack', 'G4', 24, createMelodySampleUrls()],
+  ]);
+  assert.deepEqual(completions, [{ bar: 0, playedSteps: 2, step: 1 }]);
+  assert.deepEqual(tone.calls.filter(([name]) => name.startsWith('transport.')), [
+    ['transport.scheduleRepeat', '16n'],
+    ['transport.start'],
+    ['transport.stop', 24.125],
+    ['transport.clear', 'repeat-id'],
+  ]);
+});
+
+test('AudioEngine restores all matrix tracks on the next ordinary play', async () => {
+  const tone = createFakeTone();
+  const matrix = createInitialMatrix();
+  matrix.drums[0][0] = { instruments: ['kick'] };
+  matrix.melody[0][0] = { type: 'melody', note: 'G4' };
+  const engine = new AudioEngine({
+    tone,
+    matrixSource: matrix,
+    playerFactory: createPlayerFactory(tone.calls),
+    samplerFactory: createSamplerFactory(tone.calls),
+  });
+
+  await engine.play({ audibleTrackIds: ['melody'], maxPlaybackSteps: 1 });
+  tone.Transport.scheduledCallback(24);
+  await engine.play({ bpm: 120 });
+  tone.Transport.scheduledCallback(25);
+
+  assert.equal(tone.calls.some(([name]) => name === 'player.start'), true);
+  assert.equal(tone.calls.filter(([name]) => name === 'sampler.triggerAttack').length, 2);
+});
+
+test('AudioEngine bounded playback stops at bar eight without looping to the start', async () => {
+  const tone = createFakeTone();
+  const matrix = createInitialMatrix();
+  const positions = [];
+  const completions = [];
+  const engine = new AudioEngine({
+    tone,
+    matrixSource: matrix,
+    onPlaybackComplete: (result) => completions.push(result),
+    playerFactory: createPlayerFactory(tone.calls),
+  });
+
+  await engine.play({
+    bar: 6,
+    maxPlaybackSteps: 2 * STEPS_PER_BAR,
+    onPositionChange: (bar, step) => positions.push([bar, step]),
+    step: 0,
+  });
+  for (let index = 0; index < 2 * STEPS_PER_BAR; index += 1) {
+    tone.Transport.scheduledCallback(24 + index * 0.125);
+  }
+
+  assert.deepEqual(positions[0], [6, 0]);
+  assert.deepEqual(positions.at(-1), [7, 15]);
+  assert.equal(positions.some(([bar]) => bar === 0), false);
+  assert.deepEqual(completions, [{ bar: 7, playedSteps: 32, step: 15 }]);
 });
 
 test('AudioEngine clears existing matrix playback even when Tone returns event id zero', async () => {

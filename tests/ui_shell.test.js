@@ -100,18 +100,18 @@ test('topbar exposes independent undo redo controls and App wires history', asyn
   assert.match(source, /APP_COMMAND_TYPES\.APP_REDO/);
   assert.match(source, /APP_COMMAND_TYPES\.CLIP_COPY_SELECTED/);
   assert.match(source, /APP_COMMAND_TYPES\.CLIP_PASTE/);
-  assert.match(source, /command\?\.type === APP_COMMAND_TYPES\.APP_UNDO[\s\S]*handleUndo\(\);[\s\S]*return;/);
-  assert.match(source, /command\?\.type === APP_COMMAND_TYPES\.APP_REDO[\s\S]*handleRedo\(\);[\s\S]*return;/);
+  assert.match(source, /command\?\.type === APP_COMMAND_TYPES\.APP_UNDO[\s\S]*handleUndoWithMelodyStop\(\);[\s\S]*return;/);
+  assert.match(source, /command\?\.type === APP_COMMAND_TYPES\.APP_REDO[\s\S]*handleRedoWithMelodyStop\(\);[\s\S]*return;/);
   assert.match(source, /command\?\.type === APP_COMMAND_TYPES\.CLIP_COPY_SELECTED[\s\S]*handleCopySelectedClip\(\);[\s\S]*return;/);
-  assert.match(source, /command\?\.type === APP_COMMAND_TYPES\.CLIP_PASTE[\s\S]*handlePasteClipRequest\(\);[\s\S]*return;/);
+  assert.match(source, /command\?\.type === APP_COMMAND_TYPES\.CLIP_PASTE[\s\S]*handlePasteClipRequestWithMelodyStop\(\);[\s\S]*return;/);
   assert.match(undoControllerSource, /setRedoHistory\(\(\) => \[\]\)/);
   assert.match(source, /canRedo,\s*\n\s*canUndo,\s*\n\s*currentBar/);
   assert.match(source, /canCopyClip,/);
   assert.match(source, /canPasteClip,/);
   assert.match(source, /onCopyClip:\s*handleCopySelectedClip/);
-  assert.match(source, /onPasteClip:\s*handlePasteClipRequest/);
-  assert.match(source, /onRedo:\s*handleRedo/);
-  assert.match(source, /onUndo:\s*handleUndo/);
+  assert.match(source, /onPasteClip:\s*handlePasteClipRequestWithMelodyStop/);
+  assert.match(source, /onRedo:\s*handleRedoWithMelodyStop/);
+  assert.match(source, /onUndo:\s*handleUndoWithMelodyStop/);
   assert.match(source, /withUndoCheckpoint\(\(\) => \{[\s\S]*createClip\(trackId,\s*barIndex\)/);
   assert.match(source, /withUndoCheckpoint\(\(\) => \{[\s\S]*handleTutorialControlAction/);
   assert.match(source, /withUndoCheckpoint\(\(\) => \{[\s\S]*state\.setCell\('drums'/);
@@ -731,6 +731,18 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
     new URL('../src/app/components/PianoRoll.jsx', import.meta.url),
     'utf8',
   );
+  const melodyRecordingSource = await readFile(
+    new URL('../src/app/useMelodyRecordingController.js', import.meta.url),
+    'utf8',
+  );
+  const audioEngineSource = await readFile(
+    new URL('../src/audio/AudioEngine.js', import.meta.url),
+    'utf8',
+  );
+  const clipsSliceSource = await readFile(
+    new URL('../src/store/slices/clipsSlice.js', import.meta.url),
+    'utf8',
+  );
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
   assert.match(uiDataSource, /melody:\s*'Melody'/);
@@ -832,7 +844,7 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.doesNotMatch(melodyEditorSource, /melody-rhythm-mini-grid/);
   assert.match(
     melodyEditorSource,
-    /activeRhythmTemplate\?\.steps\[melodyRecordingState\?\.recordedNotes\]/,
+    /activeRhythmTemplate\?\.steps\[melodyRecordingState\?\.barRecordedNotes\]/,
   );
   assert.match(melodyEditorSource, /activeHighlightedStep:\s*activeRhythmRecordingStep/);
   assert.match(pianoRollSource, /data-rhythm-template=/);
@@ -855,13 +867,30 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(css, /\.melody-cell\.rhythm-column::before/);
   assert.match(css, /@keyframes melody-rhythm-guide-pulse/);
   assert.match(css, /@keyframes melody-rhythm-target-pulse/);
-  assert.match(melodyEditorSource, /开始顺序写入/);
-  assert.match(melodyEditorSource, /原旋律会保留到全部音符收集完成/);
+  assert.match(melodyEditorSource, /覆盖并开始写入/);
+  assert.match(melodyEditorSource, /每个小节会在收集完整一组音符后才原子覆盖/);
+  assert.match(melodyEditorSource, /自由写入只会在播放到每个小节时覆盖/);
   assert.match(melodyEditorSource, /自由弹奏 · 不会写入；点击写入开始收集/);
   assert.doesNotMatch(melodyEditorSource, /自由试奏|auditionActive|onMelodyAuditionToggle/);
   assert.match(melodyEditorSource, /onClick=\{onMelodyWriteToggle\}/);
-  assert.match(melodyEditorSource, /已收集/);
+  assert.match(melodyEditorSource, /总音符/);
+  assert.match(melodyEditorSource, /小节 \$\{writeBarProgress\}/);
   assert.match(melodyEditorSource, /开始旋律写入/);
+  assert.match(melodyRecordingSource, /getMelodyWriteBarRange\(clip\.bar\)/);
+  assert.match(melodyRecordingSource, /hasMelodyNotesInRange\(state\.matrix, pendingSession\.startBar, pendingSession\.endBar\)/);
+  assert.match(melodyRecordingSource, /ensureMelodyClipsInRange\(pendingSession\.startBar, pendingSession\.endBar\)/);
+  assert.match(melodyRecordingSource, /audibleTrackIds:\s*\['melody'\]/);
+  assert.match(melodyRecordingSource, /maxPlaybackSteps:\s*pendingSession\.targetBars\.length \* STEPS_PER_BAR/);
+  assert.match(melodyRecordingSource, /prepareFreeRecordingBar\(session, bar\)/);
+  assert.match(melodyRecordingSource, /const completedBar = session\.currentBar;[\s\S]*replaceMelodyBarWithSequence\(/);
+  assert.match(melodyRecordingSource, /session\.completedBars\.push\(completedBar\)/);
+  assert.match(melodyRecordingSource, /barRecordedNotes/);
+  assert.match(source, /handleMelodyRecordingTransportPosition\(bar, step\)/);
+  assert.match(source, /onUndo: handleUndoWithMelodyStop/);
+  assert.match(source, /onRedo: handleRedoWithMelodyStop/);
+  assert.match(clipsSliceSource, /ensureMelodyClipsInRange/);
+  assert.match(audioEngineSource, /this\.audibleTrackIds && !this\.audibleTrackIds\.has\(event\.trackId\)/);
+  assert.match(audioEngineSource, /this\.playedSteps >= this\.maxPlaybackSteps/);
   assert.doesNotMatch(melodyEditorSource, /MELODY_RECORDING_PHASES\.PREVIEW|试听中 · 当前小节播放一次/);
   assert.doesNotMatch(melodyEditorSource, /renderIcon\(Circle\)|录制中|MELODY RECORD/);
   assert.match(melodyEditorSource, /melody-example-keys/);
