@@ -456,17 +456,7 @@ function applyChordRhythmStepPassingChord(matrix, clips, barIndex, stepIndex, ch
 function clearChordRhythmBar(matrix, barIndex) {
   if (!matrix?.chord?.[barIndex]) return matrix;
 
-  const sourceChordLabel = getSourceChordLabel(matrix, barIndex);
-  const progressionTemplateId = getChordProgressionTemplateId(matrix, barIndex);
-  const selectedGrooveTemplateId = getChordSelectedGrooveTemplateId(matrix, barIndex)
-    ?? CUSTOM_CHORD_GROOVE_ID;
   const nextBar = Array.from({ length: STEPS_PER_BAR }, () => null);
-  nextBar[0] = createChordSourceCell(
-    sourceChordLabel,
-    progressionTemplateId,
-    selectedGrooveTemplateId,
-  );
-
   return replaceChordBar(matrix, barIndex, nextBar);
 }
 

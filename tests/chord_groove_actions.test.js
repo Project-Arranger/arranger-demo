@@ -25,6 +25,7 @@ import {
 } from '../src/app/chordGrooveActions.js';
 import {
   getChordBeatDisplaySegments,
+  getChordBarDisplayLabel,
   setChordCell,
 } from '../src/app/chordActions.js';
 import createInitialMatrix from '../src/store/createInitialMatrix.js';
@@ -258,7 +259,7 @@ test('toggleChordRhythmStep creates custom playable hits and retains a silent so
   assert.equal(getChordSelectedGrooveTemplateId(matrix, 2), CUSTOM_CHORD_GROOVE_ID);
 });
 
-test('clearChordRhythmBar preserves progression metadata without leaving playable hits', () => {
+test('clearChordRhythmBar removes progression metadata and the timeline chord label', () => {
   const clips = createClips({ id: 'chord-bar-4', trackId: 'chord', bar: 4 });
   let matrix = applyChordTemplateWorkspaceToBar(createInitialMatrix(), clips, 4, {
     progressionTemplateId: 'andalusian',
@@ -268,10 +269,9 @@ test('clearChordRhythmBar preserves progression metadata without leaving playabl
   matrix = clearChordRhythmBar(matrix, 4);
 
   assert.deepEqual(getChordRhythmSteps(matrix, 4), []);
-  assert.equal(matrix.chord[4][0].type, CHORD_SOURCE_CELL_TYPE);
-  assert.equal(matrix.chord[4][0].sourceChordLabel, 'Am');
-  assert.equal(matrix.chord[4][0].progressionTemplateId, 'andalusian');
-  assert.equal(matrix.chord[4][0].selectedGrooveTemplateId, 'block-syncopated');
+  assert.equal(matrix.chord[4].every((cell) => cell === null), true);
+  assert.equal(getChordBarDisplayLabel(matrix, 4), null);
+  assert.equal(getAppliedChordProgressionTemplateId(matrix, clips, 4), null);
 });
 
 test('single-step chord enrichment keeps the bar source and sibling rhythm hits intact', () => {
