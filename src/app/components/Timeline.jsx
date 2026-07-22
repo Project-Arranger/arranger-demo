@@ -190,7 +190,9 @@ const Timeline = forwardRef(function Timeline(
   const [isPlayheadDragging, setIsPlayheadDragging] = useState(false);
   const [suppressNextClick, setSuppressNextClick] = useState(false);
   const feedbackTimerRef = useRef(null);
+  const rulerClickResetTimerRef = useRef(null);
   const rulerRef = useRef(null);
+  const suppressRulerClickRef = useRef(false);
   const flatStep = currentBar * STEPS_PER_BAR + currentStep;
   const playheadLeft = `${(flatStep / (TOTAL_BARS * STEPS_PER_BAR)) * 100}%`;
   const tutorialPlayheadRole = tutorialTargets?.playhead?.role ?? null;
@@ -265,12 +267,25 @@ const Timeline = forwardRef(function Timeline(
   const handlePlayheadMouseDown = (event) => {
     event.preventDefault();
     event.stopPropagation();
+    window.clearTimeout(rulerClickResetTimerRef.current);
+    suppressRulerClickRef.current = true;
     setIsPlayheadDragging(true);
+    seekPlayheadFromClientX(event.clientX);
+  };
+
+  const handleRulerClick = (event) => {
+    if (suppressRulerClickRef.current) {
+      window.clearTimeout(rulerClickResetTimerRef.current);
+      suppressRulerClickRef.current = false;
+      return;
+    }
+
     seekPlayheadFromClientX(event.clientX);
   };
 
   useEffect(() => () => {
     window.clearTimeout(feedbackTimerRef.current);
+    window.clearTimeout(rulerClickResetTimerRef.current);
   }, []);
 
   useEffect(() => {
@@ -317,6 +332,10 @@ const Timeline = forwardRef(function Timeline(
     const handleMouseUp = (event) => {
       seekPlayheadFromClientX(event.clientX);
       setIsPlayheadDragging(false);
+      window.clearTimeout(rulerClickResetTimerRef.current);
+      rulerClickResetTimerRef.current = window.setTimeout(() => {
+        suppressRulerClickRef.current = false;
+      }, 0);
     };
 
     window.addEventListener('mousemove', handleMouseMove);
@@ -339,7 +358,12 @@ const Timeline = forwardRef(function Timeline(
       style={{ '--bars': TOTAL_BARS, '--track-count': tracks.length }}
     >
       <div className="timeline-bezel" aria-hidden="true" />
-      <div className="ruler" aria-label="Timeline bars" ref={rulerRef}>
+      <div
+        className="ruler"
+        aria-label="Timeline bars"
+        onClick={handleRulerClick}
+        ref={rulerRef}
+      >
         {BAR_NUMBERS.map((barNumber) => (
           <div
             className={`bar-label${barNumber === 1 || barNumber === 5 ? ' major' : ''} mono`}

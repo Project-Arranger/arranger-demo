@@ -246,6 +246,10 @@ test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async
   assert.match(timelineSource, /style=\{\{ left: playheadLeft \}\}/);
   assert.match(timelineSource, /onTransportSeek/);
   assert.match(timelineSource, /getTimelinePlayheadSeekPosition/);
+  assert.match(timelineSource, /onClick=\{handleRulerClick\}/);
+  assert.match(timelineSource, /suppressRulerClickRef\.current = true/);
+  assert.match(timelineSource, /if \(suppressRulerClickRef\.current\)/);
+  assert.match(timelineSource, /rulerClickResetTimerRef\.current = window\.setTimeout/);
   assert.match(timelineSource, /handlePlayheadMouseDown/);
   assert.match(timelineSource, /playhead-hit/);
   assert.match(timelineSource, /className="timeline-footer-spacer"/);
@@ -254,6 +258,11 @@ test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async
   assert.match(source, /clips/);
   assert.match(source, /getClipForTrackBar/);
   assert.match(source, /createClip\(trackId,\s*barIndex\)/);
+  assert.match(source, /const seekTransportToBarStart = useCallback\(\(bar\) => \{[\s\S]*TRANSPORT_SEEK[\s\S]*step:\s*0/);
+  assert.match(source, /const handleTrackSelect = useCallback\(\(trackId, barIndex\) => \{[\s\S]*const hasExplicitBar = Number\.isInteger\(barIndex\);[\s\S]*if \(hasExplicitBar\) seekTransportToBarStart\(targetBar\);/);
+  assert.match(source, /const handleAddClip = useCallback\(\(trackId, barIndex\) => \{[\s\S]*if \(clip\) seekTransportToBarStart\(clip\.bar\);/);
+  assert.match(source, /const handleOpenClip = useCallback\(\(clipId\) => \{[\s\S]*selectClip\(clipId\);[\s\S]*seekTransportToBarStart\(clip\.bar\);/);
+  assert.match(source, /const handlePageTrackBar = useCallback\(\(direction\) => \{[\s\S]*state\.selectClip\(clip\.id\);[\s\S]*seekTransportToBarStart\(clip\.bar\);/);
   assert.match(source, /handleFillEmptyTrackClips/);
   assert.match(source, /createEmptyClipsForTrack\(trackId\)/);
   assert.match(source, /onFillEmptyTrackClips:\s*handleFillEmptyTrackClips/);

@@ -351,31 +351,44 @@ export default function App() {
     && getAdjacentTrackClipBar(clips, activeTrackId, selectedBar, 'next') !== null
   ), [activeTrackId, clips, selectedBar]);
 
-  const handleTrackSelect = useCallback((trackId, barIndex = selectedBar) => {
+  const seekTransportToBarStart = useCallback((bar) => {
+    if (!Number.isInteger(bar)) return;
+    void dispatchAppCommand({
+      type: APP_COMMAND_TYPES.TRANSPORT_SEEK,
+      bar,
+      step: 0,
+    });
+  }, [dispatchAppCommand]);
+
+  const handleTrackSelect = useCallback((trackId, barIndex) => {
     const state = useMusicStore.getState();
-    const clip = state.getClipForTrackBar(trackId, barIndex);
+    const hasExplicitBar = Number.isInteger(barIndex);
+    const targetBar = hasExplicitBar ? barIndex : state.selectedBar;
+    const clip = state.getClipForTrackBar(trackId, targetBar);
     if (clip) {
       state.selectClip(clip.id);
+      if (hasExplicitBar) seekTransportToBarStart(targetBar);
       return;
     }
 
     const { setActiveTrackId, setSelectedBar, setSelectedClipId } = state;
     setActiveTrackId(trackId);
-    setSelectedBar(barIndex);
+    setSelectedBar(targetBar);
     setSelectedClipId(null);
-  }, [selectedBar]);
+    if (hasExplicitBar) seekTransportToBarStart(targetBar);
+  }, [seekTransportToBarStart]);
 
   const handleAddClip = useCallback((trackId, barIndex) => {
     const state = useMusicStore.getState();
+    let clip;
     if (state.getClipForTrackBar(trackId, barIndex)) {
-      state.createClip(trackId, barIndex);
-      return;
+      clip = state.createClip(trackId, barIndex);
+    } else {
+      clip = withUndoCheckpoint(() => state.createClip(trackId, barIndex));
     }
 
-    withUndoCheckpoint(() => {
-      state.createClip(trackId, barIndex);
-    });
-  }, [withUndoCheckpoint]);
+    if (clip) seekTransportToBarStart(clip.bar);
+  }, [seekTransportToBarStart, withUndoCheckpoint]);
 
   const applyTutorialStepSetup = useCallback((step, knownAppliedSetups = appliedTutorialSetups) => {
     const setupType = step?.setup?.type;
@@ -561,8 +574,9 @@ export default function App() {
   }, [withUndoCheckpoint]);
 
   const handleOpenClip = useCallback((clipId) => {
-    useMusicStore.getState().selectClip(clipId);
-  }, []);
+    const clip = useMusicStore.getState().selectClip(clipId);
+    if (clip) seekTransportToBarStart(clip.bar);
+  }, [seekTransportToBarStart]);
 
   const handleCloseEditor = useCallback(() => {
     melodyRecording.stopRecording();
@@ -671,8 +685,11 @@ export default function App() {
     if (nextBar === null) return;
 
     const clip = state.getClipForTrackBar(state.activeTrackId, nextBar);
-    if (clip) state.selectClip(clip.id);
-  }, []);
+    if (clip) {
+      state.selectClip(clip.id);
+      seekTransportToBarStart(clip.bar);
+    }
+  }, [seekTransportToBarStart]);
 
   const handlePreviousBar = useCallback(() => {
     handlePageTrackBar('previous');
