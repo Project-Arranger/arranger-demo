@@ -930,6 +930,9 @@ test('chord template workspace fits the editor at compact desktop heights', asyn
   assert.match(css, /\.chord-step-harmony-options\.enrich\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\);/s);
   assert.match(css, /\.chord-step-harmony-option-preview\s*\{[^}]*width:\s*40px;[^}]*height:\s*40px;/s);
   assert.match(css, /\.chord-step-harmony-option-apply:disabled,\s*\n\.chord-step-harmony-option-preview:disabled\s*\{[^}]*cursor:\s*not-allowed;/s);
+  assert.match(css, /\.chord-step-passing-availability\.is-restricted\s*\{[^}]*color:\s*#271507;[^}]*background:[^}]*#d68a34;[^}]*border-color:\s*#ffe0a4;[^}]*box-shadow:/s);
+  assert.match(css, /\.chord-step-passing-availability\.is-restricted::before\s*\{[^}]*content:\s*"!";[^}]*background:\s*#3a1e09;/s);
+  assert.match(css, /\.chord-step-passing-availability\.is-available\s*\{[^}]*color:\s*#c7a475;[^}]*box-shadow:\s*none;/s);
   assert.match(css, /\.chord-step-harmony-popover\[data-side="above"\]/);
   assert.match(css, /\.chord-template-mini-groove\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\);/s);
   assert.match(css, /\.chord-template-mini-beat-group\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\);/s);

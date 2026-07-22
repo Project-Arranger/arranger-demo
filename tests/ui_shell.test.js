@@ -371,6 +371,10 @@ test('app shell exposes the chord rhythm editor and unified template workspace',
   assert.match(chordEditorSource, /丰富和弦/);
   assert.match(chordEditorSource, /经过和弦/);
   assert.match(chordEditorSource, /PASSING_CHORD_STEP_INDEX/);
+  assert.match(chordEditorSource, /chord-step-passing-availability/);
+  assert.match(chordEditorSource, /canApplyPassing \? 'is-available' : 'is-restricted'/);
+  assert.match(chordEditorSource, /canApplyPassing \? '第 15 步可用' : '仅第 15 步可用'/);
+  assert.match(chordEditorSource, /aria-describedby=\{describedBy\}/);
   assert.match(chordEditorSource, /renderHarmonyOption\(option, 'passing', !canApplyPassing\)/);
   assert.match(chordEditorSource, /chord-step-harmony-option-preview/);
   assert.match(chordEditorSource, /onChordStepHarmonyPreview\(\{ chordName, mode \}\)/);

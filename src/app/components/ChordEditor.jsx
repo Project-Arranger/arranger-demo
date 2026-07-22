@@ -234,7 +234,13 @@ function ChordStepHarmonyPopover({
             <h3 id="chordPassingTitle">经过和弦</h3>
             <span>{sourceChordLabel} → {targetChordLabel ?? 'NEXT CHORD'}</span>
           </div>
-          <span id={passingHintId}>
+          <span
+            className={[
+              'chord-step-passing-availability',
+              canApplyPassing ? 'is-available' : 'is-restricted',
+            ].join(' ')}
+            id={passingHintId}
+          >
             {canApplyPassing ? '第 15 步可用' : '仅第 15 步可用'}
           </span>
         </div>
