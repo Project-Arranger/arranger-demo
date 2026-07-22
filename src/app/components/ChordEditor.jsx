@@ -571,7 +571,7 @@ function ChordEditor({
                   </span>
                 </div>
               ) : null}
-              <div className="chord-rhythm-readout">
+              <div className="chord-rhythm-readout current">
                 <div>
                   <span className="chord-rhythm-readout-label">当前小节主和弦</span>
                   <span className="chord-rhythm-readout-sub">
@@ -597,7 +597,7 @@ function ChordEditor({
           </div>
 
           <div className="chord-rhythm-sequencer-head">
-            <div>
+            <div className="chord-rhythm-sequencer-copy">
               <h2>本小节弹奏律动</h2>
               <p>点击 16 个步进开关，决定这个和弦在一小节里的触发位置</p>
             </div>

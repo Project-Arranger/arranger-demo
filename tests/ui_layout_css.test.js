@@ -923,6 +923,12 @@ test('chord template workspace fits the editor at compact desktop heights', asyn
   assert.match(css, /\.chord-template-progression-options,\s*\n\.chord-template-groove-options\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\);/s);
   assert.match(css, /\.chord-template-workspace-actions\s*\{[^}]*display:\s*flex;/s);
   assert.match(css, /\.chord-rhythm-step-grid\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(152px,\s*1fr\)\);/s);
+  assert.match(css, /\.chord-rhythm-summary\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) auto;/s);
+  assert.match(css, /\.chord-rhythm-summary-left\s*\{[^}]*display:\s*grid;[^}]*justify-self:\s*start;/s);
+  assert.match(css, /\.chord-rhythm-progression-info\s*\{[^}]*display:\s*flex;[^}]*align-items:\s*baseline;/s);
+  assert.match(css, /\.chord-rhythm-readout\.next\s*\{[^}]*justify-self:\s*end;/s);
+  assert.match(css, /\.chord-rhythm-sequencer-copy\s*\{[^}]*display:\s*flex;[^}]*align-items:\s*baseline;/s);
+  assert.match(css, /\.chord-rhythm-sequencer-head p\s*\{[^}]*margin:\s*0;[^}]*white-space:\s*nowrap;/s);
   assert.match(css, /\.chord-rhythm-beat-group\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(24px,\s*1fr\)\);/s);
   assert.match(css, /\.chord-rhythm-beat-group\s*\{[^}]*box-shadow:\s*[^}]*inset/s);
   assert.match(css, /\.chord-rhythm-step-label\s*\{[^}]*font-family:\s*Georgia/s);
