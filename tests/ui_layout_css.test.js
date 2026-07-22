@@ -539,7 +539,7 @@ test('timeline clips and add controls inherit the left track color map', async (
   assert.match(css, /\.add-clip\s*\{[^}]*background:\s*color-mix\(in oklab,\s*var\(--track-color,\s*var\(--surface\)\)/s);
 });
 
-test('timeline clips render with generated nine-slice skin assets', async () => {
+test('timeline clips keep their nine-slice gems inside one shared dark corner mask', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
   for (const trackId of TRACK_IDS) {
@@ -549,10 +549,20 @@ test('timeline clips render with generated nine-slice skin assets', async () => 
   assert.match(css, /\.clip\s*\{[^}]*isolation:\s*isolate;/s);
   assert.match(css, /\.clip\s*\{[^}]*overflow:\s*hidden;/s);
   assert.match(css, /\.clip\s*\{[^}]*background:[^}]*var\(--clip-bg\)/s);
+  assert.match(css, /\.clip\s*\{[^}]*--clip-skin-inset:\s*1px;/s);
+  assert.match(css, /\.clip\s*\{[^}]*--clip-skin-radius:\s*11px;/s);
+  assert.match(css, /\.clip\s*\{[^}]*--clip-skin-scale:\s*1;/s);
+  assert.match(css, /\.clip\s*\{[^}]*color-mix\(in oklab,\s*#030202 82%,\s*var\(--clip-bg\)\)/s);
+  assert.match(css, /\.clip\[data-type="chord"\]\s*\{[^}]*--clip-skin-scale:\s*1\.08;/s);
   assert.match(css, /\.clip::before\s*\{[^}]*content:\s*"";/s);
+  assert.match(css, /\.clip::before\s*\{[^}]*inset:\s*var\(--clip-skin-inset\);/s);
   assert.match(css, /\.clip::before\s*\{[^}]*border-image-source:\s*var\(--clip-skin\);/s);
   assert.match(css, /\.clip::before\s*\{[^}]*border-image-slice:\s*128 fill;/s);
   assert.match(css, /\.clip::before\s*\{[^}]*border-image-width:\s*18px;/s);
+  assert.match(css, /\.clip::before\s*\{[^}]*border-radius:\s*var\(--clip-skin-radius\);/s);
+  assert.match(css, /\.clip::before\s*\{[^}]*clip-path:\s*inset\(0 round var\(--clip-skin-radius\)\);/s);
+  assert.match(css, /\.clip::before\s*\{[^}]*transform:\s*scale\(var\(--clip-skin-scale\)\);/s);
+  assert.doesNotMatch(css, /\.clip::before\s*\{[^}]*background-image:/s);
   assert.match(css, /\.clip::before\s*\{[^}]*filter:\s*drop-shadow/s);
   assert.match(css, /\.clip::after\s*\{[^}]*content:\s*"";/s);
   assert.match(css, /\.clip::after\s*\{[^}]*box-shadow:\s*inset 0 0 0 1px/s);
