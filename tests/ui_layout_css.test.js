@@ -361,7 +361,7 @@ test('fourteen inch mac demo viewport uses a dense one-screen tutorial layout', 
   assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.app\s*\{[^}]*--app-topbar-height:\s*46px;[^}]*--app-editor-height:\s*clamp\(250px,\s*43vh,\s*286px\);[^}]*--track-row-size:\s*minmax\(44px,\s*1fr\);[^}]*--track-footer-height:\s*32px;/s);
   assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.app:has\(\.editor\[data-screen-label="Drum Sequencer"\]:not\(\[data-picker="drum-template"\]\)\),\s*\n\s*\.app:has\(\.editor\[data-screen-label="Chord Editor"\]:not\(\[data-picker="chord"\]\):not\(\[data-picker="groove"\]\)\),\s*\n\s*\.app:has\(\.editor\[data-screen-label="Melody Editor"\]:not\(\[data-picker="scale"\]\)\),\s*\n\s*\.app:has\(\.editor\[data-screen-label="Bass Editor"\]:not\(\[data-picker="groove"\]\)\)\s*\{[^}]*--app-editor-height:\s*clamp\(420px,\s*54vh,\s*560px\);/s);
   assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.app:has\(\.editor\[data-picker="chord"\]\),\s*\n\s*\.app:has\(\.editor\[data-picker="groove"\]\),\s*\n\s*\.app:has\(\.editor\[data-picker="scale"\]\)\s*\{[^}]*--app-editor-height:\s*clamp\(286px,\s*48vh,\s*332px\);/s);
-  assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.topbar\s*\{[^}]*grid-template-columns:\s*minmax\(148px,\s*0\.72fr\) minmax\(62px,\s*max-content\) minmax\(0,\s*1fr\) minmax\(170px,\s*0\.72fr\);[^}]*gap:\s*8px;[^}]*padding:\s*0 12px;/s);
+  assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.topbar\s*\{[^}]*grid-template-columns:\s*minmax\(148px,\s*176px\) minmax\(62px,\s*max-content\) max-content minmax\(224px,\s*1fr\) max-content;[^}]*gap:\s*8px;[^}]*padding:\s*0 12px;/s);
   assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.workspace\.tutorial-sidebar-open\s*\{[^}]*grid-template-columns:\s*clamp\(164px,\s*15vw,\s*196px\) minmax\(0,\s*1fr\) clamp\(248px,\s*20vw,\s*294px\);/s);
   assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.tutorial-panel\s*\{[^}]*grid-template-rows:\s*40px minmax\(0,\s*1fr\) var\(--track-footer-height\);/s);
   assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.tutorial-panel-body\s*\{[^}]*align-content:\s*start;[^}]*padding:\s*10px 12px;[^}]*overflow:\s*hidden;/s);
@@ -371,13 +371,13 @@ test('fourteen inch mac demo viewport uses a dense one-screen tutorial layout', 
   assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.editor-head\s*\{[^}]*min-height:\s*44px;[^}]*padding:\s*0 12px;/s);
 });
 
-test('fourteen inch mac demo viewport anchors topbar status to the whole app center', async () => {
+test('fourteen inch mac demo viewport reserves separate space for transport and status', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
-  assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.topbar-center\s*\{[^}]*position:\s*absolute;[^}]*left:\s*50%;[^}]*top:\s*50%;[^}]*transform:\s*translate\(-50%,\s*-50%\);[^}]*width:\s*max-content;[^}]*max-width:\s*min\(430px,\s*calc\(100% - 560px\)\);/s);
-  assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.topbar-center\s*\{[^}]*grid-column:\s*1 \/ -1;[^}]*grid-row:\s*1;/s);
-  assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.topbar-left-controls\s*\{[^}]*grid-column:\s*3;[^}]*justify-self:\s*start;/s);
-  assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.right-tools\s*\{[^}]*grid-column:\s*4;[^}]*justify-self:\s*end;/s);
+  assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.topbar-left-controls\s*\{[^}]*grid-column:\s*3;[^}]*z-index:\s*2;[^}]*justify-self:\s*start;/s);
+  assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.topbar-center\s*\{[^}]*position:\s*relative;[^}]*grid-column:\s*4;[^}]*grid-row:\s*1;[^}]*width:\s*min\(100%,\s*max-content\);[^}]*max-width:\s*100%;/s);
+  assert.doesNotMatch(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.topbar-center\s*\{[^}]*position:\s*absolute;/s);
+  assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.right-tools\s*\{[^}]*grid-column:\s*5;[^}]*justify-self:\s*end;/s);
 });
 
 test('fourteen inch mac demo viewport compacts real topbar controls without overflow', async () => {
