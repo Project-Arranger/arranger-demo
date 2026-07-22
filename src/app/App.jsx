@@ -83,6 +83,7 @@ import {
 import { createTimelineTracks } from './timelineViewModels.js';
 import { syncEditorToPlaybackBar } from './playbackEditorSync.js';
 import { syncTrackScrollContainers } from './syncTrackScroll.js';
+import { createTutorialSkipAppState } from './tutorialSkipState.js';
 import { syncEditorToTutorialSuggestedBar } from './tutorialEditorSync.js';
 import {
   EDITOR_RESIZE_MIN_HEIGHT,
@@ -1364,16 +1365,19 @@ export default function App() {
 
   const handleTutorialSkip = useCallback(() => {
     withUndoCheckpoint(() => {
+      const initialAppState = useMusicStore.getInitialState();
+      const skippedAppState = createTutorialSkipAppState(initialAppState);
+
       clearTutorialAutoAdvanceTimer();
       clearTutorialCountIn();
       stopTutorialPreviewPlayback();
-      useMusicStore.setState(useMusicStore.getInitialState(), true);
+      useMusicStore.setState(skippedAppState, true);
       setCurrentTutorialStepIndex(0);
       setTutorialProgress(createTutorialState());
       setAppliedTutorialSetups(() => new Set());
       setTutorialStepCheckpoints(() => ({
         0: createTutorialCheckpoint({
-          appState: useMusicStore.getInitialState(),
+          appState: initialAppState,
           appliedTutorialSetups: new Set(),
           tutorialProgress: createTutorialState(),
         }),
