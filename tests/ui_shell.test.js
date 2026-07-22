@@ -330,6 +330,9 @@ test('app shell exposes the chord rhythm editor and unified template workspace',
   assert.match(chordEditorSource, /getAppliedChordProgressionTemplateId/);
   assert.match(chordEditorSource, /getChordSelectedGrooveTemplateId/);
   assert.match(chordEditorSource, /getSourceChordLabel/);
+  assert.match(chordEditorSource, /const hasPlayableChordContent = activeSteps\.size > 0/);
+  assert.match(chordEditorSource, /\{hasPlayableChordContent \? \([\s\S]*className="chord-rhythm-progression-info"[\s\S]*\) : null\}/);
+  assert.match(chordEditorSource, /\{hasPlayableChordContent \? \(currentChord \?\? '—'\) : '—'\}/);
   assert.match(chordEditorSource, /getNextChordClipBar/);
   assert.match(chordEditorSource, /templates\.slice\(/);
   assert.match(chordEditorSource, /TEMPLATE_PAGE_SIZE = 3/);

@@ -275,6 +275,7 @@ function ChordEditor({
   const nextChordBar = getNextChordClipBar(clips, selectedBar);
   const nextChord = nextChordBar === null ? null : getSourceChordLabel(matrix, nextChordBar);
   const activeSteps = new Set(getChordRhythmSteps(matrix, selectedBar));
+  const hasPlayableChordContent = activeSteps.size > 0;
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [templatePage, setTemplatePage] = useState(0);
   const [pendingTemplateId, setPendingTemplateId] = useState(DEFAULT_TEMPLATE_ID);
@@ -534,15 +535,17 @@ function ChordEditor({
         <section className="chord-rhythm-panel" aria-label="本小节和弦律动">
           <div className="chord-rhythm-summary">
             <div className="chord-rhythm-summary-left">
-              <div className="chord-rhythm-progression-info">
-                <span className="chord-rhythm-eyebrow">Progression</span>
-                <strong className="chord-rhythm-progression-name">
-                  {activeTemplate?.name ?? '自定义'}
-                </strong>
-                <span className="chord-rhythm-progression-chords">
-                  {activeTemplate?.chords.join(' · ') ?? currentChord}
-                </span>
-              </div>
+              {hasPlayableChordContent ? (
+                <div className="chord-rhythm-progression-info">
+                  <span className="chord-rhythm-eyebrow">Progression</span>
+                  <strong className="chord-rhythm-progression-name">
+                    {activeTemplate?.name ?? '自定义'}
+                  </strong>
+                  <span className="chord-rhythm-progression-chords">
+                    {activeTemplate?.chords.join(' · ') ?? currentChord}
+                  </span>
+                </div>
+              ) : null}
               <div className="chord-rhythm-readout">
                 <div>
                   <span className="chord-rhythm-readout-label">当前小节主和弦</span>
@@ -550,7 +553,9 @@ function ChordEditor({
                     BAR {String(selectedBar + 1).padStart(2, '0')} · ROOT CHORD
                   </span>
                 </div>
-                <span className="chord-rhythm-badge">{currentChord ?? '—'}</span>
+                <span className="chord-rhythm-badge">
+                  {hasPlayableChordContent ? (currentChord ?? '—') : '—'}
+                </span>
               </div>
             </div>
             <div className="chord-rhythm-readout next">
