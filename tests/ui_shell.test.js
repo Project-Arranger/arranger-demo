@@ -409,6 +409,7 @@ test('app shell exposes the chord rhythm editor and unified template workspace',
 
 test('timeline add clip controls switch the persistent editor by track row', async () => {
   const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
   const bottomEditorSource = await readFile(
     new URL('../src/app/components/BottomEditor.jsx', import.meta.url),
     'utf8',
@@ -523,6 +524,9 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(drumSequencerSource, /drum-step-groups/);
   assert.match(drumSequencerSource, /drum-step-group/);
   assert.match(drumSequencerSource, /DRUM SEQUENCER - BAR/);
+  assert.doesNotMatch(drumSequencerSource, /drum-bar-indicator/);
+  assert.doesNotMatch(drumSequencerSource, /\/ 8/);
+  assert.doesNotMatch(css, /\.drum-bar-indicator\s*\{/);
   assert.match(drumSequencerSource, /drumTemplatePickerOpen/);
   assert.match(drumSequencerSource, /data-picker=\{drumTemplatePickerOpen \? 'drum-template' : undefined\}/);
   assert.match(drumSequencerSource, /选择律动模板/);

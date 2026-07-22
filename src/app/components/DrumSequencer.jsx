@@ -379,11 +379,6 @@ function DrumSequencer({
               </div>
             ))}
 
-            <div className="drum-bar-indicator mono">
-              {selectedBar + 1}
-              {' '}
-              / 8
-            </div>
           </>
         ))}
       </div>
