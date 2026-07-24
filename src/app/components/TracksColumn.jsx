@@ -5,8 +5,9 @@ import {
 import {
   createElement,
   forwardRef,
-  useState,
+  useCallback,
   useRef,
+  useState,
 } from 'react';
 import {
   MAX_TRACK_VOLUME_DB,
@@ -14,6 +15,7 @@ import {
 } from '../trackVolumeViewModels.js';
 import { getTrackVolumeFromClientX } from '../trackVolumeInteraction.js';
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
+import { useSecondaryMenuDismiss } from '../useSecondaryMenuDismiss.js';
 import { TRACK_ICONS, renderIcon } from './icons.js';
 
 function TrackRow({
@@ -206,7 +208,18 @@ const TracksColumn = forwardRef(function TracksColumn(
   scrollRef,
 ) {
   const [addTrackMenuOpen, setAddTrackMenuOpen] = useState(false);
+  const addTrackMenuRef = useRef(null);
+  const addTrackTriggerRef = useRef(null);
   const canAddTrack = addTrackOptions.length > 0;
+  const closeAddTrackMenu = useCallback(() => {
+    setAddTrackMenuOpen(false);
+  }, []);
+  useSecondaryMenuDismiss({
+    active: addTrackMenuOpen,
+    menuRef: addTrackMenuRef,
+    onDismiss: closeAddTrackMenu,
+    triggerRef: addTrackTriggerRef,
+  });
   const handleAddTrackButtonClick = () => {
     if (!canAddTrack) return;
     setAddTrackMenuOpen((isOpen) => !isOpen);
@@ -243,6 +256,7 @@ const TracksColumn = forwardRef(function TracksColumn(
       <div className="add-track-row">
         <button
           className="add-track"
+          ref={addTrackTriggerRef}
           type="button"
           aria-expanded={canAddTrack ? addTrackMenuOpen : undefined}
           aria-haspopup="menu"
@@ -253,7 +267,12 @@ const TracksColumn = forwardRef(function TracksColumn(
           Add Track
         </button>
         {addTrackMenuOpen ? (
-          <div className="add-track-menu" role="menu" aria-label="Add track">
+          <div
+            className="add-track-menu"
+            ref={addTrackMenuRef}
+            role="menu"
+            aria-label="Add track"
+          >
             {addTrackOptions.map((track) => {
               const Icon = TRACK_ICONS[track.id];
 

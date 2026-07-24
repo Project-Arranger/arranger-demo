@@ -30,6 +30,7 @@ import {
   hasExistingChordClipContent,
 } from '../chordActions.js';
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
+import { useSecondaryMenuDismiss } from '../useSecondaryMenuDismiss.js';
 import { ClipNameInput } from './ClipNameInput.jsx';
 import { EditorTrackIdentity } from './EditorTrackIdentity.jsx';
 import { renderIcon } from './icons.js';
@@ -51,6 +52,10 @@ const HARMONY_POPOVER_ESTIMATED_HEIGHT = 490;
 
 function isTutorialControlAllowed(role) {
   return role === 'target' || role === 'allowed';
+}
+
+function isHarmonyTrigger(target) {
+  return Boolean(target?.closest?.('.chord-rhythm-step-label'));
 }
 
 function getNextChordClipBar(clips, selectedBar) {
@@ -124,6 +129,7 @@ function ChordStepHarmonyPopover({
   onClose,
   onPreview,
   previewingOptionKey,
+  popoverRef,
   sourceChordLabel,
   stepIndex,
   targetChordLabel,
@@ -207,6 +213,7 @@ function ChordStepHarmonyPopover({
   return (
     <section
       className="chord-step-harmony-popover"
+      ref={popoverRef}
       data-side={position.side}
       role="dialog"
       aria-label={`编辑第 ${stepIndex + 1} 步和弦`}
@@ -326,6 +333,9 @@ function ChordEditor({
   const previewRunRef = useRef(0);
   const harmonyPreviewRunRef = useRef(0);
   const harmonyAnchorRefs = useRef(new Map());
+  const harmonyPopoverRef = useRef(null);
+  const workspaceRef = useRef(null);
+  const workspaceTriggerRef = useRef(null);
   const workspaceButtonRole = getTutorialControlRole(tutorialTargets, WORKSPACE_BUTTON_CONTROL);
   const applyRole = getTutorialControlRole(tutorialTargets, APPLY_CONTROL);
   const visibleTemplates = templates.slice(
@@ -356,6 +366,20 @@ function ChordEditor({
     setHarmonyPanel(null);
     if (harmonyPanel?.source === 'launchpad') onLaunchpadHarmonyClose();
   }, [harmonyPanel?.source, onLaunchpadHarmonyClose, stopHarmonyPreview]);
+  useSecondaryMenuDismiss({
+    active: workspaceOpen && !confirmApplyOpen,
+    dismissOnEscape: false,
+    menuRef: workspaceRef,
+    onDismiss: closeWorkspace,
+    triggerRef: workspaceTriggerRef,
+  });
+  useSecondaryMenuDismiss({
+    active: Boolean(harmonyPanel),
+    dismissOnEscape: false,
+    isIgnoredTarget: isHarmonyTrigger,
+    menuRef: harmonyPopoverRef,
+    onDismiss: closeHarmonyPanel,
+  });
 
   useEffect(() => () => {
     previewRunRef.current += 1;
@@ -387,18 +411,6 @@ function ChordEditor({
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [closeHarmonyPanel, closeWorkspace, confirmApplyOpen, harmonyPanel, workspaceOpen]);
-
-  useEffect(() => {
-    const handlePointerDown = (event) => {
-      if (!harmonyPanel) return;
-      if (event.target.closest('.chord-step-harmony-popover')) return;
-      if (event.target.closest('.chord-rhythm-step-label')) return;
-      closeHarmonyPanel();
-    };
-
-    document.addEventListener('mousedown', handlePointerDown);
-    return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, [closeHarmonyPanel, harmonyPanel]);
 
   const openWorkspace = () => {
     stopPreview();
@@ -492,6 +504,14 @@ function ChordEditor({
 
   const handleHarmonyPanelOpen = (stepIndex, element, source = 'pointer') => {
     if (!activeSteps.has(stepIndex)) return;
+    if (
+      source === 'pointer'
+      && harmonyPanel?.bar === selectedBar
+      && harmonyPanel?.stepIndex === stepIndex
+    ) {
+      closeHarmonyPanel();
+      return;
+    }
     stopPreview();
     stopHarmonyPreview();
     setHarmonyPanel({
@@ -608,11 +628,12 @@ function ChordEditor({
               'chord-template-workspace-trigger',
               workspaceButtonRole === 'target' ? 'tutorial-control-target' : '',
             ].filter(Boolean).join(' ')}
+            ref={workspaceTriggerRef}
             aria-expanded={workspaceOpen}
             data-tutorial-role={workspaceButtonRole}
             disabled={tutorialLocked && !isTutorialControlAllowed(workspaceButtonRole)}
             type="button"
-            onClick={openWorkspace}
+            onClick={workspaceOpen ? closeWorkspace : openWorkspace}
           >
             选择和弦模板与律动
           </button>
@@ -769,6 +790,7 @@ function ChordEditor({
           onClose={closeHarmonyPanel}
           onPreview={handleHarmonyPreview}
           previewingOptionKey={harmonyPreviewOptionKey}
+          popoverRef={harmonyPopoverRef}
           sourceChordLabel={getChordRhythmStepSourceLabel(matrix, selectedBar, harmonyPanel.stepIndex)}
           stepIndex={harmonyPanel.stepIndex}
           targetChordLabel={nextChord ?? getDoowopPassingTargetChord(
@@ -779,6 +801,7 @@ function ChordEditor({
 
       <section
         className="chord-template-workspace"
+        ref={workspaceRef}
         aria-labelledby="chordTemplateWorkspaceTitle"
         aria-modal="true"
         hidden={!workspaceOpen}

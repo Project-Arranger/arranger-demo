@@ -15,6 +15,7 @@ import {
 } from '../drumSequencerData.js';
 import { createDefaultDrumsPattern } from '../drumsPatternActions.js';
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
+import { useSecondaryMenuDismiss } from '../useSecondaryMenuDismiss.js';
 import { ClipNameInput } from './ClipNameInput.jsx';
 import { EditorTrackIdentity } from './EditorTrackIdentity.jsx';
 import { renderIcon } from './icons.js';
@@ -150,6 +151,8 @@ function DrumSequencer({
   const [selectedDrumTemplateId, setSelectedDrumTemplateId] = useState(BASIC_DRUM_TEMPLATE.id);
   const [suppressNextClick, setSuppressNextClick] = useState(false);
   const dragSessionRef = useRef(null);
+  const templatePickerRef = useRef(null);
+  const templateTriggerRef = useRef(null);
   const generateCurrentRole = getTutorialControlRole(tutorialTargets, 'generate-current-drums-bar');
   const generateAllRole = getTutorialControlRole(tutorialTargets, 'generate-all-drums-bars');
   const templateButtonRole = generateCurrentRole === 'target' || generateAllRole === 'target'
@@ -225,16 +228,12 @@ function DrumSequencer({
     };
   }, [dragSource, onStepMove]);
 
-  useEffect(() => {
-    if (!drumTemplatePickerOpen) return undefined;
-
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape') setDrumTemplatePickerOpen(false);
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [drumTemplatePickerOpen]);
+  useSecondaryMenuDismiss({
+    active: drumTemplatePickerOpen,
+    menuRef: templatePickerRef,
+    onDismiss: () => setDrumTemplatePickerOpen(false),
+    triggerRef: templateTriggerRef,
+  });
 
   const handleTemplateCardKeyDown = (event) => {
     if (event.key !== 'Enter' && event.key !== ' ') return;
@@ -276,10 +275,13 @@ function DrumSequencer({
         <div className="tools">
           <button
             className={templateButtonClassName}
+            ref={templateTriggerRef}
             type="button"
+            aria-expanded={drumTemplatePickerOpen}
+            aria-haspopup="dialog"
             data-tutorial-role={templateButtonRole}
             disabled={templateButtonLocked}
-            onClick={() => setDrumTemplatePickerOpen(true)}
+            onClick={() => setDrumTemplatePickerOpen((isOpen) => !isOpen)}
           >
             {renderIcon(AudioWaveform)}
             选择律动模板
@@ -383,7 +385,14 @@ function DrumSequencer({
         ))}
       </div>
 
-      <div className="gtpl-picker drum-template-picker" role="dialog" aria-label="选择律动模板" data-screen-label="Drum Groove Template Picker" hidden={!drumTemplatePickerOpen}>
+      <div
+        className="gtpl-picker drum-template-picker"
+        ref={templatePickerRef}
+        role="dialog"
+        aria-label="选择律动模板"
+        data-screen-label="Drum Groove Template Picker"
+        hidden={!drumTemplatePickerOpen}
+      >
         <header className="tpl-head">
           <div className="tpl-head-left">
             <button className="btn-template-groove-active" aria-label="关闭选择律动模板" type="button" onClick={() => setDrumTemplatePickerOpen(false)}>

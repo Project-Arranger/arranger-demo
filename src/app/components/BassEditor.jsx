@@ -7,6 +7,7 @@ import {
   createElement,
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from 'react';
 import {
@@ -18,6 +19,7 @@ import { getBassGroovePreviewSteps } from '../bassGroovePreview.js';
 import { BASS_NOTES } from '../../data/bassNotes.js';
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
 import { BEAT_NUMBERS } from '../uiShellData.js';
+import { useSecondaryMenuDismiss } from '../useSecondaryMenuDismiss.js';
 import { ClipNameInput } from './ClipNameInput.jsx';
 import { EditorTrackIdentity } from './EditorTrackIdentity.jsx';
 import { renderIcon } from './icons.js';
@@ -73,6 +75,8 @@ function BassEditor({
   const [pickerMode, setPickerMode] = useState(null);
   const [selectedGrooveTemplateId, setSelectedGrooveTemplateId] = useState('bass-8th-basic');
   const [confirmApplyOpen, setConfirmApplyOpen] = useState(false);
+  const groovePickerRef = useRef(null);
+  const grooveTriggerRef = useRef(null);
   const groovePickerOpen = pickerMode === 'groove';
   const selectedGrooveTemplate = BASS_GROOVE_TEMPLATES.find(
     (template) => template.id === selectedGrooveTemplateId,
@@ -81,6 +85,13 @@ function BassEditor({
     setConfirmApplyOpen(false);
     setPickerMode(null);
   }, []);
+  useSecondaryMenuDismiss({
+    active: groovePickerOpen && !confirmApplyOpen,
+    dismissOnEscape: false,
+    menuRef: groovePickerRef,
+    onDismiss: closeBassPicker,
+    triggerRef: grooveTriggerRef,
+  });
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -142,11 +153,14 @@ function BassEditor({
         <div className="tools">
           <button
             className={grooveButtonClassName}
+            ref={grooveTriggerRef}
             aria-label="选择Bass弹奏律动模板"
+            aria-expanded={groovePickerOpen}
+            aria-haspopup="dialog"
             type="button"
             data-tutorial-role={grooveButtonRole}
             disabled={tutorialLocked && !isTutorialControlAllowed(grooveButtonRole)}
-            onClick={() => setPickerMode('groove')}
+            onClick={() => setPickerMode((mode) => (mode === 'groove' ? null : 'groove'))}
           >
             {renderIcon(AudioWaveform)}
             选择Bass弹奏律动模板
@@ -212,6 +226,7 @@ function BassEditor({
 
       <section
         className="chord-template-workspace bass-template-workspace"
+        ref={groovePickerRef}
         aria-labelledby="bassTemplateWorkspaceTitle"
         aria-modal="true"
         data-screen-label="Bass Groove Template Picker"

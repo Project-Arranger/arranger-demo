@@ -5,7 +5,9 @@ import {
 } from 'lucide-react';
 import {
   createElement,
+  useCallback,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import {
@@ -35,6 +37,7 @@ import {
 import { MELODY_RECORDING_PHASES } from '../useMelodyRecordingController.js';
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
 import { BEAT_NUMBERS } from '../uiShellData.js';
+import { useSecondaryMenuDismiss } from '../useSecondaryMenuDismiss.js';
 import { ClipNameInput } from './ClipNameInput.jsx';
 import { EditorTrackIdentity } from './EditorTrackIdentity.jsx';
 import { renderIcon } from './icons.js';
@@ -105,6 +108,21 @@ function MelodyEditor({
   const [selectedRhythmTemplateId, setSelectedRhythmTemplateId] = useState(
     melodyRhythmTemplateId,
   );
+  const rhythmPickerRef = useRef(null);
+  const rhythmTriggerRef = useRef(null);
+  const scalePickerRef = useRef(null);
+  const scaleTriggerRef = useRef(null);
+  const closePicker = useCallback(() => {
+    setPickerMode(null);
+  }, []);
+  const activePickerRef = pickerMode === 'scale' ? scalePickerRef : rhythmPickerRef;
+  const activeTriggerRef = pickerMode === 'scale' ? scaleTriggerRef : rhythmTriggerRef;
+  useSecondaryMenuDismiss({
+    active: pickerMode !== null,
+    menuRef: activePickerRef,
+    onDismiss: closePicker,
+    triggerRef: activeTriggerRef,
+  });
   const scaleButtonRole = getTutorialControlRole(tutorialTargets, 'melody-scale-button');
   const scaleButtonDisabled = tutorialLocked && scaleButtonRole !== 'target';
   const exampleKeysTarget = tutorialTargets?.controls?.find((target) => (
@@ -235,12 +253,15 @@ function MelodyEditor({
               'btn-template-groove',
               activeRhythmTemplate ? 'btn-template-groove-active' : '',
             ].filter(Boolean).join(' ')}
+            ref={rhythmTriggerRef}
             aria-label="选择旋律律动"
+            aria-expanded={pickerMode === 'rhythm'}
+            aria-haspopup="dialog"
             type="button"
             disabled={tutorialLocked || workflowLocked}
             onClick={() => {
               setSelectedRhythmTemplateId(activeRhythmTemplate?.id ?? melodyRhythmTemplateId);
-              setPickerMode('rhythm');
+              setPickerMode((mode) => (mode === 'rhythm' ? null : 'rhythm'));
             }}
           >
             {renderIcon(SlidersHorizontal)}
@@ -251,12 +272,15 @@ function MelodyEditor({
               'btn-template-groove',
               scaleButtonRole === 'target' ? 'tutorial-control-target' : '',
             ].filter(Boolean).join(' ')}
+            ref={scaleTriggerRef}
             aria-label="选择音阶"
+            aria-expanded={pickerMode === 'scale'}
+            aria-haspopup="dialog"
             aria-disabled={scaleButtonDisabled || scaleChangeLocked}
             data-tutorial-role={scaleButtonRole ?? undefined}
             type="button"
             disabled={scaleButtonDisabled || scaleChangeLocked}
-            onClick={() => setPickerMode('scale')}
+            onClick={() => setPickerMode((mode) => (mode === 'scale' ? null : 'scale'))}
           >
             {renderIcon(ChevronUp)}
             选择音阶
@@ -416,6 +440,7 @@ function MelodyEditor({
 
       <section
         className="scale-picker melody-scale-workspace"
+        ref={scalePickerRef}
         aria-labelledby="melodyScaleWorkspaceTitle"
         aria-modal="true"
         data-screen-label="Scale Picker"
@@ -523,6 +548,7 @@ function MelodyEditor({
 
       <section
         className="chord-template-workspace melody-rhythm-workspace"
+        ref={rhythmPickerRef}
         aria-labelledby="melodyRhythmWorkspaceTitle"
         aria-modal="true"
         data-screen-label="Melody Rhythm Picker"
