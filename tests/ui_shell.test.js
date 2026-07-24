@@ -335,7 +335,7 @@ test('app shell exposes the chord rhythm editor and unified template workspace',
     source.indexOf('const handleChordTemplateWorkspaceApply'),
     source.indexOf('const handleClearChordBar'),
   );
-  const chordClearTrackHandlerSource = source.slice(
+  const chordClearRequestSource = source.slice(
     source.indexOf('const handleClearChord = useCallback'),
     source.indexOf('const handleBassStepToggle'),
   );
@@ -444,8 +444,8 @@ test('app shell exposes the chord rhythm editor and unified template workspace',
   assert.doesNotMatch(source, /applyChordTemplateWorkspaceToBar/);
   assert.match(source, /toggleChordRhythmStep/);
   assert.match(source, /clearChordRhythmBar/);
-  assert.match(chordClearTrackHandlerSource, /withUndoCheckpoint\(\(\) => \{/);
-  assert.match(chordClearTrackHandlerSource, /clearTrack\('chord'\)/);
+  assert.match(chordClearRequestSource, /requestClearAction\('chord', 'track'\)/);
+  assert.doesNotMatch(chordClearRequestSource, /clearTrack\('chord'\)/);
   assert.match(source, /createChordTemplateWorkspacePreviewEvents/);
   assert.match(source, /createChordStepHarmonyPreviewEvents/);
   assert.match(source, /previewChordClipSequence/);
@@ -459,6 +459,41 @@ test('app shell exposes the chord rhythm editor and unified template workspace',
   assert.match(bottomEditorSource, /onChordTemplateWorkspacePreviewStop/);
   assert.match(bottomEditorSource, /onClearChord/);
   assert.match(bottomEditorSource, /onClearChordBar/);
+});
+
+test('all destructive clear actions require one shared confirmation', async () => {
+  const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+  const confirmHandlerSource = source.slice(
+    source.indexOf('const confirmClearAction = useCallback'),
+    source.indexOf('const handleTutorialNext'),
+  );
+
+  assert.match(source, /const \[pendingClearAction, setPendingClearAction\] = useState\(null\)/);
+  assert.match(source, /requestClearAction\('drums', 'bar', selectedBar\)/);
+  assert.match(source, /requestClearAction\('drums', 'track'\)/);
+  assert.match(source, /requestClearAction\('chord', 'bar', selectedBar\)/);
+  assert.match(source, /requestClearAction\('chord', 'track'\)/);
+  assert.match(source, /requestClearAction\('bass', 'bar', selectedBar\)/);
+  assert.match(source, /requestClearAction\('bass', 'track'\)/);
+  assert.match(source, /requestClearAction\('melody', 'bar', selectedBar\)/);
+  assert.match(source, /requestClearAction\('melody', 'track'\)/);
+  assert.match(source, /event\.key !== 'Escape'/);
+  assert.match(source, /cancelClearAction\(\)/);
+  assert.match(source, /enabled: !pendingClearAction/);
+  assert.match(source, /aria-label="关闭清空确认框"/);
+  assert.match(source, /确认清空整条 \$\{CLEAR_TRACK_LABELS\[pendingClearAction\.trackId\]\} 轨/);
+  assert.match(source, /确认清空 \$\{CLEAR_TRACK_LABELS\[pendingClearAction\.trackId\]\} 第 \$\{pendingClearAction\.bar \+ 1\} 小节/);
+  assert.match(source, /onClick=\{cancelClearAction\}[\s\S]*取消/);
+  assert.match(source, /onClick=\{confirmClearAction\}[\s\S]*确认清空/);
+  assert.match(confirmHandlerSource, /withUndoCheckpoint\(\(\) => \{/);
+  assert.match(confirmHandlerSource, /state\.clearTrack\(action\.trackId\)/);
+  assert.match(confirmHandlerSource, /clearDrumsBar\(state\.matrix, action\.bar\)/);
+  assert.match(confirmHandlerSource, /clearChordRhythmBar\(state\.matrix, action\.bar\)/);
+  assert.match(confirmHandlerSource, /clearBassBar\(state\.matrix, action\.bar\)/);
+  assert.match(confirmHandlerSource, /clearMelodyBar\(state\.matrix, action\.bar\)/);
+  assert.match(css, /\.clear-confirm-heading\s*\{/);
+  assert.match(css, /\.clear-confirm-close\s*\{/);
 });
 
 test('timeline add clip controls switch the persistent editor by track row', async () => {
@@ -1048,7 +1083,7 @@ test('app exposes the bass editor and existing-clip groove template workflow', a
   assert.match(source, /state\.setTrackMatrix\('bass',\s*nextMatrix\.bass\)/);
   assert.doesNotMatch(source, /nextMatrix\.bass\[clip\.bar\]\.forEach\(\(cell,\s*step\) => \{[\s\S]*state\.setCell\('bass',\s*clip\.bar,\s*step,\s*cell\);/);
   assert.match(source, /handleClearBassBar/);
-  assert.match(source, /clearTrack\('bass'\)/);
+  assert.match(source, /requestClearAction\('bass', 'track'\)/);
   assert.match(source, /triggerBassNote/);
   assert.match(source, /previewBassPattern/);
 });

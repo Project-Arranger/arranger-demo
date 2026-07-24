@@ -111,6 +111,12 @@ import {
 } from './uiShellData.js';
 
 const TUTORIAL_AUTO_ADVANCE_MS = 450;
+const CLEAR_TRACK_LABELS = Object.freeze({
+  bass: 'Bass',
+  chord: 'Chord',
+  drums: 'Drums',
+  melody: 'Melody',
+});
 
 let tutorialAutoAdvanceTimerId = null;
 
@@ -178,6 +184,7 @@ export default function App() {
     [clips],
   );
   const [isNewSongConfirmOpen, setIsNewSongConfirmOpen] = useState(false);
+  const [pendingClearAction, setPendingClearAction] = useState(null);
   const [timelineSelection, setTimelineSelection] = useState(null);
   const [
     timelineSelectionPlaybackActive,
@@ -465,6 +472,33 @@ export default function App() {
   const cancelNewSong = useCallback(() => {
     setIsNewSongConfirmOpen(false);
   }, []);
+
+  const requestClearAction = useCallback((trackId, scope, bar = null) => {
+    if (!CLEAR_TRACK_LABELS[trackId]) return;
+    if (scope !== 'bar' && scope !== 'track') return;
+    if (scope === 'bar' && !Number.isInteger(bar)) return;
+
+    setPendingClearAction({ bar, scope, trackId });
+  }, []);
+
+  const cancelClearAction = useCallback(() => {
+    setPendingClearAction(null);
+  }, []);
+
+  useEffect(() => {
+    if (!pendingClearAction) return undefined;
+
+    const handleClearConfirmKeyDown = (event) => {
+      if (event.key !== 'Escape') return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      cancelClearAction();
+    };
+
+    window.addEventListener('keydown', handleClearConfirmKeyDown, true);
+    return () => window.removeEventListener('keydown', handleClearConfirmKeyDown, true);
+  }, [cancelClearAction, pendingClearAction]);
 
   const confirmNewSong = useCallback(() => {
     setIsNewSongConfirmOpen(false);
@@ -820,18 +854,12 @@ export default function App() {
   ]);
 
   const handleClearCurrentDrumsBar = useCallback(() => {
-    withUndoCheckpoint(() => {
-      const state = useMusicStore.getState();
-      const nextMatrix = clearDrumsBar(state.matrix, selectedBar);
-      writeDrumsBars(nextMatrix, [selectedBar]);
-    });
-  }, [selectedBar, withUndoCheckpoint, writeDrumsBars]);
+    requestClearAction('drums', 'bar', selectedBar);
+  }, [requestClearAction, selectedBar]);
 
   const handleClearDrums = useCallback(() => {
-    withUndoCheckpoint(() => {
-      useMusicStore.getState().clearTrack('drums');
-    });
-  }, [withUndoCheckpoint]);
+    requestClearAction('drums', 'track');
+  }, [requestClearAction]);
 
   const handlePageTrackBar = useCallback((direction) => {
     stopMelodyRecording();
@@ -1215,19 +1243,12 @@ export default function App() {
   ]);
 
   const handleClearChordBar = useCallback(() => {
-    withUndoCheckpoint(() => {
-      const state = useMusicStore.getState();
-      const nextMatrix = clearChordRhythmBar(state.matrix, selectedBar);
-      if (nextMatrix === state.matrix) return;
-      state.setTrackMatrix('chord', nextMatrix.chord);
-    });
-  }, [selectedBar, withUndoCheckpoint]);
+    requestClearAction('chord', 'bar', selectedBar);
+  }, [requestClearAction, selectedBar]);
 
   const handleClearChord = useCallback(() => {
-    withUndoCheckpoint(() => {
-      useMusicStore.getState().clearTrack('chord');
-    });
-  }, [withUndoCheckpoint]);
+    requestClearAction('chord', 'track');
+  }, [requestClearAction]);
 
   const handleBassStepToggle = useCallback((step, note) => {
     withUndoCheckpoint(() => {
@@ -1280,21 +1301,12 @@ export default function App() {
   ]);
 
   const handleClearBassBar = useCallback(() => {
-    withUndoCheckpoint(() => {
-      const state = useMusicStore.getState();
-      const nextMatrix = clearBassBar(state.matrix, selectedBar);
-
-      nextMatrix.bass[selectedBar].forEach((cell, step) => {
-        state.setCell('bass', selectedBar, step, cell);
-      });
-    });
-  }, [selectedBar, withUndoCheckpoint]);
+    requestClearAction('bass', 'bar', selectedBar);
+  }, [requestClearAction, selectedBar]);
 
   const handleClearBass = useCallback(() => {
-    withUndoCheckpoint(() => {
-      useMusicStore.getState().clearTrack('bass');
-    });
-  }, [withUndoCheckpoint]);
+    requestClearAction('bass', 'track');
+  }, [requestClearAction]);
 
   const handleMelodyStepToggle = useCallback((step, note) => {
     melodyRecording.stopRecording();
@@ -1355,25 +1367,66 @@ export default function App() {
   }, [melodyRecording, selectedBar, withUndoCheckpoint]);
 
   const handleClearMelodyBar = useCallback(() => {
-    melodyRecording.stopRecording();
+    requestClearAction('melody', 'bar', selectedBar);
+  }, [requestClearAction, selectedBar]);
+
+  const handleClearMelody = useCallback(() => {
+    requestClearAction('melody', 'track');
+  }, [requestClearAction]);
+
+  const confirmClearAction = useCallback(() => {
+    const action = pendingClearAction;
+    if (!action) return;
+
+    setPendingClearAction(null);
+    if (action.trackId === 'melody') melodyRecording.stopRecording();
+
     withUndoCheckpoint(() => {
       const state = useMusicStore.getState();
-      const nextMatrix = clearMelodyBar(state.matrix, selectedBar);
-      const nextClips = clearMelodyRhythmTemplateFromBar(state.clips, selectedBar);
+
+      if (action.scope === 'track') {
+        if (action.trackId === 'melody') {
+          const nextClips = clearMelodyRhythmTemplates(state.clips);
+          state.clearTrack('melody');
+          if (nextClips !== state.clips) useMusicStore.setState({ clips: nextClips });
+          return;
+        }
+
+        state.clearTrack(action.trackId);
+        return;
+      }
+
+      if (action.trackId === 'drums') {
+        const nextMatrix = clearDrumsBar(state.matrix, action.bar);
+        writeDrumsBars(nextMatrix, [action.bar]);
+        return;
+      }
+
+      if (action.trackId === 'chord') {
+        const nextMatrix = clearChordRhythmBar(state.matrix, action.bar);
+        if (nextMatrix !== state.matrix) state.setTrackMatrix('chord', nextMatrix.chord);
+        return;
+      }
+
+      if (action.trackId === 'bass') {
+        const nextMatrix = clearBassBar(state.matrix, action.bar);
+        nextMatrix.bass[action.bar].forEach((cell, step) => {
+          state.setCell('bass', action.bar, step, cell);
+        });
+        return;
+      }
+
+      const nextMatrix = clearMelodyBar(state.matrix, action.bar);
+      const nextClips = clearMelodyRhythmTemplateFromBar(state.clips, action.bar);
       state.setTrackMatrix('melody', nextMatrix.melody);
       if (nextClips !== state.clips) useMusicStore.setState({ clips: nextClips });
     });
-  }, [melodyRecording, selectedBar, withUndoCheckpoint]);
-
-  const handleClearMelody = useCallback(() => {
-    melodyRecording.stopRecording();
-    withUndoCheckpoint(() => {
-      const state = useMusicStore.getState();
-      const nextClips = clearMelodyRhythmTemplates(state.clips);
-      state.clearTrack('melody');
-      if (nextClips !== state.clips) useMusicStore.setState({ clips: nextClips });
-    });
-  }, [melodyRecording, withUndoCheckpoint]);
+  }, [
+    melodyRecording,
+    pendingClearAction,
+    withUndoCheckpoint,
+    writeDrumsBars,
+  ]);
 
   const handleTutorialNext = useCallback(() => {
     if (!tutorialViewModel.canManualNext) return;
@@ -1746,6 +1799,7 @@ export default function App() {
 
   useKeyboardCommands({
     dispatch: dispatchInputCommand,
+    enabled: !pendingClearAction,
     hasTimelineSelection: Boolean(timelineSelection),
   });
   const {
@@ -1973,6 +2027,56 @@ export default function App() {
                 </button>
                 <button className="new-song-confirm-apply" type="button" onClick={confirmNewSong}>
                   创建新乐章
+                </button>
+              </div>
+            </section>
+          </div>
+        ) : null}
+        {pendingClearAction ? (
+          <div className="new-song-confirm-overlay clear-confirm-overlay" role="presentation">
+            <section
+              className="new-song-confirm-dialog clear-confirm-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="clear-confirm-title"
+              aria-describedby="clear-confirm-copy"
+            >
+              <div className="clear-confirm-heading">
+                <span className="new-song-confirm-kicker">CLEAR CONTENT</span>
+                <button
+                  className="clear-confirm-close"
+                  type="button"
+                  aria-label="关闭清空确认框"
+                  onClick={cancelClearAction}
+                >
+                  ×
+                </button>
+              </div>
+              <h2 className="new-song-confirm-title" id="clear-confirm-title">
+                {pendingClearAction.scope === 'bar'
+                  ? `确认清空 ${CLEAR_TRACK_LABELS[pendingClearAction.trackId]} 第 ${pendingClearAction.bar + 1} 小节？`
+                  : `确认清空整条 ${CLEAR_TRACK_LABELS[pendingClearAction.trackId]} 轨？`}
+              </h2>
+              <p className="new-song-confirm-copy" id="clear-confirm-copy">
+                {pendingClearAction.scope === 'bar'
+                  ? '该小节中的全部内容都会被移除。确认后可使用撤销恢复。'
+                  : '该轨道所有小节中的内容都会被移除。确认后可使用撤销恢复。'}
+              </p>
+              <div className="new-song-confirm-actions">
+                <button
+                  className="new-song-confirm-cancel"
+                  type="button"
+                  autoFocus
+                  onClick={cancelClearAction}
+                >
+                  取消
+                </button>
+                <button
+                  className="new-song-confirm-apply"
+                  type="button"
+                  onClick={confirmClearAction}
+                >
+                  确认清空
                 </button>
               </div>
             </section>
