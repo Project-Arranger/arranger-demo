@@ -171,6 +171,14 @@ function getExistingBassClipBars(clips) {
     .sort((a, b) => a - b);
 }
 
+function hasExistingBassClipContent(matrix, clips) {
+  return getExistingBassClipBars(clips).some((bar) => (
+    matrix?.bass?.[bar]?.some((cell) => (
+      cell?.type === 'bass' || Boolean(cell?.note)
+    ))
+  ));
+}
+
 function getExistingChordClipBarSet(clips) {
   return new Set((clips?.ids ?? [])
     .map((id) => clips.byId?.[id])
@@ -209,6 +217,7 @@ export {
   createBassCell,
   createBassPreviewEvents,
   getBassGrooveTemplate,
+  hasExistingBassClipContent,
   isBassCellActive,
   isValidBassNote,
   toggleBassCell,

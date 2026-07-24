@@ -2091,6 +2091,7 @@ export default function App() {
           activeTutorialTarget,
           tutorialLocked: activeTutorialLocked,
           tutorialTargets: activeTutorialTargets,
+          isPlaying,
           matrix,
           clips,
           melodyScaleId,

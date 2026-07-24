@@ -331,6 +331,10 @@ test('app shell exposes the chord rhythm editor and unified template workspace',
     new URL('../src/app/components/TrackEditorPlaceholder.jsx', import.meta.url),
     'utf8',
   );
+  const chordApplyHandlerSource = source.slice(
+    source.indexOf('const handleChordTemplateWorkspaceApply'),
+    source.indexOf('const handleClearChordBar'),
+  );
 
   assert.match(chordEditorSource, /data-screen-label="Chord Editor"/);
   assert.match(chordEditorSource, /data-picker=\{workspaceOpen \? 'chord-workspace' : undefined\}/);
@@ -425,6 +429,7 @@ test('app shell exposes the chord rhythm editor and unified template workspace',
   assert.match(source, /applyChordRhythmStepEnrichment/);
   assert.match(source, /applyChordRhythmStepPassingChord/);
   assert.match(source, /handleChordTemplateWorkspaceApply/);
+  assert.doesNotMatch(chordApplyHandlerSource, /TRANSPORT_STOP/);
   assert.match(source, /handleChordTemplateWorkspacePreview/);
   assert.match(source, /handleChordTemplateWorkspacePreviewStop/);
   assert.match(source, /applyChordTemplateWorkspaceToExistingClips/);
@@ -938,6 +943,10 @@ test('app exposes the bass editor and existing-clip groove template workflow', a
   );
   const bassActionsSource = await readFile(new URL('../src/app/bassActions.js', import.meta.url), 'utf8');
   const bassNotesSource = await readFile(new URL('../src/data/bassNotes.js', import.meta.url), 'utf8');
+  const bassApplyHandlerSource = source.slice(
+    source.indexOf('const handleBassGrooveTemplateApply'),
+    source.indexOf('const handleClearBassBar'),
+  );
 
   assert.match(bottomEditorSource, /BassEditor/);
   assert.match(bottomEditorSource, /activeTrackId === 'bass' && selectedClipId/);
@@ -946,6 +955,7 @@ test('app exposes the bass editor and existing-clip groove template workflow', a
   assert.match(bottomEditorSource, /onBassGrooveTemplateApply/);
   assert.match(bottomEditorSource, /onClearBassBar/);
   assert.match(bottomEditorSource, /onClearBass/);
+  assert.match(bottomEditorSource, /createElement\(BassEditor,[\s\S]*clips,[\s\S]*isPlaying/);
   assert.match(bottomEditorSource, /createElement\(BassEditor,[\s\S]*tutorialLocked,[\s\S]*tutorialTargets/);
   assert.match(bassEditorSource, /data-screen-label="Bass Editor"/);
   assert.match(bassEditorSource, /tutorialLocked = false/);
@@ -995,6 +1005,13 @@ test('app exposes the bass editor and existing-clip groove template workflow', a
   assert.match(bassEditorSource, /onBassGrooveTemplatePreview\(template\.id\)/);
   assert.match(bassEditorSource, /onBassGrooveTemplateApply\(templateId\)/);
   assert.match(bassEditorSource, /onClick=\{\(\) => handleGrooveTemplateApply\(template\.id\)\}/);
+  assert.match(bassEditorSource, /isPlaying && hasExistingBassClipContent\(matrix, clips\)/);
+  assert.match(bassEditorSource, /setSelectedGrooveTemplateId\(templateId\)[\s\S]*setConfirmApplyOpen\(true\)/);
+  assert.match(bassEditorSource, /是否覆盖已有 Bass 内容？/);
+  assert.match(bassEditorSource, /当前播放不会停止/);
+  assert.match(bassEditorSource, /onClick=\{\(\) => setConfirmApplyOpen\(false\)\}[\s\S]*取消/);
+  assert.match(bassEditorSource, /onClick=\{applySelectedGrooveTemplate\}[\s\S]*覆盖并应用/);
+  assert.match(bassEditorSource, /if \(confirmApplyOpen\)[\s\S]*setConfirmApplyOpen\(false\)[\s\S]*closeBassPicker\(\)/);
   assert.match(bassEditorSource, /清空本小节/);
   assert.match(bassEditorSource, /清空整轨/);
   assert.doesNotMatch(bassEditorSource, /清空 Bass/);
@@ -1003,6 +1020,7 @@ test('app exposes the bass editor and existing-clip groove template workflow', a
   assert.match(bassActionsSource, /bass-16th-swing/);
   assert.match(bassActionsSource, /applyBassGrooveTemplateToBar/);
   assert.match(bassActionsSource, /applyBassGrooveTemplateToExistingClips/);
+  assert.match(bassActionsSource, /function hasExistingBassClipContent\(matrix, clips\)/);
   assert.match(bassActionsSource, /createBassPreviewEvents/);
   assert.match(bassNotesSource, /BASS_NOTE_IDS/);
   assert.match(bassNotesSource, /createPianoRollNotes\(\{ lowestOctave: 0 \}\)/);
@@ -1011,6 +1029,7 @@ test('app exposes the bass editor and existing-clip groove template workflow', a
   assert.match(source, /handleBassGrooveTemplatePreview/);
   assert.match(source, /createBassPreviewEvents\(state\.matrix,\s*selectedBar,\s*templateId\)/);
   assert.match(source, /handleBassGrooveTemplateApply/);
+  assert.doesNotMatch(bassApplyHandlerSource, /TRANSPORT_STOP/);
   assert.match(source, /currentTutorialStep\?\.id === TUTORIAL_STEP_IDS\.BASS_SELECT_GROOVE_TEMPLATE/);
   assert.match(source, /control:\s*`bass-groove-card:\$\{templateId\}`/);
   assert.match(source, /applyTutorialActionProgress\(tutorialAction\)/);

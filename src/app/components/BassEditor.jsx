@@ -11,6 +11,7 @@ import {
 } from 'react';
 import {
   BASS_GROOVE_TEMPLATES,
+  hasExistingBassClipContent,
   isBassCellActive,
 } from '../bassActions.js';
 import { getBassGroovePreviewSteps } from '../bassGroovePreview.js';
@@ -51,6 +52,8 @@ function isTutorialControlAllowed(role) {
 function BassEditor({
   canPageBars = false,
   clipName,
+  clips,
+  isPlaying = false,
   matrix,
   onBassPreview = () => {},
   onBassStepToggle = () => {},
@@ -69,27 +72,48 @@ function BassEditor({
 }) {
   const [pickerMode, setPickerMode] = useState(null);
   const [selectedGrooveTemplateId, setSelectedGrooveTemplateId] = useState('bass-8th-basic');
+  const [confirmApplyOpen, setConfirmApplyOpen] = useState(false);
   const groovePickerOpen = pickerMode === 'groove';
-  const closeBassPicker = useCallback(() => setPickerMode(null), []);
+  const selectedGrooveTemplate = BASS_GROOVE_TEMPLATES.find(
+    (template) => template.id === selectedGrooveTemplateId,
+  );
+  const closeBassPicker = useCallback(() => {
+    setConfirmApplyOpen(false);
+    setPickerMode(null);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key !== 'Escape') return;
-      setPickerMode(null);
+      if (confirmApplyOpen) {
+        setConfirmApplyOpen(false);
+        return;
+      }
+      closeBassPicker();
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [closeBassPicker, confirmApplyOpen]);
 
   const handleGrooveTemplateApply = (templateId) => {
     setSelectedGrooveTemplateId(templateId);
+    if (isPlaying && hasExistingBassClipContent(matrix, clips)) {
+      setConfirmApplyOpen(true);
+      return;
+    }
+
     onBassGrooveTemplateApply(templateId);
-    setPickerMode(null);
+    closeBassPicker();
+  };
+
+  const applySelectedGrooveTemplate = () => {
+    onBassGrooveTemplateApply(selectedGrooveTemplateId);
+    closeBassPicker();
   };
 
   const handleClose = () => {
-    setPickerMode(null);
+    closeBassPicker();
     onClose();
   };
 
@@ -212,7 +236,7 @@ function BassEditor({
             <div className="chord-template-workspace-label bass-template-workspace-label">
               <strong>选择 Bass 弹奏律动</strong>
               <span>BASS GROOVE</span>
-              <p>点击卡片后，立即应用到已有 Bass Clips。</p>
+              <p>点击卡片应用到已有 Bass Clips；播放中覆盖前会确认。</p>
             </div>
 
             <div className="bass-template-groove-options" aria-label="选择Bass弹奏律动模板">
@@ -273,6 +297,49 @@ function BassEditor({
             </div>
           </div>
         </div>
+
+        {confirmApplyOpen ? (
+          <div className="tpl-confirm-overlay">
+            <section
+              className="tpl-confirm-dialog"
+              aria-labelledby="bassTemplateConfirmTitle"
+              aria-modal="true"
+              role="dialog"
+            >
+              <span className="tpl-confirm-kicker">BASS TEMPLATE</span>
+              <h3 className="tpl-confirm-title" id="bassTemplateConfirmTitle">
+                是否覆盖已有 Bass 内容？
+              </h3>
+              <p className="tpl-confirm-copy">
+                所选律动会原子覆盖全部已有 Bass Clips，当前播放不会停止。
+              </p>
+              <div className="tpl-confirm-template">
+                <strong className="tpl-confirm-template-name">
+                  {selectedGrooveTemplate?.name ?? '所选 Bass 律动'}
+                </strong>
+                <span className="tpl-confirm-template-chords">
+                  {selectedGrooveTemplate?.hitLabel}
+                </span>
+              </div>
+              <div className="tpl-confirm-actions">
+                <button
+                  className="tpl-confirm-cancel"
+                  type="button"
+                  onClick={() => setConfirmApplyOpen(false)}
+                >
+                  取消
+                </button>
+                <button
+                  className="tpl-confirm-apply"
+                  type="button"
+                  onClick={applySelectedGrooveTemplate}
+                >
+                  覆盖并应用
+                </button>
+              </div>
+            </section>
+          </div>
+        ) : null}
       </section>
     </section>
   );

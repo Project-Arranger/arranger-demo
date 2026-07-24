@@ -6,6 +6,7 @@ import {
   BASS_GROOVE_TEMPLATES,
   clearBassBar,
   createBassPreviewEvents,
+  hasExistingBassClipContent,
   isBassCellActive,
   toggleBassCell,
 } from '../src/app/bassActions.js';
@@ -213,6 +214,24 @@ test('applyBassGrooveTemplateToExistingClips is a no-op without bass clips or a 
 
   assert.equal(applyBassGrooveTemplateToExistingClips(matrix, noBassClips, 'bass-8th-basic'), matrix);
   assert.equal(applyBassGrooveTemplateToExistingClips(matrix, noBassClips, 'missing'), matrix);
+});
+
+test('hasExistingBassClipContent only reports notes inside existing Bass clips', () => {
+  const matrix = createInitialMatrix();
+  const clips = createClips(
+    { id: 'bass-bar-0', trackId: 'bass', bar: 0 },
+    { id: 'chord-bar-1', trackId: 'chord', bar: 1 },
+  );
+
+  matrix.bass[2][0] = { type: 'bass', note: 'D1', duration: '16n' };
+  matrix.chord[1][0] = createChordCell('C');
+  assert.equal(hasExistingBassClipContent(matrix, clips), false);
+
+  matrix.bass[0][4] = { type: 'bass', note: 'G0', duration: '16n' };
+  assert.equal(hasExistingBassClipContent(matrix, clips), true);
+
+  matrix.bass[0][4] = { note: 'A0' };
+  assert.equal(hasExistingBassClipContent(matrix, clips), true);
 });
 
 test('bass groove templates fall back to the first bar chord and then C1', () => {

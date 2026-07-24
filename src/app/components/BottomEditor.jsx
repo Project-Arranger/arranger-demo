@@ -12,6 +12,7 @@ function BottomEditor({
   tutorialLocked = false,
   tutorialTargets,
   selectedClipName = '',
+  isPlaying = false,
   matrix,
   clips,
   launchpadHarmonySelection,
@@ -87,6 +88,8 @@ function BottomEditor({
     });
   } else if (activeTrackId === 'bass' && selectedClipId) {
     editor = createElement(BassEditor, {
+      clips,
+      isPlaying,
       matrix,
       clipName: selectedClipName,
       onBassPreview,
