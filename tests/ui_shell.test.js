@@ -363,6 +363,8 @@ test('app shell exposes the chord rhythm editor and unified template workspace',
   assert.match(chordEditorSource, /className="chord-rhythm-summary-left"[\s\S]*className="chord-rhythm-readout current"/);
   assert.match(chordEditorSource, /className="chord-rhythm-sequencer-copy"/);
   assert.match(chordEditorSource, /\{hasPlayableChordContent \? \(currentChord \?\? '—'\) : '—'\}/);
+  assert.match(chordEditorSource, /const hasPlayableNextChordContent = nextChordBar !== null[\s\S]*getChordRhythmSteps\(matrix, nextChordBar\)\.length > 0/);
+  assert.match(chordEditorSource, /\{hasPlayableNextChordContent \? \(nextChord \?\? '—'\) : '—'\}/);
   assert.match(chordEditorSource, /getNextChordClipBar/);
   assert.match(chordEditorSource, /templates\.slice\(/);
   assert.match(chordEditorSource, /TEMPLATE_PAGE_SIZE = 3/);

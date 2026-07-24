@@ -308,6 +308,8 @@ function ChordEditor({
   const currentChord = getSourceChordLabel(matrix, selectedBar);
   const nextChordBar = getNextChordClipBar(clips, selectedBar);
   const nextChord = nextChordBar === null ? null : getSourceChordLabel(matrix, nextChordBar);
+  const hasPlayableNextChordContent = nextChordBar !== null
+    && getChordRhythmSteps(matrix, nextChordBar).length > 0;
   const activeSteps = useMemo(
     () => new Set(getChordRhythmSteps(matrix, selectedBar)),
     [matrix, selectedBar],
@@ -685,7 +687,9 @@ function ChordEditor({
                     : `BAR ${String(nextChordBar + 1).padStart(2, '0')} · NEXT CHORD`}
                 </span>
               </div>
-              <span className="chord-rhythm-badge">{nextChord ?? '—'}</span>
+              <span className="chord-rhythm-badge">
+                {hasPlayableNextChordContent ? (nextChord ?? '—') : '—'}
+              </span>
             </div>
           </div>
 
