@@ -1223,6 +1223,12 @@ export default function App() {
     });
   }, [selectedBar, withUndoCheckpoint]);
 
+  const handleClearChord = useCallback(() => {
+    withUndoCheckpoint(() => {
+      useMusicStore.getState().clearTrack('chord');
+    });
+  }, [withUndoCheckpoint]);
+
   const handleBassStepToggle = useCallback((step, note) => {
     withUndoCheckpoint(() => {
       const state = useMusicStore.getState();
@@ -2129,6 +2135,7 @@ export default function App() {
           onMelodyStepToggle: handleMelodyStepToggle,
           onRenameClip: handleRenameClip,
           onClearCurrentDrumsBar: handleClearCurrentDrumsBar,
+          onClearChord: handleClearChord,
           onClearChordBar: handleClearChordBar,
           onClearDrums: handleClearDrums,
           canPageBars,

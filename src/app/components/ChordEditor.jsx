@@ -290,6 +290,7 @@ function ChordEditor({
   onChordTemplateWorkspaceApply = () => {},
   onLaunchpadHarmonyClose = () => {},
   onClose = () => {},
+  onClearChord = () => {},
   onClearChordBar = () => {},
   onNextBar = () => {},
   onPreviousBar = () => {},
@@ -563,6 +564,11 @@ function ChordEditor({
     onClearChordBar();
   };
 
+  const handleClearChord = () => {
+    closeHarmonyPanel();
+    onClearChord();
+  };
+
   const handleCloseEditor = () => {
     closeHarmonyPanel();
     onClose();
@@ -615,6 +621,14 @@ function ChordEditor({
             onClick={handleClearChordBar}
           >
             清空本小节
+          </button>
+          <button
+            className="chord-rhythm-clear chord-rhythm-clear-track"
+            disabled={tutorialLocked}
+            type="button"
+            onClick={handleClearChord}
+          >
+            清空整轨
           </button>
           <button
             className="editor-close chord-rhythm-close"

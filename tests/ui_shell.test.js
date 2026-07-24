@@ -335,6 +335,10 @@ test('app shell exposes the chord rhythm editor and unified template workspace',
     source.indexOf('const handleChordTemplateWorkspaceApply'),
     source.indexOf('const handleClearChordBar'),
   );
+  const chordClearTrackHandlerSource = source.slice(
+    source.indexOf('const handleClearChord = useCallback'),
+    source.indexOf('const handleBassStepToggle'),
+  );
 
   assert.match(chordEditorSource, /data-screen-label="Chord Editor"/);
   assert.match(chordEditorSource, /data-picker=\{workspaceOpen \? 'chord-workspace' : undefined\}/);
@@ -393,6 +397,8 @@ test('app shell exposes the chord rhythm editor and unified template workspace',
   assert.match(chordEditorSource, /icon-play\.svg/);
   assert.match(chordEditorSource, /icon-x\.svg/);
   assert.match(chordEditorSource, /清空本小节/);
+  assert.match(chordEditorSource, /onClick=\{handleClearChord\}[\s\S]*清空整轨/);
+  assert.match(chordEditorSource, /onClearChord\(\)/);
   assert.match(chordEditorSource, /ChordStepHarmonyPopover/);
   assert.match(chordEditorSource, /丰富和弦/);
   assert.match(chordEditorSource, /经过和弦/);
@@ -410,7 +416,7 @@ test('app shell exposes the chord rhythm editor and unified template workspace',
   assert.match(chordEditorSource, /onChordStepHarmonyPreview\(\{ chordName, mode \}\)/);
   assert.match(chordEditorSource, /aria-label=\{isPreviewing \? `停止试听 \$\{option\.name\}` : `试听 \$\{option\.name\}`\}/);
   assert.match(chordEditorSource, /harmonyPreviewRunRef/);
-  assert.doesNotMatch(chordEditorSource, /清空整轨|More/);
+  assert.doesNotMatch(chordEditorSource, /More/);
   assert.doesNotMatch(chordEditorSource, /shouldConfirmChordTemplateApply|window\.confirm/);
 
   assert.match(chordGrooveActionsSource, /function applyChordTemplateWorkspaceToBar/);
@@ -436,6 +442,8 @@ test('app shell exposes the chord rhythm editor and unified template workspace',
   assert.doesNotMatch(source, /applyChordTemplateWorkspaceToBar/);
   assert.match(source, /toggleChordRhythmStep/);
   assert.match(source, /clearChordRhythmBar/);
+  assert.match(chordClearTrackHandlerSource, /withUndoCheckpoint\(\(\) => \{/);
+  assert.match(chordClearTrackHandlerSource, /clearTrack\('chord'\)/);
   assert.match(source, /createChordTemplateWorkspacePreviewEvents/);
   assert.match(source, /createChordStepHarmonyPreviewEvents/);
   assert.match(source, /previewChordClipSequence/);
@@ -447,6 +455,7 @@ test('app shell exposes the chord rhythm editor and unified template workspace',
   assert.match(bottomEditorSource, /onChordTemplateWorkspaceApply/);
   assert.match(bottomEditorSource, /onChordTemplateWorkspacePreview/);
   assert.match(bottomEditorSource, /onChordTemplateWorkspacePreviewStop/);
+  assert.match(bottomEditorSource, /onClearChord/);
   assert.match(bottomEditorSource, /onClearChordBar/);
 });
 

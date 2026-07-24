@@ -225,6 +225,27 @@ test('clearTrack clears one track without clearing other tracks', () => {
   assert.deepEqual(matrix.bass[0][0], { note: 'C1', velocity: 100 });
 });
 
+test('clearTrack removes Chord notes and source metadata without touching other tracks', () => {
+  useMusicStore.getState().setCell('chord', 0, 0, {
+    chordName: 'C',
+    progressionTemplateId: 'doowop',
+    selectedGrooveTemplateId: 'block-basic',
+    type: 'chord-source',
+  });
+  useMusicStore.getState().setCell('chord', 0, 4, {
+    chordName: 'C',
+    grooveTemplateId: 'block-basic',
+    type: 'chord',
+  });
+  useMusicStore.getState().setCell('bass', 0, 0, { note: 'C1', velocity: 100 });
+
+  useMusicStore.getState().clearTrack('chord');
+  const { matrix } = useMusicStore.getState();
+
+  assert.equal(matrix.chord.every((bar) => bar.every((cell) => cell === null)), true);
+  assert.deepEqual(matrix.bass[0][0], { note: 'C1', velocity: 100 });
+});
+
 test('clearMatrix resets the full matrix', () => {
   useMusicStore.getState().setCell('drums', 0, 0, { instruments: ['kick'] });
   useMusicStore.getState().setCell('bass', 0, 0, { note: 'C1', velocity: 100 });
