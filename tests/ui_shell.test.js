@@ -654,7 +654,10 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(source, /handlePageTrackBar\('previous'\)/);
   assert.match(source, /handlePageTrackBar\('next'\)/);
   assert.match(source, /getAdjacentTrackClipBar\(\s*state\.clips,\s*state\.activeTrackId,\s*state\.selectedBar,\s*direction,\s*\)/);
-  assert.match(bottomEditorSource, /activeTrackId === 'drums' && selectedClipId/);
+  assert.match(
+    bottomEditorSource,
+    /activeTrackId === 'drums' && \(selectedClipId \|\| drumsWriting\)/,
+  );
   assert.match(bottomEditorSource, /canPageBars/);
   assert.match(bottomEditorSource, /onPreviousBar/);
   assert.match(bottomEditorSource, /onNextBar/);

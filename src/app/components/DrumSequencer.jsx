@@ -13,6 +13,7 @@ import {
   DRUM_SEQUENCER_ROWS,
   isDrumsStepActive,
 } from '../drumSequencerData.js';
+import { DRUMS_RECORDING_PHASES } from '../drumsLiveRecording.js';
 import { createDefaultDrumsPattern } from '../drumsPatternActions.js';
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
 import { useSecondaryMenuDismiss } from '../useSecondaryMenuDismiss.js';
@@ -131,6 +132,8 @@ function DrumSequencer({
   matrix,
   canPageBars = false,
   clipName,
+  drumsRecordingState,
+  hasClip = true,
   onClose = () => {},
   onClearCurrentBar,
   onClearDrums,
@@ -138,8 +141,11 @@ function DrumSequencer({
   onGenerateCurrentBar,
   onNextBar = () => {},
   onPreviousBar = () => {},
+  onRecordCancel = () => {},
+  onRecordConfirm = () => {},
   onStepMove,
   onStepToggle,
+  onWriteToggle = () => {},
   onRenameClip,
   selectedBar,
   tutorialLocked = false,
@@ -153,14 +159,37 @@ function DrumSequencer({
   const dragSessionRef = useRef(null);
   const templatePickerRef = useRef(null);
   const templateTriggerRef = useRef(null);
+  const recordingPhase = drumsRecordingState?.phase ?? DRUMS_RECORDING_PHASES.IDLE;
+  const recordingActive = [
+    DRUMS_RECORDING_PHASES.COUNT_IN,
+    DRUMS_RECORDING_PHASES.RECORDING,
+  ].includes(recordingPhase);
+  const workflowLocked = recordingPhase !== DRUMS_RECORDING_PHASES.IDLE;
+  const writeBarProgress = Number.isInteger(drumsRecordingState?.currentBar)
+    && Number.isInteger(drumsRecordingState?.startBar)
+    ? drumsRecordingState.currentBar - drumsRecordingState.startBar + 1
+    : 0;
+  const recordingStatus = recordingPhase === DRUMS_RECORDING_PHASES.COUNT_IN
+    ? `预拍 ${drumsRecordingState.countInBeat}`
+    : recordingPhase === DRUMS_RECORDING_PHASES.RECORDING
+      ? `写入中 ${writeBarProgress}/${drumsRecordingState?.totalBars ?? 0}`
+      : recordingPhase === DRUMS_RECORDING_PHASES.CONFIRM
+        ? '等待确认覆盖'
+        : null;
   const generateCurrentRole = getTutorialControlRole(tutorialTargets, 'generate-current-drums-bar');
   const generateAllRole = getTutorialControlRole(tutorialTargets, 'generate-all-drums-bars');
   const templateButtonRole = generateCurrentRole === 'target' || generateAllRole === 'target'
     ? 'target'
     : null;
-  const templateButtonLocked = tutorialLocked && templateButtonRole !== 'target';
-  const generateCurrentLocked = tutorialLocked && generateCurrentRole !== 'target';
-  const generateAllLocked = tutorialLocked && generateAllRole !== 'target';
+  const templateButtonLocked = (tutorialLocked && templateButtonRole !== 'target')
+    || workflowLocked
+    || !hasClip;
+  const generateCurrentLocked = (tutorialLocked && generateCurrentRole !== 'target')
+    || workflowLocked
+    || !hasClip;
+  const generateAllLocked = (tutorialLocked && generateAllRole !== 'target')
+    || workflowLocked
+    || !hasClip;
   const templateButtonClassName = [
     'btn-template-groove',
     'drum-action',
@@ -235,6 +264,20 @@ function DrumSequencer({
     triggerRef: templateTriggerRef,
   });
 
+  useEffect(() => {
+    if (recordingPhase !== DRUMS_RECORDING_PHASES.CONFIRM) return undefined;
+
+    const handleRecordConfirmKeyDown = (event) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      event.stopPropagation();
+      onRecordCancel();
+    };
+
+    window.addEventListener('keydown', handleRecordConfirmKeyDown, true);
+    return () => window.removeEventListener('keydown', handleRecordConfirmKeyDown, true);
+  }, [onRecordCancel, recordingPhase]);
+
   const handleTemplateCardKeyDown = (event) => {
     if (event.key !== 'Enter' && event.key !== ' ') return;
     event.preventDefault();
@@ -256,6 +299,15 @@ function DrumSequencer({
     onClose();
   };
 
+  const handleWriteButtonClick = () => {
+    setDrumTemplatePickerOpen(false);
+    if (recordingPhase === DRUMS_RECORDING_PHASES.CONFIRM) {
+      onRecordConfirm();
+      return;
+    }
+    onWriteToggle();
+  };
+
   return (
     <section className="editor drum-editor" data-screen-label="Drum Sequencer" data-picker={drumTemplatePickerOpen ? 'drum-template' : undefined}>
       <header className="editor-head">
@@ -263,11 +315,26 @@ function DrumSequencer({
           {createElement(EditorTrackIdentity, { trackId: 'drums', label: 'Drums' })}
           <div className="clip-title">
             <div className="crumb">Drums · Phrase</div>
-            {createElement(ClipNameInput, { clipName, onRenameClip })}
+            {createElement(ClipNameInput, {
+              clipName: hasClip ? clipName : '等待首次击打创建 Clip',
+              disabled: !hasClip || workflowLocked,
+              onRenameClip,
+            })}
             <div className="clip-name-meta">
-              DRUM SEQUENCER - BAR
-              {' '}
-              {selectedBar + 1}
+              <span>
+                DRUM SEQUENCER - BAR
+                {' '}
+                {selectedBar + 1}
+              </span>
+              {recordingStatus ? (
+                <span
+                  className="drums-record-status-inline"
+                  role="status"
+                  aria-live="polite"
+                >
+                  {recordingStatus}
+                </span>
+              ) : null}
             </div>
           </div>
         </div>
@@ -286,10 +353,39 @@ function DrumSequencer({
             {renderIcon(AudioWaveform)}
             选择律动模板
           </button>
-          <button className="btn-template drum-clear-action" type="button" onClick={onClearCurrentBar}>
+          <button
+            className={[
+              'btn-template',
+              'drums-record-button',
+              recordingActive ? 'recording' : '',
+            ].filter(Boolean).join(' ')}
+            aria-label={recordingActive ? '停止打击乐写入' : '开始打击乐写入'}
+            type="button"
+            disabled={tutorialLocked}
+            onClick={handleWriteButtonClick}
+          >
+            {recordingPhase === DRUMS_RECORDING_PHASES.COUNT_IN
+              ? `预拍 ${drumsRecordingState.countInBeat}`
+              : recordingPhase === DRUMS_RECORDING_PHASES.RECORDING
+                ? `写入中 ${writeBarProgress}/${drumsRecordingState?.totalBars ?? 0}`
+                : recordingPhase === DRUMS_RECORDING_PHASES.CONFIRM
+                  ? '确认重写'
+                  : '写入'}
+          </button>
+          <button
+            className="btn-template drum-clear-action"
+            type="button"
+            disabled={workflowLocked || !hasClip}
+            onClick={onClearCurrentBar}
+          >
             清本小节
           </button>
-          <button className="btn-template drum-clear-action" type="button" onClick={onClearDrums}>
+          <button
+            className="btn-template drum-clear-action"
+            type="button"
+            disabled={workflowLocked || !hasClip}
+            onClick={onClearDrums}
+          >
             清整轨
           </button>
           <button
@@ -306,7 +402,7 @@ function DrumSequencer({
 
       <div className="drum-seq-body">
         {createElement(TrackBarPager, {
-          canPageBars,
+          canPageBars: canPageBars && !workflowLocked,
           contentClassName: 'drum-seq-panel',
           onNextBar,
           onPreviousBar,
@@ -342,7 +438,9 @@ function DrumSequencer({
                   );
                   const interactiveTutorialCell = tutorialRole?.startsWith('target')
                     || tutorialRole === 'source';
-                  const locked = tutorialLocked && !interactiveTutorialCell;
+                  const locked = (tutorialLocked && !interactiveTutorialCell)
+                    || workflowLocked
+                    || !hasClip;
                   const canDrag = active && !locked;
                   const dragOver = dragOverStep?.instrument === row.id
                     && dragOverStep.step === stepIndex;
@@ -384,6 +482,13 @@ function DrumSequencer({
           </>
         ))}
       </div>
+
+      {recordingPhase === DRUMS_RECORDING_PHASES.COUNT_IN ? (
+        <div className="melody-record-count-in drums-record-count-in" role="status" aria-live="assertive">
+          <span>预拍</span>
+          <strong>{drumsRecordingState.countInBeat}</strong>
+        </div>
+      ) : null}
 
       <div
         className="gtpl-picker drum-template-picker"
@@ -498,6 +603,31 @@ function DrumSequencer({
           </button>
         </footer>
       </div>
+
+      {recordingPhase === DRUMS_RECORDING_PHASES.CONFIRM ? (
+        <div className="melody-record-confirm-overlay drums-record-confirm-overlay" role="presentation">
+          <section
+            className="melody-record-confirm-dialog drums-record-confirm-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="drumsRecordConfirmTitle"
+          >
+            <span>DRUMS WRITE</span>
+            <h2 id="drumsRecordConfirmTitle">
+              是否覆盖第 {drumsRecordingState.startBar + 1}–{drumsRecordingState.endBar + 1} 小节已有鼓点？
+            </h2>
+            <p>
+              播放到每个小节时才会清空；提前停止会保留尚未到达的小节。
+            </p>
+            <div>
+              <button type="button" onClick={onRecordCancel}>取消</button>
+              <button className="primary" type="button" onClick={onRecordConfirm}>
+                覆盖并开始写入
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </section>
   );
 }

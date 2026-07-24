@@ -103,6 +103,7 @@ import {
 import { useClipClipboardActions } from './useClipClipboardActions.js';
 import { useTutorialController } from './useTutorialController.js';
 import { useUndoHistoryController } from './useUndoHistoryController.js';
+import { useDrumsRecordingController } from './useDrumsRecordingController.js';
 import { useMelodyRecordingController } from './useMelodyRecordingController.js';
 import {
   BAR_NUMBERS,
@@ -169,9 +170,7 @@ export default function App() {
       })
       : null
   ), [chordActive, clips, launchpadChordHarmonyTarget, matrix]);
-  const drumsActive = activeTrackId === 'drums'
-    && Boolean(selectedClipId)
-    && clips.byId[selectedClipId]?.trackId === 'drums';
+  const drumsActive = activeTrackId === 'drums';
   const drumsClipBars = useMemo(
     () => getSortedTrackClipBars(clips, 'drums'),
     [clips],
@@ -271,7 +270,6 @@ export default function App() {
     tutorialStepCheckpoints,
     tutorialVisible,
   });
-
   const resetTutorialTransportToStart = useCallback(async () => {
     clearTutorialCountIn();
     await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
@@ -315,6 +313,15 @@ export default function App() {
     selectedClip,
     withUndoCheckpoint,
   });
+  const drumsRecording = useDrumsRecordingController({
+    activeTrackId,
+    audioEngine,
+    bpm,
+    dispatchAppCommand,
+    withUndoCheckpoint,
+  });
+  const handleDrumsRecordingTransportPosition = drumsRecording.handleTransportPosition;
+  const stopDrumsRecording = drumsRecording.stopRecording;
   const handleMelodyRecordingTransportPosition = melodyRecording.handleTransportPosition;
   const stopMelodyRecording = melodyRecording.stopRecording;
   const clearTimelineSelectionPlayback = useCallback(() => {
@@ -334,26 +341,40 @@ export default function App() {
     setTimelineSelection(selection);
     if (!selection) return;
 
+    stopDrumsRecording();
     stopMelodyRecording();
     const state = useMusicStore.getState();
     state.setActiveTrackId(selection.trackIds[0]);
     state.setSelectedBar(selection.startBar);
     state.setSelectedClipId(null);
-  }, [stopMelodyRecording]);
+  }, [stopDrumsRecording, stopMelodyRecording]);
   const handleUndoWithMelodyStop = useCallback(() => {
     clearTimelineSelectionPlayback();
+    stopDrumsRecording({ stopTransport: false });
     stopMelodyRecording();
     handleUndo();
-  }, [clearTimelineSelectionPlayback, handleUndo, stopMelodyRecording]);
+  }, [
+    clearTimelineSelectionPlayback,
+    handleUndo,
+    stopDrumsRecording,
+    stopMelodyRecording,
+  ]);
   const handleRedoWithMelodyStop = useCallback(() => {
     clearTimelineSelectionPlayback();
+    stopDrumsRecording({ stopTransport: false });
     stopMelodyRecording();
     handleRedo();
-  }, [clearTimelineSelectionPlayback, handleRedo, stopMelodyRecording]);
+  }, [
+    clearTimelineSelectionPlayback,
+    handleRedo,
+    stopDrumsRecording,
+    stopMelodyRecording,
+  ]);
   const handlePasteClipRequestWithMelodyStop = useCallback(() => {
+    stopDrumsRecording();
     stopMelodyRecording();
     handlePasteClipRequest();
-  }, [handlePasteClipRequest, stopMelodyRecording]);
+  }, [handlePasteClipRequest, stopDrumsRecording, stopMelodyRecording]);
 
   useEffect(() => {
     if (!melodyEditorIsOpen) return;
@@ -391,40 +412,47 @@ export default function App() {
   const handleBackToStart = useCallback(() => {
     clearTimelineSelectionPlayback();
     clearTutorialCountIn();
+    stopDrumsRecording();
     stopMelodyRecording();
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_SEEK, bar: 0, step: 0 });
   }, [
     clearTimelineSelectionPlayback,
     clearTutorialCountIn,
     dispatchAppCommand,
+    stopDrumsRecording,
     stopMelodyRecording,
   ]);
 
   const handleStop = useCallback(() => {
     clearTimelineSelectionPlayback();
     clearTutorialCountIn();
+    stopDrumsRecording({ stopTransport: false });
     stopMelodyRecording({ stopTransport: false });
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
   }, [
     clearTimelineSelectionPlayback,
     clearTutorialCountIn,
     dispatchAppCommand,
+    stopDrumsRecording,
     stopMelodyRecording,
   ]);
 
   const handleStopAndRewind = useCallback(() => {
     clearTimelineSelectionPlayback();
     clearTutorialCountIn();
+    stopDrumsRecording({ stopTransport: false });
     stopMelodyRecording({ stopTransport: false });
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP_AND_REWIND });
   }, [
     clearTimelineSelectionPlayback,
     clearTutorialCountIn,
     dispatchAppCommand,
+    stopDrumsRecording,
     stopMelodyRecording,
   ]);
 
   const handleNewSong = useCallback(() => {
+    stopDrumsRecording({ stopTransport: false });
     stopMelodyRecording();
     withUndoCheckpoint(() => {
       const initialAppState = useMusicStore.getInitialState();
@@ -460,6 +488,7 @@ export default function App() {
     setTutorialSidebarCollapsed,
     setTutorialStepCheckpoints,
     setTutorialVisible,
+    stopDrumsRecording,
     stopMelodyRecording,
     stopTutorialPreviewPlayback,
     withUndoCheckpoint,
@@ -524,17 +553,19 @@ export default function App() {
 
   const seekTransportToBarStart = useCallback((bar) => {
     if (!Number.isInteger(bar)) return;
+    stopDrumsRecording();
     stopMelodyRecording();
     void dispatchAppCommand({
       type: APP_COMMAND_TYPES.TRANSPORT_SEEK,
       bar,
       step: 0,
     });
-  }, [dispatchAppCommand, stopMelodyRecording]);
+  }, [dispatchAppCommand, stopDrumsRecording, stopMelodyRecording]);
 
   const handleTrackSelect = useCallback((trackId, barIndex) => {
     clearTimelineSelectionPlayback();
     setTimelineSelection(null);
+    stopDrumsRecording();
     stopMelodyRecording();
     const state = useMusicStore.getState();
     const hasExplicitBar = Number.isInteger(barIndex);
@@ -551,11 +582,17 @@ export default function App() {
     setSelectedBar(targetBar);
     setSelectedClipId(null);
     if (hasExplicitBar) seekTransportToBarStart(targetBar);
-  }, [clearTimelineSelectionPlayback, seekTransportToBarStart, stopMelodyRecording]);
+  }, [
+    clearTimelineSelectionPlayback,
+    seekTransportToBarStart,
+    stopDrumsRecording,
+    stopMelodyRecording,
+  ]);
 
   const handleAddClip = useCallback((trackId, barIndex) => {
     clearTimelineSelectionPlayback();
     setTimelineSelection(null);
+    stopDrumsRecording();
     stopMelodyRecording();
     const state = useMusicStore.getState();
     let clip;
@@ -569,6 +606,7 @@ export default function App() {
   }, [
     clearTimelineSelectionPlayback,
     seekTransportToBarStart,
+    stopDrumsRecording,
     stopMelodyRecording,
     withUndoCheckpoint,
   ]);
@@ -700,6 +738,7 @@ export default function App() {
   ]);
 
   const handleFillEmptyTrackClips = useCallback((trackId) => {
+    stopDrumsRecording();
     stopMelodyRecording();
     let tutorialAction = null;
     if (tutorialActive) {
@@ -729,6 +768,7 @@ export default function App() {
     applyTutorialActionProgress,
     currentTutorialStep,
     selectedBar,
+    stopDrumsRecording,
     tutorialActive,
     tutorialProgress,
     stopMelodyRecording,
@@ -736,11 +776,12 @@ export default function App() {
   ]);
 
   const handleAddTrack = useCallback((trackId) => {
+    stopDrumsRecording();
     stopMelodyRecording();
     withUndoCheckpoint(() => {
       useMusicStore.getState().addVisibleTrack(trackId);
     });
-  }, [stopMelodyRecording, withUndoCheckpoint]);
+  }, [stopDrumsRecording, stopMelodyRecording, withUndoCheckpoint]);
 
   const handleTrackVolumeChange = useCallback((trackId, volume) => {
     useMusicStore.getState().setTrackVolume(trackId, volume);
@@ -749,6 +790,7 @@ export default function App() {
   const handleMoveClip = useCallback((clipId, targetBar) => {
     clearTimelineSelectionPlayback();
     setTimelineSelection(null);
+    stopDrumsRecording();
     stopMelodyRecording();
     const state = useMusicStore.getState();
     const sourceClip = state.clips.byId[clipId];
@@ -760,21 +802,33 @@ export default function App() {
     withUndoCheckpoint(() => {
       state.moveClipToBar(clipId, targetBar);
     });
-  }, [clearTimelineSelectionPlayback, stopMelodyRecording, withUndoCheckpoint]);
+  }, [
+    clearTimelineSelectionPlayback,
+    stopDrumsRecording,
+    stopMelodyRecording,
+    withUndoCheckpoint,
+  ]);
 
   const handleOpenClip = useCallback((clipId) => {
     clearTimelineSelectionPlayback();
     setTimelineSelection(null);
+    stopDrumsRecording();
     stopMelodyRecording();
     const clip = useMusicStore.getState().selectClip(clipId);
     if (clip) seekTransportToBarStart(clip.bar);
-  }, [clearTimelineSelectionPlayback, seekTransportToBarStart, stopMelodyRecording]);
+  }, [
+    clearTimelineSelectionPlayback,
+    seekTransportToBarStart,
+    stopDrumsRecording,
+    stopMelodyRecording,
+  ]);
 
   const handleCloseEditor = useCallback(() => {
     clearTimelineSelectionPlayback();
+    stopDrumsRecording();
     melodyRecording.stopRecording();
     useMusicStore.getState().setSelectedClipId(null);
-  }, [clearTimelineSelectionPlayback, melodyRecording]);
+  }, [clearTimelineSelectionPlayback, melodyRecording, stopDrumsRecording]);
 
   const handleRenameClip = useCallback((name) => {
     if (!selectedClipId) return;
@@ -862,6 +916,7 @@ export default function App() {
   }, [requestClearAction]);
 
   const handlePageTrackBar = useCallback((direction) => {
+    stopDrumsRecording();
     stopMelodyRecording();
     const state = useMusicStore.getState();
     const nextBar = getAdjacentTrackClipBar(
@@ -877,7 +932,7 @@ export default function App() {
       state.selectClip(clip.id);
       seekTransportToBarStart(clip.bar);
     }
-  }, [seekTransportToBarStart, stopMelodyRecording]);
+  }, [seekTransportToBarStart, stopDrumsRecording, stopMelodyRecording]);
 
   const handlePreviousBar = useCallback(() => {
     handlePageTrackBar('previous');
@@ -890,11 +945,18 @@ export default function App() {
   const handleTransportSeek = useCallback((bar, step) => {
     clearTimelineSelectionPlayback();
     setTimelineSelection(null);
+    stopDrumsRecording();
     stopMelodyRecording();
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_SEEK, bar, step });
-  }, [clearTimelineSelectionPlayback, dispatchAppCommand, stopMelodyRecording]);
+  }, [
+    clearTimelineSelectionPlayback,
+    dispatchAppCommand,
+    stopDrumsRecording,
+    stopMelodyRecording,
+  ]);
 
   const handlePlayToggle = useCallback(() => {
+    stopDrumsRecording({ stopTransport: false });
     if (tutorialActive) {
       const tutorialAction = handleTutorialControlAction({
         control: TUTORIAL_CONTROL_TARGETS.TRANSPORT_PLAY,
@@ -946,6 +1008,7 @@ export default function App() {
     handleTimelineSelectionPlaybackComplete,
     isPlaying,
     selectedBar,
+    stopDrumsRecording,
     stopMelodyRecording,
     timelineSelection,
     tutorialActive,
@@ -955,6 +1018,7 @@ export default function App() {
   useEffect(() => {
     audioEngine.onPositionChange = (bar, step) => {
       useMusicStore.getState().setTransportPosition(bar, step);
+      handleDrumsRecordingTransportPosition(bar, step);
       handleMelodyRecordingTransportPosition(bar, step);
 
       if (
@@ -997,6 +1061,7 @@ export default function App() {
   }, [
     applyTutorialActionProgress,
     currentTutorialStep,
+    handleDrumsRecordingTransportPosition,
     handleMelodyRecordingTransportPosition,
     setTutorialProgress,
     tutorialActive,
@@ -1030,6 +1095,17 @@ export default function App() {
       window.clearTimeout(playbackTimer);
     };
   }, [bpm, currentTutorialStep, dispatchAppCommand]);
+
+  const handleDrumsWriteToggle = useCallback(() => {
+    clearTimelineSelectionPlayback();
+    setTimelineSelection(null);
+    stopMelodyRecording();
+    return drumsRecording.requestWriteToggle();
+  }, [
+    clearTimelineSelectionPlayback,
+    drumsRecording,
+    stopMelodyRecording,
+  ]);
 
   const handleDrumsStepToggle = useCallback((
     instrument,
@@ -1662,12 +1738,20 @@ export default function App() {
     }
 
     if (command?.type === APP_COMMAND_TYPES.TRANSPORT_SEEK) {
+      stopDrumsRecording();
       stopMelodyRecording();
       void dispatchAppCommand(command);
       return;
     }
 
+    if (command?.type === APP_COMMAND_TYPES.DRUMS_PREVIEW) {
+      drumsRecording.handlePadInput(command.instrument);
+      void dispatchAppCommand(command);
+      return;
+    }
+
     if (command?.type === APP_COMMAND_TYPES.DRUMS_SELECT_CLIP) {
+      if (drumsRecording.workflowLocked) return false;
       return handleLaunchpadDrumsClipSelect(command.bar);
     }
 
@@ -1712,6 +1796,7 @@ export default function App() {
     }
 
     if (command?.type === APP_COMMAND_TYPES.DRUMS_TOGGLE) {
+      if (drumsRecording.workflowLocked) return;
       const state = useMusicStore.getState();
       const activeClip = state.clips.byId[state.selectedClipId];
       if (
@@ -1740,6 +1825,7 @@ export default function App() {
     }
 
     if (command?.type === APP_COMMAND_TYPES.CLIP_COPY_SELECTED) {
+      if (drumsRecording.workflowLocked) return;
       handleCopySelectedClip();
       return;
     }
@@ -1750,6 +1836,7 @@ export default function App() {
     }
 
     if (command?.type === APP_COMMAND_TYPES.CLIP_DELETE_SELECTED) {
+      stopDrumsRecording();
       stopMelodyRecording();
       const selectionClipIds = getTimelineSelectionClipIds(
         useMusicStore.getState().clips,
@@ -1774,6 +1861,7 @@ export default function App() {
     void dispatchAppCommand(command);
   }, [
     dispatchAppCommand,
+    drumsRecording,
     handleCopySelectedClip,
     handleChordRhythmStepToggle,
     handleDrumsStepToggle,
@@ -1792,6 +1880,7 @@ export default function App() {
     handleStopAndRewind,
     handleUndoWithMelodyStop,
     melodyRecording,
+    stopDrumsRecording,
     stopMelodyRecording,
     timelineSelection,
     withUndoCheckpoint,
@@ -1799,7 +1888,8 @@ export default function App() {
 
   useKeyboardCommands({
     dispatch: dispatchInputCommand,
-    enabled: !pendingClearAction,
+    enabled: !pendingClearAction
+      && drumsRecording.recordingState.phase !== 'confirm',
     hasTimelineSelection: Boolean(timelineSelection),
   });
   const {
@@ -2204,6 +2294,7 @@ export default function App() {
           isPlaying,
           matrix,
           clips,
+          drumsRecordingState: drumsRecording.recordingState,
           melodyScaleId,
           melodyActiveInputNotes: melodyRecording.activeInputNotes,
           melodyRecordingState: melodyRecording.recordingState,
@@ -2249,6 +2340,9 @@ export default function App() {
           onPreviousBar: handlePreviousBar,
           onDrumsStepMove: handleDrumsStepMove,
           onDrumsStepToggle: handleDrumsStepToggle,
+          onDrumsRecordCancel: drumsRecording.cancelRecord,
+          onDrumsRecordConfirm: drumsRecording.confirmRecord,
+          onDrumsWriteToggle: handleDrumsWriteToggle,
           selectedBar,
           selectedClipId,
         })}

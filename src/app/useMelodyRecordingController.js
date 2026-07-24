@@ -353,6 +353,14 @@ function useMelodyRecordingController({
   } = {}) => {
     const currentPhase = recordingStateRef.current.phase;
     const session = sessionRef.current;
+    if (
+      currentPhase === MELODY_RECORDING_PHASES.IDLE
+      && !session
+      && !pendingSessionRef.current
+    ) {
+      return false;
+    }
+
     generationRef.current += 1;
     clearTimers();
     if (session?.mode === MELODY_RECORDING_MODES.FREE) finalizeActiveNote();
@@ -387,6 +395,7 @@ function useMelodyRecordingController({
         },
       )
       : getCurrentRestState());
+    return true;
   }, [
     audioEngine,
     clearActiveNotes,

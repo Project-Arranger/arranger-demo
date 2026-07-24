@@ -15,6 +15,7 @@ function BottomEditor({
   isPlaying = false,
   matrix,
   clips,
+  drumsRecordingState,
   launchpadHarmonySelection,
   launchpadHarmonyTarget,
   melodyScaleId,
@@ -58,6 +59,9 @@ function BottomEditor({
   onPreviousBar,
   onDrumsStepMove,
   onDrumsStepToggle,
+  onDrumsRecordCancel,
+  onDrumsRecordConfirm,
+  onDrumsWriteToggle,
   selectedBar,
   selectedClipId,
 }) {
@@ -67,10 +71,17 @@ function BottomEditor({
   ].filter(Boolean).join(' ');
   let editor;
 
-  if (activeTrackId === 'drums' && selectedClipId) {
+  const drumsWriting = Boolean(
+    drumsRecordingState?.phase
+    && drumsRecordingState.phase !== 'idle',
+  );
+
+  if (activeTrackId === 'drums' && (selectedClipId || drumsWriting)) {
     editor = createElement(DrumSequencer, {
       matrix,
       clipName: selectedClipName,
+      drumsRecordingState,
+      hasClip: Boolean(selectedClipId),
       onClose: onCloseEditor,
       onClearCurrentBar: onClearCurrentDrumsBar,
       onClearDrums,
@@ -79,8 +90,11 @@ function BottomEditor({
       onGenerateCurrentBar: onGenerateCurrentDrumsBar,
       onNextBar,
       onPreviousBar,
+      onRecordCancel: onDrumsRecordCancel,
+      onRecordConfirm: onDrumsRecordConfirm,
       onStepMove: onDrumsStepMove,
       onStepToggle: onDrumsStepToggle,
+      onWriteToggle: onDrumsWriteToggle,
       onRenameClip,
       selectedBar,
       trackId: activeTrackId,

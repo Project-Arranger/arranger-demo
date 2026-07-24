@@ -2022,6 +2022,11 @@ button {
   border-bottom-color: color-mix(in oklab, var(--brand) 42%, transparent);
 }
 
+.clip-name-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
 .clip-name-edit-icon {
   display: inline-grid;
   flex: 0 0 auto;
@@ -10840,19 +10845,37 @@ body {
     inset 0 -14px 22px rgb(0 0 0 / 0.3);
 }
 
-.melody-record-button {
+.melody-record-button,
+.drums-record-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 78px;
 }
 
-.melody-record-button.recording {
+.melody-record-button.recording,
+.drums-record-button.recording {
   box-shadow:
     inset 0 3px 8px rgb(0 0 0 / 0.46),
     inset 0 1px 0 rgb(255 246 218 / 0.08),
     0 1px 2px rgb(0 0 0 / 0.28);
   transform: translateY(1px);
+}
+
+.drums-record-status-inline {
+  max-width: min(360px, 32vw);
+  overflow: hidden;
+  color: #70471f;
+  font-size: 9px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drums-record-status-inline::before {
+  margin-right: 6px;
+  color: #98632d;
+  content: "\00b7";
 }
 
 .melody-input-status-inline {
