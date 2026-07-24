@@ -178,10 +178,12 @@ test('clip copy paste flow keeps an app clipboard and confirms destructive paste
     'utf8',
   );
 
-  assert.match(appSource, /useClipClipboardActions\(\{\s*activeTrackId,\s*clips,\s*matrix,\s*selectedBar,\s*selectedClipId,\s*withUndoCheckpoint,\s*\}\)/);
+  assert.match(appSource, /useClipClipboardActions\(\{[\s\S]*activeTrackId,[\s\S]*clips,[\s\S]*matrix,[\s\S]*onTimelineSelectionChange: setTimelineSelection,[\s\S]*selectedBar,[\s\S]*selectedClipId,[\s\S]*timelineSelection,[\s\S]*withUndoCheckpoint,[\s\S]*\}\)/);
   assert.match(clipClipboardSource, /const \[clipClipboard,\s*setClipClipboard\] = useState\(null\);/);
   assert.match(clipClipboardSource, /const \[pendingClipPaste,\s*setPendingClipPaste\] = useState\(null\);/);
   assert.match(clipClipboardSource, /const handleCopySelectedClip = useCallback\(\(\) => \{[\s\S]*createClipClipboardSnapshot\(selectedClipId\)[\s\S]*setClipClipboard\(snapshot\);/);
+  assert.match(clipClipboardSource, /createTimelineClipboardSnapshot\([\s\S]*timelineSelection,[\s\S]*\)/);
+  assert.match(clipClipboardSource, /pasteTimelineClipboardSnapshot\([\s\S]*clipClipboard,[\s\S]*target\.targetBar/);
   assert.match(clipClipboardSource, /const handlePasteClipRequest = useCallback\(\(\) => \{[\s\S]*getCurrentClipPasteTarget\(\)[\s\S]*setPendingClipPaste/);
   assert.match(clipClipboardSource, /const confirmClipPaste = useCallback\(\(\) => \{[\s\S]*pasteClipToTarget\(pendingClipPaste\);[\s\S]*setPendingClipPaste\(null\);/);
   assert.match(clipClipboardSource, /const cancelClipPaste = useCallback\(\(\) => \{[\s\S]*setPendingClipPaste\(null\);[\s\S]*\}, \[\]\);/);
@@ -247,10 +249,19 @@ test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async
   assert.match(timelineSource, /onTransportSeek/);
   assert.match(timelineSource, /getTimelinePlayheadSeekPosition/);
   assert.match(timelineSource, /onClick=\{handleRulerClick\}/);
+  assert.match(timelineSource, /onMouseDown=\{handleRulerMouseDown\}/);
   assert.match(timelineSource, /suppressRulerClickRef\.current = true/);
   assert.match(timelineSource, /if \(suppressRulerClickRef\.current\)/);
   assert.match(timelineSource, /rulerClickResetTimerRef\.current = window\.setTimeout/);
+  assert.match(timelineSource, /event\.shiftKey && !tutorialLocked/);
+  assert.match(timelineSource, /startMarqueeSession\(event,[\s\S]*clip\.bar,[\s\S]*trackId,[\s\S]*'clip'\)/);
+  assert.match(timelineSource, /startMarqueeSession\(event,[\s\S]*trackIds\[0\],[\s\S]*'ruler'\)/);
+  assert.match(timelineSource, /createRulerTimelineSelection\([\s\S]*marqueeSession\.anchor\.bar,[\s\S]*focus,[\s\S]*trackIds/);
+  assert.match(timelineSource, /const suppressClipClickAfterDrag = useCallback\(\(\) => \{[\s\S]*setSuppressNextClick\(true\);[\s\S]*window\.setTimeout\(\(\) => \{[\s\S]*setSuppressNextClick\(false\)/);
+  assert.match(timelineSource, /marqueeSession\.source === 'clip'[\s\S]*suppressClipClickAfterDrag\(\)/);
+  assert.match(timelineSource, /marqueeSession\.source === 'ruler'[\s\S]*suppressRulerClickRef\.current = true/);
   assert.match(timelineSource, /handlePlayheadMouseDown/);
+  assert.match(timelineSource, /const handlePlayheadMouseDown = \(event\) => \{[\s\S]*event\.stopPropagation\(\)/);
   assert.match(timelineSource, /playhead-hit/);
   assert.match(timelineSource, /className="timeline-footer-spacer"/);
   assert.match(source, /handleTransportSeek/);
@@ -1154,7 +1165,7 @@ test('tutorial navigation buttons interrupt preview playback', async () => {
   assert.match(source, /setTutorialProgress\(\(progress\) => \{[\s\S]*handleTutorialPlaybackPosition\(\{[\s\S]*progress,[\s\S]*step: currentTutorialStep/);
   assert.doesNotMatch(source, /handleTutorialPlaybackPosition\(\{[\s\S]*progress: tutorialProgress,[\s\S]*trackId: 'chord'/);
   assert.match(source, /const dispatchInputCommand = useCallback\(\(command\) => \{[\s\S]*command\?\.type === APP_COMMAND_TYPES\.TRANSPORT_TOGGLE_PLAY[\s\S]*handlePlayToggle\(\);[\s\S]*return;[\s\S]*void dispatchAppCommand\(command\);/);
-  assert.match(source, /useKeyboardCommands\(\{ dispatch: dispatchInputCommand \}\)/);
+  assert.match(source, /useKeyboardCommands\(\{[\s\S]*dispatch: dispatchInputCommand,[\s\S]*hasTimelineSelection: Boolean\(timelineSelection\),[\s\S]*\}\)/);
   assert.match(source, /useLaunchpadXCommands\(\{[\s\S]*dispatch: dispatchInputCommand,[\s\S]*drumsActive,[\s\S]*selectedBar,[\s\S]*\}\)/);
   assert.doesNotMatch(source, /useKeyboardCommands\(\{ dispatch: dispatchAppCommand \}\)/);
   assert.match(source, /applyTutorialActionProgress,[\s\S]*currentTutorialStep,[\s\S]*tutorialProgress,[\s\S]*tutorialActive/);

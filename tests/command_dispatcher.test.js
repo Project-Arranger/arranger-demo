@@ -429,6 +429,13 @@ test('keyboard map turns common keys into app commands', () => {
   );
   assert.deepEqual(
     mapKeyboardEventToCommand(
+      { type: 'keydown', key: 'c', ctrlKey: true },
+      { hasTimelineSelection: true, selectedClipId: null },
+    ),
+    { type: 'clip.copySelected' },
+  );
+  assert.deepEqual(
+    mapKeyboardEventToCommand(
       { type: 'keydown', key: 'v', metaKey: true },
       { activeTrackId: 'drums', selectedBar: 0 },
     ),
@@ -490,6 +497,13 @@ test('keyboard map turns common keys into app commands', () => {
     { type: 'clip.deleteSelected' },
   );
   assert.equal(mapKeyboardEventToCommand({ type: 'keydown', key: 'Delete' }, { selectedClipId: null }), null);
+  assert.deepEqual(
+    mapKeyboardEventToCommand(
+      { type: 'keydown', key: 'Delete' },
+      { hasTimelineSelection: true, selectedClipId: null },
+    ),
+    { type: 'clip.deleteSelected' },
+  );
   assert.equal(
     mapKeyboardEventToCommand(
       { type: 'keydown', key: 'Delete', target: { tagName: 'INPUT', isContentEditable: false } },

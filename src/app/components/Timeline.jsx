@@ -6,6 +6,7 @@ import {
   forwardRef,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -15,6 +16,12 @@ import {
   TOTAL_BARS,
 } from '../../domain/musicConstants.js';
 import { getTimelinePlayheadSeekPosition } from '../timelinePlayhead.js';
+import {
+  createRulerTimelineSelection,
+  createTimelineSelection,
+  getTimelineCellFromPoint,
+  isTimelineCellSelected,
+} from '../timelineSelection.js';
 import { BAR_NUMBERS } from '../uiShellData.js';
 import { renderIcon } from './icons.js';
 
@@ -82,6 +89,25 @@ function getClipFeedbackClass(trackId, bar, dragFeedback) {
   return DROP_FEEDBACK_CLASS_BY_TYPE[dragFeedback.type];
 }
 
+function getTimelineSelectionStyle(selection, trackIds) {
+  if (!selection || !Array.isArray(trackIds) || trackIds.length === 0) return undefined;
+
+  const selectedTrackIndexes = selection.trackIds
+    .map((trackId) => trackIds.indexOf(trackId))
+    .filter((trackIndex) => trackIndex >= 0);
+  if (selectedTrackIndexes.length === 0) return undefined;
+
+  const startTrackIndex = Math.min(...selectedTrackIndexes);
+  const endTrackIndex = Math.max(...selectedTrackIndexes);
+
+  return {
+    '--selection-start-bar': selection.startBar,
+    '--selection-bar-count': selection.endBar - selection.startBar + 1,
+    '--selection-start-track': startTrackIndex,
+    '--selection-track-count': endTrackIndex - startTrackIndex + 1,
+  };
+}
+
 function getTutorialBarRole(tutorialTargets, bar) {
   return tutorialTargets?.timelineBars?.find((target) => target.bar === bar)?.role ?? null;
 }
@@ -100,6 +126,7 @@ function Clip({
   onMouseDownClip,
   onOpenClip,
   onTutorialOpenClip,
+  rangeSelected,
   shouldIgnoreClick,
   tutorialLocked,
   tutorialBarRole,
@@ -137,6 +164,7 @@ function Clip({
         'clip',
         active ? 'selected' : '',
         dragging ? 'clip-dragging' : '',
+        rangeSelected ? 'range-selected' : '',
         dragFeedbackClass,
         getTutorialBarClass(tutorialBarRole),
       ].filter(Boolean).join(' ')}
@@ -177,7 +205,9 @@ const Timeline = forwardRef(function Timeline(
     onTransportSeek = () => {},
     onTutorialOpenClip = () => true,
     onTrackSelect,
+    onTimelineSelectionChange = () => {},
     selectedClipId,
+    timelineSelection,
     tutorialLocked = false,
     tutorialTargets,
     tracks,
@@ -188,11 +218,21 @@ const Timeline = forwardRef(function Timeline(
   const [dragFeedback, setDragFeedback] = useState(null);
   const [dragOverBar, setDragOverBar] = useState(null);
   const [isPlayheadDragging, setIsPlayheadDragging] = useState(false);
+  const [marqueeSelection, setMarqueeSelection] = useState(null);
+  const [marqueeSession, setMarqueeSession] = useState(null);
   const [suppressNextClick, setSuppressNextClick] = useState(false);
   const feedbackTimerRef = useRef(null);
+  const gridRef = useRef(null);
   const rulerClickResetTimerRef = useRef(null);
   const rulerRef = useRef(null);
+  const suppressTrackRowClickRef = useRef(false);
   const suppressRulerClickRef = useRef(false);
+  const trackIds = useMemo(() => tracks.map((track) => track.id), [tracks]);
+  const displayedTimelineSelection = marqueeSelection ?? timelineSelection;
+  const timelineSelectionStyle = getTimelineSelectionStyle(
+    displayedTimelineSelection,
+    trackIds,
+  );
   const flatStep = currentBar * STEPS_PER_BAR + currentStep;
   const playheadLeft = `${(flatStep / (TOTAL_BARS * STEPS_PER_BAR)) * 100}%`;
   const tutorialPlayheadRole = tutorialTargets?.playhead?.role ?? null;
@@ -215,8 +255,32 @@ const Timeline = forwardRef(function Timeline(
     return true;
   };
 
-  const handleMouseDown = (event, clip, trackId) => {
+  const suppressClipClickAfterDrag = useCallback(() => {
+    setSuppressNextClick(true);
+    window.setTimeout(() => {
+      setSuppressNextClick(false);
+    }, 0);
+  }, []);
+
+  const startMarqueeSession = (event, anchor, source) => {
+    flushSync(() => setMarqueeSession({
+      anchor,
+      source,
+      startX: event.clientX,
+      startY: event.clientY,
+    }));
+  };
+
+  const handleClipMouseDown = (event, clip, trackId) => {
     event.stopPropagation();
+    if (event.shiftKey && !tutorialLocked) {
+      startMarqueeSession(event, {
+        bar: clip.bar,
+        trackId,
+      }, 'clip');
+      return;
+    }
+
     flushSync(() => setDragSession({
       clipId: clip.id,
       sourceBar: clip.bar,
@@ -235,6 +299,11 @@ const Timeline = forwardRef(function Timeline(
   }, []);
 
   const handleTrackRowClick = (event, trackId) => {
+    if (suppressTrackRowClickRef.current) {
+      suppressTrackRowClickRef.current = false;
+      return;
+    }
+
     const target = event.target;
     if (target.closest('button')) return;
 
@@ -251,7 +320,29 @@ const Timeline = forwardRef(function Timeline(
       return;
     }
 
+    onTimelineSelectionChange(null);
     onTrackSelect(trackId, Number.isInteger(barIndex) ? barIndex : undefined);
+  };
+
+  const handleMarqueeMouseDown = (event, trackId) => {
+    if (event.button !== 0 || tutorialLocked || event.target.closest('button')) return;
+
+    const bar = getBarFromRow(event.currentTarget, event.clientX);
+    if (bar === null) return;
+
+    startMarqueeSession(event, { bar, trackId }, 'grid');
+  };
+
+  const handleRulerMouseDown = (event) => {
+    if (event.button !== 0 || tutorialLocked) return;
+
+    const bar = getBarFromRow(event.currentTarget, event.clientX);
+    if (bar === null) return;
+
+    startMarqueeSession(event, {
+      bar,
+      trackId: trackIds[0],
+    }, 'ruler');
   };
 
   const seekPlayheadFromClientX = useCallback((clientX) => {
@@ -289,6 +380,17 @@ const Timeline = forwardRef(function Timeline(
   }, []);
 
   useEffect(() => {
+    if (!timelineSelection) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') onTimelineSelectionChange(null);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onTimelineSelectionChange, timelineSelection]);
+
+  useEffect(() => {
     if (!dragSession) return undefined;
 
     const handleMouseMove = (event) => {
@@ -309,7 +411,7 @@ const Timeline = forwardRef(function Timeline(
       const targetBar = getBarFromTrack(dragSession.trackId, event.clientX);
       if (targetBar === null) return;
 
-      setSuppressNextClick(true);
+      suppressClipClickAfterDrag();
       showDragFeedback(createDragFeedback(tracks, dragSession, targetBar));
       onMoveClip(dragSession.clipId, targetBar);
     };
@@ -321,7 +423,97 @@ const Timeline = forwardRef(function Timeline(
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [dragSession, onMoveClip, showDragFeedback, tracks]);
+  }, [
+    dragSession,
+    onMoveClip,
+    showDragFeedback,
+    suppressClipClickAfterDrag,
+    tracks,
+  ]);
+
+  useEffect(() => {
+    if (!marqueeSession) return undefined;
+
+    let dragged = false;
+    let latestSelection = null;
+
+    const getSelectionAtPoint = (clientX, clientY) => {
+      const gridRect = gridRef.current?.getBoundingClientRect();
+      if (
+        marqueeSession.source === 'ruler'
+        && (
+          !gridRect
+          || clientY < gridRect.top
+          || clientY > gridRect.bottom
+        )
+      ) {
+        return null;
+      }
+
+      const focus = getTimelineCellFromPoint({
+        clientX,
+        clientY,
+        rect: gridRect,
+        trackIds,
+      });
+      if (marqueeSession.source === 'ruler') {
+        return createRulerTimelineSelection(
+          marqueeSession.anchor.bar,
+          focus,
+          trackIds,
+        );
+      }
+
+      return createTimelineSelection(marqueeSession.anchor, focus, trackIds);
+    };
+
+    const handleMouseMove = (event) => {
+      if (!didPointerDrag(event, marqueeSession)) return;
+
+      const selection = getSelectionAtPoint(event.clientX, event.clientY);
+      if (!selection) return;
+
+      event.preventDefault();
+      dragged = true;
+      latestSelection = selection;
+      setMarqueeSelection(selection);
+    };
+
+    const handleMouseUp = (event) => {
+      if (dragged) {
+        const selection = getSelectionAtPoint(event.clientX, event.clientY)
+          ?? latestSelection;
+        if (marqueeSession.source === 'clip') {
+          suppressClipClickAfterDrag();
+        } else if (marqueeSession.source === 'ruler') {
+          window.clearTimeout(rulerClickResetTimerRef.current);
+          suppressRulerClickRef.current = true;
+          rulerClickResetTimerRef.current = window.setTimeout(() => {
+            suppressRulerClickRef.current = false;
+          }, 0);
+        } else {
+          suppressTrackRowClickRef.current = true;
+        }
+        onTimelineSelectionChange(selection);
+      }
+
+      setMarqueeSession(null);
+      setMarqueeSelection(null);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [
+    marqueeSession,
+    onTimelineSelectionChange,
+    suppressClipClickAfterDrag,
+    trackIds,
+  ]);
 
   useEffect(() => {
     if (!isPlayheadDragging) return undefined;
@@ -362,6 +554,7 @@ const Timeline = forwardRef(function Timeline(
         className="ruler"
         aria-label="Timeline bars"
         onClick={handleRulerClick}
+        onMouseDown={handleRulerMouseDown}
         ref={rulerRef}
       >
         {BAR_NUMBERS.map((barNumber) => (
@@ -386,7 +579,13 @@ const Timeline = forwardRef(function Timeline(
         </div>
       </div>
 
-      <div className="grid">
+      <div
+        className={[
+          'grid',
+          marqueeSession ? 'marquee-selecting' : '',
+        ].filter(Boolean).join(' ')}
+        ref={gridRef}
+      >
         <div className="grid-glass" aria-hidden="true" />
         <div className="grid-rows" aria-hidden="true">
           {tracks.map((track) => (
@@ -407,9 +606,15 @@ const Timeline = forwardRef(function Timeline(
               data-track-index={trackIndex}
               key={track.id}
               onClick={(event) => handleTrackRowClick(event, track.id)}
+              onMouseDown={(event) => handleMarqueeMouseDown(event, track.id)}
             >
               {track.bars.map((bar) => {
                 const dropZoneClass = getDropZoneClass(track.id, bar.bar, dragOverBar, dragFeedback);
+                const rangeSelected = isTimelineCellSelected(
+                  displayedTimelineSelection,
+                  track.id,
+                  bar.bar,
+                );
                 const tutorialBarRole = track.id === 'drums'
                   ? getTutorialBarRole(tutorialTargets, bar.bar)
                   : null;
@@ -417,7 +622,11 @@ const Timeline = forwardRef(function Timeline(
 
                 return (
                   <div
-                    className={[dropZoneClass, getTutorialBarClass(dropZoneTutorialRole)]
+                    className={[
+                      dropZoneClass,
+                      rangeSelected ? 'range-selected' : '',
+                      getTutorialBarClass(dropZoneTutorialRole),
+                    ]
                       .filter(Boolean).join(' ')}
                     aria-label={`Drop clip on ${track.label} bar ${bar.barNumber}`}
                     data-bar-index={bar.bar}
@@ -433,10 +642,15 @@ const Timeline = forwardRef(function Timeline(
                 dragFeedbackClass: getClipFeedbackClass(track.id, bar.bar, dragFeedback),
                 dragging: dragSession?.clipId === bar.clip?.id,
                 key: bar.clip?.id ?? `${track.id}-empty-${bar.bar}`,
-                onMouseDownClip: handleMouseDown,
+                onMouseDownClip: handleClipMouseDown,
                 onOpenClip,
                 onTutorialOpenClip,
                 shouldIgnoreClick,
+                rangeSelected: isTimelineCellSelected(
+                  displayedTimelineSelection,
+                  track.id,
+                  bar.bar,
+                ),
                 tutorialLocked,
                 tutorialBarRole: track.id === 'drums'
                   ? getTutorialBarRole(tutorialTargets, bar.bar)
@@ -477,6 +691,15 @@ const Timeline = forwardRef(function Timeline(
             </div>
           ))}
         </div>
+
+        {timelineSelectionStyle ? (
+          <div
+            aria-label={`Selected bars ${displayedTimelineSelection.startBar + 1} through ${displayedTimelineSelection.endBar + 1}`}
+            className="timeline-marquee-selection"
+            role="status"
+            style={timelineSelectionStyle}
+          />
+        ) : null}
 
         <div className={playheadGridClass} style={{ left: playheadLeft }}>
           <div

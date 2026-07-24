@@ -88,6 +88,10 @@ import {
   getSortedTrackClipBars,
 } from './trackBarPaging.js';
 import { createTimelineTracks } from './timelineViewModels.js';
+import {
+  getTimelineSelectionClipIds,
+  getTimelineSelectionPlaybackOptions,
+} from './timelineSelection.js';
 import { syncEditorToPlaybackBar } from './playbackEditorSync.js';
 import { syncTrackScrollContainers } from './syncTrackScroll.js';
 import { createTutorialSkipAppState } from './tutorialSkipState.js';
@@ -174,6 +178,11 @@ export default function App() {
     [clips],
   );
   const [isNewSongConfirmOpen, setIsNewSongConfirmOpen] = useState(false);
+  const [timelineSelection, setTimelineSelection] = useState(null);
+  const [
+    timelineSelectionPlaybackActive,
+    setTimelineSelectionPlaybackActive,
+  ] = useState(false);
   const tracksScrollRef = useRef(null);
   const timelineScrollRef = useRef(null);
   const {
@@ -281,8 +290,10 @@ export default function App() {
     activeTrackId,
     clips,
     matrix,
+    onTimelineSelectionChange: setTimelineSelection,
     selectedBar,
     selectedClipId,
+    timelineSelection,
     withUndoCheckpoint,
   });
   const melodyTemplateSteps = useMemo(() => (
@@ -299,14 +310,39 @@ export default function App() {
   });
   const handleMelodyRecordingTransportPosition = melodyRecording.handleTransportPosition;
   const stopMelodyRecording = melodyRecording.stopRecording;
+  const clearTimelineSelectionPlayback = useCallback(() => {
+    if (!timelineSelectionPlaybackActive) return;
+
+    setTimelineSelectionPlaybackActive(false);
+    audioEngine.setPlaybackCompleteHandler?.(null);
+  }, [timelineSelectionPlaybackActive]);
+  const handleTimelineSelectionPlaybackComplete = useCallback(() => {
+    setTimelineSelectionPlaybackActive(false);
+    audioEngine.setPlaybackCompleteHandler?.(null);
+    queueMicrotask(() => {
+      void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
+    });
+  }, [dispatchAppCommand]);
+  const handleTimelineSelectionChange = useCallback((selection) => {
+    setTimelineSelection(selection);
+    if (!selection) return;
+
+    stopMelodyRecording();
+    const state = useMusicStore.getState();
+    state.setActiveTrackId(selection.trackIds[0]);
+    state.setSelectedBar(selection.startBar);
+    state.setSelectedClipId(null);
+  }, [stopMelodyRecording]);
   const handleUndoWithMelodyStop = useCallback(() => {
+    clearTimelineSelectionPlayback();
     stopMelodyRecording();
     handleUndo();
-  }, [handleUndo, stopMelodyRecording]);
+  }, [clearTimelineSelectionPlayback, handleUndo, stopMelodyRecording]);
   const handleRedoWithMelodyStop = useCallback(() => {
+    clearTimelineSelectionPlayback();
     stopMelodyRecording();
     handleRedo();
-  }, [handleRedo, stopMelodyRecording]);
+  }, [clearTimelineSelectionPlayback, handleRedo, stopMelodyRecording]);
   const handlePasteClipRequestWithMelodyStop = useCallback(() => {
     stopMelodyRecording();
     handlePasteClipRequest();
@@ -318,9 +354,10 @@ export default function App() {
   }, [melodyEditorIsOpen]);
 
   useEffect(() => () => {
+    clearTimelineSelectionPlayback();
     clearTutorialAutoAdvanceTimer();
     clearTutorialCountIn();
-  }, [clearTutorialCountIn]);
+  }, [clearTimelineSelectionPlayback, clearTutorialCountIn]);
 
   useEffect(() => {
     audioEngine.setVolumeSource?.(() => {
@@ -345,21 +382,40 @@ export default function App() {
   }, [activeTrackId, currentBar, isPlaying, selectedBar]);
 
   const handleBackToStart = useCallback(() => {
+    clearTimelineSelectionPlayback();
     clearTutorialCountIn();
     stopMelodyRecording();
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_SEEK, bar: 0, step: 0 });
-  }, [clearTutorialCountIn, dispatchAppCommand, stopMelodyRecording]);
+  }, [
+    clearTimelineSelectionPlayback,
+    clearTutorialCountIn,
+    dispatchAppCommand,
+    stopMelodyRecording,
+  ]);
 
   const handleStop = useCallback(() => {
+    clearTimelineSelectionPlayback();
     clearTutorialCountIn();
     stopMelodyRecording({ stopTransport: false });
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
-  }, [clearTutorialCountIn, dispatchAppCommand, stopMelodyRecording]);
+  }, [
+    clearTimelineSelectionPlayback,
+    clearTutorialCountIn,
+    dispatchAppCommand,
+    stopMelodyRecording,
+  ]);
 
   const handleStopAndRewind = useCallback(() => {
+    clearTimelineSelectionPlayback();
     clearTutorialCountIn();
+    stopMelodyRecording({ stopTransport: false });
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP_AND_REWIND });
-  }, [clearTutorialCountIn, dispatchAppCommand]);
+  }, [
+    clearTimelineSelectionPlayback,
+    clearTutorialCountIn,
+    dispatchAppCommand,
+    stopMelodyRecording,
+  ]);
 
   const handleNewSong = useCallback(() => {
     stopMelodyRecording();
@@ -370,6 +426,8 @@ export default function App() {
       clearTutorialAutoAdvanceTimer();
       stopTutorialPreviewPlayback();
       clearClipClipboardState();
+      clearTimelineSelectionPlayback();
+      setTimelineSelection(null);
       useMusicStore.setState(initialAppState, true);
       setCurrentTutorialStepIndex(0);
       setTutorialProgress(initialTutorialProgress);
@@ -387,6 +445,7 @@ export default function App() {
     }, { force: true });
   }, [
     clearClipClipboardState,
+    clearTimelineSelectionPlayback,
     setAppliedTutorialSetups,
     setCurrentTutorialStepIndex,
     setTutorialModeActive,
@@ -440,6 +499,8 @@ export default function App() {
   }, [dispatchAppCommand, stopMelodyRecording]);
 
   const handleTrackSelect = useCallback((trackId, barIndex) => {
+    clearTimelineSelectionPlayback();
+    setTimelineSelection(null);
     stopMelodyRecording();
     const state = useMusicStore.getState();
     const hasExplicitBar = Number.isInteger(barIndex);
@@ -456,9 +517,11 @@ export default function App() {
     setSelectedBar(targetBar);
     setSelectedClipId(null);
     if (hasExplicitBar) seekTransportToBarStart(targetBar);
-  }, [seekTransportToBarStart, stopMelodyRecording]);
+  }, [clearTimelineSelectionPlayback, seekTransportToBarStart, stopMelodyRecording]);
 
   const handleAddClip = useCallback((trackId, barIndex) => {
+    clearTimelineSelectionPlayback();
+    setTimelineSelection(null);
     stopMelodyRecording();
     const state = useMusicStore.getState();
     let clip;
@@ -469,7 +532,12 @@ export default function App() {
     }
 
     if (clip) seekTransportToBarStart(clip.bar);
-  }, [seekTransportToBarStart, stopMelodyRecording, withUndoCheckpoint]);
+  }, [
+    clearTimelineSelectionPlayback,
+    seekTransportToBarStart,
+    stopMelodyRecording,
+    withUndoCheckpoint,
+  ]);
 
   const applyTutorialStepSetup = useCallback((step, knownAppliedSetups = appliedTutorialSetups) => {
     const setupType = step?.setup?.type;
@@ -645,6 +713,8 @@ export default function App() {
   }, []);
 
   const handleMoveClip = useCallback((clipId, targetBar) => {
+    clearTimelineSelectionPlayback();
+    setTimelineSelection(null);
     stopMelodyRecording();
     const state = useMusicStore.getState();
     const sourceClip = state.clips.byId[clipId];
@@ -656,18 +726,21 @@ export default function App() {
     withUndoCheckpoint(() => {
       state.moveClipToBar(clipId, targetBar);
     });
-  }, [stopMelodyRecording, withUndoCheckpoint]);
+  }, [clearTimelineSelectionPlayback, stopMelodyRecording, withUndoCheckpoint]);
 
   const handleOpenClip = useCallback((clipId) => {
+    clearTimelineSelectionPlayback();
+    setTimelineSelection(null);
     stopMelodyRecording();
     const clip = useMusicStore.getState().selectClip(clipId);
     if (clip) seekTransportToBarStart(clip.bar);
-  }, [seekTransportToBarStart, stopMelodyRecording]);
+  }, [clearTimelineSelectionPlayback, seekTransportToBarStart, stopMelodyRecording]);
 
   const handleCloseEditor = useCallback(() => {
+    clearTimelineSelectionPlayback();
     melodyRecording.stopRecording();
     useMusicStore.getState().setSelectedClipId(null);
-  }, [melodyRecording]);
+  }, [clearTimelineSelectionPlayback, melodyRecording]);
 
   const handleRenameClip = useCallback((name) => {
     if (!selectedClipId) return;
@@ -787,9 +860,11 @@ export default function App() {
   }, [handlePageTrackBar]);
 
   const handleTransportSeek = useCallback((bar, step) => {
+    clearTimelineSelectionPlayback();
+    setTimelineSelection(null);
     stopMelodyRecording();
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_SEEK, bar, step });
-  }, [dispatchAppCommand, stopMelodyRecording]);
+  }, [clearTimelineSelectionPlayback, dispatchAppCommand, stopMelodyRecording]);
 
   const handlePlayToggle = useCallback(() => {
     if (tutorialActive) {
@@ -805,14 +880,46 @@ export default function App() {
       }
     }
 
+    const selectionPlayback = getTimelineSelectionPlaybackOptions(timelineSelection);
+    if (selectionPlayback) {
+      if (isPlaying) {
+        handleStop();
+        return;
+      }
+
+      clearTimelineSelectionPlayback();
+      stopMelodyRecording({ stopTransport: false });
+      setTimelineSelectionPlaybackActive(true);
+      audioEngine.setPlaybackCompleteHandler?.(handleTimelineSelectionPlaybackComplete);
+      void (async () => {
+        await dispatchAppCommand({
+          type: APP_COMMAND_TYPES.TRANSPORT_SEEK,
+          bar: selectionPlayback.bar,
+          step: selectionPlayback.step,
+        });
+        await dispatchAppCommand({
+          type: APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY,
+          audibleTrackIds: selectionPlayback.audibleTrackIds,
+          maxPlaybackSteps: selectionPlayback.maxPlaybackSteps,
+        });
+      })();
+      return;
+    }
+
+    clearTimelineSelectionPlayback();
     stopMelodyRecording({ stopTransport: false });
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY });
   }, [
     applyTutorialActionProgress,
+    clearTimelineSelectionPlayback,
     currentTutorialStep,
     dispatchAppCommand,
+    handleStop,
+    handleTimelineSelectionPlaybackComplete,
+    isPlaying,
     selectedBar,
     stopMelodyRecording,
+    timelineSelection,
     tutorialActive,
     tutorialProgress,
   ]);
@@ -1585,6 +1692,20 @@ export default function App() {
 
     if (command?.type === APP_COMMAND_TYPES.CLIP_DELETE_SELECTED) {
       stopMelodyRecording();
+      const selectionClipIds = getTimelineSelectionClipIds(
+        useMusicStore.getState().clips,
+        timelineSelection,
+      );
+      if (timelineSelection) {
+        if (selectionClipIds.length) {
+          withUndoCheckpoint(() => {
+            useMusicStore.getState().deleteClipsByIds(selectionClipIds);
+          });
+        }
+        setTimelineSelection(null);
+        return;
+      }
+
       withUndoCheckpoint(() => {
         useMusicStore.getState().deleteSelectedClip();
       });
@@ -1613,10 +1734,14 @@ export default function App() {
     handleUndoWithMelodyStop,
     melodyRecording,
     stopMelodyRecording,
+    timelineSelection,
     withUndoCheckpoint,
   ]);
 
-  useKeyboardCommands({ dispatch: dispatchInputCommand });
+  useKeyboardCommands({
+    dispatch: dispatchInputCommand,
+    hasTimelineSelection: Boolean(timelineSelection),
+  });
   const {
     connect: connectLaunchpad,
     ...launchpadInput
@@ -1858,13 +1983,31 @@ export default function App() {
             >
               <span className="clip-paste-confirm-kicker">CLIP PASTE</span>
               <h2 className="clip-paste-confirm-title" id="clip-paste-confirm-title">
-                确认覆盖这个 clip？
+                {pendingClipPaste.kind === 'timeline-range'
+                  ? '确认覆盖所选范围？'
+                  : '确认覆盖这个 clip？'}
               </h2>
               <p className="clip-paste-confirm-copy" id="clip-paste-confirm-copy">
-                目标小节 {pendingClipPaste.targetBar + 1} 已有
-                {' '}
-                {pendingClipPaste.targetClip?.name ?? 'clip'}
-                ，继续粘贴会替换它的内容。
+                {pendingClipPaste.kind === 'timeline-range' ? (
+                  <>
+                    从目标小节
+                    {' '}
+                    {pendingClipPaste.targetBar + 1}
+                    {' '}
+                    开始的范围内已有
+                    {' '}
+                    {pendingClipPaste.targetClips.length}
+                    {' '}
+                    个 clip，继续粘贴会替换它们的内容。
+                  </>
+                ) : (
+                  <>
+                    目标小节 {pendingClipPaste.targetBar + 1} 已有
+                    {' '}
+                    {pendingClipPaste.targetClip?.name ?? 'clip'}
+                    ，继续粘贴会替换它的内容。
+                  </>
+                )}
               </p>
               <div className="clip-paste-confirm-actions">
                 <button className="clip-paste-confirm-cancel" type="button" onClick={cancelClipPaste}>
@@ -1903,8 +2046,10 @@ export default function App() {
             onTransportSeek: handleTransportSeek,
             onTutorialOpenClip: handleTutorialOpenClip,
             onTrackSelect: handleTrackSelect,
+            onTimelineSelectionChange: handleTimelineSelectionChange,
             ref: timelineScrollRef,
             selectedClipId,
+            timelineSelection,
             tutorialLocked: activeTutorialLocked,
             tutorialTargets: activeTutorialTargets,
             tracks,

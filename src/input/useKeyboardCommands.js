@@ -4,13 +4,20 @@ import { dispatchCommand } from './commandDispatcher.js';
 import { mapKeyboardEventToCommand, shouldPreventDefaultForCommand } from './keyboardMap.js';
 
 function useKeyboardCommands(options = {}) {
-  const { enabled = true, dispatch = dispatchCommand } = options;
+  const {
+    enabled = true,
+    dispatch = dispatchCommand,
+    hasTimelineSelection = false,
+  } = options;
 
   useEffect(() => {
     if (!enabled) return undefined;
 
     const handleKeyboardEvent = (event) => {
-      const state = useMusicStore.getState();
+      const state = {
+        ...useMusicStore.getState(),
+        hasTimelineSelection,
+      };
       const command = mapKeyboardEventToCommand(event, state);
       if (!command) return;
 
@@ -28,7 +35,7 @@ function useKeyboardCommands(options = {}) {
       window.removeEventListener('keydown', handleKeyboardEvent);
       window.removeEventListener('keyup', handleKeyboardEvent);
     };
-  }, [dispatch, enabled]);
+  }, [dispatch, enabled, hasTimelineSelection]);
 }
 
 export default useKeyboardCommands;

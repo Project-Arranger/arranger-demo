@@ -7,7 +7,7 @@ test('App shares one UI-aware command entry point between keyboard and Launchpad
 
   assert.match(source, /import useLaunchpadXCommands from '\.\.\/input\/useLaunchpadXCommands\.js';/);
   assert.match(source, /const dispatchInputCommand = useCallback\(\(command\) => \{/);
-  assert.match(source, /useKeyboardCommands\(\{ dispatch: dispatchInputCommand \}\);/);
+  assert.match(source, /useKeyboardCommands\(\{[\s\S]*dispatch: dispatchInputCommand,[\s\S]*hasTimelineSelection: Boolean\(timelineSelection\),[\s\S]*\}\);/);
   assert.match(source, /if \(command\?\.type === APP_COMMAND_TYPES\.DRUMS_TOGGLE\) \{[\s\S]*command\.bar !== state\.selectedBar[\s\S]*handleDrumsStepToggle\(command\.instrument, command\.step, command\.bar\);/);
   assert.match(source, /if \(command\?\.type === APP_COMMAND_TYPES\.DRUMS_SELECT_CLIP\) \{[\s\S]*handleLaunchpadDrumsClipSelect\(command\.bar\);/);
   assert.match(source, /if \(command\?\.type === APP_COMMAND_TYPES\.CHORD_TOGGLE_RHYTHM\) \{[\s\S]*command\.bar !== state\.selectedBar[\s\S]*handleChordRhythmStepToggle\(command\.step, command\.bar\);/);

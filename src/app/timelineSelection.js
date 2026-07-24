@@ -1,0 +1,127 @@
+import {
+  STEPS_PER_BAR,
+  TOTAL_BARS,
+} from '../domain/musicConstants.js';
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function getTimelineCellFromPoint({
+  clientX,
+  clientY,
+  rect,
+  trackIds,
+}) {
+  if (
+    !rect
+    || rect.width <= 0
+    || rect.height <= 0
+    || !Array.isArray(trackIds)
+    || trackIds.length === 0
+  ) {
+    return null;
+  }
+
+  const normalizedX = clamp((clientX - rect.left) / rect.width, 0, 1 - Number.EPSILON);
+  const normalizedY = clamp((clientY - rect.top) / rect.height, 0, 1 - Number.EPSILON);
+
+  return {
+    bar: clamp(Math.floor(normalizedX * TOTAL_BARS), 0, TOTAL_BARS - 1),
+    trackId: trackIds[clamp(
+      Math.floor(normalizedY * trackIds.length),
+      0,
+      trackIds.length - 1,
+    )],
+  };
+}
+
+function createTimelineSelection(anchor, focus, trackIds) {
+  if (!anchor || !focus || !Array.isArray(trackIds) || trackIds.length === 0) return null;
+
+  const anchorTrackIndex = trackIds.indexOf(anchor.trackId);
+  const focusTrackIndex = trackIds.indexOf(focus.trackId);
+  if (
+    anchorTrackIndex < 0
+    || focusTrackIndex < 0
+    || !Number.isInteger(anchor.bar)
+    || !Number.isInteger(focus.bar)
+  ) {
+    return null;
+  }
+
+  const startTrackIndex = Math.min(anchorTrackIndex, focusTrackIndex);
+  const endTrackIndex = Math.max(anchorTrackIndex, focusTrackIndex);
+
+  return {
+    startBar: clamp(Math.min(anchor.bar, focus.bar), 0, TOTAL_BARS - 1),
+    endBar: clamp(Math.max(anchor.bar, focus.bar), 0, TOTAL_BARS - 1),
+    trackIds: trackIds.slice(startTrackIndex, endTrackIndex + 1),
+  };
+}
+
+function createRulerTimelineSelection(anchorBar, focus, trackIds) {
+  if (
+    !Number.isInteger(anchorBar)
+    || !focus
+    || !Array.isArray(trackIds)
+    || trackIds.length === 0
+  ) {
+    return null;
+  }
+
+  return createTimelineSelection({
+    bar: anchorBar,
+    trackId: trackIds[0],
+  }, focus, trackIds);
+}
+
+function isTimelineCellSelected(selection, trackId, bar) {
+  return Boolean(
+    selection
+    && selection.trackIds?.includes(trackId)
+    && Number.isInteger(bar)
+    && bar >= selection.startBar
+    && bar <= selection.endBar,
+  );
+}
+
+function getTimelineSelectionClipIds(clips, selection) {
+  if (!selection) return [];
+
+  return (clips?.ids ?? []).filter((clipId) => {
+    const clip = clips?.byId?.[clipId];
+    return clip && isTimelineCellSelected(selection, clip.trackId, clip.bar);
+  });
+}
+
+function getTimelineSelectionPlaybackOptions(selection) {
+  if (
+    !selection
+    || !Number.isInteger(selection.startBar)
+    || !Number.isInteger(selection.endBar)
+    || selection.startBar < 0
+    || selection.endBar >= TOTAL_BARS
+    || selection.startBar > selection.endBar
+    || !Array.isArray(selection.trackIds)
+    || selection.trackIds.length === 0
+  ) {
+    return null;
+  }
+
+  return {
+    audibleTrackIds: [...selection.trackIds],
+    bar: selection.startBar,
+    maxPlaybackSteps: (selection.endBar - selection.startBar + 1) * STEPS_PER_BAR,
+    step: 0,
+  };
+}
+
+export {
+  createRulerTimelineSelection,
+  createTimelineSelection,
+  getTimelineCellFromPoint,
+  getTimelineSelectionClipIds,
+  getTimelineSelectionPlaybackOptions,
+  isTimelineCellSelected,
+};

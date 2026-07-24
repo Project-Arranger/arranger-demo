@@ -79,7 +79,7 @@ function mapKeyboardEventToCommand(event, state = {}) {
     && (event.ctrlKey || event.metaKey)
     && !event.shiftKey
     && !event.altKey
-    && state.selectedClipId
+    && (state.selectedClipId || state.hasTimelineSelection)
   ) {
     return { type: APP_COMMAND_TYPES.CLIP_COPY_SELECTED };
   }
@@ -111,7 +111,7 @@ function mapKeyboardEventToCommand(event, state = {}) {
   if (
     eventType === 'keydown'
     && (key === 'Delete' || key === 'Backspace')
-    && state.selectedClipId
+    && (state.selectedClipId || state.hasTimelineSelection)
   ) {
     return { type: APP_COMMAND_TYPES.CLIP_DELETE_SELECTED };
   }
