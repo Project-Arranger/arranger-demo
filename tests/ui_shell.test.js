@@ -177,20 +177,32 @@ test('clip copy paste flow keeps an app clipboard and confirms destructive paste
     new URL('../src/app/useClipClipboardActions.js', import.meta.url),
     'utf8',
   );
+  const pasteDestinationSource = await readFile(
+    new URL('../src/app/clipPasteDestination.js', import.meta.url),
+    'utf8',
+  );
 
-  assert.match(appSource, /useClipClipboardActions\(\{[\s\S]*activeTrackId,[\s\S]*clips,[\s\S]*matrix,[\s\S]*onTimelineSelectionChange: setTimelineSelection,[\s\S]*selectedBar,[\s\S]*selectedClipId,[\s\S]*timelineSelection,[\s\S]*withUndoCheckpoint,[\s\S]*\}\)/);
+  assert.match(appSource, /useClipClipboardActions\(\{[\s\S]*clips,[\s\S]*onTimelineSelectionChange: setTimelineSelection,[\s\S]*selectedClipId,[\s\S]*timelineSelection,[\s\S]*withUndoCheckpoint,[\s\S]*\}\)/);
   assert.match(clipClipboardSource, /const \[clipClipboard,\s*setClipClipboard\] = useState\(null\);/);
+  assert.match(clipClipboardSource, /const \[pasteDestination,\s*setPasteDestination\] = useState\(null\);/);
   assert.match(clipClipboardSource, /const \[pendingClipPaste,\s*setPendingClipPaste\] = useState\(null\);/);
-  assert.match(clipClipboardSource, /const handleCopySelectedClip = useCallback\(\(\) => \{[\s\S]*createClipClipboardSnapshot\(selectedClipId\)[\s\S]*setClipClipboard\(snapshot\);/);
+  assert.match(clipClipboardSource, /const handleCopySelectedClip = useCallback\(\(\) => \{[\s\S]*createClipClipboardSnapshot\(selectedClipId\)[\s\S]*setClipClipboard\(snapshot\);[\s\S]*setPasteDestination\(null\);/);
   assert.match(clipClipboardSource, /createTimelineClipboardSnapshot\([\s\S]*timelineSelection,[\s\S]*\)/);
   assert.match(clipClipboardSource, /pasteTimelineClipboardSnapshot\([\s\S]*clipClipboard,[\s\S]*target\.targetBar/);
   assert.match(clipClipboardSource, /const handlePasteClipRequest = useCallback\(\(\) => \{[\s\S]*getCurrentClipPasteTarget\(\)[\s\S]*setPendingClipPaste/);
-  assert.match(clipClipboardSource, /targetHasContent:\s*hasTrackBarContent/);
-  assert.match(clipClipboardSource, /targetContentCount/);
+  assert.match(pasteDestinationSource, /targetHasContent:\s*hasTrackBarContent/);
+  assert.match(pasteDestinationSource, /targetContentCount/);
   assert.doesNotMatch(clipClipboardSource, /if \(target\.targetClip \|\| target\.targetClips\?\.length\)/);
   assert.match(clipClipboardSource, /const confirmClipPaste = useCallback\(\(\) => \{[\s\S]*pasteClipToTarget\(pendingClipPaste\);[\s\S]*setPendingClipPaste\(null\);/);
   assert.match(clipClipboardSource, /const cancelClipPaste = useCallback\(\(\) => \{[\s\S]*setPendingClipPaste\(null\);[\s\S]*\}, \[\]\);/);
-  assert.match(clipClipboardSource, /const clearClipClipboardState = useCallback\(\(\) => \{[\s\S]*setClipClipboard\(null\);[\s\S]*setPendingClipPaste\(null\);/);
+  assert.match(clipClipboardSource, /const clearClipClipboardState = useCallback\(\(\) => \{[\s\S]*setClipClipboard\(null\);[\s\S]*setPasteDestination\(null\);[\s\S]*setPendingClipPaste\(null\);/);
+  assert.match(clipClipboardSource, /const clearClipPasteDestination = useCallback\(\(\) => \{[\s\S]*setPasteDestination\(null\);/);
+  assert.match(clipClipboardSource, /const selectClipPasteDestination = useCallback\(\(trackId, bar\) => \{/);
+  assert.match(clipClipboardSource, /const selectRulerPasteDestination = useCallback\(\(bar\) => \{/);
+  assert.match(clipClipboardSource, /event\.key !== 'Escape'[\s\S]*clearClipPasteDestination\(\)/);
+  assert.match(appSource, /const handleOpenClip = useCallback\(\(clipId\) => \{[\s\S]*selectClipPasteDestination\(clip\.trackId, clip\.bar\)/);
+  assert.match(appSource, /const handleTransportSeek = useCallback\(\(bar, step\) => \{[\s\S]*selectRulerPasteDestination\(bar\)/);
+  assert.match(appSource, /useKeyboardCommands\(\{[\s\S]*canPasteClip,/);
   assert.match(appSource, /clearClipClipboardState\(\);[\s\S]*useMusicStore\.setState\(initialAppState, true\);/);
   assert.match(appSource, /pendingClipPaste \? \([\s\S]*className="clip-paste-confirm-overlay"[\s\S]*role="presentation"[\s\S]*className="clip-paste-confirm-dialog"[\s\S]*role="dialog"[\s\S]*aria-modal="true"[\s\S]*确认覆盖这个 clip/);
   assert.match(appSource, /className="clip-paste-confirm-cancel"[\s\S]*onClick=\{cancelClipPaste\}[\s\S]*取消/);
@@ -282,7 +294,7 @@ test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async
   assert.match(source, /createClip\(trackId,\s*barIndex\)/);
   assert.match(source, /const seekTransportToBarStart = useCallback\(\(bar\) => \{[\s\S]*TRANSPORT_SEEK[\s\S]*step:\s*0/);
   assert.match(source, /const handleTrackSelect = useCallback\(\(trackId, barIndex\) => \{[\s\S]*const hasExplicitBar = Number\.isInteger\(barIndex\);[\s\S]*if \(hasExplicitBar\) seekTransportToBarStart\(targetBar\);/);
-  assert.match(source, /const handleAddClip = useCallback\(\(trackId, barIndex\) => \{[\s\S]*if \(clip\) seekTransportToBarStart\(clip\.bar\);/);
+  assert.match(source, /const handleAddClip = useCallback\(\(trackId, barIndex\) => \{[\s\S]*if \(clip\) \{[\s\S]*selectClipPasteDestination\(clip\.trackId, clip\.bar\);[\s\S]*seekTransportToBarStart\(clip\.bar\);/);
   assert.match(source, /const handleOpenClip = useCallback\(\(clipId\) => \{[\s\S]*selectClip\(clipId\);[\s\S]*seekTransportToBarStart\(clip\.bar\);/);
   assert.match(source, /const handlePageTrackBar = useCallback\(\(direction\) => \{[\s\S]*state\.selectClip\(clip\.id\);[\s\S]*seekTransportToBarStart\(clip\.bar\);/);
   assert.match(source, /handleFillEmptyTrackClips/);

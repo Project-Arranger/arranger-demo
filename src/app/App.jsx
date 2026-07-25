@@ -284,17 +284,17 @@ export default function App() {
     canPasteClip,
     cancelClipPaste,
     clearClipClipboardState,
+    clearClipPasteDestination,
     confirmClipPaste,
     handleCopySelectedClip,
     handlePasteClipRequest,
     pendingClipPaste,
+    selectClipPasteDestination,
+    selectRulerPasteDestination,
     selectedClip,
   } = useClipClipboardActions({
-    activeTrackId,
     clips,
-    matrix,
     onTimelineSelectionChange: setTimelineSelection,
-    selectedBar,
     selectedClipId,
     timelineSelection,
     withUndoCheckpoint,
@@ -336,6 +336,7 @@ export default function App() {
     });
   }, [dispatchAppCommand]);
   const handleTimelineSelectionChange = useCallback((selection) => {
+    clearClipPasteDestination();
     setTimelineSelection(selection);
     if (!selection) return;
 
@@ -345,25 +346,29 @@ export default function App() {
     state.setActiveTrackId(selection.trackIds[0]);
     state.setSelectedBar(selection.startBar);
     state.setSelectedClipId(null);
-  }, [stopDrumsRecording, stopMelodyRecording]);
+  }, [clearClipPasteDestination, stopDrumsRecording, stopMelodyRecording]);
   const handleUndoWithMelodyStop = useCallback(() => {
     clearTimelineSelectionPlayback();
+    clearClipPasteDestination();
     stopDrumsRecording({ stopTransport: false });
     stopMelodyRecording();
     handleUndo();
   }, [
     clearTimelineSelectionPlayback,
+    clearClipPasteDestination,
     handleUndo,
     stopDrumsRecording,
     stopMelodyRecording,
   ]);
   const handleRedoWithMelodyStop = useCallback(() => {
     clearTimelineSelectionPlayback();
+    clearClipPasteDestination();
     stopDrumsRecording({ stopTransport: false });
     stopMelodyRecording();
     handleRedo();
   }, [
     clearTimelineSelectionPlayback,
+    clearClipPasteDestination,
     handleRedo,
     stopDrumsRecording,
     stopMelodyRecording,
@@ -562,6 +567,7 @@ export default function App() {
 
   const handleTrackSelect = useCallback((trackId, barIndex) => {
     clearTimelineSelectionPlayback();
+    clearClipPasteDestination();
     setTimelineSelection(null);
     stopDrumsRecording();
     stopMelodyRecording();
@@ -571,6 +577,7 @@ export default function App() {
     const clip = state.getClipForTrackBar(trackId, targetBar);
     if (clip) {
       state.selectClip(clip.id);
+      if (hasExplicitBar) selectClipPasteDestination(trackId, targetBar);
       if (hasExplicitBar) seekTransportToBarStart(targetBar);
       return;
     }
@@ -579,9 +586,12 @@ export default function App() {
     setActiveTrackId(trackId);
     setSelectedBar(targetBar);
     setSelectedClipId(null);
+    if (hasExplicitBar) selectClipPasteDestination(trackId, targetBar);
     if (hasExplicitBar) seekTransportToBarStart(targetBar);
   }, [
+    clearClipPasteDestination,
     clearTimelineSelectionPlayback,
+    selectClipPasteDestination,
     seekTransportToBarStart,
     stopDrumsRecording,
     stopMelodyRecording,
@@ -589,6 +599,7 @@ export default function App() {
 
   const handleAddClip = useCallback((trackId, barIndex) => {
     clearTimelineSelectionPlayback();
+    clearClipPasteDestination();
     setTimelineSelection(null);
     stopDrumsRecording();
     stopMelodyRecording();
@@ -600,9 +611,14 @@ export default function App() {
       clip = withUndoCheckpoint(() => state.createClip(trackId, barIndex));
     }
 
-    if (clip) seekTransportToBarStart(clip.bar);
+    if (clip) {
+      selectClipPasteDestination(clip.trackId, clip.bar);
+      seekTransportToBarStart(clip.bar);
+    }
   }, [
+    clearClipPasteDestination,
     clearTimelineSelectionPlayback,
+    selectClipPasteDestination,
     seekTransportToBarStart,
     stopDrumsRecording,
     stopMelodyRecording,
@@ -809,13 +825,19 @@ export default function App() {
 
   const handleOpenClip = useCallback((clipId) => {
     clearTimelineSelectionPlayback();
+    clearClipPasteDestination();
     setTimelineSelection(null);
     stopDrumsRecording();
     stopMelodyRecording();
     const clip = useMusicStore.getState().selectClip(clipId);
-    if (clip) seekTransportToBarStart(clip.bar);
+    if (clip) {
+      selectClipPasteDestination(clip.trackId, clip.bar);
+      seekTransportToBarStart(clip.bar);
+    }
   }, [
+    clearClipPasteDestination,
     clearTimelineSelectionPlayback,
+    selectClipPasteDestination,
     seekTransportToBarStart,
     stopDrumsRecording,
     stopMelodyRecording,
@@ -945,10 +967,12 @@ export default function App() {
     setTimelineSelection(null);
     stopDrumsRecording();
     stopMelodyRecording();
+    selectRulerPasteDestination(bar);
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_SEEK, bar, step });
   }, [
     clearTimelineSelectionPlayback,
     dispatchAppCommand,
+    selectRulerPasteDestination,
     stopDrumsRecording,
     stopMelodyRecording,
   ]);
@@ -1885,6 +1909,7 @@ export default function App() {
   ]);
 
   useKeyboardCommands({
+    canPasteClip,
     dispatch: dispatchInputCommand,
     enabled: !pendingClearAction
       && drumsRecording.recordingState.phase !== 'confirm',

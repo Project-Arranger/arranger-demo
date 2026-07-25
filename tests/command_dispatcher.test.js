@@ -437,14 +437,21 @@ test('keyboard map turns common keys into app commands', () => {
   assert.deepEqual(
     mapKeyboardEventToCommand(
       { type: 'keydown', key: 'v', metaKey: true },
-      { activeTrackId: 'drums', selectedBar: 0 },
+      { canPasteClip: true },
     ),
     { type: 'clip.paste' },
   );
   assert.equal(
     mapKeyboardEventToCommand(
+      { type: 'keydown', key: 'v', metaKey: true },
+      { activeTrackId: 'drums', canPasteClip: false, selectedBar: 0 },
+    ),
+    null,
+  );
+  assert.equal(
+    mapKeyboardEventToCommand(
       { type: 'keydown', key: 'v', metaKey: true, target: { tagName: 'TEXTAREA', isContentEditable: false } },
-      { activeTrackId: 'drums', selectedBar: 0 },
+      { canPasteClip: true },
     ),
     null,
   );

@@ -5,6 +5,7 @@ import { mapKeyboardEventToCommand, shouldPreventDefaultForCommand } from './key
 
 function useKeyboardCommands(options = {}) {
   const {
+    canPasteClip = false,
     enabled = true,
     dispatch = dispatchCommand,
     hasTimelineSelection = false,
@@ -16,6 +17,7 @@ function useKeyboardCommands(options = {}) {
     const handleKeyboardEvent = (event) => {
       const state = {
         ...useMusicStore.getState(),
+        canPasteClip,
         hasTimelineSelection,
       };
       const command = mapKeyboardEventToCommand(event, state);
@@ -35,7 +37,7 @@ function useKeyboardCommands(options = {}) {
       window.removeEventListener('keydown', handleKeyboardEvent);
       window.removeEventListener('keyup', handleKeyboardEvent);
     };
-  }, [dispatch, enabled, hasTimelineSelection]);
+  }, [canPasteClip, dispatch, enabled, hasTimelineSelection]);
 }
 
 export default useKeyboardCommands;

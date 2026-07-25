@@ -90,8 +90,7 @@ function mapKeyboardEventToCommand(event, state = {}) {
     && (event.ctrlKey || event.metaKey)
     && !event.shiftKey
     && !event.altKey
-    && state.activeTrackId
-    && Number.isInteger(state.selectedBar)
+    && state.canPasteClip
   ) {
     return { type: APP_COMMAND_TYPES.CLIP_PASTE };
   }

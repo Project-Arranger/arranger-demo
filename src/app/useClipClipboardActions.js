@@ -1,98 +1,64 @@
 import {
   useCallback,
+  useEffect,
   useState,
 } from 'react';
 
-import { TOTAL_BARS } from '../domain/musicConstants.js';
 import useMusicStore from '../store/useMusicStore.js';
+import {
+  createClipPasteDestination,
+  createRulerPasteDestination,
+  resolveClipPasteTarget,
+} from './clipPasteDestination.js';
 import { getTimelineSelectionClipIds } from './timelineSelection.js';
-import { hasTrackBarContent } from './trackContent.js';
 
 function useClipClipboardActions({
-  activeTrackId,
   clips,
-  matrix,
   onTimelineSelectionChange = () => {},
-  selectedBar,
   selectedClipId,
   timelineSelection,
   withUndoCheckpoint,
 }) {
   const [clipClipboard, setClipClipboard] = useState(null);
+  const [pasteDestination, setPasteDestination] = useState(null);
   const [pendingClipPaste, setPendingClipPaste] = useState(null);
   const selectedClip = selectedClipId ? clips.byId[selectedClipId] : null;
   const timelineSelectionClipIds = getTimelineSelectionClipIds(clips, timelineSelection);
-  const pasteTargetTrackId = selectedClip?.trackId ?? activeTrackId;
-  const pasteTargetBar = selectedClip?.bar ?? selectedBar;
-  const rangeBarCount = clipClipboard?.kind === 'timeline-range'
-    ? clipClipboard.sourceEndBar - clipClipboard.sourceStartBar + 1
-    : 0;
   const canCopyClip = Boolean(selectedClip || timelineSelectionClipIds.length);
-  const canPasteClip = clipClipboard?.kind === 'timeline-range'
-    ? (
-      Number.isInteger(pasteTargetBar)
-      && pasteTargetBar >= 0
-      && pasteTargetBar + rangeBarCount <= TOTAL_BARS
-    )
-    : Boolean(
-      clipClipboard
-        && clipClipboard.trackId === pasteTargetTrackId
-        && Array.isArray(matrix[pasteTargetTrackId]?.[pasteTargetBar]),
-    );
+  const canPasteClip = Boolean(resolveClipPasteTarget({
+    clipClipboard,
+    pasteDestination,
+    state: useMusicStore.getState(),
+  }));
 
   const clearClipClipboardState = useCallback(() => {
     setClipClipboard(null);
+    setPasteDestination(null);
     setPendingClipPaste(null);
   }, []);
 
-  const getCurrentClipPasteTarget = useCallback(() => {
-    if (!clipClipboard) return null;
+  const clearClipPasteDestination = useCallback(() => {
+    setPasteDestination(null);
+    setPendingClipPaste(null);
+  }, []);
 
-    const state = useMusicStore.getState();
-    const targetClip = state.selectedClipId ? state.clips.byId[state.selectedClipId] : null;
-    const targetTrackId = targetClip?.trackId ?? state.activeTrackId;
-    const targetBar = targetClip?.bar ?? state.selectedBar;
-
-    if (clipClipboard.kind === 'timeline-range') {
-      const barCount = clipClipboard.sourceEndBar - clipClipboard.sourceStartBar + 1;
-      if (
-        !Number.isInteger(targetBar)
-        || targetBar < 0
-        || targetBar + barCount > TOTAL_BARS
-      ) {
-        return null;
-      }
-
-      const targetContentCount = clipClipboard.items.filter((item) => (
-        hasTrackBarContent(
-          state.matrix,
-          item.trackId,
-          targetBar + item.barOffset,
-        )
-      )).length;
-
-      return {
-        kind: 'timeline-range',
-        targetBar,
-        targetContentCount,
-      };
-    }
-
-    if (
-      clipClipboard.trackId !== targetTrackId
-      || !Number.isInteger(targetBar)
-      || !Array.isArray(state.matrix[targetTrackId]?.[targetBar])
-    ) {
-      return null;
-    }
-
-    return {
-      targetBar,
-      targetClip,
-      targetHasContent: hasTrackBarContent(state.matrix, targetTrackId, targetBar),
-      targetTrackId,
-    };
+  const selectClipPasteDestination = useCallback((trackId, bar) => {
+    setPendingClipPaste(null);
+    setPasteDestination(
+      clipClipboard ? createClipPasteDestination(trackId, bar) : null,
+    );
   }, [clipClipboard]);
+
+  const selectRulerPasteDestination = useCallback((bar) => {
+    setPendingClipPaste(null);
+    setPasteDestination(createRulerPasteDestination(clipClipboard, bar));
+  }, [clipClipboard]);
+
+  const getCurrentClipPasteTarget = useCallback(() => resolveClipPasteTarget({
+    clipClipboard,
+    pasteDestination,
+    state: useMusicStore.getState(),
+  }), [clipClipboard, pasteDestination]);
 
   const pasteClipToTarget = useCallback((target) => {
     if (!target || !clipClipboard) return null;
@@ -119,6 +85,7 @@ function useClipClipboardActions({
       });
     }
 
+    if (pasteResult) setPasteDestination(null);
     return pasteResult;
   }, [clipClipboard, onTimelineSelectionChange, withUndoCheckpoint]);
 
@@ -130,6 +97,7 @@ function useClipClipboardActions({
       if (!snapshot) return;
 
       setClipClipboard(snapshot);
+      setPasteDestination(null);
       setPendingClipPaste(null);
       return;
     }
@@ -140,6 +108,7 @@ function useClipClipboardActions({
     if (!snapshot) return;
 
     setClipClipboard(snapshot);
+    setPasteDestination(null);
     setPendingClipPaste(null);
   }, [selectedClipId, timelineSelection, timelineSelectionClipIds.length]);
 
@@ -169,15 +138,28 @@ function useClipClipboardActions({
     setPendingClipPaste(null);
   }, [clipClipboard, pasteClipToTarget, pendingClipPaste]);
 
+  useEffect(() => {
+    const handlePasteDestinationEscape = (event) => {
+      if (event.key !== 'Escape') return;
+      clearClipPasteDestination();
+    };
+
+    window.addEventListener('keydown', handlePasteDestinationEscape, true);
+    return () => window.removeEventListener('keydown', handlePasteDestinationEscape, true);
+  }, [clearClipPasteDestination]);
+
   return {
     canCopyClip,
     canPasteClip,
     cancelClipPaste,
     clearClipClipboardState,
+    clearClipPasteDestination,
     confirmClipPaste,
     handleCopySelectedClip,
     handlePasteClipRequest,
     pendingClipPaste,
+    selectClipPasteDestination,
+    selectRulerPasteDestination,
     selectedClip,
   };
 }
