@@ -37,6 +37,19 @@ import { createTutorialDirectoryCheckpoint } from '../tutorial/tutorialDirectory
 import {
   TUTORIAL_STEP_IDS,
 } from '../tutorial/tutorialStepIds.js';
+import {
+  CHILL_TUTORIAL_STAGES,
+  CHILL_TUTORIAL_STEPS,
+  createChillTutorialSession,
+} from '../tutorial/chillTutorialSteps.js';
+import {
+  applyChillTutorialRecipe,
+  createChillTutorialAppState,
+  isChillTutorialScoreComplete,
+} from '../tutorial/chillTutorialScore.js';
+import {
+  TUTORIAL_IDS,
+} from '../tutorial/tutorialCatalog.js';
 import { createUiAudioDispatcher } from './audioUiBridge.js';
 import {
   applyBassGrooveTemplateToExistingClips,
@@ -69,6 +82,9 @@ import { Timeline } from './components/Timeline.jsx';
 import { TopBar } from './components/TopBar.jsx';
 import { TracksColumn } from './components/TracksColumn.jsx';
 import { TutorialOverlay } from './components/TutorialOverlay.jsx';
+import { ChillTutorialOverlay } from './components/ChillTutorialOverlay.jsx';
+import { ChillTutorialStageRail } from './components/ChillTutorialStageRail.jsx';
+import { TutorialLibraryPanel } from './components/TutorialLibraryPanel.jsx';
 import { toggleInstrumentInCell } from './drumSequencerData.js';
 import { createDrumsCell, getDrumsCellInstruments } from '../domain/drumsCells.js';
 import { createDrumsStepMovePatch } from '../domain/drumsStepMove.js';
@@ -126,6 +142,10 @@ const CLEAR_TRACK_LABELS = Object.freeze({
 });
 
 let tutorialAutoAdvanceTimerId = null;
+
+// JSX component references are not marked as reads by this repository's lint parser.
+void ChillTutorialOverlay;
+void TutorialLibraryPanel;
 
 function clearTutorialAutoAdvanceTimer() {
   if (tutorialAutoAdvanceTimerId === null) return;
@@ -256,17 +276,24 @@ export default function App() {
     return () => window.clearTimeout(timeoutId);
   }, [chordHarmonyState, launchpadChordHarmonyTarget]);
   const {
+    activeTutorialId,
     activeTutorialLocked,
     activeTutorialTarget,
     activeTutorialTargets,
     appliedTutorialSetups,
+    chillTutorialActive,
+    chillTutorialSession,
+    chillTutorialStep,
     clearTutorialCountIn,
     currentTutorialStep,
     currentTutorialStepIndex,
+    setActiveTutorialId,
     setAppliedTutorialSetups,
     setCurrentTutorialStepIndex,
     setTutorialModeActive,
+    setTutorialPanelState,
     setTutorialProgress,
+    setTutorialSessions,
     setTutorialSidebarCollapsed,
     setTutorialStepCheckpoints,
     setTutorialVisible,
@@ -275,11 +302,14 @@ export default function App() {
     tutorialCountInValue,
     tutorialDirectoryItems,
     tutorialModeActive,
+    tutorialPanelState,
     tutorialProgress,
     tutorialSidebarCollapsed,
     tutorialStepCheckpoints,
+    tutorialSessions,
     tutorialViewModel,
     tutorialVisible,
+    updateTutorialSession,
   } = useTutorialController({
     audioEngine,
     bpm,
@@ -291,30 +321,54 @@ export default function App() {
   const {
     canRedo,
     canUndo,
+    clearUndoHistory,
     handleRedo,
     handleTrackVolumeChangeEnd,
     handleTrackVolumeChangeStart,
     handleUndo,
     withUndoCheckpoint,
   } = useUndoHistoryController({
+    activeTutorialId,
     appliedTutorialSetups,
     clearTutorialAutoAdvanceTimer,
     clearTutorialCountIn,
     currentTutorialStepIndex,
     dispatchAppCommand,
+    setActiveTutorialId,
     setAppliedTutorialSetups,
     setCurrentTutorialStepIndex,
     setTutorialModeActive,
+    setTutorialPanelState,
     setTutorialProgress,
+    setTutorialSessions,
     setTutorialSidebarCollapsed,
     setTutorialStepCheckpoints,
     setTutorialVisible,
     tutorialModeActive,
+    tutorialPanelState,
     tutorialProgress,
+    tutorialSessions,
     tutorialSidebarCollapsed,
     tutorialStepCheckpoints,
     tutorialVisible,
   });
+  const [chillTutorialCompleting, setChillTutorialCompleting] = useState(false);
+  const tutorialMusicSnapshotsRef = useRef({});
+  const chillStepCheckpointsRef = useRef({});
+
+  const captureTutorialMusicSnapshot = useCallback((tutorialId) => {
+    if (!tutorialId) return;
+    tutorialMusicSnapshotsRef.current[tutorialId] = createTutorialCheckpoint({
+      appState: useMusicStore.getState(),
+    });
+  }, []);
+
+  const restoreTutorialMusicSnapshot = useCallback((tutorialId) => {
+    const checkpoint = tutorialMusicSnapshotsRef.current[tutorialId];
+    if (!checkpoint?.appState) return false;
+    useMusicStore.setState(checkpoint.appState);
+    return true;
+  }, []);
   const resetTutorialTransportToStart = useCallback(async () => {
     clearTutorialCountIn();
     await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
@@ -528,17 +582,31 @@ export default function App() {
       }));
       setTutorialModeActive(false);
       setTutorialSidebarCollapsed(true);
-      setTutorialVisible(true);
+      setTutorialVisible(false);
+      setActiveTutorialId(null);
+      setTutorialPanelState('closed');
+      setTutorialSessions({
+        [TUTORIAL_IDS.CHILL_RAINY_STREET]: createChillTutorialSession(),
+        [TUTORIAL_IDS.LEGACY_BASICS]: {
+          completed: false,
+          hasStarted: false,
+        },
+      });
+      tutorialMusicSnapshotsRef.current = {};
+      chillStepCheckpointsRef.current = {};
     }, { force: true });
   }, [
     clearClipClipboardState,
     clearTimelineSelectionPlayback,
     setAppliedTutorialSetups,
+    setActiveTutorialId,
     setCurrentTutorialStepIndex,
     setTutorialModeActive,
+    setTutorialPanelState,
     setTutorialProgress,
     setTutorialSidebarCollapsed,
     setTutorialStepCheckpoints,
+    setTutorialSessions,
     setTutorialVisible,
     stopDrumsRecording,
     stopMelodyRecording,
@@ -2232,6 +2300,277 @@ export default function App() {
     stopTutorialPreviewPlayback,
   ]);
 
+  const resetLegacyTutorialSession = useCallback(() => {
+    const initialAppState = useMusicStore.getInitialState();
+    const initialTutorialProgress = createTutorialState();
+    useMusicStore.setState(initialAppState, true);
+    setCurrentTutorialStepIndex(0);
+    setTutorialProgress(initialTutorialProgress);
+    setAppliedTutorialSetups(() => new Set());
+    setTutorialStepCheckpoints(() => ({
+      0: createTutorialCheckpoint({
+        appState: initialAppState,
+        appliedTutorialSetups: new Set(),
+        tutorialProgress: initialTutorialProgress,
+      }),
+    }));
+  }, [
+    setAppliedTutorialSetups,
+    setCurrentTutorialStepIndex,
+    setTutorialProgress,
+    setTutorialStepCheckpoints,
+  ]);
+
+  const resetChillTutorialSession = useCallback(() => {
+    const initialAppState = useMusicStore.getInitialState();
+    useMusicStore.setState({
+      ...initialAppState,
+      ...createChillTutorialAppState(initialAppState),
+    }, true);
+    chillStepCheckpointsRef.current = {};
+    setChillTutorialCompleting(false);
+    setTutorialSessions((sessions) => ({
+      ...sessions,
+      [TUTORIAL_IDS.CHILL_RAINY_STREET]: {
+        ...createChillTutorialSession(),
+        hasStarted: true,
+      },
+    }));
+  }, [setTutorialSessions]);
+
+  const handleTutorialSelect = useCallback((tutorialId, { restart = false } = {}) => {
+    clearTutorialAutoAdvanceTimer();
+    clearTutorialCountIn();
+    handleStop();
+    if (activeTutorialId && tutorialPanelState === 'running') {
+      captureTutorialMusicSnapshot(activeTutorialId);
+    }
+    clearUndoHistory();
+
+    if (restart) {
+      delete tutorialMusicSnapshotsRef.current[tutorialId];
+    }
+
+    if (tutorialId === TUTORIAL_IDS.CHILL_RAINY_STREET) {
+      const hasSavedSession = !restart
+        && tutorialSessions[tutorialId]?.hasStarted
+        && restoreTutorialMusicSnapshot(tutorialId);
+      if (!hasSavedSession) resetChillTutorialSession();
+      updateTutorialSession(tutorialId, (session) => ({
+        ...session,
+        hasStarted: true,
+        paused: false,
+      }));
+      setTutorialVisible(false);
+      setTutorialModeActive(false);
+      setTutorialSidebarCollapsed(true);
+    } else {
+      const hasSavedSession = !restart
+        && tutorialSessions[tutorialId]?.hasStarted
+        && restoreTutorialMusicSnapshot(tutorialId);
+      if (!hasSavedSession) resetLegacyTutorialSession();
+      updateTutorialSession(tutorialId, (session) => ({
+        ...session,
+        hasStarted: true,
+      }));
+      setTutorialVisible(true);
+      setTutorialModeActive(true);
+      setTutorialSidebarCollapsed(false);
+    }
+
+    setActiveTutorialId(tutorialId);
+    setTutorialPanelState('running');
+  }, [
+    activeTutorialId,
+    captureTutorialMusicSnapshot,
+    clearTutorialCountIn,
+    clearUndoHistory,
+    handleStop,
+    resetChillTutorialSession,
+    resetLegacyTutorialSession,
+    restoreTutorialMusicSnapshot,
+    setActiveTutorialId,
+    setTutorialModeActive,
+    setTutorialPanelState,
+    setTutorialSidebarCollapsed,
+    setTutorialVisible,
+    tutorialPanelState,
+    tutorialSessions,
+    updateTutorialSession,
+  ]);
+
+  const handleTutorialRestart = useCallback((tutorialId) => {
+    handleTutorialSelect(tutorialId, { restart: true });
+  }, [handleTutorialSelect]);
+
+  const handleTutorialLibraryClose = useCallback(() => {
+    setTutorialPanelState('closed');
+  }, [setTutorialPanelState]);
+
+  const handleChillTutorialExit = useCallback(() => {
+    handleStop();
+    captureTutorialMusicSnapshot(TUTORIAL_IDS.CHILL_RAINY_STREET);
+    updateTutorialSession(TUTORIAL_IDS.CHILL_RAINY_STREET, (session) => ({
+      ...session,
+      paused: false,
+    }));
+    setTutorialPanelState('library');
+  }, [
+    captureTutorialMusicSnapshot,
+    handleStop,
+    setTutorialPanelState,
+    updateTutorialSession,
+  ]);
+
+  const handleChillTutorialPause = useCallback(() => {
+    handleStop();
+    captureTutorialMusicSnapshot(TUTORIAL_IDS.CHILL_RAINY_STREET);
+    updateTutorialSession(TUTORIAL_IDS.CHILL_RAINY_STREET, (session) => ({
+      ...session,
+      paused: true,
+    }));
+    setTutorialPanelState('closed');
+  }, [
+    captureTutorialMusicSnapshot,
+    handleStop,
+    setTutorialPanelState,
+    updateTutorialSession,
+  ]);
+
+  const previewChillTutorialRange = useCallback((bar, maxPlaybackSteps = 32) => {
+    void (async () => {
+      await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
+      await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_SEEK, bar, step: 0 });
+      await dispatchAppCommand({
+        type: APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY,
+        maxPlaybackSteps,
+      });
+    })();
+  }, [dispatchAppCommand]);
+
+  const handleChillTutorialBack = useCallback(() => {
+    if (chillTutorialSession.stepIndex <= 0) return;
+    handleStop();
+    const targetStepIndex = chillTutorialSession.stepIndex - 1;
+    const checkpoint = chillStepCheckpointsRef.current[targetStepIndex];
+    if (checkpoint?.appState) useMusicStore.setState(checkpoint.appState);
+    updateTutorialSession(TUTORIAL_IDS.CHILL_RAINY_STREET, (session) => ({
+      ...session,
+      appliedRecipeIds: session.appliedRecipeIds.slice(0, targetStepIndex),
+      completed: false,
+      stepIndex: targetStepIndex,
+    }));
+  }, [
+    chillTutorialSession.stepIndex,
+    handleStop,
+    updateTutorialSession,
+  ]);
+
+  const completeChillTutorial = useCallback(() => {
+    handleStop();
+    captureTutorialMusicSnapshot(TUTORIAL_IDS.CHILL_RAINY_STREET);
+    updateTutorialSession(TUTORIAL_IDS.CHILL_RAINY_STREET, (session) => ({
+      ...session,
+      completed: true,
+      paused: false,
+    }));
+    setChillTutorialCompleting(false);
+    setTutorialPanelState('library');
+  }, [
+    captureTutorialMusicSnapshot,
+    handleStop,
+    setTutorialPanelState,
+    updateTutorialSession,
+  ]);
+
+  const handleChillTutorialPrimary = useCallback(() => {
+    const step = chillTutorialStep;
+    if (!step) return;
+
+    if (step.explicit) {
+      if (!isChillTutorialScoreComplete(useMusicStore.getState().matrix)) return;
+      audioEngine.setPlaybackCompleteHandler?.(() => {
+        audioEngine.setPlaybackCompleteHandler?.(null);
+        completeChillTutorial();
+      });
+      void (async () => {
+        await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
+        await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_SEEK, bar: 0, step: 0 });
+        await dispatchAppCommand({
+          type: APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY,
+          maxPlaybackSteps: 128,
+        });
+      })();
+      return;
+    }
+
+    const currentStepIndex = chillTutorialSession.stepIndex;
+    const recipePatch = applyChillTutorialRecipe(useMusicStore.getState(), step.recipeId);
+    if (!recipePatch) return;
+    chillStepCheckpointsRef.current[currentStepIndex] = createTutorialCheckpoint({
+      appState: useMusicStore.getState(),
+    });
+    withUndoCheckpoint(() => {
+      useMusicStore.setState(recipePatch);
+    });
+    setChillTutorialCompleting(true);
+
+    if (currentStepIndex <= 3) previewChillTutorialRange(2);
+    if ([7, 11].includes(currentStepIndex)) previewChillTutorialRange(
+      currentStepIndex === 7 ? 4 : 6,
+    );
+    if (currentStepIndex === 14) previewChillTutorialRange(0);
+
+    scheduleTutorialAutoAdvance(() => {
+      setChillTutorialCompleting(false);
+      updateTutorialSession(TUTORIAL_IDS.CHILL_RAINY_STREET, (session) => ({
+        ...session,
+        appliedRecipeIds: [...new Set([...session.appliedRecipeIds, step.recipeId])],
+        hasStarted: true,
+        stepIndex: Math.min(session.stepIndex + 1, CHILL_TUTORIAL_STEPS.length - 1),
+      }));
+    });
+  }, [
+    chillTutorialSession.stepIndex,
+    chillTutorialStep,
+    completeChillTutorial,
+    dispatchAppCommand,
+    previewChillTutorialRange,
+    updateTutorialSession,
+    withUndoCheckpoint,
+  ]);
+
+  const handleChillTutorialExpandedToggle = useCallback(() => {
+    updateTutorialSession(TUTORIAL_IDS.CHILL_RAINY_STREET, (session) => ({
+      ...session,
+      expanded: !session.expanded,
+    }));
+  }, [updateTutorialSession]);
+
+  useEffect(() => {
+    if (!chillTutorialActive || !chillTutorialStep?.trackId) return undefined;
+    const state = useMusicStore.getState();
+    const clip = state.getClipForTrackBar(
+      chillTutorialStep.trackId,
+      chillTutorialStep.anchorBar,
+    );
+    if (clip && state.selectedClipId !== clip.id) state.selectClip(clip.id);
+
+    const frameId = window.requestAnimationFrame(() => {
+      document.querySelector(chillTutorialStep.anchorSelector)?.scrollIntoView?.({
+        block: 'nearest',
+        inline: 'nearest',
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? 'auto'
+          : 'smooth',
+      });
+    });
+    return () => window.cancelAnimationFrame(frameId);
+  }, [
+    chillTutorialActive,
+    chillTutorialStep,
+  ]);
+
   const handleTutorialSkip = useCallback(() => {
     withUndoCheckpoint(() => {
       const initialAppState = useMusicStore.getInitialState();
@@ -2254,26 +2593,67 @@ export default function App() {
       setTutorialModeActive(false);
       setTutorialSidebarCollapsed(true);
       setTutorialVisible(true);
+      updateTutorialSession(TUTORIAL_IDS.LEGACY_BASICS, (session) => ({
+        ...session,
+        completed: true,
+        hasStarted: true,
+      }));
+      setTutorialPanelState('library');
     }, { force: true });
   }, [
     clearTutorialCountIn,
     setAppliedTutorialSetups,
     setCurrentTutorialStepIndex,
     setTutorialModeActive,
+    setTutorialPanelState,
     setTutorialProgress,
     setTutorialSidebarCollapsed,
     setTutorialStepCheckpoints,
     setTutorialVisible,
     stopTutorialPreviewPlayback,
+    updateTutorialSession,
     withUndoCheckpoint,
   ]);
 
   const handleTutorialSidebarToggle = useCallback(() => {
-    setTutorialSidebarCollapsed((collapsed) => {
-      if (collapsed) setTutorialModeActive(true);
-      return !collapsed;
-    });
-  }, [setTutorialModeActive, setTutorialSidebarCollapsed]);
+    if (
+      activeTutorialId === TUTORIAL_IDS.CHILL_RAINY_STREET
+      && chillTutorialSession.paused
+    ) {
+      updateTutorialSession(TUTORIAL_IDS.CHILL_RAINY_STREET, (session) => ({
+        ...session,
+        paused: false,
+      }));
+      setTutorialPanelState('running');
+      return;
+    }
+
+    if (tutorialPanelState === 'library') {
+      setTutorialPanelState('closed');
+      return;
+    }
+
+    if (tutorialPanelState === 'running') {
+      captureTutorialMusicSnapshot(activeTutorialId);
+      setTutorialVisible(false);
+      setTutorialModeActive(false);
+      setTutorialSidebarCollapsed(true);
+      setTutorialPanelState('library');
+      return;
+    }
+
+    setTutorialPanelState('library');
+  }, [
+    activeTutorialId,
+    captureTutorialMusicSnapshot,
+    chillTutorialSession.paused,
+    setTutorialModeActive,
+    setTutorialPanelState,
+    setTutorialSidebarCollapsed,
+    setTutorialVisible,
+    tutorialPanelState,
+    updateTutorialSession,
+  ]);
 
   const handleTutorialCompleteTask = useCallback(() => {
     const tutorialAction = completeTutorialPrimaryAction({
@@ -2286,16 +2666,30 @@ export default function App() {
     }, { force: true });
   }, [applyTutorialActionProgress, currentTutorialStep, tutorialProgress, withUndoCheckpoint]);
 
+  const tutorialSidebarOpen = tutorialPanelState === 'library'
+    || (
+      activeTutorialId === TUTORIAL_IDS.LEGACY_BASICS
+      && tutorialPanelState === 'running'
+      && tutorialVisible
+      && !tutorialSidebarCollapsed
+    );
+  const tutorialToggleLabel = chillTutorialSession.paused
+    ? '恢复教程'
+    : tutorialPanelState === 'library'
+      ? '关闭教程列表'
+      : tutorialPanelState === 'running'
+        ? '返回教程列表'
+        : '打开教程';
   const appClassName = [
     'app',
-    tutorialVisible && !tutorialSidebarCollapsed ? 'tutorial-sidebar-open' : '',
-    tutorialVisible && tutorialSidebarCollapsed ? 'tutorial-sidebar-collapsed' : '',
+    tutorialSidebarOpen ? 'tutorial-sidebar-open' : 'tutorial-sidebar-collapsed',
+    chillTutorialActive ? 'chill-tutorial-running' : '',
     isEditorResizing ? 'editor-resizing' : '',
   ].filter(Boolean).join(' ');
   const workspaceClassName = [
     'workspace',
-    tutorialVisible && !tutorialSidebarCollapsed ? 'tutorial-sidebar-open' : '',
-    tutorialVisible && tutorialSidebarCollapsed ? 'tutorial-sidebar-collapsed' : '',
+    tutorialSidebarOpen ? 'tutorial-sidebar-open' : 'tutorial-sidebar-collapsed',
+    chillTutorialActive ? 'chill-tutorial-running' : '',
   ].filter(Boolean).join(' ');
   const appStyle = editorHeightPx === null ? undefined : {
     '--app-editor-height': `${editorHeightPx}px`,
@@ -2334,10 +2728,16 @@ export default function App() {
           onUndo: handleUndoWithMelodyStop,
           rootKey,
           scale,
-          showTutorialToggle: tutorialVisible,
+          showTutorialToggle: true,
           tutorialCollapsed: tutorialSidebarCollapsed,
+          tutorialToggleActive: tutorialPanelState !== 'closed' || chillTutorialSession.paused,
+          tutorialToggleLabel,
           tutorialTargets: activeTutorialTargets,
         })}
+        {chillTutorialActive ? createElement(ChillTutorialStageRail, {
+          activeStageIndex: chillTutorialStep.stageIndex,
+          stages: CHILL_TUTORIAL_STAGES,
+        }) : null}
         {isNewSongConfirmOpen ? (
           <div className="new-song-confirm-overlay" role="presentation">
             <section
@@ -2501,7 +2901,17 @@ export default function App() {
             tutorialTargets: activeTutorialTargets,
             tracks,
           })}
-          {tutorialVisible ? createElement(TutorialOverlay, {
+          {tutorialPanelState === 'library' ? (
+            <TutorialLibraryPanel
+              onClose={handleTutorialLibraryClose}
+              onRestart={handleTutorialRestart}
+              onSelect={handleTutorialSelect}
+              sessions={tutorialSessions}
+            />
+          ) : null}
+          {activeTutorialId === TUTORIAL_IDS.LEGACY_BASICS
+            && tutorialPanelState === 'running'
+            && tutorialVisible ? createElement(TutorialOverlay, {
             canGoBack: currentTutorialStepIndex > 0,
             canManualNext: tutorialViewModel.canManualNext,
             collapsed: tutorialSidebarCollapsed,
@@ -2595,6 +3005,20 @@ export default function App() {
           selectedBar,
           selectedClipId,
         })}
+        {chillTutorialActive ? (
+          <ChillTutorialOverlay
+            completing={chillTutorialCompleting}
+            expanded={chillTutorialSession.expanded}
+            onBack={handleChillTutorialBack}
+            onExit={handleChillTutorialExit}
+            onPause={handleChillTutorialPause}
+            onPrimary={handleChillTutorialPrimary}
+            onToggleExpanded={handleChillTutorialExpandedToggle}
+            step={chillTutorialStep}
+            stepCount={CHILL_TUTORIAL_STEPS.length}
+            stepIndex={chillTutorialSession.stepIndex}
+          />
+        ) : null}
       </div>
     </div>
   );

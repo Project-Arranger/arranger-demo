@@ -55,9 +55,11 @@ function createAppState() {
 
 function createTutorialSnapshotState() {
   return {
+    activeTutorialId: 'chill-rainy-street',
     appliedTutorialSetups: new Set(['drums-drag-kick']),
     currentTutorialStepIndex: 6,
     tutorialModeActive: true,
+    tutorialPanelState: 'running',
     tutorialProgress: {
       ...createTutorialState(),
       kickVariationEdited: true,
@@ -69,6 +71,15 @@ function createTutorialSnapshotState() {
         appState: createAppState(),
         appliedTutorialSetups: new Set(['drums-drag-kick']),
         tutorialProgress: createTutorialState(),
+      },
+    },
+    tutorialSessions: {
+      'chill-rainy-street': {
+        appliedRecipeIds: ['phrase-drums'],
+        stepIndex: 1,
+      },
+      'legacy-basics': {
+        hasStarted: false,
       },
     },
     tutorialVisible: true,
@@ -217,6 +228,9 @@ test('restoreUndoSnapshot restores app store and tutorial state', () => {
   const restored = {};
 
   const didRestore = restoreUndoSnapshot({
+    setActiveTutorialId: (value) => {
+      restored.activeTutorialId = value;
+    },
     setAppliedTutorialSetups: (value) => {
       restored.appliedTutorialSetups = value;
     },
@@ -226,11 +240,17 @@ test('restoreUndoSnapshot restores app store and tutorial state', () => {
     setTutorialModeActive: (value) => {
       restored.tutorialModeActive = value;
     },
+    setTutorialPanelState: (value) => {
+      restored.tutorialPanelState = value;
+    },
     setTutorialProgress: (value) => {
       restored.tutorialProgress = value;
     },
     setTutorialSidebarCollapsed: (value) => {
       restored.tutorialSidebarCollapsed = value;
+    },
+    setTutorialSessions: (value) => {
+      restored.tutorialSessions = value;
     },
     setTutorialStepCheckpoints: (value) => {
       restored.tutorialStepCheckpoints = value;
@@ -246,6 +266,9 @@ test('restoreUndoSnapshot restores app store and tutorial state', () => {
   assert.deepEqual(calls, [['store.setState', false]]);
   assert.deepEqual(store.state.matrix.drums[0][0], { instruments: ['kick'] });
   assert.equal(restored.currentTutorialStepIndex, 6);
+  assert.equal(restored.activeTutorialId, 'chill-rainy-street');
+  assert.equal(restored.tutorialPanelState, 'running');
+  assert.equal(restored.tutorialSessions['chill-rainy-street'].stepIndex, 1);
   assert.equal(restored.tutorialProgress.kickVariationEdited, true);
   assert.deepEqual([...restored.appliedTutorialSetups], ['drums-drag-kick']);
 

@@ -171,6 +171,7 @@ function Clip({
       data-type={track.type}
       data-track-id={track.id}
       data-bar-index={clip.bar}
+      data-tutorial-anchor={`${track.id}-bar-${clip.bar}`}
       style={{ '--bar-index': clip.bar }}
       aria-label={`${track.label} clip bar ${clip.bar + 1}`}
       type="button"
@@ -631,6 +632,9 @@ const Timeline = forwardRef(function Timeline(
                       .filter(Boolean).join(' ')}
                     aria-label={`Drop clip on ${track.label} bar ${bar.barNumber}`}
                     data-bar-index={bar.bar}
+                    data-tutorial-anchor={bar.clip
+                      ? undefined
+                      : `${track.id}-bar-${bar.bar}`}
                     data-tutorial-role={dropZoneTutorialRole ?? undefined}
                     key={`${track.id}-drop-${bar.bar}`}
                     style={{ '--bar-index': bar.bar }}

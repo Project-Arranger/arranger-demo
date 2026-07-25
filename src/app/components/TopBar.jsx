@@ -41,10 +41,13 @@ function TopBar({
   scale,
   showTutorialToggle = false,
   tutorialCollapsed = false,
+  tutorialToggleLabel: tutorialToggleLabelOverride = null,
+  tutorialToggleActive = false,
   tutorialTargets,
 }) {
   const active = activeTutorialTarget === 'top-bar';
-  const tutorialToggleLabel = tutorialCollapsed ? '展开教程' : '收起教程';
+  const tutorialToggleLabel = tutorialToggleLabelOverride
+    ?? (tutorialCollapsed ? '展开教程' : '收起教程');
   const playTutorialRole = getTutorialControlRole(tutorialTargets, 'transport-play');
   const transportClassName = [
     'transport',
@@ -138,6 +141,7 @@ function TopBar({
           </button>
           <button
             className={playClassName}
+            data-tutorial-anchor="transport"
             aria-label={isPlaying ? 'Pause' : 'Play'}
             title={isPlaying ? 'Pause (Space)' : 'Play (Space)'}
             type="button"
@@ -182,6 +186,7 @@ function TopBar({
         {showTutorialToggle ? (
           <button
             className="key-switch tutorial-switch"
+            data-active={tutorialToggleActive ? 'true' : undefined}
             type="button"
             aria-label={tutorialToggleLabel}
             title={tutorialToggleLabel}

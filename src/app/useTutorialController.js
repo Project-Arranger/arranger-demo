@@ -16,6 +16,13 @@ import { createTutorialCheckpoint } from '../tutorial/tutorialCheckpoints.js';
 import {
   TUTORIAL_DIRECTORY_ITEMS,
 } from '../tutorial/tutorialStepIds.js';
+import {
+  CHILL_TUTORIAL_STEPS,
+  createChillTutorialSession,
+} from '../tutorial/chillTutorialSteps.js';
+import {
+  TUTORIAL_IDS,
+} from '../tutorial/tutorialCatalog.js';
 
 const TUTORIAL_COUNT_IN_BEATS = Object.freeze([1, 2, 3]);
 const TUTORIAL_COUNT_IN_BEAT_MULTIPLIER = 1.5;
@@ -57,9 +64,18 @@ function useTutorialController({
 }) {
   const [currentTutorialStepIndex, setCurrentTutorialStepIndex] = useState(0);
   const [tutorialProgress, setTutorialProgress] = useState(() => createTutorialState());
-  const [tutorialVisible, setTutorialVisible] = useState(true);
-  const [tutorialModeActive, setTutorialModeActive] = useState(true);
-  const [tutorialSidebarCollapsed, setTutorialSidebarCollapsed] = useState(false);
+  const [tutorialVisible, setTutorialVisible] = useState(false);
+  const [tutorialModeActive, setTutorialModeActive] = useState(false);
+  const [tutorialSidebarCollapsed, setTutorialSidebarCollapsed] = useState(true);
+  const [tutorialPanelState, setTutorialPanelState] = useState('closed');
+  const [activeTutorialId, setActiveTutorialId] = useState(null);
+  const [tutorialSessions, setTutorialSessions] = useState(() => ({
+    [TUTORIAL_IDS.CHILL_RAINY_STREET]: createChillTutorialSession(),
+    [TUTORIAL_IDS.LEGACY_BASICS]: {
+      completed: false,
+      hasStarted: false,
+    },
+  }));
   const [appliedTutorialSetups, setAppliedTutorialSetups] = useState(() => new Set());
   const [tutorialStepCheckpoints, setTutorialStepCheckpoints] = useState(() => createInitialTutorialCheckpoints());
   const [tutorialCountInValue, setTutorialCountInValue] = useState(null);
@@ -74,6 +90,12 @@ function useTutorialController({
     step: currentTutorialStep,
   }), [clips, currentTutorialStep, matrix, selectedBar, tutorialProgress]);
   const tutorialActive = tutorialVisible && tutorialModeActive;
+  const chillTutorialSession = tutorialSessions[TUTORIAL_IDS.CHILL_RAINY_STREET];
+  const chillTutorialStep = CHILL_TUTORIAL_STEPS[chillTutorialSession.stepIndex]
+    ?? CHILL_TUTORIAL_STEPS[0];
+  const chillTutorialActive = activeTutorialId === TUTORIAL_IDS.CHILL_RAINY_STREET
+    && tutorialPanelState === 'running'
+    && !chillTutorialSession.paused;
   const activeTutorialTarget = tutorialActive ? currentTutorialStep?.target?.name ?? null : null;
   const activeTutorialTargets = tutorialActive ? tutorialViewModel.targets : undefined;
   const activeTutorialLocked = tutorialActive && tutorialViewModel.locked;
@@ -86,6 +108,19 @@ function useTutorialController({
     tutorialCountInTimerIdsRef.current.forEach((timerId) => window.clearTimeout(timerId));
     tutorialCountInTimerIdsRef.current = [];
     setTutorialCountInValue(null);
+  }, []);
+
+  const updateTutorialSession = useCallback((tutorialId, update) => {
+    setTutorialSessions((sessions) => {
+      const currentSession = sessions[tutorialId] ?? {};
+      const nextSession = typeof update === 'function'
+        ? update(currentSession)
+        : { ...currentSession, ...update };
+      return {
+        ...sessions,
+        [tutorialId]: nextSession,
+      };
+    });
   }, []);
 
   const startTutorialCountInPlayback = useCallback(() => {
@@ -111,17 +146,24 @@ function useTutorialController({
   }, [audioEngine, bpm, clearTutorialCountIn, dispatchAppCommand]);
 
   return {
+    activeTutorialId,
     activeTutorialLocked,
     activeTutorialTarget,
     activeTutorialTargets,
     appliedTutorialSetups,
+    chillTutorialActive,
+    chillTutorialSession,
+    chillTutorialStep,
     clearTutorialCountIn,
     currentTutorialStep,
     currentTutorialStepIndex,
+    setActiveTutorialId,
     setAppliedTutorialSetups,
     setCurrentTutorialStepIndex,
     setTutorialModeActive,
     setTutorialProgress,
+    setTutorialPanelState,
+    setTutorialSessions,
     setTutorialSidebarCollapsed,
     setTutorialStepCheckpoints,
     setTutorialVisible,
@@ -130,11 +172,14 @@ function useTutorialController({
     tutorialCountInValue,
     tutorialDirectoryItems,
     tutorialModeActive,
+    tutorialPanelState,
     tutorialProgress,
     tutorialSidebarCollapsed,
     tutorialStepCheckpoints,
+    tutorialSessions,
     tutorialViewModel,
     tutorialVisible,
+    updateTutorialSession,
   };
 }
 

@@ -16,20 +16,26 @@ import {
 } from './undoHistory.js';
 
 function useUndoHistoryController({
+  activeTutorialId,
   appliedTutorialSetups,
   clearTutorialAutoAdvanceTimer,
   clearTutorialCountIn,
   currentTutorialStepIndex,
   dispatchAppCommand,
+  setActiveTutorialId,
   setAppliedTutorialSetups,
   setCurrentTutorialStepIndex,
   setTutorialModeActive,
+  setTutorialPanelState,
   setTutorialProgress,
+  setTutorialSessions,
   setTutorialSidebarCollapsed,
   setTutorialStepCheckpoints,
   setTutorialVisible,
   tutorialModeActive,
+  tutorialPanelState,
   tutorialProgress,
+  tutorialSessions,
   tutorialSidebarCollapsed,
   tutorialStepCheckpoints,
   tutorialVisible,
@@ -41,21 +47,27 @@ function useUndoHistoryController({
   const createCurrentUndoSnapshot = useCallback(() => createUndoSnapshot({
     appState: useMusicStore.getState(),
     tutorialState: {
+      activeTutorialId,
       appliedTutorialSetups,
       currentTutorialStepIndex,
       tutorialModeActive,
+      tutorialPanelState,
       tutorialProgress,
       tutorialSidebarCollapsed,
       tutorialStepCheckpoints,
+      tutorialSessions,
       tutorialVisible,
     },
   }), [
+    activeTutorialId,
     appliedTutorialSetups,
     currentTutorialStepIndex,
     tutorialModeActive,
+    tutorialPanelState,
     tutorialProgress,
     tutorialSidebarCollapsed,
     tutorialStepCheckpoints,
+    tutorialSessions,
     tutorialVisible,
   ]);
 
@@ -82,10 +94,13 @@ function useUndoHistoryController({
     void (async () => {
       await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
       restoreUndoSnapshot({
+        setActiveTutorialId,
         setAppliedTutorialSetups,
         setCurrentTutorialStepIndex,
         setTutorialModeActive,
+        setTutorialPanelState,
         setTutorialProgress,
+        setTutorialSessions,
         setTutorialSidebarCollapsed,
         setTutorialStepCheckpoints,
         setTutorialVisible,
@@ -97,10 +112,13 @@ function useUndoHistoryController({
     clearTutorialAutoAdvanceTimer,
     clearTutorialCountIn,
     dispatchAppCommand,
+    setActiveTutorialId,
     setAppliedTutorialSetups,
     setCurrentTutorialStepIndex,
     setTutorialModeActive,
+    setTutorialPanelState,
     setTutorialProgress,
+    setTutorialSessions,
     setTutorialSidebarCollapsed,
     setTutorialStepCheckpoints,
     setTutorialVisible,
@@ -146,9 +164,16 @@ function useUndoHistoryController({
     }
   }, [createCurrentUndoSnapshot, recordUndoSnapshot]);
 
+  const clearUndoHistory = useCallback(() => {
+    volumeUndoSnapshotRef.current = null;
+    setRedoHistory([]);
+    setUndoHistory([]);
+  }, []);
+
   return {
     canRedo: redoHistory.length > 0,
     canUndo: undoHistory.length > 0,
+    clearUndoHistory,
     handleRedo,
     handleTrackVolumeChangeEnd,
     handleTrackVolumeChangeStart,

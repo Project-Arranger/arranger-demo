@@ -82,7 +82,7 @@ test('topbar exposes independent undo redo controls and App wires history', asyn
   assert.doesNotMatch(topBarSource, /<div className=\{transportClassName\} role="toolbar" aria-label="Transport">[\s\S]*className="t-btn undo"[\s\S]*Back to start/);
   assert.doesNotMatch(topBarSource, /<div className=\{transportClassName\} role="toolbar" aria-label="Transport">[\s\S]*className="t-btn redo"[\s\S]*Back to start/);
 
-  assert.match(source, /useUndoHistoryController\(\{\s*appliedTutorialSetups,\s*clearTutorialAutoAdvanceTimer,\s*clearTutorialCountIn,\s*currentTutorialStepIndex,\s*dispatchAppCommand,/);
+  assert.match(source, /useUndoHistoryController\(\{[\s\S]*activeTutorialId,[\s\S]*appliedTutorialSetups,[\s\S]*clearTutorialAutoAdvanceTimer,[\s\S]*clearTutorialCountIn,[\s\S]*currentTutorialStepIndex,[\s\S]*dispatchAppCommand,/);
   assert.match(undoControllerSource, /createUndoSnapshot/);
   assert.match(undoControllerSource, /createUndoTransition/);
   assert.match(undoControllerSource, /createRedoTransition/);
@@ -1160,7 +1160,7 @@ test('app mounts the drums tutorial right sidebar', async () => {
   assert.match(source, /tutorialModeActive/);
   assert.match(source, /useTutorialController\(\{/);
   assert.match(tutorialControllerSource, /const tutorialActive = tutorialVisible && tutorialModeActive;/);
-  assert.match(source, /showTutorialToggle:\s*tutorialVisible/);
+  assert.match(source, /showTutorialToggle:\s*true/);
   assert.match(source, /onTutorialToggle:\s*handleTutorialSidebarToggle/);
   assert.match(source, /tutorialCollapsed:\s*tutorialSidebarCollapsed/);
   assert.doesNotMatch(source, /showTutorialReopen/);
@@ -1198,7 +1198,8 @@ test('app mounts the drums tutorial right sidebar', async () => {
   assert.match(topBarSource, /showTutorialToggle/);
   assert.match(topBarSource, /onTutorialToggle/);
   assert.match(topBarSource, /tutorialCollapsed/);
-  assert.match(topBarSource, /const tutorialToggleLabel = tutorialCollapsed \? '展开教程' : '收起教程';/);
+  assert.match(topBarSource, /tutorialToggleLabel:\s*tutorialToggleLabelOverride/);
+  assert.match(topBarSource, /tutorialToggleLabelOverride[\s\S]*tutorialCollapsed \? '展开教程' : '收起教程'/);
   assert.doesNotMatch(topBarSource, /TutorialToggleIcon/);
   assert.match(topBarSource, /className="key-switch tutorial-switch"/);
   assert.doesNotMatch(topBarSource, /className="tutorial-topbar-button icon-btn"/);
@@ -1314,7 +1315,10 @@ test('tutorial navigation buttons interrupt preview playback', async () => {
   assert.match(source, /handleTutorialOpenClip = useCallback\(\(clip\) => \{[\s\S]*advanceTutorialToNextStep\(tutorialAction\.nextProgress\);/);
   assert.match(source, /if \(tutorialAction\.shouldCompleteTutorial\)[\s\S]*clearTutorialAutoAdvanceTimer\(\);[\s\S]*clearTutorialCountIn\(\);[\s\S]*stopTutorialPreviewPlayback\(\);[\s\S]*resetTutorialTransportToStart\(\);[\s\S]*setTutorialModeActive\(false\);[\s\S]*setTutorialSidebarCollapsed\(true\);[\s\S]*return;/);
   assert.match(source, /handleTutorialSkip = useCallback\(\(\) => \{[\s\S]*const initialAppState = useMusicStore\.getInitialState\(\);[\s\S]*const skippedAppState = createTutorialSkipAppState\(initialAppState\);[\s\S]*clearTutorialAutoAdvanceTimer\(\);[\s\S]*clearTutorialCountIn\(\);[\s\S]*stopTutorialPreviewPlayback\(\);[\s\S]*useMusicStore\.setState\(skippedAppState, true\);[\s\S]*setCurrentTutorialStepIndex\(0\);[\s\S]*setTutorialProgress\(createTutorialState\(\)\);[\s\S]*setAppliedTutorialSetups\(\(\) => new Set\(\)\);[\s\S]*setTutorialStepCheckpoints\(\(\) => \(\{[\s\S]*0: createTutorialCheckpoint\(\{[\s\S]*appState: initialAppState,[\s\S]*appliedTutorialSetups: new Set\(\),[\s\S]*tutorialProgress: createTutorialState\(\),[\s\S]*\}\),[\s\S]*\}\)\);[\s\S]*setTutorialModeActive\(false\);[\s\S]*setTutorialSidebarCollapsed\(true\);[\s\S]*setTutorialVisible\(true\);/);
-  assert.doesNotMatch(source, /handleTutorialSkip = useCallback\(\(\) => \{[\s\S]*setTutorialVisible\(false\);/);
+  const skipHandlerSource = source.match(
+    /const handleTutorialSkip = useCallback\(\(\) => \{[\s\S]*?\n {2}\}, \[/,
+  )?.[0] ?? '';
+  assert.doesNotMatch(skipHandlerSource, /setTutorialVisible\(false\);/);
   assert.doesNotMatch(source, /handleTutorialSkip = useCallback\(\(\) => \{[\s\S]*restoreTutorialCheckpoint/);
   assert.match(source, /tutorialTargets:\s*activeTutorialTargets/);
   assert.match(source, /tutorialLocked:\s*activeTutorialLocked/);

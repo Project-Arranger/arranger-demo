@@ -25,12 +25,15 @@ const UNDO_APP_STATE_KEYS = Object.freeze([
 ]);
 
 const UNDO_TUTORIAL_STATE_KEYS = Object.freeze([
+  'activeTutorialId',
   'appliedTutorialSetups',
   'currentTutorialStepIndex',
   'tutorialModeActive',
+  'tutorialPanelState',
   'tutorialProgress',
   'tutorialSidebarCollapsed',
   'tutorialStepCheckpoints',
+  'tutorialSessions',
   'tutorialVisible',
 ]);
 
@@ -145,10 +148,13 @@ function createRedoTransition({
 }
 
 function restoreUndoSnapshot({
+  setActiveTutorialId,
   setAppliedTutorialSetups,
   setCurrentTutorialStepIndex,
   setTutorialModeActive,
+  setTutorialPanelState,
   setTutorialProgress,
+  setTutorialSessions,
   setTutorialSidebarCollapsed,
   setTutorialStepCheckpoints,
   setTutorialVisible,
@@ -158,13 +164,16 @@ function restoreUndoSnapshot({
   if (!snapshot) return false;
 
   store?.setState?.(cloneValue(snapshot.appState));
+  setActiveTutorialId?.(cloneValue(snapshot.tutorialState.activeTutorialId));
   setCurrentTutorialStepIndex?.(cloneValue(snapshot.tutorialState.currentTutorialStepIndex));
   setTutorialProgress?.(cloneValue(snapshot.tutorialState.tutorialProgress));
+  setTutorialPanelState?.(cloneValue(snapshot.tutorialState.tutorialPanelState));
   setTutorialVisible?.(cloneValue(snapshot.tutorialState.tutorialVisible));
   setTutorialModeActive?.(cloneValue(snapshot.tutorialState.tutorialModeActive));
   setTutorialSidebarCollapsed?.(cloneValue(snapshot.tutorialState.tutorialSidebarCollapsed));
   setAppliedTutorialSetups?.(cloneValue(snapshot.tutorialState.appliedTutorialSetups));
   setTutorialStepCheckpoints?.(cloneValue(snapshot.tutorialState.tutorialStepCheckpoints));
+  setTutorialSessions?.(cloneValue(snapshot.tutorialState.tutorialSessions));
   return true;
 }
 

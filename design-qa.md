@@ -80,6 +80,23 @@ final result: passed
 
 ---
 
+## Chill Contextual Tutorial Follow-up
+
+- Selected reference: `/Users/nora/.codex/generated_images/019f92f6-c89f-77a3-995b-7500b4bd0830/call_pejFXbpH4Ib5u1Nilbvlfdya.png`
+- Final `1280x720` evidence: `/Users/nora/Documents/arranger demo/output/playwright/chill-tutorial-1280x720.jpg`
+- Final `800x700` evidence: `/Users/nora/Documents/arranger demo/output/playwright/chill-tutorial-800x700.jpg`
+- Combined comparison: `/Users/nora/Documents/arranger demo/output/playwright/chill-tutorial-comparison.png`
+- The coachmark follows the active Timeline target with the reference's compact dark hardware-panel language. The five-stage rail sits below Transport, and the current target receives a local warm outline without a full-screen dimmer.
+- The card preserves the reference hierarchy of context, title, progress, primary action, and compact secondary controls. A persistent technical recipe block intentionally adds exact bars, 16-step positions, chords, and notes to the visual explanation.
+- At both tested viewports, the coachmark stays inside the viewport and does not overlap its active target. Expanded narrow-screen content becomes locally scrollable, and reduced-motion styling removes position and highlight transitions.
+- Pause hides the stage rail, target highlight, and coachmark; exit returns to the selector with continue/restart actions. Both tutorial Sessions restore independently, and the legacy tutorial retains its existing right-side layout.
+- The five Chill stages advance through all 16 steps. The final 128-step playback returns to the tutorial library and stops Transport. The browser console reported no errors or warnings.
+- All `482` tests passed; `npm run lint`, `npm run build`, and `git diff --check` completed successfully.
+
+final result: passed
+
+---
+
 # Drums Four-Beat Hardware Frames QA
 
 ## Source And State

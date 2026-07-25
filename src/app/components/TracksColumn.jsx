@@ -112,6 +112,7 @@ function TrackRow({
     <div
       className={classes}
       data-track-id={track.id}
+      data-tutorial-anchor={`track-${track.id}`}
       data-type={track.type ?? track.id}
       onClick={() => onSelect(track.id)}
     >
