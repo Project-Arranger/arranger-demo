@@ -96,6 +96,8 @@ In Harmony Edit, Note 61–65 map the source plus available enriched variants an
 
 Natural major maps C/D/E/F/G/A/B to columns 1–7. Pentatonic maps C/D/E/G/A to columns 1–5. Remaining columns are off and emit no commands. The scale is selected from the webpage.
 
+The two Step rows always show a three-level purple grid: dark purple for ordinary empty Steps, medium purple for empty template positions, and bright purple for written or provisionally captured positions. White marks the current edit or capture target, and green marks the transport playhead. Non-template Step input remains disabled despite its positional background. The three scale rows use dark blue for available notes and bright blue while a note is held, keeping pitch performance visually separate from the purple rhythm area.
+
 The same columns now drive a 3×8 webpage keyboard and computer QWERTY rows `QWERTYUI`, `ASDFGHJK`, and `ZXCVBNM,`. All three surfaces share one activity registry: keyboard or pointer input brightens the matching Launchpad Pad, Launchpad input highlights the webpage key, and same-note holds from multiple sources clear only after the last source releases. Overview and confirmation hide and reject the note area before sound or data mutation.
 
 ## Not Yet

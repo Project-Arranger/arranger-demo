@@ -617,6 +617,40 @@ test('Melody LED frame lights three scale rows, pressed pads, clips, and transpo
   ]);
 });
 
+test('Melody LED palette separates purple steps from blue performance pads', () => {
+  assert.deepEqual(LAUNCHPAD_X_MELODY_LED_COLORS, {
+    note: { inactive: 43, pressed: 41 },
+    step: {
+      empty: 55,
+      filled: 49,
+      playhead: 21,
+      target: 3,
+      template: 51,
+    },
+  });
+});
+
+test('Melody LED frame gives every empty step a dark purple background', () => {
+  const activeFrame = createLaunchpadXMelodyLedFrame({
+    melodyActive: true,
+    melodyRecordingState: { phase: 'overview' },
+  });
+  const inactiveFrame = createLaunchpadXMelodyLedFrame({
+    melodyActive: false,
+    melodyRecordingState: { phase: 'overview' },
+  });
+
+  for (const note of [
+    81, 82, 83, 84, 85, 86, 87, 88,
+    71, 72, 73, 74, 75, 76, 77, 78,
+  ]) {
+    assert.deepEqual(findMessage(activeFrame, 0x90, note), [
+      0x90, note, LAUNCHPAD_X_MELODY_LED_COLORS.step.empty,
+    ]);
+    assert.deepEqual(findMessage(inactiveFrame, 0x90, note), [0x90, note, 0]);
+  }
+});
+
 test('Melody LED frame clears unused pentatonic pads and keeps notes visible during confirm', () => {
   const countInFrame = createLaunchpadXMelodyLedFrame({
     melodyActive: true,
@@ -644,7 +678,7 @@ test('Melody LED frame clears unused pentatonic pads and keeps notes visible dur
   ]);
 });
 
-test('Melody LED frame renders template steps, capture progress, old notes, and visible scales', () => {
+test('Melody LED frame renders purple template, capture, filled, and empty step levels', () => {
   const matrix = createInitialMatrix();
   matrix.melody[2][0] = { type: 'melody', note: 'C4' };
   matrix.melody[2][5] = { type: 'melody', note: 'E4' };
@@ -656,6 +690,7 @@ test('Melody LED frame renders template steps, capture progress, old notes, and 
     melodyActive: true,
     melodyClipBars: [2],
     melodyRecordingState: {
+      barRecordedNotes: 1,
       phase: 'sequence-capture',
       recordedNotes: 1,
       sequenceNotes: ['G4'],
@@ -666,16 +701,19 @@ test('Melody LED frame renders template steps, capture progress, old notes, and 
   });
 
   assert.deepEqual(findMessage(frame, 0x90, 81), [
-    0x90, 81, LAUNCHPAD_X_MELODY_LED_COLORS.step.captured,
+    0x90, 81, LAUNCHPAD_X_MELODY_LED_COLORS.step.filled,
   ]);
   assert.deepEqual(findMessage(frame, 0x90, 87), [
     0x90, 87, LAUNCHPAD_X_MELODY_LED_COLORS.step.target,
   ]);
   assert.deepEqual(findMessage(frame, 0x90, 86), [
-    0x90, 86, LAUNCHPAD_X_MELODY_LED_COLORS.step.old,
+    0x90, 86, LAUNCHPAD_X_MELODY_LED_COLORS.step.filled,
   ]);
   assert.deepEqual(findMessage(frame, 0x90, 75), [
     0x90, 75, LAUNCHPAD_X_MELODY_LED_COLORS.step.template,
+  ]);
+  assert.deepEqual(findMessage(frame, 0x90, 82), [
+    0x90, 82, LAUNCHPAD_X_MELODY_LED_COLORS.step.empty,
   ]);
 
   const overview = createLaunchpadXMelodyLedFrame({
@@ -707,6 +745,55 @@ test('Melody LED frame renders template steps, capture progress, old notes, and 
   ]);
   assert.deepEqual(findMessage(playing, 0xb0, 98), [
     0xb0, 98, LAUNCHPAD_X_LED_COLORS.transport.playing,
+  ]);
+});
+
+test('Melody sequence capture resets its white target for every new bar', () => {
+  const melodyTemplateSteps = [0, 6, 12];
+
+  for (let selectedBar = 1; selectedBar < 8; selectedBar += 1) {
+    const frame = createLaunchpadXMelodyLedFrame({
+      melodyActive: true,
+      melodyRecordingState: {
+        barRecordedNotes: 0,
+        currentBar: selectedBar,
+        phase: 'sequence-capture',
+        recordedNotes: selectedBar * melodyTemplateSteps.length,
+      },
+      melodyTemplateSteps,
+      selectedBar,
+    });
+
+    assert.deepEqual(findMessage(frame, 0x90, 81), [
+      0x90, 81, LAUNCHPAD_X_MELODY_LED_COLORS.step.target,
+    ]);
+    assert.deepEqual(findMessage(frame, 0x90, 87), [
+      0x90, 87, LAUNCHPAD_X_MELODY_LED_COLORS.step.template,
+    ]);
+  }
+});
+
+test('Melody sequence capture uses per-bar progress for filled and next steps', () => {
+  const frame = createLaunchpadXMelodyLedFrame({
+    melodyActive: true,
+    melodyRecordingState: {
+      barRecordedNotes: 2,
+      currentBar: 1,
+      phase: 'sequence-capture',
+      recordedNotes: 5,
+    },
+    melodyTemplateSteps: [0, 6, 12],
+    selectedBar: 1,
+  });
+
+  assert.deepEqual(findMessage(frame, 0x90, 81), [
+    0x90, 81, LAUNCHPAD_X_MELODY_LED_COLORS.step.filled,
+  ]);
+  assert.deepEqual(findMessage(frame, 0x90, 87), [
+    0x90, 87, LAUNCHPAD_X_MELODY_LED_COLORS.step.filled,
+  ]);
+  assert.deepEqual(findMessage(frame, 0x90, 75), [
+    0x90, 75, LAUNCHPAD_X_MELODY_LED_COLORS.step.target,
   ]);
 });
 

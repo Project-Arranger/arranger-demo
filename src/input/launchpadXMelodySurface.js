@@ -27,13 +27,13 @@ const LAUNCHPAD_X_MELODY_ROWS = Object.freeze(
 );
 
 const LAUNCHPAD_X_MELODY_LED_COLORS = Object.freeze({
-  note: Object.freeze({ inactive: 49, pressed: 51 }),
+  note: Object.freeze({ inactive: 43, pressed: 41 }),
   step: Object.freeze({
-    captured: 51,
-    old: 11,
+    empty: 55,
+    filled: 49,
     playhead: 21,
     target: 3,
-    template: 49,
+    template: 51,
   }),
 });
 
@@ -117,9 +117,9 @@ function getStepLedValue(step, surface) {
   const isTemplateStep = templateIndex >= 0;
   const hasWrittenNote = hasMelodyCell(matrix, selectedBar, step);
   const selectedStep = melodyRecordingState?.selectedStep;
-  const recordedNotes = melodyRecordingState?.recordedNotes ?? 0;
+  const barRecordedNotes = melodyRecordingState?.barRecordedNotes ?? 0;
   const nextCaptureStep = phase === 'sequence-capture'
-    ? melodyTemplateSteps[recordedNotes]
+    ? melodyTemplateSteps[barRecordedNotes]
     : null;
 
   if (
@@ -135,15 +135,16 @@ function getStepLedValue(step, surface) {
   ) {
     return LAUNCHPAD_X_MELODY_LED_COLORS.step.playhead;
   }
-  if (
-    (phase === 'sequence-capture' && isTemplateStep && templateIndex < recordedNotes)
-    || (isTemplateStep && hasWrittenNote)
-  ) {
-    return LAUNCHPAD_X_MELODY_LED_COLORS.step.captured;
+  const isCapturedStep = (
+    phase === 'sequence-capture'
+    && isTemplateStep
+    && templateIndex < barRecordedNotes
+  );
+  if (isCapturedStep || hasWrittenNote) {
+    return LAUNCHPAD_X_MELODY_LED_COLORS.step.filled;
   }
   if (isTemplateStep) return LAUNCHPAD_X_MELODY_LED_COLORS.step.template;
-  if (hasWrittenNote) return LAUNCHPAD_X_MELODY_LED_COLORS.step.old;
-  return 0;
+  return LAUNCHPAD_X_MELODY_LED_COLORS.step.empty;
 }
 
 function getGridLedValue(note, surface) {
