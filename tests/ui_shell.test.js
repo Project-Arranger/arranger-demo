@@ -211,8 +211,14 @@ test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async
   assert.match(topBarSource, /play-glyph/);
   assert.doesNotMatch(topBarSource, /import\s*\{[^}]*Play/);
   assert.match(source, /data-screen-label="Main"/);
+  const chordEditorSource = await readFile(
+    new URL('../src/app/components/ChordEditor.jsx', import.meta.url),
+    'utf8',
+  );
   assert.match(source, /useEditorResize\(\{\s*activeTrackId,\s*selectedClipId,?\s*\}\)/);
   assert.match(editorResizeSource, /EDITOR_RESIZE_MIN_HEIGHT\s*=\s*180/);
+  assert.match(editorResizeSource, /CHORD_EDITOR_RESIZE_MIN_HEIGHT\s*=\s*360/);
+  assert.match(editorResizeSource, /CHORD_TEMPLATE_WORKSPACE_RESIZE_MIN_HEIGHT\s*=\s*420/);
   assert.match(editorResizeSource, /EDITOR_RESIZE_WORKSPACE_MIN_HEIGHT\s*=\s*180/);
   assert.match(editorResizeSource, /EDITOR_RESIZE_KEYBOARD_STEP\s*=\s*16/);
   assert.match(source, /editorHeightPx/);
@@ -225,7 +231,7 @@ test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async
   assert.match(source, /className="editor-resizer"/);
   assert.match(source, /role="separator"/);
   assert.match(source, /aria-orientation="horizontal"/);
-  assert.match(source, /aria-valuemin=\{EDITOR_RESIZE_MIN_HEIGHT\}/);
+  assert.match(source, /aria-valuemin=\{editorResizeMinHeight\}/);
   assert.match(source, /aria-valuemax=\{editorResizeMaxHeight\}/);
   assert.match(source, /aria-valuenow=\{currentEditorResizeValue\}/);
   assert.match(source, /tabIndex=\{0\}/);
@@ -237,6 +243,8 @@ test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async
   assert.match(editorResizeSource, /case 'ArrowDown':/);
   assert.match(editorResizeSource, /case 'Home':/);
   assert.match(editorResizeSource, /case 'End':/);
+  assert.match(editorResizeSource, /MutationObserver/);
+  assert.match(chordEditorSource, /data-editor-resize-min-height=\{workspaceOpen/);
   assert.doesNotMatch(source, /localStorage/);
   assert.match(source, /drums/);
   assert.match(source, /DRUMS_TOGGLE/);

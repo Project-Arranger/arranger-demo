@@ -917,6 +917,8 @@ test('chord template workspace fits the editor at compact desktop heights', asyn
   assert.match(css, /\.app:has\(\.editor\[data-screen-label="Chord Editor"\]:not\(\[data-picker="chord-workspace"\]\):not\(\[data-picker="chord"\]\):not\(\[data-picker="groove"\]\)\)\s*\{[^}]*--app-editor-height:\s*clamp\(420px,\s*54vh,\s*560px\);/s);
   assert.match(css, /\.app:has\(\.editor\[data-screen-label="Chord Editor"\]\[data-picker="chord-workspace"\]:not\(\[data-picker="chord"\]\):not\(\[data-picker="groove"\]\)\)\s*\{[^}]*--app-editor-height:\s*clamp\(480px,\s*62vh,\s*640px\);/s);
   assert.match(css, /@media \(max-height:\s*720px\)\s*\{[\s\S]*?\.app:has\(\.editor\[data-screen-label="Chord Editor"\]\[data-picker="chord-workspace"\]:not\(\[data-picker="chord"\]\):not\(\[data-picker="groove"\]\)\)\s*\{[^}]*--app-editor-height:\s*clamp\(360px,\s*52vh,\s*390px\);/s);
+  assert.match(css, /\.chord-rhythm-panel\s*\{[^}]*overflow:\s*auto;[^}]*overscroll-behavior:\s*contain;/s);
+  assert.match(css, /\.chord-template-workspace-body\s*\{[^}]*overflow:\s*auto;[^}]*overscroll-behavior:\s*contain;/s);
   assert.match(css, /\.chord-template-workspace-body\s*\{[^}]*grid-template-columns:\s*178px minmax\(0,\s*1fr\);/s);
   assert.match(css, /\.chord-template-progression-options,\s*\n\.chord-template-groove-options\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\);/s);
   assert.match(css, /\.chord-template-workspace-actions\s*\{[^}]*display:\s*flex;/s);

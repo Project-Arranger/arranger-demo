@@ -31,6 +31,10 @@ import {
 } from '../chordActions.js';
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
 import { useSecondaryMenuDismiss } from '../useSecondaryMenuDismiss.js';
+import {
+  CHORD_EDITOR_RESIZE_MIN_HEIGHT,
+  CHORD_TEMPLATE_WORKSPACE_RESIZE_MIN_HEIGHT,
+} from '../useEditorResize.js';
 import { ClipNameInput } from './ClipNameInput.jsx';
 import { EditorTrackIdentity } from './EditorTrackIdentity.jsx';
 import { renderIcon } from './icons.js';
@@ -607,6 +611,9 @@ function ChordEditor({
       className={editorClassName}
       data-screen-label="Chord Editor"
       data-picker={workspaceOpen ? 'chord-workspace' : undefined}
+      data-editor-resize-min-height={workspaceOpen
+        ? CHORD_TEMPLATE_WORKSPACE_RESIZE_MIN_HEIGHT
+        : CHORD_EDITOR_RESIZE_MIN_HEIGHT}
     >
       <header className="editor-head chord-rhythm-editor-head">
         <div className="editor-left">

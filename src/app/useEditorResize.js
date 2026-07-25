@@ -6,6 +6,8 @@ import {
 } from 'react';
 
 const EDITOR_RESIZE_MIN_HEIGHT = 180;
+const CHORD_EDITOR_RESIZE_MIN_HEIGHT = 360;
+const CHORD_TEMPLATE_WORKSPACE_RESIZE_MIN_HEIGHT = 420;
 const EDITOR_RESIZE_WORKSPACE_MIN_HEIGHT = 180;
 const EDITOR_RESIZE_KEYBOARD_STEP = 16;
 const EDITOR_RESIZE_DEFAULT_HEIGHT = 300;
@@ -18,15 +20,35 @@ function getTopbarHeight() {
   return document.querySelector('.topbar')?.getBoundingClientRect().height ?? 0;
 }
 
-function getEditorResizeBounds() {
+function getRequestedEditorMinHeight() {
+  const requestedMinHeight = Number(
+    document.querySelector('.track-editor-target .editor')
+      ?.dataset.editorResizeMinHeight,
+  );
+
+  return Number.isFinite(requestedMinHeight)
+    ? Math.max(EDITOR_RESIZE_MIN_HEIGHT, requestedMinHeight)
+    : EDITOR_RESIZE_MIN_HEIGHT;
+}
+
+function getEditorResizeBounds({
+  requestedMinHeight = getRequestedEditorMinHeight(),
+  topbarHeight = getTopbarHeight(),
+  viewportHeight = getViewportHeight(),
+  workspaceMinHeight = EDITOR_RESIZE_WORKSPACE_MIN_HEIGHT,
+} = {}) {
   const maxHeight = Math.max(
     EDITOR_RESIZE_MIN_HEIGHT,
-    getViewportHeight() - getTopbarHeight() - EDITOR_RESIZE_WORKSPACE_MIN_HEIGHT,
+    viewportHeight - topbarHeight - workspaceMinHeight,
+  );
+  const minHeight = Math.min(
+    maxHeight,
+    Math.max(EDITOR_RESIZE_MIN_HEIGHT, requestedMinHeight),
   );
 
   return {
     maxHeight,
-    minHeight: EDITOR_RESIZE_MIN_HEIGHT,
+    minHeight,
   };
 }
 
@@ -46,6 +68,7 @@ function useEditorResize({
   selectedClipId,
 } = {}) {
   const [editorHeightPx, setEditorHeightPx] = useState(null);
+  const [editorResizeMinHeight, setEditorResizeMinHeight] = useState(EDITOR_RESIZE_MIN_HEIGHT);
   const [editorResizeMaxHeight, setEditorResizeMaxHeight] = useState(EDITOR_RESIZE_DEFAULT_HEIGHT);
   const [currentEditorResizeValue, setCurrentEditorResizeValue] = useState(EDITOR_RESIZE_DEFAULT_HEIGHT);
   const [isEditorResizing, setIsEditorResizing] = useState(false);
@@ -56,6 +79,7 @@ function useEditorResize({
     const bounds = getEditorResizeBounds();
     const nextHeight = clampEditorHeight(height, bounds);
 
+    setEditorResizeMinHeight(bounds.minHeight);
     setEditorResizeMaxHeight(bounds.maxHeight);
     setCurrentEditorResizeValue(nextHeight);
     setEditorHeightPx(nextHeight);
@@ -69,6 +93,7 @@ function useEditorResize({
   useEffect(() => {
     const syncEditorResizeMetrics = () => {
       const bounds = getEditorResizeBounds();
+      setEditorResizeMinHeight(bounds.minHeight);
       setEditorResizeMaxHeight(bounds.maxHeight);
 
       if (editorHeightPx === null) {
@@ -82,8 +107,21 @@ function useEditorResize({
     };
 
     syncEditorResizeMetrics();
+    const editorTarget = document.querySelector('.track-editor-target');
+    const editorResizeObserver = editorTarget && typeof MutationObserver === 'function'
+      ? new MutationObserver(syncEditorResizeMetrics)
+      : null;
+    editorResizeObserver?.observe(editorTarget, {
+      attributeFilter: ['data-editor-resize-min-height'],
+      attributes: true,
+      childList: true,
+      subtree: true,
+    });
     window.addEventListener('resize', syncEditorResizeMetrics);
-    return () => window.removeEventListener('resize', syncEditorResizeMetrics);
+    return () => {
+      editorResizeObserver?.disconnect();
+      window.removeEventListener('resize', syncEditorResizeMetrics);
+    };
   }, [activeTrackId, editorHeightPx, selectedClipId]);
 
   useEffect(() => () => {
@@ -135,7 +173,7 @@ function useEditorResize({
         break;
       case 'Home':
         event.preventDefault();
-        commitEditorHeight(EDITOR_RESIZE_MIN_HEIGHT);
+        commitEditorHeight(getEditorResizeBounds().minHeight);
         break;
       case 'End':
         event.preventDefault();
@@ -150,6 +188,7 @@ function useEditorResize({
     currentEditorResizeValue,
     editorHeightPx,
     editorResizeMaxHeight,
+    editorResizeMinHeight,
     handleEditorResizeKeyDown,
     handleEditorResizePointerDown,
     isEditorResizing,
@@ -157,6 +196,10 @@ function useEditorResize({
 }
 
 export {
+  CHORD_EDITOR_RESIZE_MIN_HEIGHT,
+  CHORD_TEMPLATE_WORKSPACE_RESIZE_MIN_HEIGHT,
   EDITOR_RESIZE_MIN_HEIGHT,
+  clampEditorHeight,
+  getEditorResizeBounds,
   useEditorResize,
 };

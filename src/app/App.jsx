@@ -96,10 +96,7 @@ import { syncEditorToPlaybackBar } from './playbackEditorSync.js';
 import { syncTrackScrollContainers } from './syncTrackScroll.js';
 import { createTutorialSkipAppState } from './tutorialSkipState.js';
 import { syncEditorToTutorialSuggestedBar } from './tutorialEditorSync.js';
-import {
-  EDITOR_RESIZE_MIN_HEIGHT,
-  useEditorResize,
-} from './useEditorResize.js';
+import { useEditorResize } from './useEditorResize.js';
 import { useClipClipboardActions } from './useClipClipboardActions.js';
 import { useTutorialController } from './useTutorialController.js';
 import { useUndoHistoryController } from './useUndoHistoryController.js';
@@ -195,6 +192,7 @@ export default function App() {
     currentEditorResizeValue,
     editorHeightPx,
     editorResizeMaxHeight,
+    editorResizeMinHeight,
     handleEditorResizeKeyDown,
     handleEditorResizePointerDown,
     isEditorResizing,
@@ -2277,7 +2275,7 @@ export default function App() {
           role="separator"
           aria-label="调整上下屏幕大小"
           aria-orientation="horizontal"
-          aria-valuemin={EDITOR_RESIZE_MIN_HEIGHT}
+          aria-valuemin={editorResizeMinHeight}
           aria-valuemax={editorResizeMaxHeight}
           aria-valuenow={currentEditorResizeValue}
           tabIndex={0}
