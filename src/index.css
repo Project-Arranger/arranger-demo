@@ -4896,8 +4896,11 @@ button {
   box-shadow: none;
 }
 
-.drum-step-numbers,
-.drum-row {
+.drum-sequencer-grid {
+  --drum-group-header-height: 30px;
+  --drum-group-padding: clamp(5px, 0.6vw, 8px);
+  --drum-row-gap: clamp(7px, 0.9vw, 12px);
+
   display: grid;
   grid-template-columns: 108px minmax(0, 1fr);
   align-items: center;
@@ -4905,6 +4908,17 @@ button {
   align-self: center;
   width: 82%;
   min-width: min(100%, 940px);
+}
+
+.drum-row-labels {
+  display: grid;
+  grid-template-rows: var(--drum-group-header-height) repeat(3, var(--drum-step-size));
+  gap: var(--drum-row-gap);
+  padding-block: var(--drum-group-padding);
+}
+
+.drum-row-label-spacer {
+  min-height: var(--drum-group-header-height);
 }
 
 .drum-row-label {
@@ -4942,11 +4956,11 @@ button {
 
 .drum-step-groups {
   --drum-step-group-gap: clamp(10px, 1.8vw, 18px);
-  --drum-step-group-gap-half: clamp(5px, 0.9vw, 9px);
+
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   justify-content: stretch;
-  column-gap: var(--drum-step-group-gap);
+  gap: var(--drum-step-group-gap);
   justify-self: stretch;
   width: 100%;
   min-width: 0;
@@ -4955,11 +4969,49 @@ button {
 .drum-step-group {
   --drum-step-gap: 5px;
 
-  position: relative;
+  display: grid;
+  grid-template-rows: var(--drum-group-header-height) repeat(3, var(--drum-step-size));
+  gap: var(--drum-row-gap);
+  width: 100%;
+  min-width: 0;
+  padding: var(--drum-group-padding);
+  overflow: hidden;
+  background-color: #1b1512;
+  background-image: var(--asset-grid-panel);
+  background-position: center;
+  background-size: cover;
+  border: 1px solid color-mix(in oklab, var(--hardware-copper, #b87845) 66%, #2a170d);
+  border-radius: 9px;
+  box-shadow:
+    inset 0 1px 0 rgb(255 228 170 / 0.2),
+    inset 0 0 18px rgb(0 0 0 / 0.58),
+    0 2px 5px rgb(42 21 10 / 0.28);
+}
+
+.drum-beat-header {
+  display: grid;
+  grid-template-rows: 12px 16px;
+  gap: 2px;
+  min-width: 0;
+}
+
+.drum-beat-label {
+  color: var(--hardware-gold, #d7b06d);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  line-height: 12px;
+  text-align: center;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.7);
+}
+
+.drum-beat-position-row,
+.drum-beat-row {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--drum-step-gap);
-  width: 100%;
+  align-items: center;
+  min-width: 0;
 }
 
 .drum-step-number {
@@ -4970,24 +5022,6 @@ button {
   color: var(--ink-4);
   font-size: 9px;
   font-weight: 800;
-}
-
-.drum-step-group:not(:last-child)::after {
-  position: absolute;
-  top: 4px;
-  right: calc(-1 * var(--drum-step-group-gap-half));
-  bottom: 4px;
-  width: 1px;
-  content: "";
-  background: color-mix(in oklab, var(--border) 72%, transparent);
-  border-radius: 999px;
-  pointer-events: none;
-  transform: translateX(50%);
-}
-
-.drum-step-numbers .drum-step-group:not(:last-child)::after {
-  top: 2px;
-  bottom: 2px;
 }
 
 .drum-step {
@@ -7761,12 +7795,9 @@ body {
 }
 
 .drum-step-number {
-  color: #2a1a10;
-  font-size: 12px;
-}
-
-.drum-step-group:not(:last-child)::after {
-  background: rgb(49 27 14 / 0.72);
+  color: var(--ink);
+  font-size: clamp(7.5px, 0.7vw, 10px);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.82);
 }
 
 .drum-step {
@@ -8226,8 +8257,7 @@ body {
     height: 112px;
   }
 
-  .drum-step-numbers,
-  .drum-row {
+  .drum-sequencer-grid {
     grid-template-columns: 92px minmax(0, 1fr);
     gap: 10px;
     align-self: stretch;
@@ -8236,7 +8266,8 @@ body {
   }
 
   .drum-step-groups {
-    column-gap: 12px;
+    grid-template-columns: repeat(4, minmax(112px, 1fr));
+    gap: 12px;
     justify-self: stretch;
     width: 100%;
     min-width: 0;
@@ -8245,9 +8276,7 @@ body {
   .drum-step-group {
     --drum-step-gap: 5px;
 
-    grid-template-columns: repeat(4, minmax(24px, 34px));
-    gap: var(--drum-step-gap);
-    justify-content: space-evenly;
+    padding: 5px 4px;
   }
 
   .drum-step {
@@ -8265,27 +8294,21 @@ body {
     gap: 2px;
   }
 
-  .drum-step-numbers,
-  .drum-row {
-    grid-template-columns: minmax(0, 1fr);
+  .drum-sequencer-grid {
+    --drum-group-header-height: 27px;
+    --drum-group-padding: 4px;
+    --drum-row-gap: 5px;
+
+    grid-template-columns: 70px minmax(0, 1fr);
+    gap: 6px;
     align-self: stretch;
     width: 100%;
     min-width: 0;
   }
 
-  .drum-step-numbers > :first-child {
-    display: none;
-  }
-
-  .drum-row {
-    align-items: start;
-    gap: 2px;
-  }
-
   .drum-row-label {
     gap: 6px;
-    min-height: 12px;
-    padding-left: 2px;
+    padding-left: 1px;
     font-size: 11px;
     line-height: 1;
   }
@@ -8299,7 +8322,6 @@ body {
 
   .drum-step-groups {
     --drum-step-group-gap: 5px;
-    --drum-step-group-gap-half: 2.5px;
 
     justify-self: stretch;
     width: 100%;
@@ -8309,8 +8331,17 @@ body {
   .drum-step-group {
     --drum-step-gap: 4px;
 
-    grid-template-columns: repeat(4, 44px);
-    justify-content: center;
+    padding: var(--drum-group-padding);
+  }
+
+  .drum-beat-header {
+    grid-template-rows: 10px 15px;
+    gap: 2px;
+  }
+
+  .drum-beat-label {
+    font-size: 8px;
+    line-height: 10px;
   }
 }
 
@@ -9003,12 +9034,12 @@ body {
   .drum-seq-panel {
     --drum-step-size: clamp(34px, calc((var(--app-editor-height) - 104px) / 4.2), 42px);
     --drum-row-gap: clamp(5px, calc((var(--app-editor-height) - 236px) / 12), 10px);
-
-    row-gap: var(--drum-row-gap);
   }
 
-  .drum-step-numbers,
-  .drum-row {
+  .drum-sequencer-grid {
+    --drum-group-header-height: 26px;
+    --drum-group-padding: 4px;
+
     grid-template-columns: 84px minmax(0, 1fr);
     gap: 8px;
     width: 88%;
@@ -9029,9 +9060,8 @@ body {
 
   .drum-step-groups {
     --drum-step-group-gap: clamp(8px, 1.2vw, 12px);
-    --drum-step-group-gap-half: calc(var(--drum-step-group-gap) / 2);
 
-    column-gap: var(--drum-step-group-gap);
+    gap: var(--drum-step-group-gap);
   }
 
   .drum-step-number {
@@ -9042,7 +9072,17 @@ body {
   .drum-step-group {
     --drum-step-gap: 4px;
 
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    padding: var(--drum-group-padding);
+  }
+
+  .drum-beat-header {
+    grid-template-rows: 10px 14px;
+    gap: 2px;
+  }
+
+  .drum-beat-label {
+    font-size: 8px;
+    line-height: 10px;
   }
 
   .drum-step {

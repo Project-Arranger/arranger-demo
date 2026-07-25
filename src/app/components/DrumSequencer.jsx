@@ -15,6 +15,7 @@ import {
 } from '../drumSequencerData.js';
 import { DRUMS_RECORDING_PHASES } from '../drumsLiveRecording.js';
 import { createDefaultDrumsPattern } from '../drumsPatternActions.js';
+import { formatDisplayPosition } from '../transportPosition.js';
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
 import { useSecondaryMenuDismiss } from '../useSecondaryMenuDismiss.js';
 import { ClipNameInput } from './ClipNameInput.jsx';
@@ -55,18 +56,6 @@ const TUTORIAL_CELL_COLOR_CLASSES = Object.freeze({
     yellow: 'tutorial-cell-target-yellow',
   }),
 });
-
-function renderStepGroups(renderStep) {
-  return (
-    <div className="drum-steps drum-step-groups">
-      {STEP_GROUPS.map((stepGroup, groupIndex) => (
-        <div className="drum-step-group" key={groupIndex}>
-          {stepGroup.map(renderStep)}
-        </div>
-      ))}
-    </div>
-  );
-}
 
 function didPointerDrag(event, dragSession) {
   return Math.abs(event.clientX - dragSession.startX) > DRAG_THRESHOLD_PX
@@ -308,6 +297,58 @@ function DrumSequencer({
     onWriteToggle();
   };
 
+  const renderDrumStep = (row, stepNumber) => {
+    const stepIndex = stepNumber - 1;
+    const active = isDrumsStepActive(matrix, selectedBar, stepIndex, row.id);
+    const tutorialRole = getTutorialCellRole(
+      tutorialTargets,
+      selectedBar,
+      row.id,
+      stepIndex,
+    );
+    const interactiveTutorialCell = tutorialRole?.startsWith('target')
+      || tutorialRole === 'source';
+    const locked = (tutorialLocked && !interactiveTutorialCell)
+      || workflowLocked
+      || !hasClip;
+    const canDrag = active && !locked;
+    const dragOver = dragOverStep?.instrument === row.id
+      && dragOverStep.step === stepIndex;
+    const positionLabel = formatDisplayPosition(selectedBar, stepIndex);
+
+    return (
+      <button
+        className={[
+          'drum-step',
+          active ? 'active' : '',
+          canDrag ? 'drum-step-drag-source' : '',
+          dragOver ? 'drag-over' : '',
+          stepNumber % 4 === 0 ? 'beat-end' : '',
+          locked ? 'tutorial-locked' : '',
+          ...getTutorialCellClasses(tutorialRole),
+        ].filter(Boolean).join(' ')}
+        data-instrument={row.id}
+        data-step={stepIndex}
+        data-tutorial-role={tutorialRole ?? undefined}
+        key={`${row.id}-${stepNumber}`}
+        type="button"
+        aria-label={`Toggle ${row.label} at ${positionLabel}`}
+        aria-pressed={active}
+        aria-disabled={locked}
+        disabled={locked}
+        draggable={false}
+        onMouseDown={(event) => handleMouseDownStep(event, row.id, stepIndex, canDrag)}
+        onClick={() => {
+          if (suppressNextClick) {
+            setSuppressNextClick(false);
+            return;
+          }
+          onStepToggle(row.id, stepIndex);
+        }}
+      />
+    );
+  };
+
   return (
     <section className="editor drum-editor" data-screen-label="Drum Sequencer" data-picker={drumTemplatePickerOpen ? 'drum-template' : undefined}>
       <header className="editor-head">
@@ -408,78 +449,54 @@ function DrumSequencer({
           onPreviousBar,
           trackId: 'drums',
         }, (
-          <>
-            <div className="drum-step-numbers" aria-hidden="true">
-              <div />
-              {renderStepGroups((stepNumber) => (
-                <span
-                  className={`drum-step-number${stepNumber % 4 === 0 ? ' beat-end' : ''} mono`}
-                  key={stepNumber}
-                >
-                  {stepNumber}
-                </span>
-              ))}
-            </div>
-
-            {DRUM_SEQUENCER_ROWS.map((row) => (
-              <div className="drum-row" key={row.id}>
-                <div className="drum-row-label">
+          <div className="drum-sequencer-grid">
+            <div className="drum-row-labels" aria-hidden="true">
+              <div className="drum-row-label-spacer" />
+              {DRUM_SEQUENCER_ROWS.map((row) => (
+                <div className="drum-row-label" key={row.id}>
                   <span className="drum-dot" data-instrument={row.id} />
                   <span>{row.label}</span>
                 </div>
-                {renderStepGroups((stepNumber) => {
-                  const stepIndex = stepNumber - 1;
-                  const active = isDrumsStepActive(matrix, selectedBar, stepIndex, row.id);
-                  const tutorialRole = getTutorialCellRole(
-                    tutorialTargets,
-                    selectedBar,
-                    row.id,
-                    stepIndex,
-                  );
-                  const interactiveTutorialCell = tutorialRole?.startsWith('target')
-                    || tutorialRole === 'source';
-                  const locked = (tutorialLocked && !interactiveTutorialCell)
-                    || workflowLocked
-                    || !hasClip;
-                  const canDrag = active && !locked;
-                  const dragOver = dragOverStep?.instrument === row.id
-                    && dragOverStep.step === stepIndex;
-                  return (
-                    <button
-                      className={[
-                        'drum-step',
-                        active ? 'active' : '',
-                        canDrag ? 'drum-step-drag-source' : '',
-                        dragOver ? 'drag-over' : '',
-                        stepNumber % 4 === 0 ? 'beat-end' : '',
-                        locked ? 'tutorial-locked' : '',
-                        ...getTutorialCellClasses(tutorialRole),
-                      ].filter(Boolean).join(' ')}
-                      data-instrument={row.id}
-                      data-step={stepIndex}
-                      data-tutorial-role={tutorialRole ?? undefined}
-                      key={stepNumber}
-                      type="button"
-                      aria-label={`Toggle ${row.label} step ${stepNumber}`}
-                      aria-pressed={active}
-                      aria-disabled={locked}
-                      disabled={locked}
-                      draggable={false}
-                      onMouseDown={(event) => handleMouseDownStep(event, row.id, stepIndex, canDrag)}
-                      onClick={() => {
-                        if (suppressNextClick) {
-                          setSuppressNextClick(false);
-                          return;
-                        }
-                        onStepToggle(row.id, stepIndex);
-                      }}
-                    />
-                  );
-                })}
-              </div>
-            ))}
+              ))}
+            </div>
 
-          </>
+            <div className="drum-steps drum-step-groups">
+              {STEP_GROUPS.map((stepGroup, groupIndex) => (
+                <section
+                  className="drum-step-group"
+                  aria-label={`Beat ${groupIndex + 1}`}
+                  key={groupIndex}
+                >
+                  <header className="drum-beat-header">
+                    <span className="drum-beat-label mono">
+                      BEAT
+                      {' '}
+                      {groupIndex + 1}
+                    </span>
+                    <div className="drum-beat-position-row" aria-hidden="true">
+                      {stepGroup.map((stepNumber, beatStepIndex) => (
+                        <span
+                          className="drum-step-number mono"
+                          key={stepNumber}
+                        >
+                          {beatStepIndex + 1}
+                        </span>
+                      ))}
+                    </div>
+                  </header>
+                  {DRUM_SEQUENCER_ROWS.map((row) => (
+                    <div
+                      className="drum-beat-row"
+                      data-instrument={row.id}
+                      key={row.id}
+                    >
+                      {stepGroup.map((stepNumber) => renderDrumStep(row, stepNumber))}
+                    </div>
+                  ))}
+                </section>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
 

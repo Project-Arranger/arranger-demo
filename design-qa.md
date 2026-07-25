@@ -80,6 +80,48 @@ final result: passed
 
 ---
 
+# Drums Four-Beat Hardware Frames QA
+
+## Source And State
+
+- Source visual truth: `/var/folders/22/2k2swhcn1zl1rf0pqjp4yt7w0000gn/T/codex-clipboard-7f742c84-c80a-432f-b3b0-ac9ac0f6efcd.png`
+- Implementation screenshot: `/Users/nora/Documents/arranger demo/output/playwright/drums-beat-groups-v3.png`
+- Viewport: `1280x720`, device pixel ratio `2`; the browser screenshot is normalized to `1280x720` CSS pixels.
+- Source pixels: `2280x826`; implementation pixels: `1280x720`.
+- State: tutorial skipped, Drums bar 5 selected, four beat frames visible, all pads inactive for visual comparison.
+
+## Comparison Evidence
+
+- Full-view comparison: the source and implementation screenshots were opened together in one comparison pass.
+- A separate focused crop was not required: `BEAT 1–4`, the four repeated `1–4` step labels, the three instrument rows, frame edges, and pad states are readable in the `1280x720` implementation capture.
+
+## Findings
+
+- No actionable P0/P1/P2 differences remain.
+- Fonts and typography: beat labels use the existing uppercase hardware-label treatment; each beat shows a compact monospace `1–4` step sequence at `8.5px` with no clipping.
+- Spacing and layout rhythm: four equal frames measure approximately `188.67x196.55px`; each contains one header, four position labels, three instrument rows, and twelve pads. The complete grid reports equal client and scroll widths with no horizontal overflow.
+- Colors and visual tokens: the reference's flat blue grouping is intentionally translated into the product's dark-grid texture, copper borders, brass beat labels, cream position labels, and wood editor base, following `design.md`.
+- Image quality and asset fidelity: frames reuse `dark-grid-panel.png`; pads and instrument lamps retain the existing `drum-step-*.png` assets. No placeholder imagery or new CSS-drawn assets were introduced.
+- Copy and content: every beat frame visibly repeats `1–4`, while complete positions `5.1.1–5.4.4` remain available in the pad accessible names and the current transport position remains in the TopBar.
+- Interaction and accessibility: clicking `Toggle Kick at 5.1.1` changed its pressed state without affecting grouping. Every frame has a Beat group label, every pad keeps its complete position name, and the browser console reported zero errors.
+- Verification: all `455` tests passed; `npm run lint`, `npm run build`, and `git diff --check` completed successfully.
+
+## Comparison History
+
+1. The first grouped implementation established the four hardware frames but inherited a dark position-label color, creating a P2 readability issue.
+2. Position labels were changed to the design system's cream text with a compact shadow.
+3. Full `x.x.x` labels were simplified to a repeated `1–4` sequence after product review, without removing the complete accessible positions.
+4. Post-fix evidence is `/Users/nora/Documents/arranger demo/output/playwright/drums-beat-groups-v3.png`; all sixteen labels are readable, report no overflow, and the P2 is resolved.
+
+## Accepted Differences
+
+- The reference uses large flat-blue beat cards and oversized numerals as a structural diagram. The implementation preserves the four-card grouping while using the required skeuomorphic hardware materials from `design.md`.
+- Visible labels intentionally show only the within-beat step `1–4`; full `x.x.x` positions are reserved for the TopBar and pad accessible names.
+
+final result: passed
+
+---
+
 ## Chord Step Harmony Label Readability Follow-up
 
 - Final wide-screen evidence: `/Users/nora/Documents/arranger demo/.playwright-cli/page-2026-07-15T08-30-09-032Z.png`

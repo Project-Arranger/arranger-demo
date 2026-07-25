@@ -9,11 +9,11 @@ import {
   Undo2,
 } from 'lucide-react';
 import {
-  BEATS_PER_BAR,
   ROOT_KEY,
   SCALE,
 } from '../../domain/musicConstants.js';
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
+import { formatDisplayPosition } from '../transportPosition.js';
 import { HardwareInputStatus } from './HardwareInputStatus.jsx';
 import { renderIcon } from './icons.js';
 
@@ -55,6 +55,11 @@ function TopBar({
     'play',
     isPlaying ? 'active' : '',
   ].filter(Boolean).join(' ');
+  const [
+    displayBar = '—',
+    displayBeat = '—',
+    displayStep = '—',
+  ] = formatDisplayPosition(currentBar, currentStep).split('.');
 
   return (
     <header
@@ -149,11 +154,11 @@ function TopBar({
             <div className="stat">
               <div className="lbl">Position</div>
               <div className="val mono">
-                {currentBar + 1}
+                {displayBar}
                 <span className="sep">.</span>
-                {Math.floor(currentStep / BEATS_PER_BAR) + 1}
+                {displayBeat}
                 <span className="sep">.</span>
-                {(currentStep % BEATS_PER_BAR) + 1}
+                {displayStep}
               </div>
             </div>
             <div className="stat">
