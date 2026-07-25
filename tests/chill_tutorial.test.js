@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import useMusicStore from '../src/store/useMusicStore.js';
@@ -15,6 +16,13 @@ import {
   CHILL_TUTORIAL_STEPS,
   createChillTutorialSession,
 } from '../src/tutorial/chillTutorialSteps.js';
+import {
+  CHILL_TUTORIAL_RUN_STATES,
+  advanceChillTutorialStep,
+  beginChillTutorialPreview,
+  cancelChillTutorialPreview,
+  completeChillTutorialPreview,
+} from '../src/tutorial/chillTutorialRuntime.js';
 import {
   TUTORIAL_CATALOG,
   TUTORIAL_IDS,
@@ -58,8 +66,76 @@ test('Chill tutorial exposes five stages and deterministic recipe steps', () => 
     expanded: false,
     hasStarted: false,
     paused: false,
+    runState: CHILL_TUTORIAL_RUN_STATES.IDLE,
     stepIndex: 0,
   });
+});
+
+test('every Chill step declares the phrase that should stay visible while it previews', () => {
+  const recipeSteps = CHILL_TUTORIAL_STEPS.slice(0, -1);
+  assert.equal(recipeSteps.every((step) => step.preview.maxPlaybackSteps >= 32), true);
+  assert.deepEqual(
+    recipeSteps.slice(0, 4).map((step) => step.preview),
+    Array.from({ length: 4 }, () => ({ bar: 2, maxPlaybackSteps: 32 })),
+  );
+  assert.deepEqual(
+    recipeSteps.slice(4, 8).map((step) => step.preview),
+    Array.from({ length: 4 }, () => ({ bar: 4, maxPlaybackSteps: 32 })),
+  );
+  assert.deepEqual(
+    recipeSteps.slice(8, 12).map((step) => step.preview),
+    Array.from({ length: 4 }, () => ({ bar: 6, maxPlaybackSteps: 32 })),
+  );
+  assert.deepEqual(recipeSteps[12].preview, { bar: 0, maxPlaybackSteps: 32 });
+  assert.deepEqual(recipeSteps[13].preview, { bar: 0, maxPlaybackSteps: 32 });
+  assert.deepEqual(recipeSteps[14].preview, { bar: 0, maxPlaybackSteps: 64 });
+  assert.deepEqual(CHILL_TUTORIAL_STEPS.at(-1).preview, {
+    bar: 0,
+    maxPlaybackSteps: 128,
+  });
+});
+
+test('Chill action summaries keep musical intent without step-grid notation', () => {
+  const summaries = CHILL_TUTORIAL_STEPS.map((step) => step.actionSummary);
+  assert.equal(summaries.every(Boolean), true);
+  assert.equal(summaries.some((summary) => /Fmaj7|Cmaj7|Am/.test(summary)), true);
+  summaries.forEach((summary) => {
+    assert.doesNotMatch(summary, /\bB\d\b|@\d|\bK\s+\d|HH\s+\d|S\s+\d/);
+  });
+});
+
+test('Chill preview lifecycle advances only after playback completes', () => {
+  const initialSession = createChillTutorialSession();
+  const previewing = beginChillTutorialPreview(initialSession, 'phrase-drums');
+  assert.equal(previewing.stepIndex, 0);
+  assert.equal(previewing.runState, CHILL_TUTORIAL_RUN_STATES.PREVIEWING);
+  assert.deepEqual(previewing.appliedRecipeIds, ['phrase-drums']);
+
+  const completed = completeChillTutorialPreview(previewing);
+  assert.equal(completed.stepIndex, 0);
+  assert.equal(completed.runState, CHILL_TUTORIAL_RUN_STATES.COMPLETED);
+
+  const advanced = advanceChillTutorialStep(completed, CHILL_TUTORIAL_STEPS.length);
+  assert.equal(advanced.stepIndex, 1);
+  assert.equal(advanced.runState, CHILL_TUTORIAL_RUN_STATES.IDLE);
+
+  const retrying = beginChillTutorialPreview(
+    cancelChillTutorialPreview(previewing),
+    'phrase-drums',
+  );
+  assert.deepEqual(retrying.appliedRecipeIds, ['phrase-drums']);
+  assert.equal(retrying.stepIndex, 0);
+});
+
+test('Chill App waits for the audio completion handler and clears interrupted previews', async () => {
+  const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
+
+  assert.match(source, /audioEngine\.setPlaybackCompleteHandler\?\.\(\(\) => \{/);
+  assert.match(source, /completeChillTutorialPreview\(session\)/);
+  assert.match(source, /scheduleTutorialAutoAdvance\(\(\) => \{[\s\S]*advanceChillTutorialStep/);
+  assert.match(source, /cancelChillPreviewPlayback\(\);[\s\S]*TRANSPORT_STOP/);
+  assert.doesNotMatch(source, /if \(currentStepIndex <= 3\) previewChillTutorialRange/);
+  assert.doesNotMatch(source, /\[7, 11\]\.includes\(currentStepIndex\)/);
 });
 
 test('Chill master score matches the approved eight-bar notes', () => {

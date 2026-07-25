@@ -10747,7 +10747,8 @@ body {
     transform 150ms ease;
 }
 
-.chill-coachmark.completing {
+.chill-coachmark.previewing,
+.chill-coachmark.completed {
   border-color: rgb(255 198 119 / 0.88);
   box-shadow:
     inset 0 1px 0 rgb(255 241 213 / 0.32),
@@ -10830,9 +10831,8 @@ body {
 
 .chill-coachmark-technical > p {
   margin: 0;
-  font-family: "SFMono-Regular", "JetBrains Mono", ui-monospace, monospace;
-  font-size: 10px;
-  line-height: 1.52;
+  font-size: 11px;
+  line-height: 1.58;
 }
 
 .chill-coachmark-detail {

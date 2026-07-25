@@ -50,6 +50,13 @@ import {
 import {
   TUTORIAL_IDS,
 } from '../tutorial/tutorialCatalog.js';
+import {
+  CHILL_TUTORIAL_RUN_STATES,
+  advanceChillTutorialStep,
+  beginChillTutorialPreview,
+  cancelChillTutorialPreview,
+  completeChillTutorialPreview,
+} from '../tutorial/chillTutorialRuntime.js';
 import { createUiAudioDispatcher } from './audioUiBridge.js';
 import {
   applyBassGrooveTemplateToExistingClips,
@@ -352,9 +359,22 @@ export default function App() {
     tutorialStepCheckpoints,
     tutorialVisible,
   });
-  const [chillTutorialCompleting, setChillTutorialCompleting] = useState(false);
   const tutorialMusicSnapshotsRef = useRef({});
   const chillStepCheckpointsRef = useRef({});
+  const chillPreviewGenerationRef = useRef(0);
+  const chillPreviewLifecycleRef = useRef(CHILL_TUTORIAL_RUN_STATES.IDLE);
+
+  const cancelChillPreviewPlayback = useCallback(() => {
+    if (chillPreviewLifecycleRef.current === CHILL_TUTORIAL_RUN_STATES.IDLE) return;
+
+    chillPreviewGenerationRef.current += 1;
+    chillPreviewLifecycleRef.current = CHILL_TUTORIAL_RUN_STATES.IDLE;
+    clearTutorialAutoAdvanceTimer();
+    audioEngine.setPlaybackCompleteHandler?.(null);
+    updateTutorialSession(TUTORIAL_IDS.CHILL_RAINY_STREET, (session) => (
+      cancelChillTutorialPreview(session)
+    ));
+  }, [updateTutorialSession]);
 
   const captureTutorialMusicSnapshot = useCallback((tutorialId) => {
     if (!tutorialId) return;
@@ -451,12 +471,14 @@ export default function App() {
     state.setSelectedClipId(null);
   }, [clearClipPasteDestination, stopDrumsRecording, stopMelodyRecording]);
   const handleUndoWithMelodyStop = useCallback(() => {
+    cancelChillPreviewPlayback();
     clearTimelineSelectionPlayback();
     clearClipPasteDestination();
     stopDrumsRecording({ stopTransport: false });
     stopMelodyRecording();
     handleUndo();
   }, [
+    cancelChillPreviewPlayback,
     clearTimelineSelectionPlayback,
     clearClipPasteDestination,
     handleUndo,
@@ -464,12 +486,14 @@ export default function App() {
     stopMelodyRecording,
   ]);
   const handleRedoWithMelodyStop = useCallback(() => {
+    cancelChillPreviewPlayback();
     clearTimelineSelectionPlayback();
     clearClipPasteDestination();
     stopDrumsRecording({ stopTransport: false });
     stopMelodyRecording();
     handleRedo();
   }, [
+    cancelChillPreviewPlayback,
     clearTimelineSelectionPlayback,
     clearClipPasteDestination,
     handleRedo,
@@ -488,6 +512,9 @@ export default function App() {
   }, [melodyEditorIsOpen]);
 
   useEffect(() => () => {
+    chillPreviewGenerationRef.current += 1;
+    chillPreviewLifecycleRef.current = CHILL_TUTORIAL_RUN_STATES.IDLE;
+    audioEngine.setPlaybackCompleteHandler?.(null);
     clearTimelineSelectionPlayback();
     clearTutorialAutoAdvanceTimer();
     clearTutorialCountIn();
@@ -516,12 +543,14 @@ export default function App() {
   }, [activeTrackId, currentBar, isPlaying, selectedBar]);
 
   const handleBackToStart = useCallback(() => {
+    cancelChillPreviewPlayback();
     clearTimelineSelectionPlayback();
     clearTutorialCountIn();
     stopDrumsRecording();
     stopMelodyRecording();
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_SEEK, bar: 0, step: 0 });
   }, [
+    cancelChillPreviewPlayback,
     clearTimelineSelectionPlayback,
     clearTutorialCountIn,
     dispatchAppCommand,
@@ -530,12 +559,14 @@ export default function App() {
   ]);
 
   const handleStop = useCallback(() => {
+    cancelChillPreviewPlayback();
     clearTimelineSelectionPlayback();
     clearTutorialCountIn();
     stopDrumsRecording({ stopTransport: false });
     stopMelodyRecording({ stopTransport: false });
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
   }, [
+    cancelChillPreviewPlayback,
     clearTimelineSelectionPlayback,
     clearTutorialCountIn,
     dispatchAppCommand,
@@ -544,12 +575,14 @@ export default function App() {
   ]);
 
   const handleStopAndRewind = useCallback(() => {
+    cancelChillPreviewPlayback();
     clearTimelineSelectionPlayback();
     clearTutorialCountIn();
     stopDrumsRecording({ stopTransport: false });
     stopMelodyRecording({ stopTransport: false });
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP_AND_REWIND });
   }, [
+    cancelChillPreviewPlayback,
     clearTimelineSelectionPlayback,
     clearTutorialCountIn,
     dispatchAppCommand,
@@ -558,6 +591,7 @@ export default function App() {
   ]);
 
   const handleNewSong = useCallback(() => {
+    cancelChillPreviewPlayback();
     stopDrumsRecording({ stopTransport: false });
     stopMelodyRecording();
     withUndoCheckpoint(() => {
@@ -596,6 +630,7 @@ export default function App() {
       chillStepCheckpointsRef.current = {};
     }, { force: true });
   }, [
+    cancelChillPreviewPlayback,
     clearClipClipboardState,
     clearTimelineSelectionPlayback,
     setAppliedTutorialSetups,
@@ -1175,6 +1210,10 @@ export default function App() {
 
   const handlePlayToggle = useCallback(() => {
     stopDrumsRecording({ stopTransport: false });
+    if (chillPreviewLifecycleRef.current !== CHILL_TUTORIAL_RUN_STATES.IDLE) {
+      handleStop();
+      return;
+    }
     if (tutorialActive) {
       const tutorialAction = handleTutorialControlAction({
         control: TUTORIAL_CONTROL_TARGETS.TRANSPORT_PLAY,
@@ -2328,7 +2367,8 @@ export default function App() {
       ...createChillTutorialAppState(initialAppState),
     }, true);
     chillStepCheckpointsRef.current = {};
-    setChillTutorialCompleting(false);
+    chillPreviewGenerationRef.current += 1;
+    chillPreviewLifecycleRef.current = CHILL_TUTORIAL_RUN_STATES.IDLE;
     setTutorialSessions((sessions) => ({
       ...sessions,
       [TUTORIAL_IDS.CHILL_RAINY_STREET]: {
@@ -2437,17 +2477,6 @@ export default function App() {
     updateTutorialSession,
   ]);
 
-  const previewChillTutorialRange = useCallback((bar, maxPlaybackSteps = 32) => {
-    void (async () => {
-      await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
-      await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_SEEK, bar, step: 0 });
-      await dispatchAppCommand({
-        type: APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY,
-        maxPlaybackSteps,
-      });
-    })();
-  }, [dispatchAppCommand]);
-
   const handleChillTutorialBack = useCallback(() => {
     if (chillTutorialSession.stepIndex <= 0) return;
     handleStop();
@@ -2467,76 +2496,136 @@ export default function App() {
   ]);
 
   const completeChillTutorial = useCallback(() => {
-    handleStop();
+    clearTutorialAutoAdvanceTimer();
+    chillPreviewLifecycleRef.current = CHILL_TUTORIAL_RUN_STATES.IDLE;
+    audioEngine.setPlaybackCompleteHandler?.(null);
+    void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
     captureTutorialMusicSnapshot(TUTORIAL_IDS.CHILL_RAINY_STREET);
     updateTutorialSession(TUTORIAL_IDS.CHILL_RAINY_STREET, (session) => ({
       ...session,
       completed: true,
       paused: false,
+      runState: CHILL_TUTORIAL_RUN_STATES.IDLE,
     }));
-    setChillTutorialCompleting(false);
     setTutorialPanelState('library');
   }, [
     captureTutorialMusicSnapshot,
-    handleStop,
+    dispatchAppCommand,
     setTutorialPanelState,
+    updateTutorialSession,
+  ]);
+
+  const startChillTutorialPreview = useCallback((step, stepIndex) => {
+    if (!step?.preview) return;
+
+    clearTutorialAutoAdvanceTimer();
+    const generation = chillPreviewGenerationRef.current + 1;
+    chillPreviewGenerationRef.current = generation;
+    chillPreviewLifecycleRef.current = CHILL_TUTORIAL_RUN_STATES.PREVIEWING;
+    updateTutorialSession(TUTORIAL_IDS.CHILL_RAINY_STREET, (session) => (
+      beginChillTutorialPreview(session, step.recipeId)
+    ));
+
+    audioEngine.setPlaybackCompleteHandler?.(() => {
+      if (
+        chillPreviewGenerationRef.current !== generation
+        || chillPreviewLifecycleRef.current !== CHILL_TUTORIAL_RUN_STATES.PREVIEWING
+      ) {
+        return;
+      }
+
+      audioEngine.setPlaybackCompleteHandler?.(null);
+      chillPreviewLifecycleRef.current = CHILL_TUTORIAL_RUN_STATES.COMPLETED;
+      void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
+      updateTutorialSession(TUTORIAL_IDS.CHILL_RAINY_STREET, (session) => (
+        completeChillTutorialPreview(session)
+      ));
+
+      scheduleTutorialAutoAdvance(() => {
+        if (
+          chillPreviewGenerationRef.current !== generation
+          || chillPreviewLifecycleRef.current !== CHILL_TUTORIAL_RUN_STATES.COMPLETED
+        ) {
+          return;
+        }
+
+        if (step.explicit) {
+          completeChillTutorial();
+          return;
+        }
+
+        chillPreviewLifecycleRef.current = CHILL_TUTORIAL_RUN_STATES.IDLE;
+        updateTutorialSession(TUTORIAL_IDS.CHILL_RAINY_STREET, (session) => (
+          session.stepIndex === stepIndex
+            ? advanceChillTutorialStep(session, CHILL_TUTORIAL_STEPS.length)
+            : cancelChillTutorialPreview(session)
+        ));
+      });
+    });
+
+    void (async () => {
+      try {
+        await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
+        if (chillPreviewGenerationRef.current !== generation) return;
+        await dispatchAppCommand({
+          type: APP_COMMAND_TYPES.TRANSPORT_SEEK,
+          bar: step.preview.bar,
+          step: 0,
+        });
+        if (chillPreviewGenerationRef.current !== generation) return;
+        await dispatchAppCommand({
+          type: APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY,
+          maxPlaybackSteps: step.preview.maxPlaybackSteps,
+        });
+      } catch {
+        if (chillPreviewGenerationRef.current !== generation) return;
+        chillPreviewLifecycleRef.current = CHILL_TUTORIAL_RUN_STATES.IDLE;
+        audioEngine.setPlaybackCompleteHandler?.(null);
+        updateTutorialSession(TUTORIAL_IDS.CHILL_RAINY_STREET, (session) => (
+          cancelChillTutorialPreview(session)
+        ));
+      }
+    })();
+  }, [
+    completeChillTutorial,
+    dispatchAppCommand,
     updateTutorialSession,
   ]);
 
   const handleChillTutorialPrimary = useCallback(() => {
     const step = chillTutorialStep;
-    if (!step) return;
+    if (
+      !step
+      || chillTutorialSession.runState !== CHILL_TUTORIAL_RUN_STATES.IDLE
+    ) {
+      return;
+    }
 
     if (step.explicit) {
       if (!isChillTutorialScoreComplete(useMusicStore.getState().matrix)) return;
-      audioEngine.setPlaybackCompleteHandler?.(() => {
-        audioEngine.setPlaybackCompleteHandler?.(null);
-        completeChillTutorial();
-      });
-      void (async () => {
-        await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
-        await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_SEEK, bar: 0, step: 0 });
-        await dispatchAppCommand({
-          type: APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY,
-          maxPlaybackSteps: 128,
-        });
-      })();
+      startChillTutorialPreview(step, chillTutorialSession.stepIndex);
       return;
     }
 
     const currentStepIndex = chillTutorialSession.stepIndex;
-    const recipePatch = applyChillTutorialRecipe(useMusicStore.getState(), step.recipeId);
-    if (!recipePatch) return;
-    chillStepCheckpointsRef.current[currentStepIndex] = createTutorialCheckpoint({
-      appState: useMusicStore.getState(),
-    });
-    withUndoCheckpoint(() => {
-      useMusicStore.setState(recipePatch);
-    });
-    setChillTutorialCompleting(true);
-
-    if (currentStepIndex <= 3) previewChillTutorialRange(2);
-    if ([7, 11].includes(currentStepIndex)) previewChillTutorialRange(
-      currentStepIndex === 7 ? 4 : 6,
-    );
-    if (currentStepIndex === 14) previewChillTutorialRange(0);
-
-    scheduleTutorialAutoAdvance(() => {
-      setChillTutorialCompleting(false);
-      updateTutorialSession(TUTORIAL_IDS.CHILL_RAINY_STREET, (session) => ({
-        ...session,
-        appliedRecipeIds: [...new Set([...session.appliedRecipeIds, step.recipeId])],
-        hasStarted: true,
-        stepIndex: Math.min(session.stepIndex + 1, CHILL_TUTORIAL_STEPS.length - 1),
-      }));
-    });
+    const recipeAlreadyApplied = chillTutorialSession.appliedRecipeIds.includes(step.recipeId);
+    if (!recipeAlreadyApplied) {
+      const recipePatch = applyChillTutorialRecipe(useMusicStore.getState(), step.recipeId);
+      if (!recipePatch) return;
+      chillStepCheckpointsRef.current[currentStepIndex] = createTutorialCheckpoint({
+        appState: useMusicStore.getState(),
+      });
+      withUndoCheckpoint(() => {
+        useMusicStore.setState(recipePatch);
+      });
+    }
+    startChillTutorialPreview(step, currentStepIndex);
   }, [
+    chillTutorialSession.appliedRecipeIds,
+    chillTutorialSession.runState,
     chillTutorialSession.stepIndex,
     chillTutorialStep,
-    completeChillTutorial,
-    dispatchAppCommand,
-    previewChillTutorialRange,
-    updateTutorialSession,
+    startChillTutorialPreview,
     withUndoCheckpoint,
   ]);
 
@@ -2634,6 +2723,7 @@ export default function App() {
     }
 
     if (tutorialPanelState === 'running') {
+      handleStop();
       captureTutorialMusicSnapshot(activeTutorialId);
       setTutorialVisible(false);
       setTutorialModeActive(false);
@@ -2651,6 +2741,7 @@ export default function App() {
     setTutorialPanelState,
     setTutorialSidebarCollapsed,
     setTutorialVisible,
+    handleStop,
     tutorialPanelState,
     updateTutorialSession,
   ]);
@@ -3007,13 +3098,16 @@ export default function App() {
         })}
         {chillTutorialActive ? (
           <ChillTutorialOverlay
-            completing={chillTutorialCompleting}
+            alreadyApplied={chillTutorialStep.recipeId
+              ? chillTutorialSession.appliedRecipeIds.includes(chillTutorialStep.recipeId)
+              : false}
             expanded={chillTutorialSession.expanded}
             onBack={handleChillTutorialBack}
             onExit={handleChillTutorialExit}
             onPause={handleChillTutorialPause}
             onPrimary={handleChillTutorialPrimary}
             onToggleExpanded={handleChillTutorialExpandedToggle}
+            runState={chillTutorialSession.runState}
             step={chillTutorialStep}
             stepCount={CHILL_TUTORIAL_STEPS.length}
             stepIndex={chillTutorialSession.stepIndex}

@@ -13,6 +13,7 @@ import {
   useState,
 } from 'react';
 import { getContextualTutorialPosition } from '../../tutorial/contextualTutorialPosition.js';
+import { CHILL_TUTORIAL_RUN_STATES } from '../../tutorial/chillTutorialRuntime.js';
 import { renderIcon } from './icons.js';
 
 function createRectSnapshot(rect) {
@@ -28,13 +29,14 @@ function createRectSnapshot(rect) {
 }
 
 function ChillTutorialOverlay({
-  completing = false,
+  alreadyApplied = false,
   expanded = false,
   onBack = () => {},
   onExit = () => {},
   onPause = () => {},
   onPrimary = () => {},
   onToggleExpanded = () => {},
+  runState = CHILL_TUTORIAL_RUN_STATES.IDLE,
   step,
   stepIndex = 0,
   stepCount = 1,
@@ -98,13 +100,23 @@ function ChillTutorialOverlay({
   }, [step, updatePosition]);
 
   if (!step) return null;
+  const previewing = runState === CHILL_TUTORIAL_RUN_STATES.PREVIEWING;
+  const completed = runState === CHILL_TUTORIAL_RUN_STATES.COMPLETED;
+  const primaryLabel = previewing
+    ? '正在试听…'
+    : completed
+      ? '听完了 ✓'
+      : alreadyApplied && !step.explicit
+        ? '重新试听并继续'
+        : step.primaryLabel;
 
   return (
     <section
       className={[
         'chill-coachmark',
         expanded ? 'expanded' : '',
-        completing ? 'completing' : '',
+        previewing ? 'previewing' : '',
+        completed ? 'completed' : '',
         targetMissing ? 'target-missing' : '',
       ].filter(Boolean).join(' ')}
       data-placement={position?.placement ?? 'safe'}
@@ -122,7 +134,11 @@ function ChillTutorialOverlay({
             {' · '}
             {step.trackId ? step.trackId.toUpperCase() : 'PLAYBACK'}
           </span>
-          <h2>{completing ? '完成 ✓' : step.title}</h2>
+          <h2>
+            {previewing
+              ? `正在试听：${step.title}`
+              : completed ? '听完了 ✓' : step.title}
+          </h2>
         </div>
         <button
           className="chill-coachmark-icon"
@@ -140,16 +156,16 @@ function ChillTutorialOverlay({
           ? '正在同步到这一步需要的轨道与编辑位置，请稍候。'
           : step.detail}
       </p>
-      {!targetMissing && step.technical ? (
+      {!targetMissing && step.actionSummary ? (
         <div className="chill-coachmark-technical">
-          <span>本步配方</span>
-          <p>{step.technical}</p>
+          <span>编曲动作</span>
+          <p>{step.actionSummary}</p>
         </div>
       ) : null}
       {expanded ? (
         <p className="chill-coachmark-detail">
-          编排逻辑：先固定每条轨道的节奏功能，再通过根音、终止式和留白制造段落变化。
-          配方只写入当前阶段批准的母版内容，并保留可撤销检查点。
+          为什么这样编：鼓负责节奏、和弦负责气氛、低音负责方向、旋律负责记忆点，
+          再用留白让整段音乐保持松弛。
         </p>
       ) : null}
 
@@ -165,10 +181,10 @@ function ChillTutorialOverlay({
         <button
           className="chill-coachmark-primary"
           type="button"
-          disabled={targetMissing || completing}
+          disabled={targetMissing || previewing || completed}
           onClick={onPrimary}
         >
-          {step.primaryLabel}
+          {primaryLabel}
           {renderIcon(ChevronRight)}
         </button>
         <div className="chill-coachmark-tools">
