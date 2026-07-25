@@ -1119,6 +1119,13 @@ test('app exposes the bass editor and existing-clip groove template workflow', a
   assert.match(source, /previewBassPattern/);
 });
 
+test('bass and melody piano-roll removals stay silent', async () => {
+  const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
+
+  assert.match(source, /const handleBassStepToggle = useCallback\(\(step, note\) => \{[\s\S]*getBassCellToggleResult\([\s\S]*if \(auditionNote\) \{[\s\S]*triggerBassNote\(auditionNote, '16n'\)/);
+  assert.match(source, /const handleMelodyStepToggle = useCallback\(\(step, note\) => \{[\s\S]*getMelodyCellToggleResult\([\s\S]*if \(auditionNote\) \{[\s\S]*triggerMelodyInputOneShot\(auditionNote\)/);
+});
+
 test('app keeps the editor focused on the playback bar while transport is playing', async () => {
   const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
 

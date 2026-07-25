@@ -20,6 +20,7 @@ import {
 import {
   clearMelodyBar,
   createMelodyCell,
+  getMelodyCellToggleResult,
   getMelodyCellRenderState,
   isMelodyCellActive,
   isValidMelodyNote,
@@ -118,6 +119,22 @@ test('toggleMelodyCell writes replaces and clears one note per sixteenth step', 
 
   const cleared = toggleMelodyCell(withD, 2, 5, 'D4');
   assert.equal(cleared.melody[2][5], null);
+});
+
+test('melody cell toggle result auditions additions and replacements but not removals', () => {
+  const matrix = createInitialMatrix();
+
+  const added = getMelodyCellToggleResult(matrix, 2, 5, 'C4');
+  assert.equal(added.auditionNote, 'C4');
+  assert.deepEqual(added.nextMatrix.melody[2][5], { type: 'melody', note: 'C4' });
+
+  const replaced = getMelodyCellToggleResult(added.nextMatrix, 2, 5, 'D4');
+  assert.equal(replaced.auditionNote, 'D4');
+  assert.equal(replaced.nextMatrix.melody[2][5].note, 'D4');
+
+  const removed = getMelodyCellToggleResult(replaced.nextMatrix, 2, 5, 'D4');
+  assert.equal(removed.auditionNote, null);
+  assert.equal(removed.nextMatrix.melody[2][5], null);
 });
 
 test('melody actions leave the matrix unchanged for invalid positions', () => {

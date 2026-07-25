@@ -86,6 +86,19 @@ function toggleBassCell(matrix, bar, step, note) {
   return nextMatrix;
 }
 
+function getBassCellToggleResult(matrix, bar, step, note) {
+  const removingExistingNote = isBassCellActive(matrix, bar, step, note);
+  const nextMatrix = toggleBassCell(matrix, bar, step, note);
+  const nextCell = nextMatrix?.bass?.[bar]?.[step];
+
+  return {
+    auditionNote: !removingExistingNote && nextCell?.note === note
+      ? note
+      : null,
+    nextMatrix,
+  };
+}
+
 function clearBassBar(matrix, bar) {
   if (!matrix?.bass?.[bar]) return matrix;
 
@@ -213,6 +226,7 @@ export {
   clearBassBar,
   createBassCell,
   createBassPreviewEvents,
+  getBassCellToggleResult,
   getBassGrooveTemplate,
   hasExistingBassClipContent,
   isBassCellActive,

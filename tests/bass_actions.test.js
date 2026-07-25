@@ -6,6 +6,7 @@ import {
   BASS_GROOVE_TEMPLATES,
   clearBassBar,
   createBassPreviewEvents,
+  getBassCellToggleResult,
   hasExistingBassClipContent,
   isBassCellActive,
   toggleBassCell,
@@ -60,6 +61,26 @@ test('toggleBassCell writes replaces and clears one bass note per sixteenth step
 
   const cleared = toggleBassCell(withD, 2, 5, 'F#0');
   assert.equal(cleared.bass[2][5], null);
+});
+
+test('bass cell toggle result auditions additions and replacements but not removals', () => {
+  const matrix = createInitialMatrix();
+
+  const added = getBassCellToggleResult(matrix, 2, 5, 'C1');
+  assert.equal(added.auditionNote, 'C1');
+  assert.deepEqual(added.nextMatrix.bass[2][5], {
+    type: 'bass',
+    note: 'C1',
+    duration: '16n',
+  });
+
+  const replaced = getBassCellToggleResult(added.nextMatrix, 2, 5, 'F#0');
+  assert.equal(replaced.auditionNote, 'F#0');
+  assert.equal(replaced.nextMatrix.bass[2][5].note, 'F#0');
+
+  const removed = getBassCellToggleResult(replaced.nextMatrix, 2, 5, 'F#0');
+  assert.equal(removed.auditionNote, null);
+  assert.equal(removed.nextMatrix.bass[2][5], null);
 });
 
 test('clearBassBar clears only the selected bass bar', () => {

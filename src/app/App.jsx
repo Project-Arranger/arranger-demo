@@ -42,7 +42,7 @@ import {
   applyBassGrooveTemplateToExistingClips,
   clearBassBar,
   createBassPreviewEvents,
-  toggleBassCell,
+  getBassCellToggleResult,
 } from './bassActions.js';
 import {
   applyChordTemplateWorkspaceToExistingClips,
@@ -55,7 +55,7 @@ import {
 } from './chordGrooveActions.js';
 import {
   clearMelodyBar,
-  toggleMelodyCell,
+  getMelodyCellToggleResult,
 } from './melodyActions.js';
 import {
   applyMelodyRhythmTemplateToBar,
@@ -1351,9 +1351,16 @@ export default function App() {
   const handleBassStepToggle = useCallback((step, note) => {
     withUndoCheckpoint(() => {
       const state = useMusicStore.getState();
-      const nextMatrix = toggleBassCell(state.matrix, selectedBar, step, note);
+      const { auditionNote, nextMatrix } = getBassCellToggleResult(
+        state.matrix,
+        selectedBar,
+        step,
+        note,
+      );
       state.setCell('bass', selectedBar, step, nextMatrix.bass[selectedBar][step]);
-      void audioEngine.triggerBassNote(note, '16n');
+      if (auditionNote) {
+        void audioEngine.triggerBassNote(auditionNote, '16n');
+      }
     });
   }, [selectedBar, withUndoCheckpoint]);
 
@@ -1410,9 +1417,16 @@ export default function App() {
     melodyRecording.stopRecording();
     withUndoCheckpoint(() => {
       const state = useMusicStore.getState();
-      const nextMatrix = toggleMelodyCell(state.matrix, selectedBar, step, note);
+      const { auditionNote, nextMatrix } = getMelodyCellToggleResult(
+        state.matrix,
+        selectedBar,
+        step,
+        note,
+      );
       state.setCell('melody', selectedBar, step, nextMatrix.melody[selectedBar][step]);
-      void audioEngine.triggerMelodyInputOneShot(note);
+      if (auditionNote) {
+        void audioEngine.triggerMelodyInputOneShot(auditionNote);
+      }
     });
   }, [melodyRecording, selectedBar, withUndoCheckpoint]);
 

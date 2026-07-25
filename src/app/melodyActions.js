@@ -95,6 +95,19 @@ function toggleMelodyCell(matrix, bar, step, note) {
   return nextMatrix;
 }
 
+function getMelodyCellToggleResult(matrix, bar, step, note) {
+  const removingExistingNote = isMelodyCellActive(matrix, bar, step, note);
+  const nextMatrix = toggleMelodyCell(matrix, bar, step, note);
+  const nextCell = nextMatrix?.melody?.[bar]?.[step];
+
+  return {
+    auditionNote: !removingExistingNote && nextCell?.note === note
+      ? note
+      : null,
+    nextMatrix,
+  };
+}
+
 function clearMelodyBar(matrix, bar) {
   if (!matrix?.melody?.[bar]) return matrix;
 
@@ -123,6 +136,7 @@ function replaceMelodyBarWithSequence(matrix, bar, steps, notes) {
 export {
   clearMelodyBar,
   createMelodyCell,
+  getMelodyCellToggleResult,
   getMelodyCellDurationSteps,
   getMelodyCellRenderState,
   isMelodyCellActive,
