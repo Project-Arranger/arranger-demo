@@ -109,7 +109,7 @@ function BassEditor({
 
   const handleGrooveTemplateApply = (templateId) => {
     setSelectedGrooveTemplateId(templateId);
-    if (isPlaying && hasExistingBassClipContent(matrix, clips)) {
+    if (hasExistingBassClipContent(matrix, clips)) {
       setConfirmApplyOpen(true);
       return;
     }
@@ -326,7 +326,8 @@ function BassEditor({
                 是否覆盖已有 Bass 内容？
               </h3>
               <p className="tpl-confirm-copy">
-                所选律动会原子覆盖全部已有 Bass Clips，当前播放不会停止。
+                所选律动会原子覆盖全部已有 Bass Clips。
+                {isPlaying ? ' 当前播放不会停止。' : ' 确认后可使用撤销恢复。'}
               </p>
               <div className="tpl-confirm-template">
                 <strong className="tpl-confirm-template-name">

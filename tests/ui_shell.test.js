@@ -185,6 +185,9 @@ test('clip copy paste flow keeps an app clipboard and confirms destructive paste
   assert.match(clipClipboardSource, /createTimelineClipboardSnapshot\([\s\S]*timelineSelection,[\s\S]*\)/);
   assert.match(clipClipboardSource, /pasteTimelineClipboardSnapshot\([\s\S]*clipClipboard,[\s\S]*target\.targetBar/);
   assert.match(clipClipboardSource, /const handlePasteClipRequest = useCallback\(\(\) => \{[\s\S]*getCurrentClipPasteTarget\(\)[\s\S]*setPendingClipPaste/);
+  assert.match(clipClipboardSource, /targetHasContent:\s*hasTrackBarContent/);
+  assert.match(clipClipboardSource, /targetContentCount/);
+  assert.doesNotMatch(clipClipboardSource, /if \(target\.targetClip \|\| target\.targetClips\?\.length\)/);
   assert.match(clipClipboardSource, /const confirmClipPaste = useCallback\(\(\) => \{[\s\S]*pasteClipToTarget\(pendingClipPaste\);[\s\S]*setPendingClipPaste\(null\);/);
   assert.match(clipClipboardSource, /const cancelClipPaste = useCallback\(\(\) => \{[\s\S]*setPendingClipPaste\(null\);[\s\S]*\}, \[\]\);/);
   assert.match(clipClipboardSource, /const clearClipClipboardState = useCallback\(\(\) => \{[\s\S]*setClipClipboard\(null\);[\s\S]*setPendingClipPaste\(null\);/);
@@ -638,6 +641,10 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(drumSequencerSource, /基础律动/);
   assert.match(drumSequencerSource, /应用到本小节/);
   assert.match(drumSequencerSource, /应用到整轨/);
+  assert.match(drumSequencerSource, /hasExistingDrumsClipContent\(matrix, clips\)/);
+  assert.match(drumSequencerSource, /是否覆盖已有 Drums 内容？/);
+  assert.match(drumSequencerSource, /onClick=\{applyAllTemplate\}[\s\S]*覆盖并应用/);
+  assert.match(drumSequencerSource, /if \(!confirmApplyAllOpen\) return undefined;[\s\S]*event\.key !== 'Escape'/);
   assert.doesNotMatch(drumSequencerSource, />\s*生成本小节\s*</);
   assert.doesNotMatch(drumSequencerSource, />\s*生成全局\s*</);
   assert.match(drumSequencerSource, /清本小节/);
@@ -1062,7 +1069,8 @@ test('app exposes the bass editor and existing-clip groove template workflow', a
   assert.match(bassEditorSource, /onBassGrooveTemplatePreview\(template\.id\)/);
   assert.match(bassEditorSource, /onBassGrooveTemplateApply\(templateId\)/);
   assert.match(bassEditorSource, /onClick=\{\(\) => handleGrooveTemplateApply\(template\.id\)\}/);
-  assert.match(bassEditorSource, /isPlaying && hasExistingBassClipContent\(matrix, clips\)/);
+  assert.match(bassEditorSource, /if \(hasExistingBassClipContent\(matrix, clips\)\)/);
+  assert.doesNotMatch(bassEditorSource, /isPlaying && hasExistingBassClipContent/);
   assert.match(bassEditorSource, /setSelectedGrooveTemplateId\(templateId\)[\s\S]*setConfirmApplyOpen\(true\)/);
   assert.match(bassEditorSource, /是否覆盖已有 Bass 内容？/);
   assert.match(bassEditorSource, /当前播放不会停止/);

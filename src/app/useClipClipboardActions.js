@@ -6,6 +6,7 @@ import {
 import { TOTAL_BARS } from '../domain/musicConstants.js';
 import useMusicStore from '../store/useMusicStore.js';
 import { getTimelineSelectionClipIds } from './timelineSelection.js';
+import { hasTrackBarContent } from './trackContent.js';
 
 function useClipClipboardActions({
   activeTrackId,
@@ -62,14 +63,18 @@ function useClipClipboardActions({
         return null;
       }
 
-      const targetClips = clipClipboard.items
-        .map((item) => state.getClipForTrackBar(item.trackId, targetBar + item.barOffset))
-        .filter(Boolean);
+      const targetContentCount = clipClipboard.items.filter((item) => (
+        hasTrackBarContent(
+          state.matrix,
+          item.trackId,
+          targetBar + item.barOffset,
+        )
+      )).length;
 
       return {
         kind: 'timeline-range',
         targetBar,
-        targetClips,
+        targetContentCount,
       };
     }
 
@@ -84,6 +89,7 @@ function useClipClipboardActions({
     return {
       targetBar,
       targetClip,
+      targetHasContent: hasTrackBarContent(state.matrix, targetTrackId, targetBar),
       targetTrackId,
     };
   }, [clipClipboard]);
@@ -141,7 +147,7 @@ function useClipClipboardActions({
     const target = getCurrentClipPasteTarget();
     if (!target) return;
 
-    if (target.targetClip || target.targetClips?.length) {
+    if (target.targetHasContent || target.targetContentCount > 0) {
       setPendingClipPaste(target);
       return;
     }

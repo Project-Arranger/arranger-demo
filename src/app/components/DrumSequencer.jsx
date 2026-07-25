@@ -14,7 +14,10 @@ import {
   isDrumsStepActive,
 } from '../drumSequencerData.js';
 import { DRUMS_RECORDING_PHASES } from '../drumsLiveRecording.js';
-import { createDefaultDrumsPattern } from '../drumsPatternActions.js';
+import {
+  createDefaultDrumsPattern,
+  hasExistingDrumsClipContent,
+} from '../drumsPatternActions.js';
 import { formatDisplayPosition } from '../transportPosition.js';
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
 import { useSecondaryMenuDismiss } from '../useSecondaryMenuDismiss.js';
@@ -118,6 +121,7 @@ function getDrumTemplateStepClass(rowId, stepIndex) {
 }
 
 function DrumSequencer({
+  clips,
   matrix,
   canPageBars = false,
   clipName,
@@ -143,6 +147,7 @@ function DrumSequencer({
   const [dragSource, setDragSource] = useState(null);
   const [dragOverStep, setDragOverStep] = useState(null);
   const [drumTemplatePickerOpen, setDrumTemplatePickerOpen] = useState(false);
+  const [confirmApplyAllOpen, setConfirmApplyAllOpen] = useState(false);
   const [selectedDrumTemplateId, setSelectedDrumTemplateId] = useState(BASIC_DRUM_TEMPLATE.id);
   const [suppressNextClick, setSuppressNextClick] = useState(false);
   const dragSessionRef = useRef(null);
@@ -247,11 +252,25 @@ function DrumSequencer({
   }, [dragSource, onStepMove]);
 
   useSecondaryMenuDismiss({
-    active: drumTemplatePickerOpen,
+    active: drumTemplatePickerOpen && !confirmApplyAllOpen,
     menuRef: templatePickerRef,
     onDismiss: () => setDrumTemplatePickerOpen(false),
     triggerRef: templateTriggerRef,
   });
+
+  useEffect(() => {
+    if (!confirmApplyAllOpen) return undefined;
+
+    const handleTemplateConfirmKeyDown = (event) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      event.stopPropagation();
+      setConfirmApplyAllOpen(false);
+    };
+
+    window.addEventListener('keydown', handleTemplateConfirmKeyDown, true);
+    return () => window.removeEventListener('keydown', handleTemplateConfirmKeyDown, true);
+  }, [confirmApplyAllOpen]);
 
   useEffect(() => {
     if (recordingPhase !== DRUMS_RECORDING_PHASES.CONFIRM) return undefined;
@@ -275,20 +294,34 @@ function DrumSequencer({
 
   const handleApplyCurrentTemplate = () => {
     onGenerateCurrentBar?.(selectedDrumTemplateId);
+    setConfirmApplyAllOpen(false);
     setDrumTemplatePickerOpen(false);
   };
 
   const handleApplyAllTemplate = () => {
+    if (hasExistingDrumsClipContent(matrix, clips)) {
+      setConfirmApplyAllOpen(true);
+      return;
+    }
+
     onGenerateAllBars?.(selectedDrumTemplateId);
     setDrumTemplatePickerOpen(false);
   };
 
+  const applyAllTemplate = () => {
+    onGenerateAllBars?.(selectedDrumTemplateId);
+    setConfirmApplyAllOpen(false);
+    setDrumTemplatePickerOpen(false);
+  };
+
   const handleClose = () => {
+    setConfirmApplyAllOpen(false);
     setDrumTemplatePickerOpen(false);
     onClose();
   };
 
   const handleWriteButtonClick = () => {
+    setConfirmApplyAllOpen(false);
     setDrumTemplatePickerOpen(false);
     if (recordingPhase === DRUMS_RECORDING_PHASES.CONFIRM) {
       onRecordConfirm();
@@ -620,6 +653,49 @@ function DrumSequencer({
           </button>
         </footer>
       </div>
+
+      {confirmApplyAllOpen ? (
+        <div className="tpl-confirm-overlay drums-template-confirm-overlay">
+          <section
+            className="tpl-confirm-dialog"
+            aria-labelledby="drumsTemplateConfirmTitle"
+            aria-modal="true"
+            role="dialog"
+          >
+            <span className="tpl-confirm-kicker">DRUMS TEMPLATE</span>
+            <h3 className="tpl-confirm-title" id="drumsTemplateConfirmTitle">
+              是否覆盖已有 Drums 内容？
+            </h3>
+            <p className="tpl-confirm-copy">
+              所选律动会原子覆盖全部已有 Drums Clips，确认后可使用撤销恢复。
+            </p>
+            <div className="tpl-confirm-template">
+              <strong className="tpl-confirm-template-name">
+                {BASIC_DRUM_TEMPLATE.name}
+              </strong>
+              <span className="tpl-confirm-template-chords">
+                应用到整轨
+              </span>
+            </div>
+            <div className="tpl-confirm-actions">
+              <button
+                className="tpl-confirm-cancel"
+                type="button"
+                onClick={() => setConfirmApplyAllOpen(false)}
+              >
+                取消
+              </button>
+              <button
+                className="tpl-confirm-apply"
+                type="button"
+                onClick={applyAllTemplate}
+              >
+                覆盖并应用
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       {recordingPhase === DRUMS_RECORDING_PHASES.CONFIRM ? (
         <div className="melody-record-confirm-overlay drums-record-confirm-overlay" role="presentation">

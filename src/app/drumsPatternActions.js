@@ -1,5 +1,6 @@
 import { STEPS_PER_BAR, TOTAL_BARS } from '../domain/musicConstants.js';
 import { createDrumsCell } from '../domain/drumsCells.js';
+import { hasExistingTrackClipContent } from './trackContent.js';
 
 const BASIC_DRUMS_STEPS = Object.freeze([
   Object.freeze({ step: 0, instruments: Object.freeze(['kick', 'hihat']) }),
@@ -95,6 +96,10 @@ function clearDrumsBar(matrix, barIndex) {
   return replaceDrumsBar(matrix, barIndex, createEmptyDrumsBar());
 }
 
+function hasExistingDrumsClipContent(matrix, clips) {
+  return hasExistingTrackClipContent(matrix, clips, 'drums');
+}
+
 export {
   applyBasicDrumsAllBars,
   applyBasicDrumsBar,
@@ -104,4 +109,5 @@ export {
   createDefaultDrumsPattern,
   createEmptyDrumsBar,
   getDrumsClipBarIndexes,
+  hasExistingDrumsClipContent,
 };

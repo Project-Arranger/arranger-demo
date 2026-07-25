@@ -1,32 +1,24 @@
 import { findClipForTrackBar } from '../store/slices/clipsSlice.js';
 import { getChordBarDisplayLabel } from './chordActions.js';
-import { getChordRhythmSteps } from './chordGrooveActions.js';
+import { hasClipContent } from './trackContent.js';
 import { createTrackVolumeView } from './trackVolumeViewModels.js';
 
 function getTrackVolume(track, volumes) {
   return createTrackVolumeView(volumes?.[track.id] ?? track.volume?.value);
 }
 
-function hasClipContent(clip, matrix) {
-  const bar = matrix?.[clip.trackId]?.[clip.bar];
-  if (clip.trackId === 'chord') {
-    return getChordRhythmSteps(matrix, clip.bar).length > 0;
-  }
-  return Array.isArray(bar) && bar.some((cell) => cell !== null);
-}
-
 function createClipView(clip, matrix) {
   if (!clip) return null;
 
-  const hasContent = hasClipContent(clip, matrix);
+  const clipHasContent = hasClipContent(matrix, clip);
   if (clip.trackId !== 'chord') {
-    return hasContent ? { ...clip, hasContent } : clip;
+    return clipHasContent ? { ...clip, hasContent: true } : clip;
   }
 
   return {
     ...clip,
-    chordLabel: hasContent ? getChordBarDisplayLabel(matrix, clip.bar) : null,
-    hasContent,
+    chordLabel: clipHasContent ? getChordBarDisplayLabel(matrix, clip.bar) : null,
+    hasContent: clipHasContent,
   };
 }
 

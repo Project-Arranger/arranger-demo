@@ -8,6 +8,7 @@ import {
 import {
   getChordDefinition,
 } from '../domain/chordCells.js';
+import { hasExistingTrackClipContent } from './trackContent.js';
 
 const DEFAULT_BASS_NOTE = 'C1';
 const LOW_BASS_OCTAVE_ROOTS = new Set(['F', 'F#', 'G', 'G#', 'A', 'A#', 'B']);
@@ -172,11 +173,7 @@ function getExistingBassClipBars(clips) {
 }
 
 function hasExistingBassClipContent(matrix, clips) {
-  return getExistingBassClipBars(clips).some((bar) => (
-    matrix?.bass?.[bar]?.some((cell) => (
-      cell?.type === 'bass' || Boolean(cell?.note)
-    ))
-  ));
+  return hasExistingTrackClipContent(matrix, clips, 'bass');
 }
 
 function getExistingChordClipBarSet(clips) {

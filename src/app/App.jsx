@@ -2194,9 +2194,9 @@ export default function App() {
                     {' '}
                     开始的范围内已有
                     {' '}
-                    {pendingClipPaste.targetClips.length}
+                    {pendingClipPaste.targetContentCount}
                     {' '}
-                    个 clip，继续粘贴会替换它们的内容。
+                    个包含内容的小节，继续粘贴会替换它们的内容。
                   </>
                 ) : (
                   <>

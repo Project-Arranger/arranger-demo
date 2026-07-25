@@ -78,6 +78,7 @@ function BottomEditor({
 
   if (activeTrackId === 'drums' && (selectedClipId || drumsWriting)) {
     editor = createElement(DrumSequencer, {
+      clips,
       matrix,
       clipName: selectedClipName,
       drumsRecordingState,
