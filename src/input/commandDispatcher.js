@@ -30,7 +30,13 @@ function createAudioPlayOptions(store, state, audio, command = {}) {
       syncStoreTransportPosition(store, bar, step);
       positionObserver?.(bar, step);
     },
-    volumeSource: () => store.getState().volumes,
+    volumeSource: () => {
+      const currentState = store.getState();
+      return {
+        mutedTracks: currentState.mutedTracks,
+        volumes: currentState.volumes,
+      };
+    },
   };
 }
 
@@ -69,6 +75,13 @@ async function dispatchTransportCommand(command, deps) {
       await maybeCallMethod(deps.audio, 'stop');
       return { ok: true };
 
+    case APP_COMMAND_TYPES.TRANSPORT_STOP_AND_REWIND:
+      state.stop?.();
+      await maybeCallMethod(deps.audio, 'stop');
+      syncStoreTransportPosition(store, 0, 0);
+      await maybeCallMethod(deps.audio, 'seekToStep', 0, 0);
+      return { ok: true };
+
     case APP_COMMAND_TYPES.TRANSPORT_SEEK:
       syncStoreTransportPosition(store, command.bar, command.step);
       await maybeCallMethod(deps.audio, 'seekToStep', command.bar, command.step);
@@ -101,6 +114,15 @@ async function dispatchClipCommand(command, deps) {
   }
 }
 
+async function dispatchTrackCommand(command, deps) {
+  if (command.type !== APP_COMMAND_TYPES.TRACK_TOGGLE_MUTE) return null;
+
+  const state = getStore(deps).getState();
+  state.toggleTrackMute?.(command.trackId);
+  await maybeCallMethod(deps.audio, 'refreshTrackVolume', command.trackId);
+  return { ok: true };
+}
+
 async function dispatchHandlerCommand(command, deps) {
   const { handlers = {} } = deps;
 
@@ -128,6 +150,42 @@ async function dispatchHandlerCommand(command, deps) {
       }
       return { ok: true };
 
+    case APP_COMMAND_TYPES.DRUMS_PREVIEW:
+      await maybeCallMethod(deps.audio, 'triggerDrumsStep', command.instrument);
+      return { ok: true };
+
+    case APP_COMMAND_TYPES.DRUMS_SELECT_CLIP:
+      await maybeCall(handlers.drums?.selectClip, command);
+      return { ok: true };
+
+    case APP_COMMAND_TYPES.CHORD_SELECT_CLIP:
+      await maybeCall(handlers.chord?.selectClip, command);
+      return { ok: true };
+
+    case APP_COMMAND_TYPES.CHORD_TOGGLE_RHYTHM:
+      await maybeCall(handlers.chord?.toggleRhythm, command);
+      return { ok: true };
+
+    case APP_COMMAND_TYPES.CHORD_OPEN_HARMONY:
+      await maybeCall(handlers.chord?.openHarmony, command);
+      return { ok: true };
+
+    case APP_COMMAND_TYPES.CHORD_CLOSE_HARMONY:
+      await maybeCall(handlers.chord?.closeHarmony, command);
+      return { ok: true };
+
+    case APP_COMMAND_TYPES.CHORD_APPLY_HARMONY_OPTION:
+      await maybeCall(handlers.chord?.applyHarmonyOption, command);
+      return { ok: true };
+
+    case APP_COMMAND_TYPES.CHORD_SELECT_HARMONY_OPTION:
+      await maybeCall(handlers.chord?.selectHarmonyOption, command);
+      return { ok: true };
+
+    case APP_COMMAND_TYPES.CHORD_PREVIEW_HARMONY_OPTION:
+      await maybeCall(handlers.chord?.previewHarmonyOption, command);
+      return { ok: true };
+
     case APP_COMMAND_TYPES.CHORD_SELECT_OPTION:
       await maybeCall(handlers.chord?.selectOption, command);
       return { ok: true };
@@ -152,6 +210,14 @@ async function dispatchHandlerCommand(command, deps) {
       await maybeCall(handlers.melody?.noteOff, command);
       return { ok: true };
 
+    case APP_COMMAND_TYPES.MELODY_SELECT_CLIP:
+      await maybeCall(handlers.melody?.selectClip, command);
+      return { ok: true };
+
+    case APP_COMMAND_TYPES.MELODY_SELECT_STEP:
+      await maybeCall(handlers.melody?.selectStep, command);
+      return { ok: true };
+
     default:
       return null;
   }
@@ -167,6 +233,9 @@ async function dispatchCommand(command, deps = {}) {
 
   const clipResult = await dispatchClipCommand(command, deps);
   if (clipResult) return clipResult;
+
+  const trackResult = await dispatchTrackCommand(command, deps);
+  if (trackResult) return trackResult;
 
   const handlerResult = await dispatchHandlerCommand(command, deps);
   if (handlerResult) return handlerResult;

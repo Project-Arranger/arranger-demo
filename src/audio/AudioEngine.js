@@ -1,5 +1,6 @@
 import {
   DEFAULT_BPM,
+  CORE_TRACK_IDS,
   DRUMS_INSTRUMENT_IDS,
   STEPS_PER_BAR,
   TOTAL_BARS,
@@ -140,7 +141,10 @@ function readVolumeSource(volumeSource) {
 }
 
 function getVolumeForTrack(volumeSource, trackId) {
-  const volumes = readVolumeSource(volumeSource);
+  const mix = readVolumeSource(volumeSource);
+  if (mix?.mutedTracks?.[trackId] === true) return -Infinity;
+
+  const volumes = mix?.volumes ?? mix;
   return clampTrackVolume(volumes?.[trackId]);
 }
 
@@ -251,6 +255,28 @@ export default class AudioEngine {
 
   getTrackVolume(trackId) {
     return getVolumeForTrack(this.volumeSource, trackId);
+  }
+
+  refreshTrackVolume(trackId) {
+    if (!CORE_TRACK_IDS.includes(trackId)) return null;
+
+    const volume = this.getTrackVolume(trackId);
+    if (trackId === 'drums') {
+      this.drumPlayers.forEach((player) => applyVolume(player, volume));
+      applyVolume(this.fallbackSynth, volume);
+    }
+    if (trackId === 'chord') {
+      applyVolume(this.chordSampler, volume);
+      applyVolume(this.chordSynth, volume);
+    }
+    if (trackId === 'bass') applyVolume(this.bassSampler, volume);
+    if (trackId === 'melody') {
+      applyVolume(this.melodySampler, volume);
+      applyVolume(this.melodyInputSampler, volume);
+      applyVolume(this.melodyOneShotSampler, volume);
+      if (volume === -Infinity) this.stopMelodyVoices();
+    }
+    return volume;
   }
 
   createPlayer(url, instrument) {
@@ -625,8 +651,6 @@ export default class AudioEngine {
 
     const normalizedBpm = Number.isFinite(bpm) && bpm > 0 ? bpm : DEFAULT_BPM;
     const millisecondsPerSixteenth = (60 / normalizedBpm / 4) * 1000;
-    const volume = this.getTrackVolume('chord');
-
     return new Promise((resolve) => {
       const session = {
         requestId,
@@ -651,7 +675,7 @@ export default class AudioEngine {
             event.notes,
             event.duration ?? '16n',
             this.now(),
-            volume,
+            this.getTrackVolume('chord'),
           );
         }, event.step * millisecondsPerSixteenth);
         session.timerIds.add(timerId);

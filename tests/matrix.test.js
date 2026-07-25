@@ -107,6 +107,8 @@ test('store starts with transport, context, volumes, and matrix defaults', () =>
   assert.equal(state.selectedClipId, null);
   assert.deepEqual(Object.keys(state.volumes), TRACK_IDS);
   assert.equal(Object.values(state.volumes).every((volume) => volume === 0), true);
+  assert.deepEqual(Object.keys(state.mutedTracks), CORE_TRACK_IDS);
+  assert.equal(Object.values(state.mutedTracks).every((muted) => muted === false), true);
   assert.equal(everyCell(state.matrix, (cell) => cell === null), true);
 });
 
@@ -145,6 +147,26 @@ test('setTrackVolume updates one track and clamps values to the supported range'
 
   useMusicStore.getState().setTrackVolume('unknown-track', -6);
   assert.deepEqual(useMusicStore.getState().volumes, volumes);
+});
+
+test('toggleTrackMute flips one valid track without changing its stored volume', () => {
+  const store = useMusicStore.getState();
+  store.setTrackVolume('chord', -9);
+
+  store.toggleTrackMute('chord');
+  let state = useMusicStore.getState();
+  assert.equal(state.mutedTracks.chord, true);
+  assert.equal(state.volumes.chord, -9);
+  assert.equal(state.mutedTracks.drums, false);
+
+  state.toggleTrackMute('chord');
+  state = useMusicStore.getState();
+  assert.equal(state.mutedTracks.chord, false);
+  assert.equal(state.volumes.chord, -9);
+
+  const previousMutedTracks = state.mutedTracks;
+  state.toggleTrackMute('unknown-track');
+  assert.equal(useMusicStore.getState().mutedTracks, previousMutedTracks);
 });
 
 test('setCell writes only the requested cell', () => {

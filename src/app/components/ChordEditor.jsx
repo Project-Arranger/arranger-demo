@@ -119,6 +119,7 @@ function getHarmonyPopoverPosition(anchorRect) {
 function ChordStepHarmonyPopover({
   anchorRect,
   currentLabel,
+  launchpadSelection,
   onApply,
   onClose,
   onPreview,
@@ -144,9 +145,13 @@ function ChordStepHarmonyPopover({
     </span>
   );
 
-  const renderHarmonyOption = (option, mode, disabled = false) => {
+  const renderHarmonyOption = (option, mode, disabled = false, optionIndex = 0) => {
     const optionKey = `${mode}:${option.name}`;
     const isPreviewing = previewingOptionKey === optionKey;
+    const isLaunchpadSelected = (
+      launchpadSelection?.mode === mode
+      && launchpadSelection.optionIndex === optionIndex
+    );
     const describedBy = mode === 'passing' && disabled ? passingHintId : undefined;
 
     return (
@@ -154,11 +159,19 @@ function ChordStepHarmonyPopover({
         className={[
           'chord-step-harmony-option',
           currentLabel === option.name ? 'is-current' : '',
+          isLaunchpadSelected ? 'is-launchpad-selected' : '',
           option.restore ? 'restore' : '',
           disabled ? 'is-disabled' : '',
         ].filter(Boolean).join(' ')}
         key={option.name}
       >
+        <span className="chord-step-harmony-option-pad" aria-hidden="true">
+          LPX · R
+          {mode === 'enrich' ? 3 : 4}
+          ·
+          {optionIndex + 1}
+          {isLaunchpadSelected ? ' · 已选' : ''}
+        </span>
         <button
           className="chord-step-harmony-option-apply"
           aria-describedby={describedBy}
@@ -209,6 +222,11 @@ function ChordStepHarmonyPopover({
         <div>
           <span>STEP {String(stepIndex + 1).padStart(2, '0')} · CHORD EDIT</span>
           <h2>{currentLabel}</h2>
+          {launchpadSelection ? (
+            <span className="chord-step-harmony-launchpad-hint">
+              Capture MIDI 试听 · 再按已选 Pad 确认
+            </span>
+          ) : null}
         </div>
         <button aria-label="关闭和弦编辑菜单" type="button" onClick={onClose}>×</button>
       </header>
@@ -223,7 +241,9 @@ function ChordStepHarmonyPopover({
         </div>
         <div className="chord-step-harmony-options enrich">
           {enrichOptions.length
-            ? enrichOptions.map((option) => renderHarmonyOption(option, 'enrich'))
+            ? enrichOptions.map((option, optionIndex) => (
+              renderHarmonyOption(option, 'enrich', false, optionIndex)
+            ))
             : <p className="chord-step-harmony-empty">暂无可用丰富和弦</p>}
         </div>
       </section>
@@ -245,7 +265,9 @@ function ChordStepHarmonyPopover({
           </span>
         </div>
         <div className="chord-step-harmony-options passing">
-          {passingOptions.map((option) => renderHarmonyOption(option, 'passing', !canApplyPassing))}
+          {passingOptions.map((option, optionIndex) => (
+            renderHarmonyOption(option, 'passing', !canApplyPassing, optionIndex)
+          ))}
         </div>
       </section>
     </section>
@@ -256,6 +278,8 @@ function ChordEditor({
   canPageBars = false,
   clips,
   clipName,
+  launchpadHarmonySelection = null,
+  launchpadHarmonyTarget = null,
   matrix,
   onChordRhythmStepToggle = () => {},
   onChordStepHarmonyApply = () => {},
@@ -264,6 +288,7 @@ function ChordEditor({
   onChordTemplateWorkspacePreview = () => Promise.resolve('empty'),
   onChordTemplateWorkspacePreviewStop = () => {},
   onChordTemplateWorkspaceApply = () => {},
+  onLaunchpadHarmonyClose = () => {},
   onClose = () => {},
   onClearChordBar = () => {},
   onNextBar = () => {},
@@ -282,7 +307,10 @@ function ChordEditor({
   const currentChord = getSourceChordLabel(matrix, selectedBar);
   const nextChordBar = getNextChordClipBar(clips, selectedBar);
   const nextChord = nextChordBar === null ? null : getSourceChordLabel(matrix, nextChordBar);
-  const activeSteps = new Set(getChordRhythmSteps(matrix, selectedBar));
+  const activeSteps = useMemo(
+    () => new Set(getChordRhythmSteps(matrix, selectedBar)),
+    [matrix, selectedBar],
+  );
   const hasPlayableChordContent = activeSteps.size > 0;
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [templatePage, setTemplatePage] = useState(0);
@@ -294,6 +322,7 @@ function ChordEditor({
   const [harmonyPreviewOptionKey, setHarmonyPreviewOptionKey] = useState(null);
   const previewRunRef = useRef(0);
   const harmonyPreviewRunRef = useRef(0);
+  const harmonyAnchorRefs = useRef(new Map());
   const workspaceButtonRole = getTutorialControlRole(tutorialTargets, WORKSPACE_BUTTON_CONTROL);
   const applyRole = getTutorialControlRole(tutorialTargets, APPLY_CONTROL);
   const visibleTemplates = templates.slice(
@@ -322,7 +351,8 @@ function ChordEditor({
   const closeHarmonyPanel = useCallback(() => {
     stopHarmonyPreview();
     setHarmonyPanel(null);
-  }, [stopHarmonyPreview]);
+    if (harmonyPanel?.source === 'launchpad') onLaunchpadHarmonyClose();
+  }, [harmonyPanel?.source, onLaunchpadHarmonyClose, stopHarmonyPreview]);
 
   useEffect(() => () => {
     previewRunRef.current += 1;
@@ -457,21 +487,70 @@ function ChordEditor({
     setPendingGrooveTemplateId(templateId);
   };
 
-  const handleHarmonyPanelOpen = (stepIndex, element) => {
+  const handleHarmonyPanelOpen = (stepIndex, element, source = 'pointer') => {
     if (!activeSteps.has(stepIndex)) return;
     stopPreview();
     stopHarmonyPreview();
     setHarmonyPanel({
       anchorRect: element.getBoundingClientRect(),
       bar: selectedBar,
+      source,
       stepIndex,
     });
   };
 
+  useEffect(() => {
+    if (!launchpadHarmonyTarget) {
+      if (harmonyPanel?.source !== 'launchpad') return undefined;
+      const timeoutId = window.setTimeout(() => {
+        stopHarmonyPreview();
+        setHarmonyPanel(null);
+      }, 0);
+      return () => window.clearTimeout(timeoutId);
+    }
+
+    const { bar, step } = launchpadHarmonyTarget;
+    const anchor = harmonyAnchorRefs.current.get(step);
+    if (bar !== selectedBar || !activeSteps.has(step)) {
+      const timeoutId = window.setTimeout(onLaunchpadHarmonyClose, 0);
+      return () => window.clearTimeout(timeoutId);
+    }
+    if (!anchor) return undefined;
+    if (
+      harmonyPanel?.source === 'launchpad'
+      && harmonyPanel.bar === bar
+      && harmonyPanel.stepIndex === step
+    ) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      stopPreview();
+      stopHarmonyPreview();
+      setHarmonyPanel({
+        anchorRect: anchor.getBoundingClientRect(),
+        bar,
+        source: 'launchpad',
+        stepIndex: step,
+      });
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    activeSteps,
+    harmonyPanel,
+    launchpadHarmonyTarget,
+    onLaunchpadHarmonyClose,
+    selectedBar,
+    stopHarmonyPreview,
+    stopPreview,
+  ]);
+
   const handleHarmonyApply = (selection) => {
+    const launchpadOpened = harmonyPanel?.source === 'launchpad';
     stopHarmonyPreview();
     onChordStepHarmonyApply(selection);
     setHarmonyPanel(null);
+    if (launchpadOpened) onLaunchpadHarmonyClose();
   };
 
   const handleRhythmStepToggle = (stepIndex) => {
@@ -625,6 +704,10 @@ function ChordEditor({
                         <span>{String(step + 1).padStart(2, '0')}</span>
                         {isActive ? (
                           <button
+                            ref={(element) => {
+                              if (element) harmonyAnchorRefs.current.set(step, element);
+                              else harmonyAnchorRefs.current.delete(step);
+                            }}
                             aria-expanded={harmonyPanel?.bar === selectedBar && harmonyPanel?.stepIndex === step}
                             aria-haspopup="dialog"
                             aria-label={`编辑第 ${step + 1} 步和弦 ${stepChordLabel}`}
@@ -663,6 +746,7 @@ function ChordEditor({
         <ChordStepHarmonyPopover
           anchorRect={harmonyPanel.anchorRect}
           currentLabel={getChordRhythmStepLabel(matrix, selectedBar, harmonyPanel.stepIndex)}
+          launchpadSelection={launchpadHarmonySelection}
           onApply={handleHarmonyApply}
           onClose={closeHarmonyPanel}
           onPreview={handleHarmonyPreview}

@@ -510,6 +510,7 @@ test('AudioEngine lets free-playing input samples play as one-shots', async () =
     releaseAll: (time) => tone.calls.push(['input.releaseAll', time]),
     toDestination: () => inputSampler,
     triggerAttack: (note, time) => tone.calls.push(['input.triggerAttack', note, time]),
+    triggerAttackRelease: () => {},
   };
   const engine = new AudioEngine({
     tone,
@@ -576,6 +577,58 @@ test('AudioEngine previews Melody sequences as timed input one-shots', async () 
     ['input.triggerAttack', 'C4', 12.5],
     ['input.triggerAttack', 'E4', 12.7],
     ['input.triggerAttack', 'G4', 12.9],
+  ]);
+});
+
+test('AudioEngine applies Melody volume and stops every Melody voice when muted', async () => {
+  const tone = createFakeTone();
+  const mix = {
+    mutedTracks: { melody: false },
+    volumes: { melody: -7 },
+  };
+  const matrixSampler = {
+    volume: { value: 0 },
+    releaseAll: (time) => tone.calls.push(['matrix.releaseAll', time]),
+    toDestination: () => matrixSampler,
+    triggerAttackRelease: () => {},
+  };
+  const inputSampler = {
+    volume: { value: 0 },
+    releaseAll: (time) => tone.calls.push(['input.releaseAll', time]),
+    toDestination: () => inputSampler,
+    triggerAttack: () => {},
+  };
+  const oneShotSampler = {
+    volume: { value: 0 },
+    releaseAll: (time) => tone.calls.push(['oneShot.releaseAll', time]),
+    toDestination: () => oneShotSampler,
+    triggerAttack: () => {},
+  };
+  const engine = new AudioEngine({
+    tone,
+    melodyInputSamplerFactory: () => inputSampler,
+    melodyOneShotSamplerFactory: () => oneShotSampler,
+    playerFactory: createPlayerFactory(tone.calls),
+    samplerFactory: () => matrixSampler,
+    volumeSource: () => mix,
+  });
+
+  await engine.triggerMelodyInputNote('C4');
+  engine.triggerMelodyOneShot('E4');
+  assert.equal(engine.refreshTrackVolume('melody'), -7);
+  assert.equal(matrixSampler.volume.value, -7);
+  assert.equal(inputSampler.volume.value, -7);
+  assert.equal(oneShotSampler.volume.value, -7);
+
+  mix.mutedTracks.melody = true;
+  assert.equal(engine.refreshTrackVolume('melody'), -Infinity);
+  assert.equal(matrixSampler.volume.value, -Infinity);
+  assert.equal(inputSampler.volume.value, -Infinity);
+  assert.equal(oneShotSampler.volume.value, -Infinity);
+  assert.deepEqual(tone.calls.filter(([name]) => name.endsWith('.releaseAll')), [
+    ['matrix.releaseAll', 12.5],
+    ['input.releaseAll', 12.5],
+    ['oneShot.releaseAll', 12.5],
   ]);
 });
 
@@ -1012,6 +1065,88 @@ test('AudioEngine applies live track volume source to drums previews', async () 
     ['player.start', 'snare', versioned('/samples/Drums/Snare_v0.22.wav'), 12.5, -12],
     ['player.start', 'snare', versioned('/samples/Drums/Snare_v0.22.wav'), 12.5, -6],
   ]);
+});
+
+test('AudioEngine applies independent mute state without losing the stored track volume', async () => {
+  const tone = createFakeTone();
+  const mix = {
+    mutedTracks: { drums: true },
+    volumes: { drums: -12 },
+  };
+  const engine = new AudioEngine({
+    tone,
+    volumeSource: () => mix,
+    playerFactory: createVolumeAwarePlayerFactory(tone.calls),
+  });
+
+  await engine.triggerDrumsStep('snare');
+  mix.mutedTracks.drums = false;
+  await engine.triggerDrumsStep('snare');
+
+  assert.deepEqual(tone.calls.filter(([name]) => name === 'player.start'), [
+    ['player.start', 'snare', versioned('/samples/Drums/Snare_v0.22.wav'), 12.5, -Infinity],
+    ['player.start', 'snare', versioned('/samples/Drums/Snare_v0.22.wav'), 12.5, -12],
+  ]);
+});
+
+test('AudioEngine refreshTrackVolume mutes current nodes immediately and restores dB volume', async () => {
+  const tone = createFakeTone();
+  const mix = {
+    mutedTracks: { drums: false },
+    volumes: { drums: -12 },
+  };
+  const engine = new AudioEngine({
+    tone,
+    volumeSource: () => mix,
+    playerFactory: createVolumeAwarePlayerFactory(tone.calls),
+  });
+
+  await engine.triggerDrumsStep('kick');
+  mix.mutedTracks.drums = true;
+  assert.equal(engine.refreshTrackVolume('drums'), -Infinity);
+  assert.equal(engine.drumPlayers.get('kick').volume.value, -Infinity);
+
+  mix.mutedTracks.drums = false;
+  assert.equal(engine.refreshTrackVolume('drums'), -12);
+  assert.equal(engine.drumPlayers.get('kick').volume.value, -12);
+});
+
+test('scheduled Chord previews read mute state when each event fires', async () => {
+  const tone = createFakeTone();
+  const timers = createManualTimers();
+  const mix = {
+    mutedTracks: { chord: false },
+    volumes: { chord: -7 },
+  };
+  const engine = new AudioEngine({
+    tone,
+    volumeSource: () => mix,
+    playerFactory: createPlayerFactory(tone.calls),
+    chordSamplerFactory: createVolumeAwareChordSamplerFactory(tone.calls),
+    chordSynthFactory: createVolumeAwareChordSynthFactory(tone.calls),
+    scheduleTimeout: timers.scheduleTimeout,
+    cancelTimeout: timers.cancelTimeout,
+  });
+  await engine.startAudio();
+
+  const previewPromise = engine.previewChordClipSequence([
+    { step: 0, notes: ['C4', 'E4', 'G4'], duration: '16n' },
+    { step: 4, notes: ['F4', 'A4', 'C5'], duration: '16n' },
+  ], { bpm: 120, totalSteps: 8 });
+  await Promise.resolve();
+
+  timers.runThrough(0);
+  mix.mutedTracks.chord = true;
+  timers.runThrough(500);
+  timers.runThrough(1000);
+  await previewPromise;
+
+  assert.deepEqual(
+    tone.calls
+      .filter(([name]) => name === 'chordSampler.triggerAttackRelease')
+      .map((call) => call[4]),
+    [-7, -Infinity],
+  );
 });
 
 test('AudioEngine previews chord sequences with one audio start and timed chord triggers', async () => {

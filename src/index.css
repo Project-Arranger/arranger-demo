@@ -6533,6 +6533,106 @@ body {
   gap: clamp(8px, 1vw, 16px);
 }
 
+.hardware-midi-control {
+  display: grid;
+  grid-template-columns: 9px minmax(0, 1fr);
+  grid-template-rows: 1fr 1fr;
+  align-items: center;
+  column-gap: 8px;
+  width: 152px;
+  height: 38px;
+  padding: 4px 11px;
+  color: #e8c99f;
+  background:
+    linear-gradient(180deg, rgb(67 50 38 / 0.94), rgb(11 8 7 / 0.98)),
+    #17100c;
+  border: 1px solid rgb(231 169 92 / 0.42);
+  border-radius: 10px;
+  box-shadow:
+    inset 0 1px 0 rgb(255 230 190 / 0.22),
+    inset 0 -8px 14px rgb(0 0 0 / 0.55),
+    0 5px 12px rgb(0 0 0 / 0.5);
+  cursor: pointer;
+  text-align: left;
+}
+
+.hardware-midi-dot {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  width: 8px;
+  height: 8px;
+  background: #82542f;
+  border: 1px solid rgb(255 215 160 / 0.32);
+  border-radius: 50%;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18);
+}
+
+.hardware-midi-label,
+.hardware-midi-message {
+  grid-column: 2;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hardware-midi-label {
+  align-self: end;
+  font-size: 10px;
+  font-weight: 850;
+  line-height: 1.1;
+}
+
+.hardware-midi-message {
+  align-self: start;
+  color: #ad8d68;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 8px;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+}
+
+.hardware-midi-control:hover,
+.hardware-midi-control:focus-visible {
+  color: #ffe9c5;
+  border-color: rgb(255 211 144 / 0.62);
+  filter: brightness(1.08);
+}
+
+.hardware-midi-control:focus-visible {
+  outline: 2px solid rgb(255 226 166 / 0.72);
+  outline-offset: 2px;
+}
+
+.hardware-midi-control[disabled] {
+  cursor: default;
+}
+
+.hardware-midi-control[data-status="connecting"] .hardware-midi-dot {
+  background: #f0a84e;
+  box-shadow: 0 0 9px rgb(255 169 73 / 0.68);
+}
+
+.hardware-midi-control[data-status="connected"] {
+  border-color: rgb(116 235 145 / 0.42);
+}
+
+.hardware-midi-control[data-status="connected"] .hardware-midi-dot {
+  background: #62dc86;
+  border-color: rgb(208 255 216 / 0.56);
+  box-shadow: 0 0 9px rgb(80 255 126 / 0.62);
+}
+
+.hardware-midi-control[data-status="denied"] .hardware-midi-dot,
+.hardware-midi-control[data-status="error"] .hardware-midi-dot {
+  background: #e66c53;
+  box-shadow: 0 0 8px rgb(255 86 65 / 0.45);
+}
+
+.hardware-midi-control[data-status="unsupported"] {
+  opacity: 0.56;
+}
+
 .key-switch {
   position: relative;
   display: inline-flex;
@@ -7836,6 +7936,12 @@ body {
   .right-tools .hardware-export,
   .right-tools .icon-btn:not(.tutorial-topbar-button) {
     display: none;
+  }
+}
+
+@media (max-width: 1180px) {
+  .hardware-midi-control {
+    width: 138px;
   }
 }
 
@@ -9631,6 +9737,23 @@ body {
   outline: none;
 }
 
+.chord-step-harmony-option.is-launchpad-selected {
+  border-color: #ffd56a;
+  background:
+    linear-gradient(180deg, rgb(255 204 91 / 0.25), rgb(20 10 3 / 0.5)),
+    #51351d;
+  box-shadow:
+    inset 0 0 0 1px rgb(255 229 159 / 0.42),
+    0 0 18px rgb(255 172 42 / 0.28);
+}
+
+.chord-step-harmony-launchpad-hint {
+  display: block;
+  margin-top: 5px;
+  color: #ffd56a !important;
+  letter-spacing: 0.06em !important;
+}
+
 .chord-step-harmony-option.restore {
   background:
     linear-gradient(180deg, rgb(255 226 181 / 0.18), rgb(15 8 4 / 0.44)),
@@ -9640,6 +9763,18 @@ body {
 .chord-step-harmony-option.is-disabled {
   filter: saturate(0.35);
   opacity: 0.38;
+}
+
+.chord-step-harmony-option-pad {
+  position: absolute;
+  right: 10px;
+  bottom: 9px;
+  z-index: 2;
+  color: #dca04f;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  pointer-events: none;
 }
 
 .chord-step-harmony-option-apply {

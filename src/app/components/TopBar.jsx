@@ -1,3 +1,4 @@
+import { createElement } from 'react';
 import {
   ClipboardPaste,
   Copy,
@@ -13,6 +14,7 @@ import {
   SCALE,
 } from '../../domain/musicConstants.js';
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
+import { HardwareInputStatus } from './HardwareInputStatus.jsx';
 import { renderIcon } from './icons.js';
 
 function TopBar({
@@ -24,6 +26,7 @@ function TopBar({
   canUndo = false,
   currentBar,
   currentStep,
+  hardwareInput = null,
   isPlaying,
   onBackToStart,
   onNewSong = () => {},
@@ -170,6 +173,7 @@ function TopBar({
       </div>
 
       <div className="right-tools">
+        {hardwareInput ? createElement(HardwareInputStatus, hardwareInput) : null}
         {showTutorialToggle ? (
           <button
             className="key-switch tutorial-switch"

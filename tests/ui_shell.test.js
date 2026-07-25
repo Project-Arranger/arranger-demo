@@ -386,7 +386,11 @@ test('app shell exposes the chord rhythm editor and unified template workspace',
   assert.match(chordEditorSource, /canApplyPassing \? 'is-available' : 'is-restricted'/);
   assert.match(chordEditorSource, /canApplyPassing \? '第 15 步可用' : '仅第 15 步可用'/);
   assert.match(chordEditorSource, /aria-describedby=\{describedBy\}/);
-  assert.match(chordEditorSource, /renderHarmonyOption\(option, 'passing', !canApplyPassing\)/);
+  assert.match(
+    chordEditorSource,
+    /renderHarmonyOption\(option, 'passing', !canApplyPassing, optionIndex\)/,
+  );
+  assert.match(chordEditorSource, /chord-step-harmony-option-pad/);
   assert.match(chordEditorSource, /chord-step-harmony-option-preview/);
   assert.match(chordEditorSource, /onChordStepHarmonyPreview\(\{ chordName, mode \}\)/);
   assert.match(chordEditorSource, /aria-label=\{isPreviewing \? `停止试听 \$\{option\.name\}` : `试听 \$\{option\.name\}`\}/);
@@ -509,7 +513,7 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(source, /setTrackVolume\(trackId,\s*volume\)/);
   assert.match(source, /onVolumeChange:\s*handleTrackVolumeChange/);
   assert.match(source, /setVolumeSource/);
-  assert.match(source, /useMusicStore\.getState\(\)\.volumes/);
+  assert.match(source, /const state = useMusicStore\.getState\(\);[\s\S]*mutedTracks: state\.mutedTracks,[\s\S]*volumes: state\.volumes/);
   assert.match(tracksColumnSource, /type="range"/);
   assert.match(tracksColumnSource, /aria-label=\{`\$\{track\.label\} volume`\}/);
   assert.match(tracksColumnSource, /className=\{classes\}[\s\S]*onClick=\{\(\) => onSelect\(track\.id\)\}/);
@@ -1149,8 +1153,9 @@ test('tutorial navigation buttons interrupt preview playback', async () => {
   assert.match(source, /onPositionChange[\s\S]*handleTutorialPlaybackPosition/);
   assert.match(source, /setTutorialProgress\(\(progress\) => \{[\s\S]*handleTutorialPlaybackPosition\(\{[\s\S]*progress,[\s\S]*step: currentTutorialStep/);
   assert.doesNotMatch(source, /handleTutorialPlaybackPosition\(\{[\s\S]*progress: tutorialProgress,[\s\S]*trackId: 'chord'/);
-  assert.match(source, /const dispatchKeyboardCommand = useCallback\(\(command\) => \{[\s\S]*command\?\.type === APP_COMMAND_TYPES\.TRANSPORT_TOGGLE_PLAY[\s\S]*handlePlayToggle\(\);[\s\S]*return;[\s\S]*void dispatchAppCommand\(command\);/);
-  assert.match(source, /useKeyboardCommands\(\{ dispatch: dispatchKeyboardCommand \}\)/);
+  assert.match(source, /const dispatchInputCommand = useCallback\(\(command\) => \{[\s\S]*command\?\.type === APP_COMMAND_TYPES\.TRANSPORT_TOGGLE_PLAY[\s\S]*handlePlayToggle\(\);[\s\S]*return;[\s\S]*void dispatchAppCommand\(command\);/);
+  assert.match(source, /useKeyboardCommands\(\{ dispatch: dispatchInputCommand \}\)/);
+  assert.match(source, /useLaunchpadXCommands\(\{[\s\S]*dispatch: dispatchInputCommand,[\s\S]*drumsActive,[\s\S]*selectedBar,[\s\S]*\}\)/);
   assert.doesNotMatch(source, /useKeyboardCommands\(\{ dispatch: dispatchAppCommand \}\)/);
   assert.match(source, /applyTutorialActionProgress,[\s\S]*currentTutorialStep,[\s\S]*tutorialProgress,[\s\S]*tutorialActive/);
   assert.match(tutorialControllerSource, /const tutorialDirectoryItems = useMemo/);

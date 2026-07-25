@@ -1,4 +1,5 @@
 import {
+  CORE_TRACK_IDS,
   DRUMS_INSTRUMENT_IDS,
   STEPS_PER_BAR,
   TOTAL_BARS,
@@ -50,6 +51,13 @@ function hasValidTogglePlayPayload(command) {
   return true;
 }
 
+function hasValidTrackMutePayload(command) {
+  return (
+    hasOnlyKeys(command, ['type', 'trackId'])
+    && CORE_TRACK_IDS.includes(command.trackId)
+  );
+}
+
 function hasValidDrumsPayload(command) {
   return (
     hasOnlyKeys(command, ['type', 'bar', 'step', 'instrument', 'preview']) &&
@@ -57,6 +65,45 @@ function hasValidDrumsPayload(command) {
     isIntegerInRange(command.step, 0, STEPS_PER_BAR - 1) &&
     DRUMS_INSTRUMENT_IDS.includes(command.instrument) &&
     typeof command.preview === 'boolean'
+  );
+}
+
+function hasValidDrumsPreviewPayload(command) {
+  return (
+    hasOnlyKeys(command, ['type', 'instrument'])
+    && DRUMS_INSTRUMENT_IDS.includes(command.instrument)
+  );
+}
+
+function hasValidDrumsClipPayload(command) {
+  return (
+    hasOnlyKeys(command, ['type', 'bar'])
+    && isIntegerInRange(command.bar, 0, TOTAL_BARS - 1)
+  );
+}
+
+function hasValidChordClipPayload(command) {
+  return (
+    hasOnlyKeys(command, ['type', 'bar'])
+    && isIntegerInRange(command.bar, 0, TOTAL_BARS - 1)
+  );
+}
+
+function hasValidChordRhythmPayload(command) {
+  return (
+    hasOnlyKeys(command, ['type', 'bar', 'step'])
+    && isIntegerInRange(command.bar, 0, TOTAL_BARS - 1)
+    && isIntegerInRange(command.step, 0, STEPS_PER_BAR - 1)
+  );
+}
+
+function hasValidChordHarmonyOptionPayload(command) {
+  return (
+    hasOnlyKeys(command, ['type', 'bar', 'step', 'mode', 'optionIndex'])
+    && isIntegerInRange(command.bar, 0, TOTAL_BARS - 1)
+    && isIntegerInRange(command.step, 0, STEPS_PER_BAR - 1)
+    && ['enrich', 'passing'].includes(command.mode)
+    && isIntegerInRange(command.optionIndex, 0, CHORD_OPTION_COUNT - 1)
   );
 }
 
@@ -103,6 +150,21 @@ function hasValidMelodyPayload(command) {
   );
 }
 
+function hasValidMelodyClipPayload(command) {
+  return (
+    hasOnlyKeys(command, ['type', 'bar'])
+    && isIntegerInRange(command.bar, 0, TOTAL_BARS - 1)
+  );
+}
+
+function hasValidMelodyStepPayload(command) {
+  return (
+    hasOnlyKeys(command, ['type', 'bar', 'step'])
+    && isIntegerInRange(command.bar, 0, TOTAL_BARS - 1)
+    && isIntegerInRange(command.step, 0, STEPS_PER_BAR - 1)
+  );
+}
+
 function isValidAppCommand(command) {
   if (!isPlainObject(command) || typeof command.type !== 'string') return false;
 
@@ -110,12 +172,14 @@ function isValidAppCommand(command) {
     case APP_COMMAND_TYPES.APP_REDO:
     case APP_COMMAND_TYPES.APP_UNDO:
     case APP_COMMAND_TYPES.TRANSPORT_STOP:
+    case APP_COMMAND_TYPES.TRANSPORT_STOP_AND_REWIND:
     case APP_COMMAND_TYPES.CLIP_COPY_SELECTED:
     case APP_COMMAND_TYPES.CLIP_DELETE_SELECTED:
     case APP_COMMAND_TYPES.CLIP_PASTE:
     case APP_COMMAND_TYPES.TUTORIAL_NEXT:
     case APP_COMMAND_TYPES.TUTORIAL_COMPLETE_TASK:
     case APP_COMMAND_TYPES.CHORD_CONFIRM:
+    case APP_COMMAND_TYPES.CHORD_CLOSE_HARMONY:
       return hasOnlyKeys(command, ['type']);
 
     case APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY:
@@ -124,8 +188,29 @@ function isValidAppCommand(command) {
     case APP_COMMAND_TYPES.TRANSPORT_SEEK:
       return hasValidSeekPayload(command);
 
+    case APP_COMMAND_TYPES.TRACK_TOGGLE_MUTE:
+      return hasValidTrackMutePayload(command);
+
     case APP_COMMAND_TYPES.DRUMS_TOGGLE:
       return hasValidDrumsPayload(command);
+
+    case APP_COMMAND_TYPES.DRUMS_PREVIEW:
+      return hasValidDrumsPreviewPayload(command);
+
+    case APP_COMMAND_TYPES.DRUMS_SELECT_CLIP:
+      return hasValidDrumsClipPayload(command);
+
+    case APP_COMMAND_TYPES.CHORD_SELECT_CLIP:
+      return hasValidChordClipPayload(command);
+
+    case APP_COMMAND_TYPES.CHORD_TOGGLE_RHYTHM:
+    case APP_COMMAND_TYPES.CHORD_OPEN_HARMONY:
+      return hasValidChordRhythmPayload(command);
+
+    case APP_COMMAND_TYPES.CHORD_APPLY_HARMONY_OPTION:
+    case APP_COMMAND_TYPES.CHORD_SELECT_HARMONY_OPTION:
+    case APP_COMMAND_TYPES.CHORD_PREVIEW_HARMONY_OPTION:
+      return hasValidChordHarmonyOptionPayload(command);
 
     case APP_COMMAND_TYPES.CHORD_SELECT_OPTION:
       return hasValidChordOptionPayload(command);
@@ -139,6 +224,12 @@ function isValidAppCommand(command) {
     case APP_COMMAND_TYPES.MELODY_NOTE_ON:
     case APP_COMMAND_TYPES.MELODY_NOTE_OFF:
       return hasValidMelodyPayload(command);
+
+    case APP_COMMAND_TYPES.MELODY_SELECT_CLIP:
+      return hasValidMelodyClipPayload(command);
+
+    case APP_COMMAND_TYPES.MELODY_SELECT_STEP:
+      return hasValidMelodyStepPayload(command);
 
     default:
       return false;

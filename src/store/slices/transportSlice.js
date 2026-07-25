@@ -1,5 +1,6 @@
 import {
   DEFAULT_BPM,
+  CORE_TRACK_IDS,
   ROOT_KEY,
   SCALE,
   TRACK_IDS,
@@ -8,6 +9,10 @@ import { clampTrackVolume } from '../../domain/trackVolume.js';
 
 function createDefaultVolumes() {
   return Object.fromEntries(TRACK_IDS.map((trackId) => [trackId, 0]));
+}
+
+function createDefaultMutedTracks() {
+  return Object.fromEntries(CORE_TRACK_IDS.map((trackId) => [trackId, false]));
 }
 
 function createTransportPositionPatch(bar, step) {
@@ -30,6 +35,7 @@ export default function createTransportSlice(set) {
     seekBar: 0,
     seekStep: 0,
     volumes: createDefaultVolumes(),
+    mutedTracks: createDefaultMutedTracks(),
 
     play: () => set({ isPlaying: true }),
     pause: () => set({ isPlaying: false }),
@@ -47,6 +53,16 @@ export default function createTransportSlice(set) {
         volumes: {
           ...state.volumes,
           [trackId]: clampTrackVolume(volume),
+        },
+      };
+    }),
+    toggleTrackMute: (trackId) => set((state) => {
+      if (!Object.hasOwn(state.mutedTracks, trackId)) return {};
+
+      return {
+        mutedTracks: {
+          ...state.mutedTracks,
+          [trackId]: !state.mutedTracks[trackId],
         },
       };
     }),

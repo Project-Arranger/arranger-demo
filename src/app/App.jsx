@@ -9,6 +9,7 @@ import {
 import audioEngine from '../audio/audioEngineSingleton.js';
 import { APP_COMMAND_TYPES } from '../input/appCommands.js';
 import useKeyboardCommands from '../input/useKeyboardCommands.js';
+import useLaunchpadXCommands from '../input/useLaunchpadXCommands.js';
 import useMusicStore from '../store/useMusicStore.js';
 import {
   DRUMS_DRAG_SOURCE_STEP,
@@ -61,6 +62,7 @@ import {
   applyMelodyRhythmTemplateToExistingClips,
   clearMelodyRhythmTemplateFromBar,
   clearMelodyRhythmTemplates,
+  getMelodyRhythmTemplate,
 } from './melodyRhythmTemplates.js';
 import { BottomEditor } from './components/BottomEditor.jsx';
 import { Timeline } from './components/Timeline.jsx';
@@ -70,6 +72,10 @@ import { TutorialOverlay } from './components/TutorialOverlay.jsx';
 import { toggleInstrumentInCell } from './drumSequencerData.js';
 import { createDrumsCell, getDrumsCellInstruments } from '../domain/drumsCells.js';
 import { createDrumsStepMovePatch } from '../domain/drumsStepMove.js';
+import { createLaunchpadChordHarmonyState } from './launchpadChordHarmonyState.js';
+import { selectLaunchpadChordClip } from './launchpadChordClipSelection.js';
+import { selectLaunchpadDrumsClip } from './launchpadDrumsClipSelection.js';
+import { selectLaunchpadMelodyClip } from './launchpadMelodyClipSelection.js';
 import {
   applyBasicDrumsAllBars,
   applyBasicDrumsBar,
@@ -79,6 +85,7 @@ import {
 import {
   canPageTrackClipBars,
   getAdjacentTrackClipBar,
+  getSortedTrackClipBars,
 } from './trackBarPaging.js';
 import { createTimelineTracks } from './timelineViewModels.js';
 import { syncEditorToPlaybackBar } from './playbackEditorSync.js';
@@ -131,9 +138,41 @@ export default function App() {
   const selectedBar = useMusicStore((state) => state.selectedBar);
   const selectedClipId = useMusicStore((state) => state.selectedClipId);
   const clips = useMusicStore((state) => state.clips);
+  const mutedTracks = useMusicStore((state) => state.mutedTracks);
   const volumes = useMusicStore((state) => state.volumes);
   const visibleTrackIds = useMusicStore((state) => state.visibleTrackIds);
   const melodyEditorIsOpen = activeTrackId === 'melody' && selectedClipId;
+  const chordActive = activeTrackId === 'chord'
+    && Boolean(selectedClipId)
+    && clips.byId[selectedClipId]?.trackId === 'chord';
+  const chordClipBars = useMemo(
+    () => getSortedTrackClipBars(clips, 'chord'),
+    [clips],
+  );
+  const [launchpadChordHarmonyTarget, setLaunchpadChordHarmonyTarget] = useState(null);
+  const chordHarmonyState = useMemo(() => (
+    chordActive && launchpadChordHarmonyTarget
+      ? createLaunchpadChordHarmonyState({
+        ...launchpadChordHarmonyTarget,
+        clips,
+        matrix,
+      })
+      : null
+  ), [chordActive, clips, launchpadChordHarmonyTarget, matrix]);
+  const drumsActive = activeTrackId === 'drums'
+    && Boolean(selectedClipId)
+    && clips.byId[selectedClipId]?.trackId === 'drums';
+  const drumsClipBars = useMemo(
+    () => getSortedTrackClipBars(clips, 'drums'),
+    [clips],
+  );
+  const melodyActive = activeTrackId === 'melody'
+    && Boolean(selectedClipId)
+    && clips.byId[selectedClipId]?.trackId === 'melody';
+  const melodyClipBars = useMemo(
+    () => getSortedTrackClipBars(clips, 'melody'),
+    [clips],
+  );
   const [isNewSongConfirmOpen, setIsNewSongConfirmOpen] = useState(false);
   const tracksScrollRef = useRef(null);
   const timelineScrollRef = useRef(null);
@@ -149,6 +188,13 @@ export default function App() {
     () => createUiAudioDispatcher({ store: useMusicStore, audio: audioEngine }),
     [],
   );
+
+  useEffect(() => {
+    if (!launchpadChordHarmonyTarget || chordHarmonyState) return undefined;
+
+    const timeoutId = window.setTimeout(() => setLaunchpadChordHarmonyTarget(null), 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [chordHarmonyState, launchpadChordHarmonyTarget]);
   const {
     activeTutorialLocked,
     activeTutorialTarget,
@@ -239,6 +285,9 @@ export default function App() {
     selectedClipId,
     withUndoCheckpoint,
   });
+  const melodyTemplateSteps = useMemo(() => (
+    getMelodyRhythmTemplate(selectedClip?.melodyRhythmTemplateId)?.steps ?? []
+  ), [selectedClip?.melodyRhythmTemplateId]);
   const melodyRecording = useMelodyRecordingController({
     activeTrackId,
     audioEngine,
@@ -274,7 +323,13 @@ export default function App() {
   }, [clearTutorialCountIn]);
 
   useEffect(() => {
-    audioEngine.setVolumeSource?.(() => useMusicStore.getState().volumes);
+    audioEngine.setVolumeSource?.(() => {
+      const state = useMusicStore.getState();
+      return {
+        mutedTracks: state.mutedTracks,
+        volumes: state.volumes,
+      };
+    });
 
     return () => {
       audioEngine.setVolumeSource?.(null);
@@ -297,9 +352,14 @@ export default function App() {
 
   const handleStop = useCallback(() => {
     clearTutorialCountIn();
-    melodyRecording.stopRecording({ stopTransport: false });
+    stopMelodyRecording({ stopTransport: false });
     void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
-  }, [clearTutorialCountIn, dispatchAppCommand, melodyRecording]);
+  }, [clearTutorialCountIn, dispatchAppCommand, stopMelodyRecording]);
+
+  const handleStopAndRewind = useCallback(() => {
+    clearTutorialCountIn();
+    void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP_AND_REWIND });
+  }, [clearTutorialCountIn, dispatchAppCommand]);
 
   const handleNewSong = useCallback(() => {
     stopMelodyRecording();
@@ -757,71 +817,6 @@ export default function App() {
     tutorialProgress,
   ]);
 
-  const dispatchKeyboardCommand = useCallback((command) => {
-    if (command?.type === APP_COMMAND_TYPES.APP_UNDO) {
-      handleUndoWithMelodyStop();
-      return;
-    }
-
-    if (command?.type === APP_COMMAND_TYPES.APP_REDO) {
-      handleRedoWithMelodyStop();
-      return;
-    }
-
-    if (command?.type === APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY) {
-      handlePlayToggle();
-      return;
-    }
-
-    if (command?.type === APP_COMMAND_TYPES.TRANSPORT_SEEK) {
-      stopMelodyRecording();
-      void dispatchAppCommand(command);
-      return;
-    }
-
-    if (command?.type === APP_COMMAND_TYPES.CLIP_COPY_SELECTED) {
-      handleCopySelectedClip();
-      return;
-    }
-
-    if (command?.type === APP_COMMAND_TYPES.CLIP_PASTE) {
-      handlePasteClipRequestWithMelodyStop();
-      return;
-    }
-
-    if (command?.type === APP_COMMAND_TYPES.CLIP_DELETE_SELECTED) {
-      stopMelodyRecording();
-      withUndoCheckpoint(() => {
-        useMusicStore.getState().deleteSelectedClip();
-      });
-      return;
-    }
-
-    if (command?.type === APP_COMMAND_TYPES.MELODY_NOTE_ON) {
-      melodyRecording.handleNoteOn(command);
-      return;
-    }
-
-    if (command?.type === APP_COMMAND_TYPES.MELODY_NOTE_OFF) {
-      melodyRecording.handleNoteOff(command);
-      return;
-    }
-
-    void dispatchAppCommand(command);
-  }, [
-    dispatchAppCommand,
-    handleCopySelectedClip,
-    handlePasteClipRequestWithMelodyStop,
-    handlePlayToggle,
-    handleRedoWithMelodyStop,
-    handleUndoWithMelodyStop,
-    melodyRecording,
-    stopMelodyRecording,
-    withUndoCheckpoint,
-  ]);
-
-  useKeyboardCommands({ dispatch: dispatchKeyboardCommand });
-
   useEffect(() => {
     audioEngine.onPositionChange = (bar, step) => {
       useMusicStore.getState().setTransportPosition(bar, step);
@@ -901,13 +896,19 @@ export default function App() {
     };
   }, [bpm, currentTutorialStep, dispatchAppCommand]);
 
-  const handleDrumsStepToggle = useCallback((instrument, step) => {
+  const handleDrumsStepToggle = useCallback((
+    instrument,
+    step,
+    bar = useMusicStore.getState().selectedBar,
+  ) => {
     const state = useMusicStore.getState();
+    if (state.selectedBar !== bar) return;
+
     const tutorialAction = tutorialActive ? handleTutorialDrumToggle({
       instrument,
       matrix: state.matrix,
       progress: tutorialProgress,
-      selectedBar,
+      selectedBar: bar,
       step: currentTutorialStep,
       stepIndex: step,
     }) : { allowed: true, nextProgress: tutorialProgress, shouldAdvance: false };
@@ -915,13 +916,13 @@ export default function App() {
     if (!tutorialAction.allowed) return;
 
     withUndoCheckpoint(() => {
-      const currentCell = state.matrix.drums[selectedBar]?.[step] ?? null;
+      const currentCell = state.matrix.drums[bar]?.[step] ?? null;
       const preview = !getDrumsCellInstruments(currentCell).includes(instrument);
       const nextCell = toggleInstrumentInCell(currentCell, instrument);
-      state.setCell('drums', selectedBar, step, nextCell);
+      state.setCell('drums', bar, step, nextCell);
       void dispatchAppCommand({
         type: APP_COMMAND_TYPES.DRUMS_TOGGLE,
-        bar: selectedBar,
+        bar,
         step,
         instrument,
         preview,
@@ -933,7 +934,6 @@ export default function App() {
     applyTutorialActionProgress,
     currentTutorialStep,
     dispatchAppCommand,
-    selectedBar,
     tutorialActive,
     tutorialProgress,
     withUndoCheckpoint,
@@ -1012,11 +1012,14 @@ export default function App() {
     audioEngine.stopChordClipSequencePreview()
   ), []);
 
-  const handleChordStepHarmonyPreview = useCallback(async ({ chordName } = {}) => {
+  const handleChordStepHarmonyPreview = useCallback(async ({
+    chordName,
+    preserveTransport = false,
+  } = {}) => {
     const events = createChordStepHarmonyPreviewEvents(chordName);
     if (!events.length) return 'empty';
 
-    if (useMusicStore.getState().isPlaying) {
+    if (!preserveTransport && useMusicStore.getState().isPlaying) {
       await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
     }
 
@@ -1026,36 +1029,46 @@ export default function App() {
     });
   }, [bpm, dispatchAppCommand]);
 
-  const handleChordRhythmStepToggle = useCallback((stepIndex) => {
+  const handleChordRhythmStepToggle = useCallback((
+    stepIndex,
+    bar = useMusicStore.getState().selectedBar,
+  ) => {
+    setLaunchpadChordHarmonyTarget(null);
     withUndoCheckpoint(() => {
       const state = useMusicStore.getState();
-      const nextMatrix = toggleChordRhythmStep(state.matrix, selectedBar, stepIndex);
+      if (state.selectedBar !== bar) return;
+      const nextMatrix = toggleChordRhythmStep(state.matrix, bar, stepIndex);
       if (nextMatrix === state.matrix) return;
       state.setTrackMatrix('chord', nextMatrix.chord);
     });
-  }, [selectedBar, withUndoCheckpoint]);
+  }, [withUndoCheckpoint]);
 
   const handleChordStepHarmonyApply = useCallback(({
+    bar,
     chordName,
     mode,
     stepIndex,
   } = {}) => {
     const state = useMusicStore.getState();
+    const targetBar = bar ?? state.selectedBar;
+    if (targetBar !== state.selectedBar) return false;
     const nextMatrix = mode === 'passing'
       ? applyChordRhythmStepPassingChord(
         state.matrix,
         state.clips,
-        selectedBar,
+        targetBar,
         stepIndex,
         chordName,
       )
-      : applyChordRhythmStepEnrichment(state.matrix, selectedBar, stepIndex, chordName);
-    if (nextMatrix === state.matrix) return;
+      : applyChordRhythmStepEnrichment(state.matrix, targetBar, stepIndex, chordName);
+    if (nextMatrix === state.matrix) return false;
 
     withUndoCheckpoint(() => {
       state.setTrackMatrix('chord', nextMatrix.chord);
     });
-  }, [selectedBar, withUndoCheckpoint]);
+    setLaunchpadChordHarmonyTarget(null);
+    return true;
+  }, [withUndoCheckpoint]);
 
   const handleChordTemplateWorkspaceApply = useCallback(({
     progressionTemplateId,
@@ -1294,6 +1307,344 @@ export default function App() {
     withUndoCheckpoint,
   ]);
 
+  const handleLaunchpadDrumsClipSelect = useCallback((bar) => {
+    const result = selectLaunchpadDrumsClip({
+      bar,
+      canSelectClip: handleTutorialOpenClip,
+      dispatchSeek: (targetBar, targetStep) => {
+        void dispatchAppCommand({
+          type: APP_COMMAND_TYPES.TRANSPORT_SEEK,
+          bar: targetBar,
+          step: targetStep,
+        });
+      },
+      store: useMusicStore,
+      withUndoCheckpoint,
+    });
+
+    return result.ok;
+  }, [dispatchAppCommand, handleTutorialOpenClip, withUndoCheckpoint]);
+
+  const handleLaunchpadChordClipSelect = useCallback((bar) => {
+    setLaunchpadChordHarmonyTarget(null);
+    const result = selectLaunchpadChordClip({
+      bar,
+      canSelectClip: handleTutorialOpenClip,
+      dispatchSeek: (targetBar, targetStep) => {
+        void dispatchAppCommand({
+          type: APP_COMMAND_TYPES.TRANSPORT_SEEK,
+          bar: targetBar,
+          step: targetStep,
+        });
+      },
+      store: useMusicStore,
+      withUndoCheckpoint,
+    });
+
+    return result.ok;
+  }, [dispatchAppCommand, handleTutorialOpenClip, withUndoCheckpoint]);
+
+  const handleLaunchpadMelodyClipSelect = useCallback((bar) => {
+    melodyRecording.stopRecording();
+    const result = selectLaunchpadMelodyClip({
+      bar,
+      canSelectClip: handleTutorialOpenClip,
+      dispatchSeek: (targetBar, targetStep) => {
+        void dispatchAppCommand({
+          type: APP_COMMAND_TYPES.TRANSPORT_SEEK,
+          bar: targetBar,
+          step: targetStep,
+        });
+      },
+      store: useMusicStore,
+      withUndoCheckpoint,
+    });
+
+    return result.ok;
+  }, [
+    dispatchAppCommand,
+    handleTutorialOpenClip,
+    melodyRecording,
+    withUndoCheckpoint,
+  ]);
+
+  const handleLaunchpadChordHarmonyOpen = useCallback((bar, step) => {
+    const state = useMusicStore.getState();
+    const activeClip = state.clips.byId[state.selectedClipId];
+    if (
+      state.activeTrackId !== 'chord'
+      || activeClip?.trackId !== 'chord'
+      || state.selectedBar !== bar
+      || state.matrix.chord?.[bar]?.[step]?.type !== 'chord'
+    ) {
+      return false;
+    }
+
+    setLaunchpadChordHarmonyTarget({ bar, step });
+    return true;
+  }, []);
+
+  const handleLaunchpadChordHarmonyClose = useCallback(() => {
+    setLaunchpadChordHarmonyTarget(null);
+    return true;
+  }, []);
+
+  const handleLaunchpadChordHarmonyOption = useCallback((command) => {
+    const selectedOption = chordHarmonyState?.selectedOption;
+    if (
+      chordHarmonyState?.bar !== command.bar
+      || chordHarmonyState.step !== command.step
+      || selectedOption?.mode !== command.mode
+      || selectedOption.optionIndex !== command.optionIndex
+    ) {
+      return false;
+    }
+
+    const state = useMusicStore.getState();
+    const harmonyState = createLaunchpadChordHarmonyState({
+      bar: command.bar,
+      clips: state.clips,
+      matrix: state.matrix,
+      step: command.step,
+    });
+    if (!harmonyState || state.selectedBar !== command.bar) return false;
+
+    const options = command.mode === 'passing'
+      ? harmonyState.passingOptions
+      : harmonyState.enrichOptions;
+    const option = options[command.optionIndex];
+    if (!option) return false;
+
+    const applied = handleChordStepHarmonyApply({
+      bar: command.bar,
+      chordName: option.name,
+      mode: command.mode,
+      stepIndex: command.step,
+    });
+    if (!applied) setLaunchpadChordHarmonyTarget(null);
+    return true;
+  }, [chordHarmonyState, handleChordStepHarmonyApply]);
+
+  const handleLaunchpadChordHarmonySelect = useCallback((command) => {
+    if (
+      chordHarmonyState?.bar !== command.bar
+      || chordHarmonyState.step !== command.step
+    ) {
+      return false;
+    }
+
+    const options = command.mode === 'passing'
+      ? chordHarmonyState.passingOptions
+      : chordHarmonyState.enrichOptions;
+    if (!options[command.optionIndex]) return false;
+
+    setLaunchpadChordHarmonyTarget({
+      bar: command.bar,
+      selectedOption: {
+        mode: command.mode,
+        optionIndex: command.optionIndex,
+      },
+      step: command.step,
+    });
+    return true;
+  }, [chordHarmonyState]);
+
+  const handleLaunchpadChordHarmonyPreview = useCallback((command) => {
+    const selectedOption = chordHarmonyState?.selectedOption;
+    if (
+      chordHarmonyState?.bar !== command.bar
+      || chordHarmonyState.step !== command.step
+      || selectedOption?.mode !== command.mode
+      || selectedOption.optionIndex !== command.optionIndex
+    ) {
+      return false;
+    }
+
+    void handleChordStepHarmonyPreview({
+      chordName: selectedOption.name,
+      mode: selectedOption.mode,
+      preserveTransport: true,
+    });
+    return true;
+  }, [chordHarmonyState, handleChordStepHarmonyPreview]);
+
+  const dispatchInputCommand = useCallback((command) => {
+    if (command?.type === APP_COMMAND_TYPES.APP_UNDO) {
+      handleUndoWithMelodyStop();
+      return;
+    }
+
+    if (command?.type === APP_COMMAND_TYPES.APP_REDO) {
+      handleRedoWithMelodyStop();
+      return;
+    }
+
+    if (command?.type === APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY) {
+      handlePlayToggle();
+      return;
+    }
+
+    if (command?.type === APP_COMMAND_TYPES.TRANSPORT_STOP) {
+      handleStop();
+      return;
+    }
+
+    if (command?.type === APP_COMMAND_TYPES.TRANSPORT_STOP_AND_REWIND) {
+      stopMelodyRecording({ stopTransport: false });
+      handleStopAndRewind();
+      return;
+    }
+
+    if (command?.type === APP_COMMAND_TYPES.TRANSPORT_SEEK) {
+      stopMelodyRecording();
+      void dispatchAppCommand(command);
+      return;
+    }
+
+    if (command?.type === APP_COMMAND_TYPES.DRUMS_SELECT_CLIP) {
+      return handleLaunchpadDrumsClipSelect(command.bar);
+    }
+
+    if (command?.type === APP_COMMAND_TYPES.CHORD_SELECT_CLIP) {
+      return handleLaunchpadChordClipSelect(command.bar);
+    }
+
+    if (command?.type === APP_COMMAND_TYPES.MELODY_SELECT_CLIP) {
+      return handleLaunchpadMelodyClipSelect(command.bar);
+    }
+
+    if (command?.type === APP_COMMAND_TYPES.MELODY_SELECT_STEP) {
+      return melodyRecording.selectTemplateStep(command.bar, command.step);
+    }
+
+    if (command?.type === APP_COMMAND_TYPES.MELODY_NOTE_ON) {
+      return melodyRecording.handleNoteOn(command);
+    }
+
+    if (command?.type === APP_COMMAND_TYPES.MELODY_NOTE_OFF) {
+      return melodyRecording.handleNoteOff(command);
+    }
+
+    if (command?.type === APP_COMMAND_TYPES.CHORD_OPEN_HARMONY) {
+      return handleLaunchpadChordHarmonyOpen(command.bar, command.step);
+    }
+
+    if (command?.type === APP_COMMAND_TYPES.CHORD_CLOSE_HARMONY) {
+      return handleLaunchpadChordHarmonyClose();
+    }
+
+    if (command?.type === APP_COMMAND_TYPES.CHORD_APPLY_HARMONY_OPTION) {
+      return handleLaunchpadChordHarmonyOption(command);
+    }
+
+    if (command?.type === APP_COMMAND_TYPES.CHORD_SELECT_HARMONY_OPTION) {
+      return handleLaunchpadChordHarmonySelect(command);
+    }
+
+    if (command?.type === APP_COMMAND_TYPES.CHORD_PREVIEW_HARMONY_OPTION) {
+      return handleLaunchpadChordHarmonyPreview(command);
+    }
+
+    if (command?.type === APP_COMMAND_TYPES.DRUMS_TOGGLE) {
+      const state = useMusicStore.getState();
+      const activeClip = state.clips.byId[state.selectedClipId];
+      if (
+        state.activeTrackId !== 'drums'
+        || activeClip?.trackId !== 'drums'
+        || command.bar !== state.selectedBar
+      ) {
+        return;
+      }
+      handleDrumsStepToggle(command.instrument, command.step, command.bar);
+      return;
+    }
+
+    if (command?.type === APP_COMMAND_TYPES.CHORD_TOGGLE_RHYTHM) {
+      const state = useMusicStore.getState();
+      const activeClip = state.clips.byId[state.selectedClipId];
+      if (
+        state.activeTrackId !== 'chord'
+        || activeClip?.trackId !== 'chord'
+        || command.bar !== state.selectedBar
+      ) {
+        return;
+      }
+      handleChordRhythmStepToggle(command.step, command.bar);
+      return;
+    }
+
+    if (command?.type === APP_COMMAND_TYPES.CLIP_COPY_SELECTED) {
+      handleCopySelectedClip();
+      return;
+    }
+
+    if (command?.type === APP_COMMAND_TYPES.CLIP_PASTE) {
+      handlePasteClipRequestWithMelodyStop();
+      return;
+    }
+
+    if (command?.type === APP_COMMAND_TYPES.CLIP_DELETE_SELECTED) {
+      stopMelodyRecording();
+      withUndoCheckpoint(() => {
+        useMusicStore.getState().deleteSelectedClip();
+      });
+      return;
+    }
+
+    void dispatchAppCommand(command);
+  }, [
+    dispatchAppCommand,
+    handleCopySelectedClip,
+    handleChordRhythmStepToggle,
+    handleDrumsStepToggle,
+    handleLaunchpadChordClipSelect,
+    handleLaunchpadChordHarmonyClose,
+    handleLaunchpadChordHarmonyOpen,
+    handleLaunchpadChordHarmonyOption,
+    handleLaunchpadChordHarmonyPreview,
+    handleLaunchpadChordHarmonySelect,
+    handleLaunchpadDrumsClipSelect,
+    handleLaunchpadMelodyClipSelect,
+    handlePasteClipRequestWithMelodyStop,
+    handlePlayToggle,
+    handleRedoWithMelodyStop,
+    handleStop,
+    handleStopAndRewind,
+    handleUndoWithMelodyStop,
+    melodyRecording,
+    stopMelodyRecording,
+    withUndoCheckpoint,
+  ]);
+
+  useKeyboardCommands({ dispatch: dispatchInputCommand });
+  const {
+    connect: connectLaunchpad,
+    ...launchpadInput
+  } = useLaunchpadXCommands({
+    activeInputNotes: melodyRecording.activeInputNotes,
+    chordActive,
+    chordClipBars,
+    chordHarmonyState,
+    currentBar,
+    currentStep,
+    dispatch: dispatchInputCommand,
+    drumsActive,
+    drumsClipBars,
+    isPlaying,
+    matrix,
+    melodyActive,
+    melodyClipBars,
+    melodyRecordingState: melodyRecording.recordingState,
+    melodyScaleId,
+    melodyTemplateSteps,
+    mutedTracks,
+    selectedBar,
+  });
+  const handleLaunchpadConnect = useCallback(() => {
+    void audioEngine.startAudio();
+    void connectLaunchpad();
+  }, [connectLaunchpad]);
+
   const handleTutorialBack = useCallback(() => {
     clearTutorialAutoAdvanceTimer();
     clearTutorialCountIn();
@@ -1449,6 +1800,11 @@ export default function App() {
           currentBar,
           currentStep,
           isPlaying,
+          hardwareInput: {
+            ...launchpadInput,
+            captureLabel: 'CAPTURE = PLAY',
+            onConnect: handleLaunchpadConnect,
+          },
           onBackToStart: handleBackToStart,
           onCopyClip: handleCopySelectedClip,
           onNewSong: requestNewSong,
@@ -1598,6 +1954,9 @@ export default function App() {
           melodyRhythmTemplateId: selectedClip?.melodyRhythmTemplateId ?? null,
           selectedClipName: selectedClip?.name ?? '',
           onChordRhythmStepToggle: handleChordRhythmStepToggle,
+          launchpadHarmonyTarget: launchpadChordHarmonyTarget,
+          launchpadHarmonySelection: chordHarmonyState?.selectedOption ?? null,
+          onLaunchpadHarmonyClose: handleLaunchpadChordHarmonyClose,
           onChordStepHarmonyApply: handleChordStepHarmonyApply,
           onChordStepHarmonyPreview: handleChordStepHarmonyPreview,
           onChordStepHarmonyPreviewStop: handleChordTemplateWorkspacePreviewStop,
