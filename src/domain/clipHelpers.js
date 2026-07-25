@@ -1,3 +1,5 @@
+import { getTrackTypeFromInstanceId } from './trackInstances.js';
+
 const CLIP_TRACK_LABELS = Object.freeze({
   bass: 'Bass',
   chord: 'Chord',
@@ -13,7 +15,8 @@ function createClipId(trackId, bar) {
 }
 
 function formatClipName(trackId, bar) {
-  const label = CLIP_TRACK_LABELS[trackId] ?? trackId;
+  const trackType = getTrackTypeFromInstanceId(trackId);
+  const label = CLIP_TRACK_LABELS[trackType] ?? trackId;
   const barNumber = String(bar + 1).padStart(2, '0');
 
   return `${label} ${barNumber}`;
@@ -27,7 +30,9 @@ function createClipRecord(trackId, bar) {
     name: formatClipName(trackId, bar),
   };
 
-  if (trackId === 'melody') clip.melodyRhythmTemplateId = null;
+  if (getTrackTypeFromInstanceId(trackId) === 'melody') {
+    clip.melodyRhythmTemplateId = null;
+  }
   return clip;
 }
 

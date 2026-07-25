@@ -15,6 +15,9 @@ import {
   getChordToneRoots,
 } from '../domain/chordCells.js';
 import { isValidMelodyNote } from '../app/melodyActions.js';
+import { getTrackTypeFromInstanceId } from '../domain/trackInstances.js';
+
+const PLAYBACK_TRACK_TYPE_ORDER = Object.freeze(['drums', 'bass', 'chord', 'melody']);
 
 function normalizeMatrixSource(matrixSource) {
   return typeof matrixSource === 'function' ? matrixSource : () => matrixSource;
@@ -210,25 +213,43 @@ function createMatrixPlaybackAdapter(matrixSource, options = {}) {
   }
 
   function getEventsForStep(bar, step) {
-    const matrix = readMatrix();
-    const drumsCell = matrix?.drums?.[bar]?.[step] ?? null;
-    const bassCell = matrix?.bass?.[bar]?.[step] ?? null;
-    const chordCell = matrix?.chord?.[bar]?.[step] ?? null;
-    const melodyCell = matrix?.melody?.[bar]?.[step] ?? null;
+    const source = readMatrix();
+    const matrix = source?.matrix ?? source;
+    const instanceAware = Boolean(source?.matrix);
+    const trackInstancesById = source?.trackInstancesById ?? null;
+    const trackOrder = source?.trackOrder ?? PLAYBACK_TRACK_TYPE_ORDER;
 
-    const drumEvents = extractDrumsInstruments(drumsCell).map((instrument) => (
-      createDrumsEvent(bar, step, instrument)
+    return PLAYBACK_TRACK_TYPE_ORDER.flatMap((trackType) => (
+      trackOrder
+        .filter((trackId) => (
+          trackInstancesById?.[trackId]?.type
+          ?? getTrackTypeFromInstanceId(trackId)
+        ) === trackType)
+        .flatMap((trackId) => {
+          const cell = matrix?.[trackId]?.[bar]?.[step] ?? null;
+          let events = [];
+          if (trackType === 'drums') {
+            events = extractDrumsInstruments(cell).map((instrument) => (
+              createDrumsEvent(bar, step, instrument)
+            ));
+          } else if (trackType === 'bass') {
+            const event = extractBassEvent(cell, bar, step);
+            if (event) events = [event];
+          } else if (trackType === 'chord') {
+            const event = extractChordEvent(cell, bar, step);
+            if (event) events = [event];
+          } else if (trackType === 'melody') {
+            const event = extractMelodyEvent(cell, bar, step);
+            if (event) events = [event];
+          }
+
+          return events.map((event) => (instanceAware ? {
+            ...event,
+            trackId,
+            trackType,
+          } : event));
+        })
     ));
-    const bassEvent = extractBassEvent(bassCell, bar, step);
-    const chordEvent = extractChordEvent(chordCell, bar, step);
-    const melodyEvent = extractMelodyEvent(melodyCell, bar, step);
-
-    return [
-      ...drumEvents,
-      ...(bassEvent ? [bassEvent] : []),
-      ...(chordEvent ? [chordEvent] : []),
-      ...(melodyEvent ? [melodyEvent] : []),
-    ];
   }
 
   return {

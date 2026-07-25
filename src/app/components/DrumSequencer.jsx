@@ -141,6 +141,7 @@ function DrumSequencer({
   onWriteToggle = () => {},
   onRenameClip,
   selectedBar,
+  trackName = 'Drums',
   tutorialLocked = false,
   tutorialTargets,
 }) {
@@ -386,7 +387,7 @@ function DrumSequencer({
     <section className="editor drum-editor" data-screen-label="Drum Sequencer" data-picker={drumTemplatePickerOpen ? 'drum-template' : undefined}>
       <header className="editor-head">
         <div className="editor-left">
-          {createElement(EditorTrackIdentity, { trackId: 'drums', label: 'Drums' })}
+          {createElement(EditorTrackIdentity, { trackId: 'drums', label: trackName })}
           <div className="clip-title">
             <div className="crumb">Drums · Phrase</div>
             {createElement(ClipNameInput, {

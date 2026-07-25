@@ -358,12 +358,12 @@ test('fourteen inch mac demo viewport uses a dense one-screen tutorial layout', 
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
   assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{/s);
-  assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.app\s*\{[^}]*--app-topbar-height:\s*46px;[^}]*--app-editor-height:\s*clamp\(250px,\s*43vh,\s*286px\);[^}]*--track-row-size:\s*minmax\(44px,\s*1fr\);[^}]*--track-footer-height:\s*32px;/s);
+  assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.app\s*\{[^}]*--app-topbar-height:\s*46px;[^}]*--app-editor-height:\s*clamp\(250px,\s*43vh,\s*286px\);[^}]*--track-row-min-height:\s*56px;[^}]*--tutorial-footer-height:\s*32px;/s);
   assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.app:has\(\.editor\[data-screen-label="Drum Sequencer"\]:not\(\[data-picker="drum-template"\]\)\),\s*\n\s*\.app:has\(\.editor\[data-screen-label="Chord Editor"\]:not\(\[data-picker="chord"\]\):not\(\[data-picker="groove"\]\)\),\s*\n\s*\.app:has\(\.editor\[data-screen-label="Melody Editor"\]:not\(\[data-picker="scale"\]\)\),\s*\n\s*\.app:has\(\.editor\[data-screen-label="Bass Editor"\]:not\(\[data-picker="groove"\]\)\)\s*\{[^}]*--app-editor-height:\s*clamp\(420px,\s*54vh,\s*560px\);/s);
   assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.app:has\(\.editor\[data-picker="chord"\]\),\s*\n\s*\.app:has\(\.editor\[data-picker="groove"\]\),\s*\n\s*\.app:has\(\.editor\[data-picker="scale"\]\)\s*\{[^}]*--app-editor-height:\s*clamp\(286px,\s*48vh,\s*332px\);/s);
   assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.topbar\s*\{[^}]*grid-template-columns:\s*minmax\(148px,\s*176px\) minmax\(62px,\s*max-content\) max-content minmax\(224px,\s*1fr\) max-content;[^}]*gap:\s*8px;[^}]*padding:\s*0 12px;/s);
   assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.workspace\.tutorial-sidebar-open\s*\{[^}]*grid-template-columns:\s*clamp\(164px,\s*15vw,\s*196px\) minmax\(0,\s*1fr\) clamp\(248px,\s*20vw,\s*294px\);/s);
-  assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.tutorial-panel\s*\{[^}]*grid-template-rows:\s*40px minmax\(0,\s*1fr\) var\(--track-footer-height\);/s);
+  assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.tutorial-panel\s*\{[^}]*grid-template-rows:\s*40px minmax\(0,\s*1fr\) var\(--tutorial-footer-height\);/s);
   assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.tutorial-panel-body\s*\{[^}]*align-content:\s*start;[^}]*padding:\s*10px 12px;[^}]*overflow:\s*hidden;/s);
   assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.tutorial-copy-title\s*\{[^}]*font-size:\s*11px;/s);
   assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.tutorial-copy-subtitle\s*\{[^}]*font-size:\s*20px;/s);
@@ -465,7 +465,7 @@ test('timeline clips fill exactly one bar grid cell', async () => {
 test('timeline playhead spans ruler and track grid', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
-  assert.match(css, /\.ruler\s*\{[^}]*position:\s*relative;/s);
+  assert.match(css, /\.ruler\s*\{[^}]*position:\s*sticky;[^}]*top:\s*0;/s);
   assert.match(css, /\.ruler-playhead,\s*\n\.playhead\s*\{[^}]*position:\s*absolute;/s);
   assert.match(css, /\.ruler-playhead,\s*\n\.playhead\s*\{[^}]*width:\s*2px;/s);
   assert.match(css, /\.ruler-playhead\s*\{[^}]*top:\s*0;/s);
@@ -503,25 +503,24 @@ test('editor resize handle overlays the workspace editor boundary', async () => 
 test('track list rows align with timeline hover rows', async () => {
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
-  assert.match(css, /--track-row-size:\s*minmax\(clamp\(48px,\s*7\.5vh,\s*74px\),\s*1fr\);/);
-  assert.match(css, /--track-footer-height:\s*48px;/);
-  assert.match(css, /\.tracks-col\s*\{[^}]*grid-template-rows:\s*48px minmax\(0,\s*1fr\) var\(--track-footer-height\);/s);
-  assert.match(css, /\.timeline-col\s*\{[^}]*grid-template-rows:\s*48px minmax\(0,\s*1fr\) var\(--track-footer-height\);/s);
-  assert.match(css, /\.timeline-footer-spacer\s*\{[^}]*min-height:\s*var\(--track-footer-height\);/s);
-  assert.match(css, /\.timeline-footer-spacer\s*\{[^}]*border-top:\s*1px solid var\(--border-soft\);/s);
-  assert.match(css, /\.tracks-list\s*\{[^}]*grid-template-rows:\s*repeat\(var\(--track-count,\s*4\),\s*var\(--track-row-size\)\);/s);
+  assert.match(css, /--track-row-min-height:\s*90px;/);
+  assert.match(css, /--tutorial-footer-height:\s*48px;/);
+  assert.doesNotMatch(css, /--track-footer-height:/);
+  assert.match(css, /\.tracks-col\s*\{[^}]*grid-template-rows:\s*48px minmax\(0,\s*1fr\);/s);
+  assert.match(css, /\.timeline-col\s*\{[^}]*grid-template-rows:\s*48px minmax\(0,\s*1fr\);/s);
+  assert.doesNotMatch(css, /\.timeline-footer-spacer\s*\{/);
+  assert.match(css, /\.tracks-list\s*\{[^}]*grid-template-rows:\s*repeat\(\s*var\(--track-count,\s*4\),\s*minmax\(var\(--track-row-min-height\),\s*1fr\)\s*\);/s);
+  assert.match(css, /\.tracks-list\s*\{[^}]*align-content:\s*stretch;/s);
   assert.match(css, /\.tracks-list\s*\{[^}]*overflow:\s*auto;/s);
-  assert.match(css, /\.grid-rows,\s*\n\.hover-rows\s*\{[^}]*grid-template-rows:\s*repeat\(var\(--track-count,\s*4\),\s*var\(--track-row-size\)\);/s);
+  assert.match(css, /\.grid-rows,\s*\n\.hover-rows\s*\{[^}]*grid-template-rows:\s*repeat\(\s*var\(--track-count,\s*4\),\s*minmax\(var\(--track-row-min-height\),\s*1fr\)\s*\);/s);
   assert.match(css, /\.hover-row\s*\{[^}]*position:\s*relative;/s);
   assert.doesNotMatch(css, /\.hover-row\s*\{[^}]*height:\s*var\(--timeline-clip-y-inset\);/s);
   assert.doesNotMatch(css, /\.hover-row\s*\{[^}]*top:\s*var\(--timeline-clip-y-inset\);/s);
   assert.doesNotMatch(css, /\.hover-row\s*\{[^}]*bottom:\s*var\(--timeline-clip-y-inset\);/s);
-  assert.match(css, /\.add-track\s*\{[^}]*position:\s*static;/s);
-  assert.doesNotMatch(css, /\.add-track\s*\{[^}]*position:\s*absolute;/s);
-  assert.doesNotMatch(css, /\.add-track\s*\{[^}]*bottom:/s);
-  assert.match(css, /\.add-track-row\s*\{[^}]*position:\s*relative;/s);
-  assert.match(css, /\.add-track-menu\s*\{[^}]*position:\s*absolute;/s);
-  assert.match(css, /\.add-track-menu\s*\{[^}]*bottom:\s*calc\(100% - 4px\);/s);
+  assert.match(css, /\.grid\s*\{[^}]*height:\s*max\(100%,\s*calc\(var\(--track-count,\s*4\) \* var\(--track-row-min-height\)\)\);/s);
+  assert.match(css, /\.timeline-marquee-selection\s*\{[^}]*top:\s*calc\(var\(--selection-start-track\) \* 100% \/ var\(--track-count,\s*4\)\);/s);
+  assert.match(css, /\.timeline-marquee-selection\s*\{[^}]*height:\s*calc\(var\(--selection-track-count\) \* 100% \/ var\(--track-count,\s*4\)\);/s);
+  assert.doesNotMatch(css, /linear-gradient\(to bottom,[^;]*var\(--track-row/s);
   assert.doesNotMatch(css, /min-height:\s*74px;/);
 });
 
@@ -1138,7 +1137,7 @@ test('tutorial sidebar is embedded as a workbench column and reopens from the to
   assert.match(css, /@media \(max-width:\s*980px\)\s*\{[\s\S]*\.right-tools\s*\{[^}]*grid-column:\s*2;[^}]*grid-row:\s*1;/);
   assert.match(css, /\.tutorial-panel\s*\{[^}]*position:\s*relative;/s);
   assert.match(css, /\.tutorial-panel\s*\{[^}]*z-index:\s*90;/s);
-  assert.match(css, /\.tutorial-panel\s*\{[^}]*grid-template-rows:\s*48px minmax\(0,\s*1fr\) var\(--track-footer-height\);/s);
+  assert.match(css, /\.tutorial-panel\s*\{[^}]*grid-template-rows:\s*48px minmax\(0,\s*1fr\) var\(--tutorial-footer-height\);/s);
   assert.match(css, /\.tutorial-panel\s*\{[^}]*width:\s*100%;/s);
   assert.match(css, /\.tutorial-panel\s*\{[^}]*height:\s*100%;/s);
   assert.match(css, /\.tutorial-panel\s*\{[^}]*padding:\s*0;/s);
@@ -1205,12 +1204,12 @@ test('tutorial sidebar is embedded as a workbench column and reopens from the to
   assert.match(css, /\.tutorial-panel-actions\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\);/s);
   assert.match(css, /\.tutorial-panel-actions\s*\{[^}]*align-items:\s*center;/s);
   assert.match(css, /\.tutorial-panel-actions\s*\{[^}]*gap:\s*6px;/s);
-  assert.match(css, /\.tutorial-panel-actions\s*\{[^}]*height:\s*var\(--track-footer-height\);/s);
+  assert.match(css, /\.tutorial-panel-actions\s*\{[^}]*height:\s*var\(--tutorial-footer-height\);/s);
   assert.match(css, /\.tutorial-panel-actions\s*\{[^}]*min-height:\s*0;/s);
   assert.match(css, /\.tutorial-panel-actions\s*\{[^}]*padding:\s*5px 12px;/s);
   assert.match(css, /\.tutorial-panel-actions\s*\{[^}]*border-top:\s*1px solid var\(--border-soft\);/s);
-  assert.match(css, /\.timeline-footer-spacer\s*\{[^}]*height:\s*var\(--track-footer-height\);/s);
-  assert.match(css, /\.add-track-row\s*\{[^}]*height:\s*var\(--track-footer-height\);/s);
+  assert.doesNotMatch(css, /\.timeline-footer-spacer\s*\{/);
+  assert.doesNotMatch(css, /\.add-track-row\s*\{/);
   assert.match(css, /\.tutorial-primary,\s*\n\.tutorial-secondary,\s*\n\.tutorial-link\s*\{[^}]*min-height:\s*36px;/s);
   assert.match(css, /\.tutorial-primary,\s*\n\.tutorial-secondary,\s*\n\.tutorial-link\s*\{[^}]*height:\s*36px;/s);
   assert.match(css, /\.tutorial-primary,\s*\n\.tutorial-secondary,\s*\n\.tutorial-link\s*\{[^}]*border-radius:\s*999px;/s);
@@ -1218,7 +1217,7 @@ test('tutorial sidebar is embedded as a workbench column and reopens from the to
   assert.doesNotMatch(css, /\.tutorial-panel\s*\{[^}]*height:\s*100dvh;/s);
   assert.doesNotMatch(css, /\.tutorial-panel\s*\{[^}]*backdrop-filter:/s);
   assert.doesNotMatch(css, /\.tutorial-panel\s*\{[^}]*-14px 0 36px/s);
-  assert.doesNotMatch(css, /\.tutorial-panel-actions\s*\{[^}]*min-height:\s*var\(--track-footer-height\);/s);
+  assert.doesNotMatch(css, /\.tutorial-panel-actions\s*\{[^}]*min-height:\s*var\(--tutorial-footer-height\);/s);
   assert.doesNotMatch(css, /\.tutorial-panel-actions\s*\{[^}]*padding:\s*10px 12px;/s);
   assert.doesNotMatch(css, /\.tutorial-reopen-button/);
   assert.doesNotMatch(css, /\.tutorial-panel\[data-placement=/);

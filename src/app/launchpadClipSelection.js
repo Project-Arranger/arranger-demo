@@ -1,4 +1,5 @@
 import { TOTAL_BARS } from '../domain/musicConstants.js';
+import { getTrackType } from '../domain/trackInstances.js';
 
 const LAUNCHPAD_TRACK_IDS = Object.freeze(['drums', 'chord', 'melody']);
 
@@ -6,9 +7,11 @@ function isValidBar(bar) {
   return Number.isInteger(bar) && bar >= 0 && bar < TOTAL_BARS;
 }
 
-function hasActiveTrackClip(state, trackId) {
+function hasActiveTrackClip(state, trackId, trackType = trackId) {
   const selectedClip = state.clips?.byId?.[state.selectedClipId];
-  return state.activeTrackId === trackId && selectedClip?.trackId === trackId;
+  return state.activeTrackId === trackId
+    && getTrackType(state, trackId) === trackType
+    && selectedClip?.trackId === trackId;
 }
 
 function selectLaunchpadTrackClip({
@@ -28,12 +31,15 @@ function selectLaunchpadTrackClip({
   }
 
   const state = store.getState();
-  if (!hasActiveTrackClip(state, trackId)) {
+  const activeTrackId = getTrackType(state, state.activeTrackId) === trackId
+    ? state.activeTrackId
+    : null;
+  if (!activeTrackId || !hasActiveTrackClip(state, activeTrackId, trackId)) {
     return { ok: false, reason: `inactive-${trackId}` };
   }
 
-  const existingClip = state.getClipForTrackBar(trackId, bar);
-  const candidateClip = existingClip ?? { bar, trackId };
+  const existingClip = state.getClipForTrackBar(activeTrackId, bar);
+  const candidateClip = existingClip ?? { bar, trackId: activeTrackId };
   if (canSelectClip(candidateClip) === false) {
     return { ok: false, reason: 'blocked' };
   }
@@ -43,7 +49,7 @@ function selectLaunchpadTrackClip({
     state.selectClip(existingClip.id);
   } else {
     withUndoCheckpoint(() => {
-      selectedClip = store.getState().createClip(trackId, bar);
+      selectedClip = store.getState().createClip(activeTrackId, bar);
     });
   }
 

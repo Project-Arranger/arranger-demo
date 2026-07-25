@@ -7,6 +7,8 @@ import { TrackEditorPlaceholder } from './TrackEditorPlaceholder.jsx';
 
 function BottomEditor({
   activeTrackId,
+  activeTrackName,
+  activeTrackType,
   activeTutorialTarget,
   canPageBars = false,
   tutorialLocked = false,
@@ -76,7 +78,7 @@ function BottomEditor({
     && drumsRecordingState.phase !== 'idle',
   );
 
-  if (activeTrackId === 'drums' && (selectedClipId || drumsWriting)) {
+  if (activeTrackType === 'drums' && (selectedClipId || drumsWriting)) {
     editor = createElement(DrumSequencer, {
       clips,
       matrix,
@@ -99,10 +101,11 @@ function BottomEditor({
       onRenameClip,
       selectedBar,
       trackId: activeTrackId,
+      trackName: activeTrackName,
       tutorialLocked,
       tutorialTargets,
     });
-  } else if (activeTrackId === 'bass' && selectedClipId) {
+  } else if (activeTrackType === 'bass' && selectedClipId) {
     editor = createElement(BassEditor, {
       clips,
       isPlaying,
@@ -121,10 +124,11 @@ function BottomEditor({
       onRenameClip,
       selectedBar,
       trackId: activeTrackId,
+      trackName: activeTrackName,
       tutorialLocked,
       tutorialTargets,
     });
-  } else if (activeTrackId === 'chord' && selectedClipId) {
+  } else if (activeTrackType === 'chord' && selectedClipId) {
     editor = createElement(ChordEditor, {
       matrix,
       clips,
@@ -148,10 +152,11 @@ function BottomEditor({
       onRenameClip,
       selectedBar,
       trackId: activeTrackId,
+      trackName: activeTrackName,
       tutorialLocked,
       tutorialTargets,
     });
-  } else if (activeTrackId === 'melody' && selectedClipId) {
+  } else if (activeTrackType === 'melody' && selectedClipId) {
     editor = createElement(MelodyEditor, {
       matrix,
       clipName: selectedClipName,
@@ -177,12 +182,15 @@ function BottomEditor({
       onRenameClip,
       selectedBar,
       trackId: activeTrackId,
+      trackName: activeTrackName,
       tutorialLocked,
       tutorialTargets,
     });
   } else {
     editor = createElement(TrackEditorPlaceholder, {
       activeTrackId,
+      activeTrackName,
+      activeTrackType,
       canPageBars,
       clipName: selectedClipName,
       onNextBar,

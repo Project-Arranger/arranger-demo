@@ -308,6 +308,7 @@ function ChordEditor({
   onRenameClip,
   selectedBar,
   trackId = 'chord',
+  trackName = 'Chord',
   tutorialLocked = false,
   tutorialTargets,
 }) {
@@ -617,7 +618,7 @@ function ChordEditor({
     >
       <header className="editor-head chord-rhythm-editor-head">
         <div className="editor-left">
-          {createElement(EditorTrackIdentity, { trackId: 'chord', label: 'Chord' })}
+          {createElement(EditorTrackIdentity, { trackId: 'chord', label: trackName })}
           <div className="clip-title">
             <div className="crumb">Chord · Phrase</div>
             {createElement(ClipNameInput, { clipName, onRenameClip })}

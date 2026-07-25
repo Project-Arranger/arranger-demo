@@ -4,10 +4,12 @@ function createEmptyBar() {
   return Array.from({ length: STEPS_PER_BAR }, () => null);
 }
 
-function createEmptyTrack() {
+function createEmptyTrackMatrix() {
   return Array.from({ length: TOTAL_BARS }, () => createEmptyBar());
 }
 
 export default function createInitialMatrix() {
-  return Object.fromEntries(TRACK_IDS.map((trackId) => [trackId, createEmptyTrack()]));
+  return Object.fromEntries(TRACK_IDS.map((trackId) => [trackId, createEmptyTrackMatrix()]));
 }
+
+export { createEmptyTrackMatrix };

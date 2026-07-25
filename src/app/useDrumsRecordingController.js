@@ -23,6 +23,7 @@ import {
 
 function useDrumsRecordingController({
   activeTrackId,
+  activeTrackType,
   audioEngine,
   bpm,
   dispatchAppCommand,
@@ -65,12 +66,16 @@ function useDrumsRecordingController({
     session.preparedBars.add(bar);
 
     const state = useMusicStore.getState();
-    if (!hasDrumsBarHits(state.matrix, bar)) return false;
+    const scopedMatrix = { ...state.matrix, drums: state.matrix[session.trackId] };
+    if (!hasDrumsBarHits(scopedMatrix, bar)) return false;
 
     return runSessionMutation(() => {
       const latestState = useMusicStore.getState();
-      const nextMatrix = clearDrumsBar(latestState.matrix, bar);
-      latestState.setTrackMatrix('drums', nextMatrix.drums);
+      const nextMatrix = clearDrumsBar({
+        ...latestState.matrix,
+        drums: latestState.matrix[session.trackId],
+      }, bar);
+      latestState.setTrackMatrix(session.trackId, nextMatrix.drums);
     });
   }, [runSessionMutation]);
 
@@ -128,6 +133,7 @@ function useDrumsRecordingController({
       mutations: createDrumsLiveRecordSession(),
       preparedBars: new Set(),
       startBar: pendingSession.startBar,
+      trackId: pendingSession.trackId,
       targetBars: [...pendingSession.targetBars],
     };
     sessionRef.current = session;
@@ -235,7 +241,7 @@ function useDrumsRecordingController({
 
     const state = useMusicStore.getState();
     const clip = state.clips.byId[state.selectedClipId];
-    if (state.activeTrackId !== 'drums' || clip?.trackId !== 'drums') return false;
+    if (activeTrackType !== 'drums' || clip?.trackId !== state.activeTrackId) return false;
 
     const targetBars = getDrumsWriteBarRange(clip.bar);
     const pendingSession = {
@@ -243,10 +249,16 @@ function useDrumsRecordingController({
       endBar: targetBars.at(-1),
       startBar: clip.bar,
       targetBars,
+      trackId: state.activeTrackId,
     };
     pendingSessionRef.current = pendingSession;
 
-    if (hasDrumsHitsInRange(state.matrix, pendingSession.startBar, pendingSession.endBar)) {
+    const scopedMatrix = { ...state.matrix, drums: state.matrix[pendingSession.trackId] };
+    if (hasDrumsHitsInRange(
+      scopedMatrix,
+      pendingSession.startBar,
+      pendingSession.endBar,
+    )) {
       const generation = generationRef.current + 1;
       generationRef.current = generation;
       clearTimers();
@@ -282,6 +294,7 @@ function useDrumsRecordingController({
     startPendingSession,
     stopRecording,
     updateRecordingState,
+    activeTrackType,
   ]);
 
   const confirmRecord = useCallback(() => {
@@ -310,10 +323,10 @@ function useDrumsRecordingController({
     if (!session?.targetBars.includes(bar)) return false;
 
     const patch = createDrumsLiveRecordPatch({
-      activeTrackId: state.activeTrackId,
+      activeTrackId: 'drums',
       bar,
-      currentCell: state.matrix.drums?.[bar]?.[step] ?? null,
-      hasClip: Boolean(state.getClipForTrackBar('drums', bar)),
+      currentCell: state.matrix[session.trackId]?.[bar]?.[step] ?? null,
+      hasClip: Boolean(state.getClipForTrackBar(session.trackId, bar)),
       instrument,
       isPlaying: state.isPlaying,
       phase: recordingStateRef.current.phase,
@@ -325,12 +338,12 @@ function useDrumsRecordingController({
       const latestState = useMusicStore.getState();
       if (
         patch.shouldCreateClip
-        && !latestState.getClipForTrackBar('drums', patch.bar)
+        && !latestState.getClipForTrackBar(session.trackId, patch.bar)
       ) {
-        latestState.createClip('drums', patch.bar);
+        latestState.createClip(session.trackId, patch.bar);
       }
       if (patch.shouldWriteCell) {
-        latestState.setCell('drums', patch.bar, patch.step, patch.nextCell);
+        latestState.setCell(session.trackId, patch.bar, patch.step, patch.nextCell);
       }
     });
   }, [runSessionMutation]);
@@ -363,11 +376,14 @@ function useDrumsRecordingController({
   useEffect(() => {
     if (
       recordingState.phase !== DRUMS_RECORDING_PHASES.IDLE
-      && activeTrackId !== 'drums'
+      && (
+        activeTrackType !== 'drums'
+        || activeTrackId !== sessionRef.current?.trackId
+      )
     ) {
       stopRecording();
     }
-  }, [activeTrackId, recordingState.phase, stopRecording]);
+  }, [activeTrackId, activeTrackType, recordingState.phase, stopRecording]);
 
   useEffect(() => () => {
     generationRef.current += 1;

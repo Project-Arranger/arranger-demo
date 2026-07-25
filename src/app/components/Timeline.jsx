@@ -140,7 +140,7 @@ function Clip({
     if (shouldIgnoreClick()) return;
     if (
       tutorialLocked
-      && track.id === 'drums'
+      && track.type === 'drums'
       && tutorialTimelineBarsCount
       && tutorialBarRole !== 'target'
     ) {
@@ -150,7 +150,7 @@ function Clip({
     if (onTutorialOpenClip(clip) === false) return;
     onOpenClip(clip.id);
   };
-  const chordLabel = track.id === 'chord' ? clip.chordLabel : null;
+  const chordLabel = track.type === 'chord' ? clip.chordLabel : null;
   const clipName = chordLabel ? (
     <>
       <span className="clip-idx">{clip.name.toUpperCase()}</span>
@@ -168,7 +168,8 @@ function Clip({
         dragFeedbackClass,
         getTutorialBarClass(tutorialBarRole),
       ].filter(Boolean).join(' ')}
-      data-type={track.id}
+      data-type={track.type}
+      data-track-id={track.id}
       data-bar-index={clip.bar}
       style={{ '--bar-index': clip.bar }}
       aria-label={`${track.label} clip bar ${clip.bar + 1}`}
@@ -177,7 +178,7 @@ function Clip({
       onMouseDown={(event) => {
         if (
           tutorialLocked
-          && track.id === 'drums'
+          && track.type === 'drums'
           && tutorialTimelineBarsCount
           && tutorialBarRole !== 'target'
         ) {
@@ -601,7 +602,7 @@ const Timeline = forwardRef(function Timeline(
                 track.hasClip ? 'has-phrase' : '',
                 track.id === activeTrackId ? 'active' : '',
               ].filter(Boolean).join(' ')}
-              data-type={track.id}
+              data-type={track.type}
               data-track-row={track.id}
               data-track-index={trackIndex}
               key={track.id}
@@ -615,7 +616,7 @@ const Timeline = forwardRef(function Timeline(
                   track.id,
                   bar.bar,
                 );
-                const tutorialBarRole = track.id === 'drums'
+                const tutorialBarRole = track.type === 'drums' && track.id === 'drums'
                   ? getTutorialBarRole(tutorialTargets, bar.bar)
                   : null;
                 const dropZoneTutorialRole = bar.clip ? null : tutorialBarRole;
@@ -652,7 +653,7 @@ const Timeline = forwardRef(function Timeline(
                   bar.bar,
                 ),
                 tutorialLocked,
-                tutorialBarRole: track.id === 'drums'
+                tutorialBarRole: track.type === 'drums' && track.id === 'drums'
                   ? getTutorialBarRole(tutorialTargets, bar.bar)
                   : null,
                 tutorialTimelineBarsCount: tutorialTimelineBars.size,
@@ -668,6 +669,7 @@ const Timeline = forwardRef(function Timeline(
                     style={{ '--bar-index': bar.bar }}
                     type="button"
                     disabled={tutorialLocked
+                      && track.type === 'drums'
                       && track.id === 'drums'
                       && tutorialTimelineBars.size
                       && !tutorialTimelineBars.has(bar.bar)}
@@ -675,6 +677,7 @@ const Timeline = forwardRef(function Timeline(
                       event.stopPropagation();
                       if (
                         tutorialLocked
+                        && track.type === 'drums'
                         && track.id === 'drums'
                         && tutorialTimelineBars.size
                         && !tutorialTimelineBars.has(bar.bar)
@@ -714,7 +717,6 @@ const Timeline = forwardRef(function Timeline(
           />
         </div>
       </div>
-      <div className="timeline-footer-spacer" aria-hidden="true" />
     </section>
   );
 });

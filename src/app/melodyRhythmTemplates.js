@@ -20,23 +20,23 @@ function normalizeMelodyRhythmTemplateId(templateId) {
   return getMelodyRhythmTemplate(templateId)?.id ?? null;
 }
 
-function getMelodyClipTemplateId(clips, bar) {
+function getMelodyClipTemplateId(clips, bar, trackId = 'melody') {
   const ids = clips?.ids ?? [];
   const byId = clips?.byId ?? {};
   const clip = ids
     .map((id) => byId[id])
-    .find((candidate) => candidate?.trackId === 'melody' && candidate.bar === bar);
+    .find((candidate) => candidate?.trackId === trackId && candidate.bar === bar);
   return normalizeMelodyRhythmTemplateId(clip?.melodyRhythmTemplateId);
 }
 
-function updateMelodyClipTemplates(clips, predicate, templateId) {
+function updateMelodyClipTemplates(clips, predicate, templateId, trackId = 'melody') {
   const normalizedTemplateId = normalizeMelodyRhythmTemplateId(templateId);
   let changed = false;
   const nextById = { ...clips.byId };
 
   for (const clipId of clips.ids) {
     const clip = clips.byId[clipId];
-    if (clip?.trackId !== 'melody' || !predicate(clip)) continue;
+    if (clip?.trackId !== trackId || !predicate(clip)) continue;
     if ((clip.melodyRhythmTemplateId ?? null) === normalizedTemplateId) continue;
     nextById[clipId] = { ...clip, melodyRhythmTemplateId: normalizedTemplateId };
     changed = true;
@@ -45,23 +45,23 @@ function updateMelodyClipTemplates(clips, predicate, templateId) {
   return changed ? { ids: clips.ids, byId: nextById } : clips;
 }
 
-function applyMelodyRhythmTemplateToBar(clips, bar, templateId) {
+function applyMelodyRhythmTemplateToBar(clips, bar, templateId, trackId = 'melody') {
   if (!Number.isInteger(bar) || bar < 0 || bar >= TOTAL_BARS) return clips;
   if (!getMelodyRhythmTemplate(templateId)) return clips;
-  return updateMelodyClipTemplates(clips, (clip) => clip.bar === bar, templateId);
+  return updateMelodyClipTemplates(clips, (clip) => clip.bar === bar, templateId, trackId);
 }
 
-function applyMelodyRhythmTemplateToExistingClips(clips, templateId) {
+function applyMelodyRhythmTemplateToExistingClips(clips, templateId, trackId = 'melody') {
   if (!getMelodyRhythmTemplate(templateId)) return clips;
-  return updateMelodyClipTemplates(clips, () => true, templateId);
+  return updateMelodyClipTemplates(clips, () => true, templateId, trackId);
 }
 
-function clearMelodyRhythmTemplateFromBar(clips, bar) {
-  return updateMelodyClipTemplates(clips, (clip) => clip.bar === bar, null);
+function clearMelodyRhythmTemplateFromBar(clips, bar, trackId = 'melody') {
+  return updateMelodyClipTemplates(clips, (clip) => clip.bar === bar, null, trackId);
 }
 
-function clearMelodyRhythmTemplates(clips) {
-  return updateMelodyClipTemplates(clips, () => true, null);
+function clearMelodyRhythmTemplates(clips, trackId = 'melody') {
+  return updateMelodyClipTemplates(clips, () => true, null, trackId);
 }
 
 export {

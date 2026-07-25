@@ -1,5 +1,6 @@
 import { STEPS_PER_BAR, TOTAL_BARS } from '../domain/musicConstants.js';
 import { APP_COMMAND_TYPES, CHORD_OPTION_COUNT } from './appCommands.js';
+import { getTrackType } from '../domain/trackInstances.js';
 import {
   getKeyboardMelodyInputId,
   getMelodyInputCellByCode,
@@ -121,7 +122,7 @@ function mapKeyboardEventToCommand(event, state = {}) {
 
   if (
     eventType === 'keydown'
-    && state.activeTrackId === 'melody'
+    && getTrackType(state, state.activeTrackId) === 'melody'
     && !event.ctrlKey
     && !event.metaKey
     && !event.altKey
@@ -137,7 +138,7 @@ function mapKeyboardEventToCommand(event, state = {}) {
     }
   }
 
-  if (state.activeTrackId === 'chord' && /^[0-9]$/.test(key)) {
+  if (getTrackType(state, state.activeTrackId) === 'chord' && /^[0-9]$/.test(key)) {
     return mapNumberKeyToCommand(eventType, key);
   }
 

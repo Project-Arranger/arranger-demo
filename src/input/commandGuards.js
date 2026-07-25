@@ -3,9 +3,9 @@ import {
   DRUMS_INSTRUMENT_IDS,
   STEPS_PER_BAR,
   TOTAL_BARS,
-  TRACK_IDS,
 } from '../domain/musicConstants.js';
 import { isChordName, isChordSpan } from '../domain/chordCells.js';
+import { getTrackTypeFromInstanceId } from '../domain/trackInstances.js';
 import { APP_COMMAND_TYPES, CHORD_OPTION_COUNT, MELODY_NOTE_IDS } from './appCommands.js';
 import { MELODY_INPUT_SOURCES } from './melodyInputLayout.js';
 
@@ -37,7 +37,9 @@ function hasValidTogglePlayPayload(command) {
     && (
       !Array.isArray(command.audibleTrackIds)
       || new Set(command.audibleTrackIds).size !== command.audibleTrackIds.length
-      || !command.audibleTrackIds.every((trackId) => TRACK_IDS.includes(trackId))
+      || !command.audibleTrackIds.every((trackId) => (
+        getTrackTypeFromInstanceId(trackId) !== null
+      ))
     )
   ) {
     return false;
@@ -54,24 +56,26 @@ function hasValidTogglePlayPayload(command) {
 function hasValidTrackMutePayload(command) {
   return (
     hasOnlyKeys(command, ['type', 'trackId'])
-    && CORE_TRACK_IDS.includes(command.trackId)
+    && CORE_TRACK_IDS.includes(getTrackTypeFromInstanceId(command.trackId))
   );
 }
 
 function hasValidDrumsPayload(command) {
   return (
-    hasOnlyKeys(command, ['type', 'bar', 'step', 'instrument', 'preview']) &&
+    hasOnlyKeys(command, ['type', 'bar', 'step', 'instrument', 'preview', 'trackId']) &&
     isIntegerInRange(command.bar, 0, TOTAL_BARS - 1) &&
     isIntegerInRange(command.step, 0, STEPS_PER_BAR - 1) &&
     DRUMS_INSTRUMENT_IDS.includes(command.instrument) &&
     typeof command.preview === 'boolean'
+    && (!('trackId' in command) || getTrackTypeFromInstanceId(command.trackId) === 'drums')
   );
 }
 
 function hasValidDrumsPreviewPayload(command) {
   return (
-    hasOnlyKeys(command, ['type', 'instrument'])
+    hasOnlyKeys(command, ['type', 'instrument', 'trackId'])
     && DRUMS_INSTRUMENT_IDS.includes(command.instrument)
+    && (!('trackId' in command) || getTrackTypeFromInstanceId(command.trackId) === 'drums')
   );
 }
 

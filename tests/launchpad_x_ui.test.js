@@ -7,10 +7,11 @@ test('App shares one UI-aware command entry point between keyboard and Launchpad
 
   assert.match(source, /import useLaunchpadXCommands from '\.\.\/input\/useLaunchpadXCommands\.js';/);
   assert.match(source, /const dispatchInputCommand = useCallback\(\(command\) => \{/);
+  assert.match(source, /command\?\.type === APP_COMMAND_TYPES\.TRACK_TOGGLE_MUTE[\s\S]*getTrackInstanceIdsByType\(state, command\.trackId\)[\s\S]*targetTrackId[\s\S]*state\.setActiveTrackId\(targetTrackId\)/);
   assert.match(source, /useKeyboardCommands\(\{[\s\S]*dispatch: dispatchInputCommand,[\s\S]*hasTimelineSelection: Boolean\(timelineSelection\),[\s\S]*\}\);/);
-  assert.match(source, /if \(command\?\.type === APP_COMMAND_TYPES\.DRUMS_TOGGLE\) \{[\s\S]*command\.bar !== state\.selectedBar[\s\S]*handleDrumsStepToggle\(command\.instrument, command\.step, command\.bar\);/);
+  assert.match(source, /if \(command\?\.type === APP_COMMAND_TYPES\.DRUMS_TOGGLE\) \{[\s\S]*getTrackType\(state, state\.activeTrackId\) !== 'drums'[\s\S]*activeClip\?\.trackId !== state\.activeTrackId[\s\S]*handleDrumsStepToggle\(command\.instrument, command\.step, command\.bar\);/);
   assert.match(source, /if \(command\?\.type === APP_COMMAND_TYPES\.DRUMS_SELECT_CLIP\) \{[\s\S]*handleLaunchpadDrumsClipSelect\(command\.bar\);/);
-  assert.match(source, /if \(command\?\.type === APP_COMMAND_TYPES\.CHORD_TOGGLE_RHYTHM\) \{[\s\S]*command\.bar !== state\.selectedBar[\s\S]*handleChordRhythmStepToggle\(command\.step, command\.bar\);/);
+  assert.match(source, /if \(command\?\.type === APP_COMMAND_TYPES\.CHORD_TOGGLE_RHYTHM\) \{[\s\S]*getTrackType\(state, state\.activeTrackId\) !== 'chord'[\s\S]*activeClip\?\.trackId !== state\.activeTrackId[\s\S]*handleChordRhythmStepToggle\(command\.step, command\.bar\);/);
   assert.match(source, /if \(command\?\.type === APP_COMMAND_TYPES\.CHORD_SELECT_CLIP\) \{[\s\S]*handleLaunchpadChordClipSelect\(command\.bar\);/);
   assert.match(source, /if \(command\?\.type === APP_COMMAND_TYPES\.CHORD_OPEN_HARMONY\) \{[\s\S]*handleLaunchpadChordHarmonyOpen\(command\.bar, command\.step\);/);
   assert.match(source, /if \(command\?\.type === APP_COMMAND_TYPES\.CHORD_CLOSE_HARMONY\) \{[\s\S]*handleLaunchpadChordHarmonyClose\(\);/);
@@ -25,7 +26,7 @@ test('App shares one UI-aware command entry point between keyboard and Launchpad
   assert.match(source, /handleLaunchpadChordHarmonyPreview[\s\S]*preserveTransport: true/);
   assert.match(source, /const handleStopAndRewind = useCallback\(\(\) => \{[\s\S]*APP_COMMAND_TYPES\.TRANSPORT_STOP_AND_REWIND/);
   assert.match(source, /if \(command\?\.type === APP_COMMAND_TYPES\.TRANSPORT_STOP_AND_REWIND\) \{[\s\S]*handleStopAndRewind\(\);/);
-  assert.match(source, /useLaunchpadXCommands\(\{[\s\S]*chordActive,[\s\S]*chordClipBars,[\s\S]*chordHarmonyState,[\s\S]*dispatch: dispatchInputCommand,[\s\S]*drumsActive,[\s\S]*drumsClipBars,[\s\S]*isPlaying,[\s\S]*matrix,[\s\S]*mutedTracks,[\s\S]*selectedBar,[\s\S]*\}\);/);
+  assert.match(source, /useLaunchpadXCommands\(\{[\s\S]*chordActive,[\s\S]*chordClipBars,[\s\S]*chordHarmonyState,[\s\S]*dispatch: dispatchInputCommand,[\s\S]*drumsActive,[\s\S]*drumsClipBars,[\s\S]*isPlaying,[\s\S]*matrix: editorMatrix,[\s\S]*mutedTracks: launchpadMutedTracks,[\s\S]*selectedBar,[\s\S]*\}\);/);
   assert.match(source, /melodyActive,[\s\S]*melodyClipBars,[\s\S]*melodyRecordingState: melodyRecording\.recordingState,[\s\S]*melodyScaleId/);
   assert.match(source, /activeInputNotes: melodyRecording\.activeInputNotes/);
   assert.match(source, /audioEngine\.setVolumeSource\?\.\(\(\) => \{[\s\S]*const state = useMusicStore\.getState\(\);[\s\S]*mutedTracks: state\.mutedTracks,[\s\S]*volumes: state\.volumes/);

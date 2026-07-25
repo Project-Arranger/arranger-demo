@@ -69,6 +69,7 @@ function BassEditor({
   onRenameClip,
   selectedBar,
   trackId = 'bass',
+  trackName = 'Bass',
   tutorialLocked = false,
   tutorialTargets,
 }) {
@@ -138,7 +139,7 @@ function BassEditor({
     <section className="editor bass-editor" data-screen-label="Bass Editor" data-picker={pickerMode ?? undefined}>
       <header className="editor-head">
         <div className="editor-left">
-          {createElement(EditorTrackIdentity, { trackId: 'bass', label: 'Bass' })}
+          {createElement(EditorTrackIdentity, { trackId: 'bass', label: trackName })}
           <div className="clip-title">
             <div className="crumb">Bass · Phrase</div>
             {createElement(ClipNameInput, { clipName, onRenameClip })}

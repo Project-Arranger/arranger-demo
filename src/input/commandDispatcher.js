@@ -25,7 +25,17 @@ function createAudioPlayOptions(store, state, audio, command = {}) {
     bar: state.currentBar,
     maxPlaybackSteps: command.maxPlaybackSteps,
     step: state.currentStep,
-    matrixSource: () => store.getState().matrix,
+    matrixSource: () => {
+      const currentState = store.getState();
+      if (!currentState.trackInstancesById || !currentState.trackOrder) {
+        return currentState.matrix;
+      }
+      return {
+        matrix: currentState.matrix,
+        trackInstancesById: currentState.trackInstancesById,
+        trackOrder: currentState.trackOrder,
+      };
+    },
     onPositionChange: (bar, step) => {
       syncStoreTransportPosition(store, bar, step);
       positionObserver?.(bar, step);
@@ -146,12 +156,32 @@ async function dispatchHandlerCommand(command, deps) {
     case APP_COMMAND_TYPES.DRUMS_TOGGLE:
       await maybeCall(handlers.drums?.toggle, command);
       if (command.preview) {
-        await maybeCallMethod(deps.audio, 'triggerDrumsStep', command.instrument);
+        if (command.trackId) {
+          await maybeCallMethod(
+            deps.audio,
+            'triggerDrumsStep',
+            command.instrument,
+            undefined,
+            { trackId: command.trackId },
+          );
+        } else {
+          await maybeCallMethod(deps.audio, 'triggerDrumsStep', command.instrument);
+        }
       }
       return { ok: true };
 
     case APP_COMMAND_TYPES.DRUMS_PREVIEW:
-      await maybeCallMethod(deps.audio, 'triggerDrumsStep', command.instrument);
+      if (command.trackId) {
+        await maybeCallMethod(
+          deps.audio,
+          'triggerDrumsStep',
+          command.instrument,
+          undefined,
+          { trackId: command.trackId },
+        );
+      } else {
+        await maybeCallMethod(deps.audio, 'triggerDrumsStep', command.instrument);
+      }
       return { ok: true };
 
     case APP_COMMAND_TYPES.DRUMS_SELECT_CLIP:

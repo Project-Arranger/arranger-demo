@@ -46,9 +46,14 @@ test('secondary menus share outside-click dismissal without dismissing confirmat
   assert.match(hookSource, /triggerRef\?\.current/);
   assert.match(hookSource, /isIgnoredTarget\?\.\(event\.target\)/);
 
-  assert.match(tracksSource, /active: addTrackMenuOpen/);
-  assert.match(tracksSource, /ref=\{addTrackMenuRef\}/);
-  assert.match(tracksSource, /ref=\{addTrackTriggerRef\}/);
+  assert.match(tracksSource, /const \[trackManagerOpen, setTrackManagerOpen\] = useState\(false\)/);
+  assert.match(tracksSource, /if \(!trackManagerOpen && !pendingRemoveTrackId\) return undefined/);
+  assert.match(tracksSource, /if \(pendingRemoveTrackId\) setPendingRemoveTrackId\(null\)/);
+  assert.match(tracksSource, /else setTrackManagerOpen\(false\)/);
+  assert.match(tracksSource, /className="track-manager-overlay"/);
+  assert.match(tracksSource, /role="dialog"/);
+  assert.match(tracksSource, /className="track-delete-confirm-overlay"/);
+  assert.doesNotMatch(tracksSource, /track-manager-overlay"[^>]*onClick=/);
 
   assert.match(drumsSource, /active: drumTemplatePickerOpen/);
   assert.match(drumsSource, /setDrumTemplatePickerOpen\(\(isOpen\) => !isOpen\)/);

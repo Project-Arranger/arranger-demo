@@ -4,10 +4,18 @@ const CHECKPOINT_APP_STATE_KEYS = Object.freeze([
   'currentBar',
   'currentStep',
   'matrix',
+  'mutedTracks',
+  'nextTrackCreatedIndex',
+  'nextTrackOrdinalByType',
+  'primaryChordTrackId',
   'seekBar',
   'seekStep',
   'selectedBar',
   'selectedClipId',
+  'trackInstancesById',
+  'trackOrder',
+  'visibleTrackIds',
+  'volumes',
 ]);
 
 function cloneValue(value) {

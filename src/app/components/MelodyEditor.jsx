@@ -101,6 +101,7 @@ function MelodyEditor({
   onRenameClip,
   selectedBar,
   trackId = 'melody',
+  trackName = 'Melody',
   tutorialLocked = false,
   tutorialTargets,
 }) {
@@ -222,7 +223,7 @@ function MelodyEditor({
     <section className="editor" data-screen-label="Melody Editor" data-picker={pickerMode ?? undefined}>
       <header className="editor-head">
         <div className="editor-left">
-          {createElement(EditorTrackIdentity, { trackId: 'melody', label: 'Melody' })}
+          {createElement(EditorTrackIdentity, { trackId: 'melody', label: trackName })}
           <div className="clip-title">
             <div className="crumb">Melody · Phrase</div>
             {createElement(ClipNameInput, { clipName, onRenameClip })}

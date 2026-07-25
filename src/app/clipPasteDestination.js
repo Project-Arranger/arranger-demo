@@ -1,4 +1,5 @@
 import { TOTAL_BARS } from '../domain/musicConstants.js';
+import { getTrackType } from '../domain/trackInstances.js';
 import { hasTrackBarContent } from './trackContent.js';
 
 function createClipPasteDestination(trackId, bar) {
@@ -72,7 +73,8 @@ function resolveClipPasteTarget({
 
   const targetTrackId = pasteDestination.trackId;
   if (
-    clipClipboard.trackId !== targetTrackId
+    (clipClipboard.trackType ?? getTrackType(state, clipClipboard.trackId))
+      !== getTrackType(state, targetTrackId)
     || !Number.isInteger(targetBar)
     || !Array.isArray(state.matrix[targetTrackId]?.[targetBar])
     || typeof state.getClipForTrackBar !== 'function'

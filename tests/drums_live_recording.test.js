@@ -153,13 +153,19 @@ test('controller uses count-in, delayed bar clearing, full-track playback, and b
   assert.match(source, /tick\(4\)/);
   assert.match(source, /prepareRecordingBar\(session, pendingSession\.startBar\)/);
   assert.match(source, /step !== 0/);
-  assert.match(source, /clearDrumsBar\(latestState\.matrix, bar\)/);
+  assert.match(
+    source,
+    /clearDrumsBar\(\{[\s\S]*drums: latestState\.matrix\[session\.trackId\],[\s\S]*\}, bar\)/,
+  );
   assert.match(
     source,
     /TRANSPORT_TOGGLE_PLAY,[\s\S]*maxPlaybackSteps: pendingSession\.targetBars\.length \* STEPS_PER_BAR/,
   );
   assert.doesNotMatch(source, /audibleTrackIds/);
-  assert.match(source, /patch\.shouldCreateClip[\s\S]*latestState\.createClip\('drums', patch\.bar\)/);
+  assert.match(
+    source,
+    /patch\.shouldCreateClip[\s\S]*latestState\.createClip\(session\.trackId, patch\.bar\)/,
+  );
   assert.match(source, /session\.mutations\.record\(action, withUndoCheckpoint\)/);
   assert.match(
     melodyControllerSource,

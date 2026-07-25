@@ -1,4 +1,4 @@
-import createInitialMatrix from '../createInitialMatrix.js';
+import createInitialMatrix, { createEmptyTrackMatrix } from '../createInitialMatrix.js';
 
 function hasTrack(matrix, trackId) {
   return Object.hasOwn(matrix, trackId);
@@ -49,7 +49,7 @@ export default function createMatrixSlice(set, get) {
       return {
         matrix: {
           ...state.matrix,
-          [trackId]: createInitialMatrix()[trackId],
+          [trackId]: createEmptyTrackMatrix(),
         },
       };
     }),

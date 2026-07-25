@@ -72,6 +72,11 @@ import { TutorialOverlay } from './components/TutorialOverlay.jsx';
 import { toggleInstrumentInCell } from './drumSequencerData.js';
 import { createDrumsCell, getDrumsCellInstruments } from '../domain/drumsCells.js';
 import { createDrumsStepMovePatch } from '../domain/drumsStepMove.js';
+import {
+  canRemoveTrackInstance,
+  getTrackInstanceIdsByType,
+  getTrackType,
+} from '../domain/trackInstances.js';
 import { createLaunchpadChordHarmonyState } from './launchpadChordHarmonyState.js';
 import { selectLaunchpadChordClip } from './launchpadChordClipSelection.js';
 import { selectLaunchpadDrumsClip } from './launchpadDrumsClipSelection.js';
@@ -94,6 +99,10 @@ import {
 } from './timelineSelection.js';
 import { syncEditorToPlaybackBar } from './playbackEditorSync.js';
 import { syncTrackScrollContainers } from './syncTrackScroll.js';
+import {
+  createTrackScopedClips,
+  createTrackScopedMatrix,
+} from './trackInstanceScope.js';
 import { createTutorialSkipAppState } from './tutorialSkipState.js';
 import { syncEditorToTutorialSuggestedBar } from './tutorialEditorSync.js';
 import { useEditorResize } from './useEditorResize.js';
@@ -105,7 +114,7 @@ import { useMelodyRecordingController } from './useMelodyRecordingController.js'
 import {
   BAR_NUMBERS,
   getTrackUiByIds,
-  OPTIONAL_TRACK_UI,
+  TRACK_UI,
 } from './uiShellData.js';
 
 const TUTORIAL_AUTO_ADVANCE_MS = 450;
@@ -133,6 +142,27 @@ function scheduleTutorialAutoAdvance(callback) {
   }, TUTORIAL_AUTO_ADVANCE_MS);
 }
 
+function createTrackActionScope(state, trackId = state.activeTrackId) {
+  const trackType = getTrackType(state, trackId);
+  return {
+    clips: createTrackScopedClips({
+      activeTrackId: trackId,
+      activeTrackType: trackType,
+      clips: state.clips,
+      primaryChordTrackId: state.primaryChordTrackId,
+      trackInstancesById: state.trackInstancesById,
+    }),
+    matrix: createTrackScopedMatrix({
+      activeTrackId: trackId,
+      activeTrackType: trackType,
+      matrix: state.matrix,
+      primaryChordTrackId: state.primaryChordTrackId,
+    }),
+    trackId,
+    trackType,
+  };
+}
+
 export default function App() {
   const bpm = useMusicStore((state) => state.bpm);
   const rootKey = useMusicStore((state) => state.rootKey);
@@ -148,36 +178,53 @@ export default function App() {
   const clips = useMusicStore((state) => state.clips);
   const mutedTracks = useMusicStore((state) => state.mutedTracks);
   const volumes = useMusicStore((state) => state.volumes);
-  const visibleTrackIds = useMusicStore((state) => state.visibleTrackIds);
-  const melodyEditorIsOpen = activeTrackId === 'melody' && selectedClipId;
-  const chordActive = activeTrackId === 'chord'
+  const trackInstancesById = useMusicStore((state) => state.trackInstancesById);
+  const trackOrder = useMusicStore((state) => state.trackOrder);
+  const primaryChordTrackId = useMusicStore((state) => state.primaryChordTrackId);
+  const activeTrackType = getTrackType({ trackInstancesById }, activeTrackId);
+  const melodyEditorIsOpen = activeTrackType === 'melody' && selectedClipId;
+  const chordActive = activeTrackType === 'chord'
     && Boolean(selectedClipId)
-    && clips.byId[selectedClipId]?.trackId === 'chord';
+    && clips.byId[selectedClipId]?.trackId === activeTrackId;
   const chordClipBars = useMemo(
-    () => getSortedTrackClipBars(clips, 'chord'),
-    [clips],
+    () => getSortedTrackClipBars(clips, activeTrackType === 'chord' ? activeTrackId : 'chord'),
+    [activeTrackId, activeTrackType, clips],
   );
   const [launchpadChordHarmonyTarget, setLaunchpadChordHarmonyTarget] = useState(null);
-  const chordHarmonyState = useMemo(() => (
-    chordActive && launchpadChordHarmonyTarget
-      ? createLaunchpadChordHarmonyState({
-        ...launchpadChordHarmonyTarget,
-        clips,
-        matrix,
-      })
-      : null
-  ), [chordActive, clips, launchpadChordHarmonyTarget, matrix]);
-  const drumsActive = activeTrackId === 'drums';
+  const chordHarmonyState = useMemo(() => {
+    if (!chordActive || !launchpadChordHarmonyTarget) return null;
+    const scope = createTrackActionScope({
+      activeTrackId,
+      clips,
+      matrix,
+      primaryChordTrackId,
+      trackInstancesById,
+    }, activeTrackId);
+    return createLaunchpadChordHarmonyState({
+      ...launchpadChordHarmonyTarget,
+      clips: scope.clips,
+      matrix: scope.matrix,
+    });
+  }, [
+    activeTrackId,
+    chordActive,
+    clips,
+    launchpadChordHarmonyTarget,
+    matrix,
+    primaryChordTrackId,
+    trackInstancesById,
+  ]);
+  const drumsActive = activeTrackType === 'drums';
   const drumsClipBars = useMemo(
-    () => getSortedTrackClipBars(clips, 'drums'),
-    [clips],
+    () => getSortedTrackClipBars(clips, drumsActive ? activeTrackId : 'drums'),
+    [activeTrackId, clips, drumsActive],
   );
-  const melodyActive = activeTrackId === 'melody'
+  const melodyActive = activeTrackType === 'melody'
     && Boolean(selectedClipId)
-    && clips.byId[selectedClipId]?.trackId === 'melody';
+    && clips.byId[selectedClipId]?.trackId === activeTrackId;
   const melodyClipBars = useMemo(
-    () => getSortedTrackClipBars(clips, 'melody'),
-    [clips],
+    () => getSortedTrackClipBars(clips, melodyActive ? activeTrackId : 'melody'),
+    [activeTrackId, clips, melodyActive],
   );
   const [isNewSongConfirmOpen, setIsNewSongConfirmOpen] = useState(false);
   const [pendingClearAction, setPendingClearAction] = useState(null);
@@ -304,6 +351,7 @@ export default function App() {
   ), [selectedClip?.melodyRhythmTemplateId]);
   const melodyRecording = useMelodyRecordingController({
     activeTrackId,
+    activeTrackType,
     audioEngine,
     bpm,
     dispatchAppCommand,
@@ -313,6 +361,7 @@ export default function App() {
   });
   const drumsRecording = useDrumsRecordingController({
     activeTrackId,
+    activeTrackType,
     audioEngine,
     bpm,
     dispatchAppCommand,
@@ -506,11 +555,19 @@ export default function App() {
   }, []);
 
   const requestClearAction = useCallback((trackId, scope, bar = null) => {
-    if (!CLEAR_TRACK_LABELS[trackId]) return;
+    const state = useMusicStore.getState();
+    const trackType = getTrackType(state, trackId);
+    if (!CLEAR_TRACK_LABELS[trackType]) return;
     if (scope !== 'bar' && scope !== 'track') return;
     if (scope === 'bar' && !Number.isInteger(bar)) return;
 
-    setPendingClearAction({ bar, scope, trackId });
+    setPendingClearAction({
+      bar,
+      scope,
+      trackId,
+      trackName: state.trackInstancesById?.[trackId]?.name ?? CLEAR_TRACK_LABELS[trackType],
+      trackType,
+    });
   }, []);
 
   const cancelClearAction = useCallback(() => {
@@ -537,10 +594,35 @@ export default function App() {
     handleNewSong();
   }, [handleNewSong]);
 
-  const visibleTrackUi = useMemo(() => getTrackUiByIds(visibleTrackIds), [visibleTrackIds]);
-  const availableAddTrackOptions = useMemo(() => (
-    OPTIONAL_TRACK_UI.filter((track) => !visibleTrackIds.includes(track.id))
-  ), [visibleTrackIds]);
+  const visibleTrackUi = useMemo(
+    () => getTrackUiByIds(trackOrder, trackInstancesById),
+    [trackInstancesById, trackOrder],
+  );
+  const availableAddTrackOptions = TRACK_UI;
+  const activeTrackName = trackInstancesById[activeTrackId]?.name ?? activeTrackType;
+  const editorMatrix = useMemo(() => createTrackScopedMatrix({
+    activeTrackId,
+    activeTrackType,
+    matrix,
+    primaryChordTrackId,
+  }), [activeTrackId, activeTrackType, matrix, primaryChordTrackId]);
+  const editorClips = useMemo(() => createTrackScopedClips({
+    activeTrackId,
+    activeTrackType,
+    clips,
+    primaryChordTrackId,
+    trackInstancesById,
+  }), [
+    activeTrackId,
+    activeTrackType,
+    clips,
+    primaryChordTrackId,
+    trackInstancesById,
+  ]);
+  const launchpadMutedTracks = useMemo(() => ({
+    ...mutedTracks,
+    ...(activeTrackType ? { [activeTrackType]: mutedTracks[activeTrackId] === true } : {}),
+  }), [activeTrackId, activeTrackType, mutedTracks]);
   const tracks = useMemo(() => createTimelineTracks({
     barNumbers: BAR_NUMBERS,
     clips,
@@ -789,13 +871,51 @@ export default function App() {
     withUndoCheckpoint,
   ]);
 
-  const handleAddTrack = useCallback((trackId) => {
-    stopDrumsRecording();
-    stopMelodyRecording();
+  const stopForTrackStructureChange = useCallback(() => {
+    clearTimelineSelectionPlayback();
+    clearClipPasteDestination();
+    setTimelineSelection(null);
+    stopDrumsRecording({ stopTransport: false });
+    stopMelodyRecording({ stopTransport: false });
+    void dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_STOP });
+  }, [
+    clearClipPasteDestination,
+    clearTimelineSelectionPlayback,
+    dispatchAppCommand,
+    stopDrumsRecording,
+    stopMelodyRecording,
+  ]);
+
+  const handleAddTrack = useCallback((trackType) => {
+    stopForTrackStructureChange();
     withUndoCheckpoint(() => {
-      useMusicStore.getState().addVisibleTrack(trackId);
+      useMusicStore.getState().addTrackInstance(trackType);
     });
-  }, [stopDrumsRecording, stopMelodyRecording, withUndoCheckpoint]);
+  }, [stopForTrackStructureChange, withUndoCheckpoint]);
+
+  const handleRenameTrack = useCallback((trackId, name) => {
+    withUndoCheckpoint(() => {
+      useMusicStore.getState().renameTrackInstance(trackId, name);
+    });
+  }, [withUndoCheckpoint]);
+
+  const handleMoveTrack = useCallback((trackId, targetIndex) => {
+    stopForTrackStructureChange();
+    withUndoCheckpoint(() => {
+      useMusicStore.getState().moveTrackInstance(trackId, targetIndex);
+    });
+  }, [stopForTrackStructureChange, withUndoCheckpoint]);
+
+  const handleRemoveTrack = useCallback((trackId) => {
+    stopForTrackStructureChange();
+    withUndoCheckpoint(() => {
+      useMusicStore.getState().removeTrackInstance(trackId);
+    });
+  }, [stopForTrackStructureChange, withUndoCheckpoint]);
+
+  const canRemoveTrack = useCallback((trackId) => (
+    canRemoveTrackInstance(useMusicStore.getState(), trackId)
+  ), []);
 
   const handleTrackVolumeChange = useCallback((trackId, volume) => {
     useMusicStore.getState().setTrackVolume(trackId, volume);
@@ -861,11 +981,11 @@ export default function App() {
     });
   }, [selectedClipId, withUndoCheckpoint]);
 
-  const writeDrumsBars = useCallback((nextMatrix, barIndexes) => {
+  const writeDrumsBars = useCallback((nextMatrix, barIndexes, trackId) => {
     const state = useMusicStore.getState();
     for (const barIndex of barIndexes) {
       nextMatrix.drums[barIndex].forEach((cell, step) => {
-        state.setCell('drums', barIndex, step, cell);
+        state.setCell(trackId, barIndex, step, cell);
       });
     }
   }, []);
@@ -884,8 +1004,10 @@ export default function App() {
 
     withUndoCheckpoint(() => {
       const state = useMusicStore.getState();
-      const nextMatrix = applyBasicDrumsBar(state.matrix, selectedBar);
-      writeDrumsBars(nextMatrix, [selectedBar]);
+      const scope = createTrackActionScope(state);
+      if (scope.trackType !== 'drums') return;
+      const nextMatrix = applyBasicDrumsBar(scope.matrix, selectedBar);
+      writeDrumsBars(nextMatrix, [selectedBar], scope.trackId);
       if (tutorialAction) applyTutorialActionProgress(tutorialAction);
     }, { force: Boolean(tutorialAction) });
   }, [
@@ -912,9 +1034,15 @@ export default function App() {
 
     withUndoCheckpoint(() => {
       const state = useMusicStore.getState();
-      const drumsClipBars = getDrumsClipBarIndexes(state.clips);
-      const nextMatrix = applyBasicDrumsAllBars(state.matrix, drumsClipBars);
-      writeDrumsBars(nextMatrix, BAR_NUMBERS.map((_, barIndex) => barIndex));
+      const scope = createTrackActionScope(state);
+      if (scope.trackType !== 'drums') return;
+      const drumsClipBars = getDrumsClipBarIndexes(scope.clips);
+      const nextMatrix = applyBasicDrumsAllBars(scope.matrix, drumsClipBars);
+      writeDrumsBars(
+        nextMatrix,
+        BAR_NUMBERS.map((_, barIndex) => barIndex),
+        scope.trackId,
+      );
       if (tutorialAction) applyTutorialActionProgress(tutorialAction);
     }, { force: Boolean(tutorialAction) });
   }, [
@@ -928,12 +1056,12 @@ export default function App() {
   ]);
 
   const handleClearCurrentDrumsBar = useCallback(() => {
-    requestClearAction('drums', 'bar', selectedBar);
-  }, [requestClearAction, selectedBar]);
+    requestClearAction(activeTrackId, 'bar', selectedBar);
+  }, [activeTrackId, requestClearAction, selectedBar]);
 
   const handleClearDrums = useCallback(() => {
-    requestClearAction('drums', 'track');
-  }, [requestClearAction]);
+    requestClearAction(activeTrackId, 'track');
+  }, [activeTrackId, requestClearAction]);
 
   const handlePageTrackBar = useCallback((direction) => {
     stopDrumsRecording();
@@ -1136,10 +1264,12 @@ export default function App() {
   ) => {
     const state = useMusicStore.getState();
     if (state.selectedBar !== bar) return;
+    const scope = createTrackActionScope(state);
+    if (scope.trackType !== 'drums') return;
 
     const tutorialAction = tutorialActive ? handleTutorialDrumToggle({
       instrument,
-      matrix: state.matrix,
+      matrix: scope.matrix,
       progress: tutorialProgress,
       selectedBar: bar,
       step: currentTutorialStep,
@@ -1149,16 +1279,17 @@ export default function App() {
     if (!tutorialAction.allowed) return;
 
     withUndoCheckpoint(() => {
-      const currentCell = state.matrix.drums[bar]?.[step] ?? null;
+      const currentCell = scope.matrix.drums[bar]?.[step] ?? null;
       const preview = !getDrumsCellInstruments(currentCell).includes(instrument);
       const nextCell = toggleInstrumentInCell(currentCell, instrument);
-      state.setCell('drums', bar, step, nextCell);
+      state.setCell(scope.trackId, bar, step, nextCell);
       void dispatchAppCommand({
         type: APP_COMMAND_TYPES.DRUMS_TOGGLE,
         bar,
         step,
         instrument,
         preview,
+        trackId: scope.trackId,
       });
 
       applyTutorialActionProgress(tutorialAction);
@@ -1174,11 +1305,13 @@ export default function App() {
 
   const handleDrumsStepMove = useCallback((instrument, fromStep, toStep) => {
     const state = useMusicStore.getState();
+    const scope = createTrackActionScope(state);
+    if (scope.trackType !== 'drums') return;
     const tutorialAction = tutorialActive
       ? handleTutorialDrumMove({
         fromStep,
         instrument,
-        matrix: state.matrix,
+        matrix: scope.matrix,
         progress: tutorialProgress,
         selectedBar,
         step: currentTutorialStep,
@@ -1189,7 +1322,7 @@ export default function App() {
       bar: selectedBar,
       fromStep,
       instrument,
-      matrix: state.matrix,
+      matrix: scope.matrix,
       toStep,
     });
 
@@ -1197,7 +1330,7 @@ export default function App() {
 
     withUndoCheckpoint(() => {
       moveAction.nextMatrixPatch.forEach((patch) => {
-        state.setCell('drums', patch.bar, patch.step, patch.cell);
+        state.setCell(scope.trackId, patch.bar, patch.step, patch.cell);
       });
       void dispatchAppCommand({
         type: APP_COMMAND_TYPES.DRUMS_TOGGLE,
@@ -1205,6 +1338,7 @@ export default function App() {
         step: toStep,
         instrument,
         preview: true,
+        trackId: scope.trackId,
       });
 
       if (tutorialAction) {
@@ -1238,6 +1372,7 @@ export default function App() {
     return audioEngine.previewChordClipSequence(events, {
       bpm,
       totalSteps: 64,
+      trackId: useMusicStore.getState().activeTrackId,
     });
   }, [bpm, dispatchAppCommand]);
 
@@ -1259,6 +1394,7 @@ export default function App() {
     return audioEngine.previewChordClipSequence(events, {
       bpm,
       totalSteps: 8,
+      trackId: useMusicStore.getState().activeTrackId,
     });
   }, [bpm, dispatchAppCommand]);
 
@@ -1270,9 +1406,11 @@ export default function App() {
     withUndoCheckpoint(() => {
       const state = useMusicStore.getState();
       if (state.selectedBar !== bar) return;
-      const nextMatrix = toggleChordRhythmStep(state.matrix, bar, stepIndex);
-      if (nextMatrix === state.matrix) return;
-      state.setTrackMatrix('chord', nextMatrix.chord);
+      const scope = createTrackActionScope(state);
+      if (scope.trackType !== 'chord') return;
+      const nextMatrix = toggleChordRhythmStep(scope.matrix, bar, stepIndex);
+      if (nextMatrix === scope.matrix) return;
+      state.setTrackMatrix(scope.trackId, nextMatrix.chord);
     });
   }, [withUndoCheckpoint]);
 
@@ -1283,21 +1421,23 @@ export default function App() {
     stepIndex,
   } = {}) => {
     const state = useMusicStore.getState();
+    const scope = createTrackActionScope(state);
+    if (scope.trackType !== 'chord') return false;
     const targetBar = bar ?? state.selectedBar;
     if (targetBar !== state.selectedBar) return false;
     const nextMatrix = mode === 'passing'
       ? applyChordRhythmStepPassingChord(
-        state.matrix,
-        state.clips,
+        scope.matrix,
+        scope.clips,
         targetBar,
         stepIndex,
         chordName,
       )
-      : applyChordRhythmStepEnrichment(state.matrix, targetBar, stepIndex, chordName);
-    if (nextMatrix === state.matrix) return false;
+      : applyChordRhythmStepEnrichment(scope.matrix, targetBar, stepIndex, chordName);
+    if (nextMatrix === scope.matrix) return false;
 
     withUndoCheckpoint(() => {
-      state.setTrackMatrix('chord', nextMatrix.chord);
+      state.setTrackMatrix(scope.trackId, nextMatrix.chord);
     });
     setLaunchpadChordHarmonyTarget(null);
     return true;
@@ -1319,16 +1459,18 @@ export default function App() {
     }
 
     const state = useMusicStore.getState();
+    const scope = createTrackActionScope(state);
+    if (scope.trackType !== 'chord') return;
     const selection = { progressionTemplateId, grooveTemplateId };
     const nextMatrix = applyChordTemplateWorkspaceToExistingClips(
-      state.matrix,
-      state.clips,
+      scope.matrix,
+      scope.clips,
       selection,
     );
-    if (nextMatrix === state.matrix) return;
+    if (nextMatrix === scope.matrix) return;
 
     withUndoCheckpoint(() => {
-      state.setTrackMatrix('chord', nextMatrix.chord);
+      state.setTrackMatrix(scope.trackId, nextMatrix.chord);
       if (tutorialAction) applyTutorialActionProgress(tutorialAction);
     }, { force: Boolean(tutorialAction) });
   }, [
@@ -1341,39 +1483,55 @@ export default function App() {
   ]);
 
   const handleClearChordBar = useCallback(() => {
-    requestClearAction('chord', 'bar', selectedBar);
-  }, [requestClearAction, selectedBar]);
+    requestClearAction(activeTrackId, 'bar', selectedBar);
+  }, [activeTrackId, requestClearAction, selectedBar]);
 
   const handleClearChord = useCallback(() => {
-    requestClearAction('chord', 'track');
-  }, [requestClearAction]);
+    requestClearAction(activeTrackId, 'track');
+  }, [activeTrackId, requestClearAction]);
 
   const handleBassStepToggle = useCallback((step, note) => {
     withUndoCheckpoint(() => {
       const state = useMusicStore.getState();
+      const scope = createTrackActionScope(state);
+      if (scope.trackType !== 'bass') return;
       const { auditionNote, nextMatrix } = getBassCellToggleResult(
-        state.matrix,
+        scope.matrix,
         selectedBar,
         step,
         note,
       );
-      state.setCell('bass', selectedBar, step, nextMatrix.bass[selectedBar][step]);
+      state.setCell(scope.trackId, selectedBar, step, nextMatrix.bass[selectedBar][step]);
       if (auditionNote) {
-        void audioEngine.triggerBassNote(auditionNote, '16n');
+        void audioEngine.triggerBassNote(
+          auditionNote,
+          '16n',
+          undefined,
+          { trackId: scope.trackId },
+        );
       }
     });
   }, [selectedBar, withUndoCheckpoint]);
 
   const handleBassPreview = useCallback((note) => {
-    void audioEngine.triggerBassNote(note, '16n');
+    void audioEngine.triggerBassNote(
+      note,
+      '16n',
+      undefined,
+      { trackId: useMusicStore.getState().activeTrackId },
+    );
   }, []);
 
   const handleBassGrooveTemplatePreview = useCallback((templateId) => {
     const state = useMusicStore.getState();
-    const events = createBassPreviewEvents(state.matrix, selectedBar, templateId);
+    const scope = createTrackActionScope(state);
+    if (scope.trackType !== 'bass') return;
+    const events = createBassPreviewEvents(scope.matrix, selectedBar, templateId);
     if (!events.length) return;
 
-    void audioEngine.previewBassPattern(events);
+    void audioEngine.previewBassPattern(events, {
+      trackId: scope.trackId,
+    });
   }, [selectedBar]);
 
   const handleBassGrooveTemplateApply = useCallback((templateId) => {
@@ -1389,11 +1547,17 @@ export default function App() {
     }
 
     const state = useMusicStore.getState();
-    const nextMatrix = applyBassGrooveTemplateToExistingClips(state.matrix, state.clips, templateId);
-    if (nextMatrix === state.matrix) return;
+    const scope = createTrackActionScope(state);
+    if (scope.trackType !== 'bass') return;
+    const nextMatrix = applyBassGrooveTemplateToExistingClips(
+      scope.matrix,
+      scope.clips,
+      templateId,
+    );
+    if (nextMatrix === scope.matrix) return;
 
     withUndoCheckpoint(() => {
-      state.setTrackMatrix('bass', nextMatrix.bass);
+      state.setTrackMatrix(scope.trackId, nextMatrix.bass);
       if (tutorialAction) applyTutorialActionProgress(tutorialAction);
     }, { force: Boolean(tutorialAction) });
   }, [
@@ -1406,37 +1570,42 @@ export default function App() {
   ]);
 
   const handleClearBassBar = useCallback(() => {
-    requestClearAction('bass', 'bar', selectedBar);
-  }, [requestClearAction, selectedBar]);
+    requestClearAction(activeTrackId, 'bar', selectedBar);
+  }, [activeTrackId, requestClearAction, selectedBar]);
 
   const handleClearBass = useCallback(() => {
-    requestClearAction('bass', 'track');
-  }, [requestClearAction]);
+    requestClearAction(activeTrackId, 'track');
+  }, [activeTrackId, requestClearAction]);
 
   const handleMelodyStepToggle = useCallback((step, note) => {
     melodyRecording.stopRecording();
     withUndoCheckpoint(() => {
       const state = useMusicStore.getState();
+      const scope = createTrackActionScope(state);
+      if (scope.trackType !== 'melody') return;
       const { auditionNote, nextMatrix } = getMelodyCellToggleResult(
-        state.matrix,
+        scope.matrix,
         selectedBar,
         step,
         note,
       );
-      state.setCell('melody', selectedBar, step, nextMatrix.melody[selectedBar][step]);
+      state.setCell(scope.trackId, selectedBar, step, nextMatrix.melody[selectedBar][step]);
       if (auditionNote) {
-        void audioEngine.triggerMelodyInputOneShot(auditionNote);
+        void audioEngine.triggerMelodyInputOneShot(auditionNote, undefined, {
+          trackId: scope.trackId,
+        });
       }
     });
   }, [melodyRecording, selectedBar, withUndoCheckpoint]);
 
   const handleMelodyPreview = useCallback((noteOrNotes) => {
+    const trackId = useMusicStore.getState().activeTrackId;
     if (Array.isArray(noteOrNotes)) {
-      void audioEngine.previewMelodySequence(noteOrNotes);
+      void audioEngine.previewMelodySequence(noteOrNotes, { trackId });
       return;
     }
 
-    void audioEngine.triggerMelodyInputOneShot(noteOrNotes);
+    void audioEngine.triggerMelodyInputOneShot(noteOrNotes, undefined, { trackId });
   }, []);
 
   const handleMelodyScaleChange = useCallback((scaleId) => {
@@ -1471,35 +1640,45 @@ export default function App() {
     melodyRecording.clearActiveNotes();
     withUndoCheckpoint(() => {
       const state = useMusicStore.getState();
+      const targetTrackId = getTrackType(state, state.activeTrackId) === 'melody'
+        ? state.activeTrackId
+        : 'melody';
       const nextClips = scope === 'global'
-        ? applyMelodyRhythmTemplateToExistingClips(state.clips, templateId)
-        : applyMelodyRhythmTemplateToBar(state.clips, selectedBar, templateId);
+        ? applyMelodyRhythmTemplateToExistingClips(state.clips, templateId, targetTrackId)
+        : applyMelodyRhythmTemplateToBar(
+          state.clips,
+          selectedBar,
+          templateId,
+          targetTrackId,
+        );
       if (nextClips !== state.clips) useMusicStore.setState({ clips: nextClips });
     });
   }, [melodyRecording, selectedBar, withUndoCheckpoint]);
 
   const handleClearMelodyBar = useCallback(() => {
-    requestClearAction('melody', 'bar', selectedBar);
-  }, [requestClearAction, selectedBar]);
+    requestClearAction(activeTrackId, 'bar', selectedBar);
+  }, [activeTrackId, requestClearAction, selectedBar]);
 
   const handleClearMelody = useCallback(() => {
-    requestClearAction('melody', 'track');
-  }, [requestClearAction]);
+    requestClearAction(activeTrackId, 'track');
+  }, [activeTrackId, requestClearAction]);
 
   const confirmClearAction = useCallback(() => {
     const action = pendingClearAction;
     if (!action) return;
 
     setPendingClearAction(null);
-    if (action.trackId === 'melody') melodyRecording.stopRecording();
+    if (action.trackType === 'melody') melodyRecording.stopRecording();
 
     withUndoCheckpoint(() => {
       const state = useMusicStore.getState();
+      const scope = createTrackActionScope(state, action.trackId);
+      if (scope.trackType !== action.trackType) return;
 
       if (action.scope === 'track') {
-        if (action.trackId === 'melody') {
-          const nextClips = clearMelodyRhythmTemplates(state.clips);
-          state.clearTrack('melody');
+        if (action.trackType === 'melody') {
+          const nextClips = clearMelodyRhythmTemplates(state.clips, action.trackId);
+          state.clearTrack(action.trackId);
           if (nextClips !== state.clips) useMusicStore.setState({ clips: nextClips });
           return;
         }
@@ -1508,29 +1687,33 @@ export default function App() {
         return;
       }
 
-      if (action.trackId === 'drums') {
-        const nextMatrix = clearDrumsBar(state.matrix, action.bar);
-        writeDrumsBars(nextMatrix, [action.bar]);
+      if (action.trackType === 'drums') {
+        const nextMatrix = clearDrumsBar(scope.matrix, action.bar);
+        writeDrumsBars(nextMatrix, [action.bar], action.trackId);
         return;
       }
 
-      if (action.trackId === 'chord') {
-        const nextMatrix = clearChordRhythmBar(state.matrix, action.bar);
-        if (nextMatrix !== state.matrix) state.setTrackMatrix('chord', nextMatrix.chord);
+      if (action.trackType === 'chord') {
+        const nextMatrix = clearChordRhythmBar(scope.matrix, action.bar);
+        if (nextMatrix !== scope.matrix) state.setTrackMatrix(action.trackId, nextMatrix.chord);
         return;
       }
 
-      if (action.trackId === 'bass') {
-        const nextMatrix = clearBassBar(state.matrix, action.bar);
+      if (action.trackType === 'bass') {
+        const nextMatrix = clearBassBar(scope.matrix, action.bar);
         nextMatrix.bass[action.bar].forEach((cell, step) => {
-          state.setCell('bass', action.bar, step, cell);
+          state.setCell(action.trackId, action.bar, step, cell);
         });
         return;
       }
 
-      const nextMatrix = clearMelodyBar(state.matrix, action.bar);
-      const nextClips = clearMelodyRhythmTemplateFromBar(state.clips, action.bar);
-      state.setTrackMatrix('melody', nextMatrix.melody);
+      const nextMatrix = clearMelodyBar(scope.matrix, action.bar);
+      const nextClips = clearMelodyRhythmTemplateFromBar(
+        state.clips,
+        action.bar,
+        action.trackId,
+      );
+      state.setTrackMatrix(action.trackId, nextMatrix.melody);
       if (nextClips !== state.clips) useMusicStore.setState({ clips: nextClips });
     });
   }, [
@@ -1649,11 +1832,12 @@ export default function App() {
   const handleLaunchpadChordHarmonyOpen = useCallback((bar, step) => {
     const state = useMusicStore.getState();
     const activeClip = state.clips.byId[state.selectedClipId];
+    const trackType = getTrackType(state, state.activeTrackId);
     if (
-      state.activeTrackId !== 'chord'
-      || activeClip?.trackId !== 'chord'
+      trackType !== 'chord'
+      || activeClip?.trackId !== state.activeTrackId
       || state.selectedBar !== bar
-      || state.matrix.chord?.[bar]?.[step]?.type !== 'chord'
+      || state.matrix[state.activeTrackId]?.[bar]?.[step]?.type !== 'chord'
     ) {
       return false;
     }
@@ -1747,6 +1931,24 @@ export default function App() {
   }, [chordHarmonyState, handleChordStepHarmonyPreview]);
 
   const dispatchInputCommand = useCallback((command) => {
+    if (command?.type === APP_COMMAND_TYPES.TRACK_TOGGLE_MUTE) {
+      const state = useMusicStore.getState();
+      const instanceIds = getTrackInstanceIdsByType(state, command.trackId);
+      if (!instanceIds.length) return false;
+      const activeIndex = instanceIds.indexOf(state.activeTrackId);
+      const targetTrackId = activeIndex >= 0
+        ? instanceIds[(activeIndex + 1) % instanceIds.length]
+        : instanceIds[0];
+      const targetClip = state.getClipForTrackBar(targetTrackId, state.selectedBar);
+      state.setActiveTrackId(targetTrackId);
+      state.setSelectedClipId(targetClip?.id ?? null);
+      void dispatchAppCommand({
+        ...command,
+        trackId: targetTrackId,
+      });
+      return true;
+    }
+
     if (command?.type === APP_COMMAND_TYPES.APP_UNDO) {
       handleUndoWithMelodyStop();
       return;
@@ -1782,7 +1984,11 @@ export default function App() {
 
     if (command?.type === APP_COMMAND_TYPES.DRUMS_PREVIEW) {
       drumsRecording.handlePadInput(command.instrument);
-      void dispatchAppCommand(command);
+      const state = useMusicStore.getState();
+      const trackId = getTrackType(state, state.activeTrackId) === 'drums'
+        ? state.activeTrackId
+        : 'drums';
+      void dispatchAppCommand({ ...command, trackId });
       return;
     }
 
@@ -1836,8 +2042,8 @@ export default function App() {
       const state = useMusicStore.getState();
       const activeClip = state.clips.byId[state.selectedClipId];
       if (
-        state.activeTrackId !== 'drums'
-        || activeClip?.trackId !== 'drums'
+        getTrackType(state, state.activeTrackId) !== 'drums'
+        || activeClip?.trackId !== state.activeTrackId
         || command.bar !== state.selectedBar
       ) {
         return;
@@ -1850,8 +2056,8 @@ export default function App() {
       const state = useMusicStore.getState();
       const activeClip = state.clips.byId[state.selectedClipId];
       if (
-        state.activeTrackId !== 'chord'
-        || activeClip?.trackId !== 'chord'
+        getTrackType(state, state.activeTrackId) !== 'chord'
+        || activeClip?.trackId !== state.activeTrackId
         || command.bar !== state.selectedBar
       ) {
         return;
@@ -1943,13 +2149,13 @@ export default function App() {
     drumsActive,
     drumsClipBars,
     isPlaying,
-    matrix,
+    matrix: editorMatrix,
     melodyActive,
     melodyClipBars,
     melodyRecordingState: melodyRecording.recordingState,
     melodyScaleId,
     melodyTemplateSteps,
-    mutedTracks,
+    mutedTracks: launchpadMutedTracks,
     selectedBar,
   });
   const handleLaunchpadConnect = useCallback(() => {
@@ -2181,8 +2387,8 @@ export default function App() {
               </div>
               <h2 className="new-song-confirm-title" id="clear-confirm-title">
                 {pendingClearAction.scope === 'bar'
-                  ? `确认清空 ${CLEAR_TRACK_LABELS[pendingClearAction.trackId]} 第 ${pendingClearAction.bar + 1} 小节？`
-                  : `确认清空整条 ${CLEAR_TRACK_LABELS[pendingClearAction.trackId]} 轨？`}
+                  ? `确认清空 ${pendingClearAction.trackName} 第 ${pendingClearAction.bar + 1} 小节？`
+                  : `确认清空整条 ${pendingClearAction.trackName} 轨？`}
               </h2>
               <p className="new-song-confirm-copy" id="clear-confirm-copy">
                 {pendingClearAction.scope === 'bar'
@@ -2261,8 +2467,12 @@ export default function App() {
           {createElement(TracksColumn, {
             activeTrackId,
             addTrackOptions: availableAddTrackOptions,
+            canRemoveTrack,
             onAddTrack: handleAddTrack,
             onFillEmptyTrackClips: handleFillEmptyTrackClips,
+            onMoveTrack: handleMoveTrack,
+            onRemoveTrack: handleRemoveTrack,
+            onRenameTrack: handleRenameTrack,
             onTrackSelect: handleTrackSelect,
             onVolumeChange: handleTrackVolumeChange,
             onVolumeChangeEnd: handleTrackVolumeChangeEnd,
@@ -2325,12 +2535,14 @@ export default function App() {
         </div>
         {createElement(BottomEditor, {
           activeTrackId,
+          activeTrackName,
+          activeTrackType,
           activeTutorialTarget,
           tutorialLocked: activeTutorialLocked,
           tutorialTargets: activeTutorialTargets,
           isPlaying,
-          matrix,
-          clips,
+          matrix: editorMatrix,
+          clips: editorClips,
           drumsRecordingState: drumsRecording.recordingState,
           melodyScaleId,
           melodyActiveInputNotes: melodyRecording.activeInputNotes,

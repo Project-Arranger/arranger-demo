@@ -1048,6 +1048,42 @@ test('AudioEngine applies current track volumes to matrix playback events', asyn
   ]);
 });
 
+test('AudioEngine keeps duplicate track instance volume and mute channels independent', async () => {
+  const tone = createFakeTone();
+  const matrix = createInitialMatrix();
+  matrix['drums-2'] = createInitialMatrix().drums;
+  matrix.drums[0][0] = { instruments: ['kick'] };
+  matrix['drums-2'][0][0] = { instruments: ['kick'] };
+  const mix = {
+    mutedTracks: { drums: false, 'drums-2': true },
+    volumes: { drums: -12, 'drums-2': -4 },
+  };
+  const matrixSource = {
+    matrix,
+    trackInstancesById: {
+      drums: { id: 'drums', type: 'drums' },
+      'drums-2': { id: 'drums-2', type: 'drums' },
+    },
+    trackOrder: ['drums', 'drums-2'],
+  };
+  const engine = new AudioEngine({
+    tone,
+    matrixSource,
+    volumeSource: () => mix,
+    playerFactory: createVolumeAwarePlayerFactory(tone.calls),
+  });
+
+  await engine.play({ bpm: 120 });
+  tone.Transport.scheduledCallback(24);
+
+  assert.deepEqual(tone.calls.filter(([name]) => name === 'player.start'), [
+    ['player.start', 'kick', versioned('/samples/Drums/Kick_v0.22.wav'), 24, -12],
+    ['player.start', 'kick', versioned('/samples/Drums/Kick_v0.22.wav'), 24, -Infinity],
+  ]);
+  assert.equal(engine.refreshTrackVolume('drums'), -12);
+  assert.equal(engine.refreshTrackVolume('drums-2'), -Infinity);
+});
+
 test('AudioEngine applies live track volume source to drums previews', async () => {
   const tone = createFakeTone();
   const volumes = { drums: -12 };

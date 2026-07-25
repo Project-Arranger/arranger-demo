@@ -286,7 +286,7 @@ test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async
   assert.match(timelineSource, /handlePlayheadMouseDown/);
   assert.match(timelineSource, /const handlePlayheadMouseDown = \(event\) => \{[\s\S]*event\.stopPropagation\(\)/);
   assert.match(timelineSource, /playhead-hit/);
-  assert.match(timelineSource, /className="timeline-footer-spacer"/);
+  assert.doesNotMatch(timelineSource, /className="timeline-footer-spacer"/);
   assert.match(source, /handleTransportSeek/);
   assert.match(source, /onTransportSeek:\s*handleTransportSeek/);
   assert.match(source, /clips/);
@@ -300,22 +300,29 @@ test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async
   assert.match(source, /handleFillEmptyTrackClips/);
   assert.match(source, /createEmptyClipsForTrack\(trackId\)/);
   assert.match(source, /onFillEmptyTrackClips:\s*handleFillEmptyTrackClips/);
-  assert.match(source, /visibleTrackIds/);
-  assert.match(source, /getTrackUiByIds\(visibleTrackIds\)/);
+  assert.match(source, /trackOrder/);
+  assert.match(source, /trackInstancesById/);
+  assert.match(source, /getTrackUiByIds\(trackOrder, trackInstancesById\)/);
   assert.match(source, /handleAddTrack/);
-  assert.match(source, /addVisibleTrack\(trackId\)/);
+  assert.match(source, /addTrackInstance\(trackType\)/);
   assert.match(source, /addTrackOptions:\s*availableAddTrackOptions/);
+  assert.match(source, /onRenameTrack:\s*handleRenameTrack/);
+  assert.match(source, /onMoveTrack:\s*handleMoveTrack/);
+  assert.match(source, /onRemoveTrack:\s*handleRemoveTrack/);
   assert.match(source, /selectClip\(clipId\)/);
   assert.doesNotMatch(source, /track\.clipName/);
   assert.doesNotMatch(uiDataSource, /trackClips|clipName|selected:/);
   assert.match(tracksColumnSource, /onFillEmptyTrackClips/);
   assert.match(tracksColumnSource, /onFillEmptyTrackClips\(track\.id\)/);
   assert.match(tracksColumnSource, /填充整轨/);
-  assert.match(tracksColumnSource, /aria-label="填充整轨"/);
-  assert.match(tracksColumnSource, /aria-haspopup="menu"/);
-  assert.match(tracksColumnSource, /add-track-menu/);
-  assert.match(tracksColumnSource, /role="menuitem"/);
-  assert.match(tracksColumnSource, /onAddTrack\(track\.id\)/);
+  assert.match(tracksColumnSource, /aria-label=\{`填充 \$\{track\.label\} 整轨`\}/);
+  assert.match(tracksColumnSource, /aria-label="编辑轨道"/);
+  assert.match(tracksColumnSource, /className="track-manager-panel"/);
+  assert.match(tracksColumnSource, /role="dialog"/);
+  assert.match(tracksColumnSource, /onAddTrack\(trackType\)/);
+  assert.match(tracksColumnSource, /onRenameTrack\(trackId, nextName\)/);
+  assert.match(tracksColumnSource, /onMoveTrack\(draggedTrackId, index\)/);
+  assert.match(tracksColumnSource, /onRemoveTrack\(pendingRemoveTrack\.id\)/);
   assert.doesNotMatch(tracksColumnSource, /\+8|铺满/);
 
   assert.deepEqual(TRACK_UI.map((track) => track.id), TRACK_IDS);
@@ -467,8 +474,8 @@ test('app shell exposes the chord rhythm editor and unified template workspace',
   assert.doesNotMatch(source, /applyChordTemplateWorkspaceToBar/);
   assert.match(source, /toggleChordRhythmStep/);
   assert.match(source, /clearChordRhythmBar/);
-  assert.match(chordClearRequestSource, /requestClearAction\('chord', 'track'\)/);
-  assert.doesNotMatch(chordClearRequestSource, /clearTrack\('chord'\)/);
+  assert.match(chordClearRequestSource, /requestClearAction\(activeTrackId, 'track'\)/);
+  assert.doesNotMatch(chordClearRequestSource, /clearTrack\(activeTrackId\)/);
   assert.match(source, /createChordTemplateWorkspacePreviewEvents/);
   assert.match(source, /createChordStepHarmonyPreviewEvents/);
   assert.match(source, /previewChordClipSequence/);
@@ -493,28 +500,24 @@ test('all destructive clear actions require one shared confirmation', async () =
   );
 
   assert.match(source, /const \[pendingClearAction, setPendingClearAction\] = useState\(null\)/);
-  assert.match(source, /requestClearAction\('drums', 'bar', selectedBar\)/);
-  assert.match(source, /requestClearAction\('drums', 'track'\)/);
-  assert.match(source, /requestClearAction\('chord', 'bar', selectedBar\)/);
-  assert.match(source, /requestClearAction\('chord', 'track'\)/);
-  assert.match(source, /requestClearAction\('bass', 'bar', selectedBar\)/);
-  assert.match(source, /requestClearAction\('bass', 'track'\)/);
-  assert.match(source, /requestClearAction\('melody', 'bar', selectedBar\)/);
-  assert.match(source, /requestClearAction\('melody', 'track'\)/);
+  assert.match(source, /const requestClearAction = useCallback\(\(trackId, scope, bar = null\) => \{[\s\S]*getTrackType\(state, trackId\)[\s\S]*trackName: state\.trackInstancesById\?\.\[trackId\]\?\.name/);
+  assert.equal(source.match(/requestClearAction\(activeTrackId, 'bar', selectedBar\)/g)?.length, 4);
+  assert.equal(source.match(/requestClearAction\(activeTrackId, 'track'\)/g)?.length, 4);
   assert.match(source, /event\.key !== 'Escape'/);
   assert.match(source, /cancelClearAction\(\)/);
   assert.match(source, /enabled: !pendingClearAction/);
   assert.match(source, /aria-label="关闭清空确认框"/);
-  assert.match(source, /确认清空整条 \$\{CLEAR_TRACK_LABELS\[pendingClearAction\.trackId\]\} 轨/);
-  assert.match(source, /确认清空 \$\{CLEAR_TRACK_LABELS\[pendingClearAction\.trackId\]\} 第 \$\{pendingClearAction\.bar \+ 1\} 小节/);
+  assert.match(source, /确认清空整条 \$\{pendingClearAction\.trackName\} 轨/);
+  assert.match(source, /确认清空 \$\{pendingClearAction\.trackName\} 第 \$\{pendingClearAction\.bar \+ 1\} 小节/);
   assert.match(source, /onClick=\{cancelClearAction\}[\s\S]*取消/);
   assert.match(source, /onClick=\{confirmClearAction\}[\s\S]*确认清空/);
   assert.match(confirmHandlerSource, /withUndoCheckpoint\(\(\) => \{/);
   assert.match(confirmHandlerSource, /state\.clearTrack\(action\.trackId\)/);
-  assert.match(confirmHandlerSource, /clearDrumsBar\(state\.matrix, action\.bar\)/);
-  assert.match(confirmHandlerSource, /clearChordRhythmBar\(state\.matrix, action\.bar\)/);
-  assert.match(confirmHandlerSource, /clearBassBar\(state\.matrix, action\.bar\)/);
-  assert.match(confirmHandlerSource, /clearMelodyBar\(state\.matrix, action\.bar\)/);
+  assert.match(confirmHandlerSource, /createTrackActionScope\(state, action\.trackId\)/);
+  assert.match(confirmHandlerSource, /clearDrumsBar\(scope\.matrix, action\.bar\)/);
+  assert.match(confirmHandlerSource, /clearChordRhythmBar\(scope\.matrix, action\.bar\)/);
+  assert.match(confirmHandlerSource, /clearBassBar\(scope\.matrix, action\.bar\)/);
+  assert.match(confirmHandlerSource, /clearMelodyBar\(scope\.matrix, action\.bar\)/);
   assert.match(css, /\.clear-confirm-heading\s*\{/);
   assert.match(css, /\.clear-confirm-close\s*\{/);
 });
@@ -669,7 +672,7 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(source, /applyBasicDrumsBar/);
   assert.match(source, /getDrumsClipBarIndexes/);
   assert.match(source, /applyBasicDrumsAllBars/);
-  assert.match(source, /applyBasicDrumsAllBars\(state\.matrix,\s*drumsClipBars\)/);
+  assert.match(source, /applyBasicDrumsAllBars\(scope\.matrix,\s*drumsClipBars\)/);
   assert.doesNotMatch(source, /createBasicDrumsBarWithoutKick/);
   assert.match(source, /clearDrumsBar/);
   assert.match(source, /getAdjacentTrackClipBar/);
@@ -683,7 +686,7 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(source, /getAdjacentTrackClipBar\(\s*state\.clips,\s*state\.activeTrackId,\s*state\.selectedBar,\s*direction,\s*\)/);
   assert.match(
     bottomEditorSource,
-    /activeTrackId === 'drums' && \(selectedClipId \|\| drumsWriting\)/,
+    /activeTrackType === 'drums' && \(selectedClipId \|\| drumsWriting\)/,
   );
   assert.match(bottomEditorSource, /canPageBars/);
   assert.match(bottomEditorSource, /onPreviousBar/);
@@ -696,7 +699,7 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(bottomEditorSource, /onNextBar/);
   assert.match(bottomEditorSource, /onPreviousBar/);
   assert.match(bottomEditorSource, /onClose:\s*onCloseEditor/);
-  assert.match(bottomEditorSource, /activeTrackId === 'chord'/);
+  assert.match(bottomEditorSource, /activeTrackType === 'chord'/);
   assert.match(bottomEditorSource, /onChordRhythmStepToggle/);
   assert.match(bottomEditorSource, /onChordTemplateWorkspacePreview/);
   assert.match(bottomEditorSource, /onChordTemplateWorkspacePreviewStop/);
@@ -718,13 +721,13 @@ test('track editors reuse the full track-select identity style in editor-left he
     'utf8',
   );
   const editorFiles = [
-    ['DrumSequencer.jsx', 'drums', 'Drums'],
-    ['ChordEditor.jsx', 'chord', 'Chord'],
-    ['BassEditor.jsx', 'bass', 'Bass'],
-    ['MelodyEditor.jsx', 'melody', 'Melody'],
+    ['DrumSequencer.jsx', 'drums'],
+    ['ChordEditor.jsx', 'chord'],
+    ['BassEditor.jsx', 'bass'],
+    ['MelodyEditor.jsx', 'melody'],
   ];
 
-  assert.match(tracksColumnSource, /const Icon = TRACK_ICONS\[track\.id\];/);
+  assert.match(tracksColumnSource, /const Icon = TRACK_ICONS\[track\.type \?\? track\.id\];/);
   assert.match(tracksColumnSource, /className="track-select"[\s\S]*renderIcon\(Icon\)/);
   assert.match(editorTrackIdentitySource, /import\s*\{[^}]*TRACK_ICONS[^}]*renderIcon[^}]*\}\s*from '\.\/icons\.js';/s);
   assert.match(editorTrackIdentitySource, /className=\{[^}]*editor-track-identity[^}]*track-select/s);
@@ -732,7 +735,7 @@ test('track editors reuse the full track-select identity style in editor-left he
   assert.match(editorTrackIdentitySource, /<span className="ic">[\s\S]*renderIcon\(Icon\)/);
   assert.match(editorTrackIdentitySource, /<span className="track-name">\{label\}<\/span>/);
 
-  for (const [fileName, trackId, label] of editorFiles) {
+  for (const [fileName, trackId] of editorFiles) {
     const source = await readFile(
       new URL(`../src/app/components/${fileName}`, import.meta.url),
       'utf8',
@@ -744,7 +747,7 @@ test('track editors reuse the full track-select identity style in editor-left he
     );
     assert.match(
       source,
-      new RegExp(`createElement\\(EditorTrackIdentity, \\{ trackId: '${trackId}', label: '${label}' \\}\\)`),
+      new RegExp(`createElement\\(EditorTrackIdentity, \\{ trackId: '${trackId}', label: trackName \\}\\)`),
     );
     assert.doesNotMatch(source, /className="clip-chip"[\s\S]*TRACK_ICONS\./);
   }
@@ -847,7 +850,7 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(contextSliceSource, /melodyScaleId:\s*'major'/);
   assert.match(contextSliceSource, /setMelodyScaleId/);
   assert.match(bottomEditorSource, /MelodyEditor/);
-  assert.match(bottomEditorSource, /activeTrackId === 'melody' && selectedClipId/);
+  assert.match(bottomEditorSource, /activeTrackType === 'melody' && selectedClipId/);
   assert.match(bottomEditorSource, /onMelodyStepToggle/);
   assert.match(bottomEditorSource, /onMelodyPreview/);
   assert.match(bottomEditorSource, /onMelodyScaleChange/);
@@ -975,9 +978,10 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(melodyEditorSource, /小节 \$\{writeBarProgress\}/);
   assert.match(melodyEditorSource, /开始旋律写入/);
   assert.match(melodyRecordingSource, /getMelodyWriteBarRange\(clip\.bar\)/);
-  assert.match(melodyRecordingSource, /hasMelodyNotesInRange\(state\.matrix, pendingSession\.startBar, pendingSession\.endBar\)/);
-  assert.match(melodyRecordingSource, /ensureMelodyClipsInRange\(pendingSession\.startBar, pendingSession\.endBar\)/);
-  assert.match(melodyRecordingSource, /audibleTrackIds:\s*\['melody'\]/);
+  assert.match(melodyRecordingSource, /const scopedMatrix = \{ \.\.\.state\.matrix, melody: state\.matrix\[pendingSession\.trackId\] \}/);
+  assert.match(melodyRecordingSource, /hasMelodyNotesInRange\([\s\S]*scopedMatrix,[\s\S]*pendingSession\.startBar,[\s\S]*pendingSession\.endBar/);
+  assert.match(melodyRecordingSource, /ensureMelodyClipsInRange\([\s\S]*pendingSession\.startBar,[\s\S]*pendingSession\.endBar,[\s\S]*pendingSession\.trackId/);
+  assert.match(melodyRecordingSource, /audibleTrackIds:\s*\[pendingSession\.trackId\]/);
   assert.match(melodyRecordingSource, /maxPlaybackSteps:\s*pendingSession\.targetBars\.length \* STEPS_PER_BAR/);
   assert.match(melodyRecordingSource, /prepareFreeRecordingBar\(session, bar\)/);
   assert.match(melodyRecordingSource, /const completedBar = session\.currentBar;[\s\S]*replaceMelodyBarWithSequence\(/);
@@ -1002,8 +1006,8 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(source, /currentTutorialStep\?\.id === TUTORIAL_STEP_IDS\.MELODY_SELECT_SCALE/);
   assert.match(source, /control:\s*`melody-scale-card:\$\{scaleId\}`/);
   assert.match(source, /handleClearMelodyBar/);
-  assert.match(source, /clearTrack\('melody'\)/);
-  assert.match(source, /activeTrackId === 'melody' && selectedClipId/);
+  assert.match(source, /state\.clearTrack\(action\.trackId\)/);
+  assert.match(source, /activeTrackType === 'melody' && selectedClipId/);
   assert.match(source, /audioEngine\.startAudio/);
 });
 
@@ -1025,7 +1029,7 @@ test('app exposes the bass editor and existing-clip groove template workflow', a
   );
 
   assert.match(bottomEditorSource, /BassEditor/);
-  assert.match(bottomEditorSource, /activeTrackId === 'bass' && selectedClipId/);
+  assert.match(bottomEditorSource, /activeTrackType === 'bass' && selectedClipId/);
   assert.match(bottomEditorSource, /onBassStepToggle/);
   assert.match(bottomEditorSource, /onBassGrooveTemplatePreview/);
   assert.match(bottomEditorSource, /onBassGrooveTemplateApply/);
@@ -1104,17 +1108,17 @@ test('app exposes the bass editor and existing-clip groove template workflow', a
   assert.doesNotMatch(bassNotesSource, /CHORD_GRID_PITCHES/);
   assert.match(source, /handleBassStepToggle/);
   assert.match(source, /handleBassGrooveTemplatePreview/);
-  assert.match(source, /createBassPreviewEvents\(state\.matrix,\s*selectedBar,\s*templateId\)/);
+  assert.match(source, /createBassPreviewEvents\(scope\.matrix,\s*selectedBar,\s*templateId\)/);
   assert.match(source, /handleBassGrooveTemplateApply/);
   assert.doesNotMatch(bassApplyHandlerSource, /TRANSPORT_STOP/);
   assert.match(source, /currentTutorialStep\?\.id === TUTORIAL_STEP_IDS\.BASS_SELECT_GROOVE_TEMPLATE/);
   assert.match(source, /control:\s*`bass-groove-card:\$\{templateId\}`/);
   assert.match(source, /applyTutorialActionProgress\(tutorialAction\)/);
-  assert.match(source, /applyBassGrooveTemplateToExistingClips\(state\.matrix,\s*state\.clips,\s*templateId\)/);
-  assert.match(source, /state\.setTrackMatrix\('bass',\s*nextMatrix\.bass\)/);
+  assert.match(source, /applyBassGrooveTemplateToExistingClips\(\s*scope\.matrix,\s*scope\.clips,\s*templateId/);
+  assert.match(source, /state\.setTrackMatrix\(scope\.trackId,\s*nextMatrix\.bass\)/);
   assert.doesNotMatch(source, /nextMatrix\.bass\[clip\.bar\]\.forEach\(\(cell,\s*step\) => \{[\s\S]*state\.setCell\('bass',\s*clip\.bar,\s*step,\s*cell\);/);
   assert.match(source, /handleClearBassBar/);
-  assert.match(source, /requestClearAction\('bass', 'track'\)/);
+  assert.match(source, /requestClearAction\(activeTrackId, 'track'\)/);
   assert.match(source, /triggerBassNote/);
   assert.match(source, /previewBassPattern/);
 });
@@ -1122,8 +1126,8 @@ test('app exposes the bass editor and existing-clip groove template workflow', a
 test('bass and melody piano-roll removals stay silent', async () => {
   const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
 
-  assert.match(source, /const handleBassStepToggle = useCallback\(\(step, note\) => \{[\s\S]*getBassCellToggleResult\([\s\S]*if \(auditionNote\) \{[\s\S]*triggerBassNote\(auditionNote, '16n'\)/);
-  assert.match(source, /const handleMelodyStepToggle = useCallback\(\(step, note\) => \{[\s\S]*getMelodyCellToggleResult\([\s\S]*if \(auditionNote\) \{[\s\S]*triggerMelodyInputOneShot\(auditionNote\)/);
+  assert.match(source, /const handleBassStepToggle = useCallback\(\(step, note\) => \{[\s\S]*getBassCellToggleResult\([\s\S]*if \(auditionNote\) \{[\s\S]*triggerBassNote\([\s\S]*auditionNote,[\s\S]*'16n'/);
+  assert.match(source, /const handleMelodyStepToggle = useCallback\(\(step, note\) => \{[\s\S]*getMelodyCellToggleResult\([\s\S]*if \(auditionNote\) \{[\s\S]*triggerMelodyInputOneShot\(auditionNote,/);
 });
 
 test('app keeps the editor focused on the playback bar while transport is playing', async () => {
