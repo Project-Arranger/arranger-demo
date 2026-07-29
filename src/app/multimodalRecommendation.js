@@ -43,6 +43,63 @@ const MULTIMODAL_ANALYSIS_STAGES = Object.freeze([
   '匹配调式、和声与配器',
 ]);
 
+const MULTIMODAL_RECOMMENDATION_TRACKS = Object.freeze([
+  Object.freeze({
+    id: 'drums',
+    label: 'Drums',
+    timbres: Object.freeze([
+      Object.freeze({ id: 'soft-electronic-kit', label: 'Soft Electronic Kit' }),
+      Object.freeze({ id: 'dusty-tape-kit', label: 'Dusty Tape Kit' }),
+      Object.freeze({ id: 'clean-digital-kit', label: 'Clean Digital Kit' }),
+    ]),
+  }),
+  Object.freeze({
+    id: 'chord',
+    label: 'Chord',
+    timbres: Object.freeze([
+      Object.freeze({ id: 'warm-electric-piano', label: 'Warm Electric Piano' }),
+      Object.freeze({ id: 'muted-rhodes', label: 'Muted Rhodes' }),
+      Object.freeze({ id: 'glass-electric-keys', label: 'Glass Electric Keys' }),
+    ]),
+  }),
+  Object.freeze({
+    id: 'bass',
+    label: 'Bass',
+    timbres: Object.freeze([
+      Object.freeze({ id: 'round-electric-bass', label: 'Round Electric Bass' }),
+      Object.freeze({ id: 'soft-sub-bass', label: 'Soft Sub Bass' }),
+      Object.freeze({ id: 'fm-round-bass', label: 'FM Round Bass' }),
+    ]),
+  }),
+  Object.freeze({
+    id: 'melody',
+    label: 'Melody',
+    timbres: Object.freeze([
+      Object.freeze({ id: 'airy-synth-lead', label: 'Airy Synth Lead' }),
+      Object.freeze({ id: 'hazy-bell-lead', label: 'Hazy Bell Lead' }),
+      Object.freeze({ id: 'soft-pluck-lead', label: 'Soft Pluck Lead' }),
+    ]),
+  }),
+  Object.freeze({
+    id: 'pad',
+    label: 'Pad',
+    timbres: Object.freeze([
+      Object.freeze({ id: 'rain-glow-pad', label: 'Rain Glow Pad' }),
+      Object.freeze({ id: 'tape-bloom-pad', label: 'Tape Bloom Pad' }),
+      Object.freeze({ id: 'glass-air-pad', label: 'Glass Air Pad' }),
+    ]),
+  }),
+  Object.freeze({
+    id: 'sample',
+    label: 'Sampler',
+    timbres: Object.freeze([
+      Object.freeze({ id: 'rain-street-texture', label: 'Rain Street Texture' }),
+      Object.freeze({ id: 'vinyl-room-texture', label: 'Vinyl Room Texture' }),
+      Object.freeze({ id: 'city-field-ambience', label: 'City Field Ambience' }),
+    ]),
+  }),
+]);
+
 const MULTIMODAL_RECOMMENDATION = Object.freeze({
   style: Object.freeze({
     defaultId: 'chill-rainy-street',
@@ -68,44 +125,46 @@ const MULTIMODAL_RECOMMENDATION = Object.freeze({
       Object.freeze({ id: 'dorian-loop', label: 'Dm7 → G → Cmaj7 → Am7' }),
     ]),
   }),
-  timbre: Object.freeze({
-    defaultId: 'warm-neon',
-    options: Object.freeze([
-      Object.freeze({
-        id: 'warm-neon',
-        label: 'Warm Neon',
-        tracks: Object.freeze({
-          drums: 'Soft Electronic Kit',
-          chord: 'Warm Electric Piano',
-          bass: 'Round Electric Bass',
-          melody: 'Airy Synth Lead',
-        }),
-      }),
-      Object.freeze({
-        id: 'tape-haze',
-        label: 'Tape Haze',
-        tracks: Object.freeze({
-          drums: 'Dusty Tape Kit',
-          chord: 'Muted Rhodes',
-          bass: 'Soft Sub Bass',
-          melody: 'Hazy Bell Lead',
-        }),
-      }),
-      Object.freeze({
-        id: 'glass-city',
-        label: 'Glass City',
-        tracks: Object.freeze({
-          drums: 'Clean Digital Kit',
-          chord: 'Glass Electric Keys',
-          bass: 'FM Round Bass',
-          melody: 'Soft Pluck Lead',
-        }),
-      }),
-    ]),
-  }),
+  tracks: MULTIMODAL_RECOMMENDATION_TRACKS,
   timeSignature: '4 / 4',
   structure: '8 小节 · 前奏 / 两句主题 / 收束',
 });
+
+function createDefaultTrackTimbreSelections() {
+  return Object.fromEntries(
+    MULTIMODAL_RECOMMENDATION_TRACKS.map((track) => [track.id, track.timbres[0].id]),
+  );
+}
+
+function toggleRecommendationTrackSelection(selectedTrackIds, trackId) {
+  const validTrackIds = new Set(MULTIMODAL_RECOMMENDATION_TRACKS.map((track) => track.id));
+  const selectedIds = Array.isArray(selectedTrackIds)
+    ? selectedTrackIds.filter((id, index, values) => (
+      validTrackIds.has(id) && values.indexOf(id) === index
+    ))
+    : [...CORE_TRACK_IDS];
+
+  if (!validTrackIds.has(trackId)) return selectedIds;
+  if (selectedIds.includes(trackId)) {
+    return selectedIds.length > 1
+      ? selectedIds.filter((id) => id !== trackId)
+      : selectedIds;
+  }
+
+  return MULTIMODAL_RECOMMENDATION_TRACKS
+    .map((track) => track.id)
+    .filter((id) => selectedIds.includes(id) || id === trackId);
+}
+
+function selectRecommendationTrackTimbre(timbreByTrackId, trackId, timbreId) {
+  const track = MULTIMODAL_RECOMMENDATION_TRACKS.find((item) => item.id === trackId);
+  if (!track?.timbres.some((timbre) => timbre.id === timbreId)) return timbreByTrackId;
+
+  return {
+    ...timbreByTrackId,
+    [trackId]: timbreId,
+  };
+}
 
 function getMultimodalMediaKind(file) {
   const type = String(file?.type ?? '').toLowerCase();
@@ -194,10 +253,12 @@ function createMultimodalRecommendationAppState({ bpm = RECOMMENDED_BPM } = {}) 
 
 function createInitialRecommendationSelections() {
   return {
+    activeTrackId: 'drums',
     harmony: MULTIMODAL_RECOMMENDATION.harmony.defaultId,
     mode: MULTIMODAL_RECOMMENDATION.mode.defaultId,
+    selectedTrackIds: [...CORE_TRACK_IDS],
     style: MULTIMODAL_RECOMMENDATION.style.defaultId,
-    timbre: MULTIMODAL_RECOMMENDATION.timbre.defaultId,
+    timbreByTrackId: createDefaultTrackTimbreSelections(),
   };
 }
 
@@ -208,6 +269,8 @@ export {
   MULTIMODAL_RECOMMENDATION,
   createInitialRecommendationSelections,
   createMultimodalRecommendationAppState,
+  selectRecommendationTrackTimbre,
+  toggleRecommendationTrackSelection,
   getMultimodalMediaKind,
   validateMultimodalMediaFile,
 };

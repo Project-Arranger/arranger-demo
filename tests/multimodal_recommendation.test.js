@@ -12,7 +12,10 @@ import {
 import {
   MULTIMODAL_ANALYSIS_STAGES,
   MULTIMODAL_RECOMMENDATION,
+  createInitialRecommendationSelections,
   createMultimodalRecommendationAppState,
+  selectRecommendationTrackTimbre,
+  toggleRecommendationTrackSelection,
   validateMultimodalMediaFile,
 } from '../src/app/multimodalRecommendation.js';
 import {
@@ -74,7 +77,7 @@ test('multimodal media validation accepts the approved image and video formats a
   }).valid, false);
 });
 
-test('fixed multimodal profile exposes the three analysis stages and four-track recommendation', () => {
+test('fixed multimodal profile exposes analysis stages and six per-track timbre groups', () => {
   assert.deepEqual(MULTIMODAL_ANALYSIS_STAGES, [
     '读取画面构图与动态',
     '识别色彩、场景与情绪',
@@ -87,13 +90,61 @@ test('fixed multimodal profile exposes the three analysis stages and four-track 
     'Cmaj7 → Am7 → Fmaj7 → G7',
   );
   assert.deepEqual(
-    MULTIMODAL_RECOMMENDATION.timbre.options[0].tracks,
-    {
-      drums: 'Soft Electronic Kit',
-      chord: 'Warm Electric Piano',
-      bass: 'Round Electric Bass',
-      melody: 'Airy Synth Lead',
-    },
+    MULTIMODAL_RECOMMENDATION.tracks.map((track) => track.id),
+    ['drums', 'chord', 'bass', 'melody', 'pad', 'sample'],
+  );
+  assert.deepEqual(
+    MULTIMODAL_RECOMMENDATION.tracks.map((track) => track.timbres.length),
+    [3, 3, 3, 3, 3, 3],
+  );
+  assert.deepEqual(
+    MULTIMODAL_RECOMMENDATION.tracks.map((track) => track.timbres[0].label),
+    [
+      'Soft Electronic Kit',
+      'Warm Electric Piano',
+      'Round Electric Bass',
+      'Airy Synth Lead',
+      'Rain Glow Pad',
+      'Rain Street Texture',
+    ],
+  );
+});
+
+test('recommendation selections keep four defaults and enforce at least one selected track', () => {
+  const initial = createInitialRecommendationSelections();
+
+  assert.equal(initial.activeTrackId, 'drums');
+  assert.deepEqual(initial.selectedTrackIds, ['drums', 'chord', 'bass', 'melody']);
+  assert.equal(initial.timbreByTrackId.drums, 'soft-electronic-kit');
+  assert.equal(initial.timbreByTrackId.sample, 'rain-street-texture');
+
+  assert.deepEqual(
+    toggleRecommendationTrackSelection(initial.selectedTrackIds, 'pad'),
+    ['drums', 'chord', 'bass', 'melody', 'pad'],
+  );
+  assert.deepEqual(
+    toggleRecommendationTrackSelection(['drums'], 'drums'),
+    ['drums'],
+  );
+  assert.deepEqual(
+    toggleRecommendationTrackSelection(['drums', 'chord'], 'drums'),
+    ['chord'],
+  );
+});
+
+test('per-track timbre selection accepts only options owned by that track', () => {
+  const initial = createInitialRecommendationSelections();
+  const updated = selectRecommendationTrackTimbre(
+    initial.timbreByTrackId,
+    'pad',
+    'glass-air-pad',
+  );
+
+  assert.equal(updated.pad, 'glass-air-pad');
+  assert.equal(updated.drums, 'soft-electronic-kit');
+  assert.equal(
+    selectRecommendationTrackTimbre(updated, 'pad', 'soft-sub-bass'),
+    updated,
   );
 });
 
@@ -146,7 +197,12 @@ test('multimodal UI exposes upload results choices and reusable real BPM control
   assert.match(screenSource, /controls[\s\S]*muted[\s\S]*playsInline/);
   assert.match(screenSource, /BpmControl/);
   assert.match(screenSource, /ChoiceChips/);
-  assert.match(screenSource, /recommended-tracks/);
+  assert.match(screenSource, /TrackRecommendationPicker/);
+  assert.match(screenSource, /track-recommendation-grid/);
+  assert.match(screenSource, /track-timbre-options/);
+  assert.match(screenSource, /已推荐 \{selectedTrackIds\.length\}/);
+  assert.match(screenSource, /disabled=\{selected && selectedTrackIds\.length === 1\}/);
+  assert.match(screenSource, /role="radiogroup"/);
   assert.match(screenSource, /使用这个方案/);
   assert.match(bpmSource, /BPM_PRESETS\.map/);
   assert.match(bpmSource, /min=\{BPM_MIN\}/);
@@ -158,7 +214,11 @@ test('multimodal UI exposes upload results choices and reusable real BPM control
   assert.match(appSource, /audioEngine\.setTempo\?\.\(nextBpm\)/);
   assert.match(appSource, /drumsRecording\.workflowLocked \|\| melodyRecording\.workflowLocked/);
   assert.match(appSource, /tutorialPanelState === 'running'/);
-  assert.match(css, /\.results-view\s*\{[^}]*grid-template-columns:/s);
+  assert.match(css, /\.results-overview\s*\{[^}]*grid-template-columns:\s*240px minmax\(0,\s*1fr\);/s);
+  assert.match(css, /\.results-media-frame\s*\{[^}]*width:\s*240px;[^}]*height:\s*135px;/s);
+  assert.match(css, /\.track-recommendation-grid\s*\{[^}]*grid-template-columns:\s*repeat\(6,/s);
+  assert.match(css, /\.recommendation-footer\s*\{[^}]*grid-template-columns:/s);
+  assert.match(css, /@media \(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)/);
   assert.match(css, /\.bpm-popover\s*\{[^}]*position:\s*absolute;/s);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 });

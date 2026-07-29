@@ -14,6 +14,8 @@ import { MultimodalFlowScreen } from './components/MultimodalFlowScreen.jsx';
 import {
   createInitialRecommendationSelections,
   createMultimodalRecommendationAppState,
+  selectRecommendationTrackTimbre,
+  toggleRecommendationTrackSelection,
   validateMultimodalMediaFile,
 } from './multimodalRecommendation.js';
 import { RECOMMENDED_BPM } from '../domain/bpm.js';
@@ -92,6 +94,34 @@ function Root() {
     }));
   };
 
+  const handleRecommendationTrackFocus = (trackId) => {
+    setSelections((current) => ({
+      ...current,
+      activeTrackId: trackId,
+    }));
+  };
+
+  const handleRecommendationTrackToggle = (trackId) => {
+    setSelections((current) => ({
+      ...current,
+      selectedTrackIds: toggleRecommendationTrackSelection(
+        current.selectedTrackIds,
+        trackId,
+      ),
+    }));
+  };
+
+  const handleRecommendationTimbreChange = (trackId, timbreId) => {
+    setSelections((current) => ({
+      ...current,
+      timbreByTrackId: selectRecommendationTrackTimbre(
+        current.timbreByTrackId,
+        trackId,
+        timbreId,
+      ),
+    }));
+  };
+
   const handleBackToGenre = () => {
     setMediaFile(null);
     setMediaKind(null);
@@ -126,6 +156,9 @@ function Root() {
       onCancelAnalysis: () => setView(ROOT_VIEWS.UPLOAD),
       onFileSelect: handleFileSelect,
       onGenerate: handleStartAnalysis,
+      onRecommendationTimbreChange: handleRecommendationTimbreChange,
+      onRecommendationTrackFocus: handleRecommendationTrackFocus,
+      onRecommendationTrackToggle: handleRecommendationTrackToggle,
       onSelectionChange: handleSelectionChange,
       previewUrl,
       selections,

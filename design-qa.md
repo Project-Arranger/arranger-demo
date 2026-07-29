@@ -543,3 +543,21 @@ final result: passed
 - All `333` tests passed; `npm run lint`, `npm run build`, and the focused chord/UI suites completed successfully.
 
 final result: passed
+
+---
+
+## AI Recommendation Single-screen and Track Timbre Follow-up
+
+- Existing result-page reference: `/var/folders/22/2k2swhcn1zl1rf0pqjp4yt7w0000gn/T/codex-clipboard-a42d475d-aea1-47e0-9f22-cf6ec648640c.png`
+- Final image result evidence at `1512x760`: `/private/tmp/ai-results-1512x760.png`
+- Final video result evidence at `1512x760`: `/private/tmp/ai-results-video-1512x760.png`
+- Narrow desktop evidence measured at `1280x720`: `/private/tmp/ai-results-1280x720.png`
+- The result was rebuilt as a compact upper overview plus a full-width lower track console. Image and video media use the same `240x135px` frame, native video controls remain available, and `object-fit: contain` preserves uncropped source content.
+- Six ordered track cards expose independent focus and selection controls. Drums, Chord, Bass, and Melody are selected by default; Pad and Sampler remain optional. The live count updates from one to six tracks and the final selected track cannot be removed.
+- Only the focused track expands into three horizontal timbre choices, with the first marked `AI 推荐`. Track focus, corner selection, and per-track timbre state were verified independently.
+- A real interaction pass found the focused card layer intercepting its corner toggle. The toggle now stays above the card action and retains absolute positioning during keyboard focus.
+- At `1512x760` and `1280x720`, document `scrollHeight` equals `clientHeight`, the primary action remains fully visible, and the compact media stays within the requested dimensions. At `390x844`, the result stacks vertically with no horizontal overflow.
+- Selecting BPM 96 and applying the recommendation created the intended fixed four-track, eight-bar empty project at 96 BPM. The video path exposed native controls and the browser console reported no warnings or errors.
+- All 494 tests passed; `npm run lint`, `npm run build`, and `git diff --check` completed successfully.
+
+final result: passed
