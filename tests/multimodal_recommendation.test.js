@@ -220,6 +220,10 @@ test('multimodal UI exposes upload results choices and reusable real BPM control
   assert.match(css, /\.recommendation-footer\s*\{[^}]*grid-template-columns:/s);
   assert.match(css, /\.recommendation-bpm-panel \.bpm-stepper\s*\{[^}]*grid-template-columns:\s*28px minmax\(0,\s*1fr\) 28px;/s);
   assert.match(css, /@media \(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)/);
+  assert.match(css, /\.genre-gate:has\(\.multimodal-screen\)\s*\{[^}]*padding:\s*12px;[^}]*overflow:\s*hidden;/s);
+  assert.match(css, /\.genre-hardware:has\(\.multimodal-screen\)\s*\{[^}]*min-height:\s*calc\(100dvh - 24px\);[^}]*padding:\s*18px;[^}]*gap:\s*12px;/s);
+  assert.match(css, /\.multimodal-screen\s*\{[^}]*min-height:\s*0;[^}]*gap:\s*8px;[^}]*padding:\s*14px;/s);
+  assert.match(css, /\.upload-screen \.upload-view\s*\{[^}]*min-height:\s*clamp\(477px,\s*calc\(823px - 22\.9vw\),\s*530px\);/s);
   assert.match(css, /\.bpm-popover\s*\{[^}]*position:\s*absolute;/s);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 });

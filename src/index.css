@@ -13745,55 +13745,59 @@ body {
 }
 
 @media (min-width: 1180px) and (max-width: 1512px) and (max-height: 760px) {
-  .genre-gate:has(.results-screen) {
+  .genre-gate:has(.multimodal-screen) {
     padding: 12px;
     overflow: hidden;
   }
 
-  .genre-hardware:has(.results-screen) {
+  .genre-hardware:has(.multimodal-screen) {
     min-height: calc(100dvh - 24px);
     padding: 18px;
     gap: 12px;
   }
 
-  .genre-console:has(.results-screen) {
+  .genre-console:has(.multimodal-screen) {
     gap: 8px;
   }
 
-  .genre-console:has(.results-screen) .genre-console-title {
+  .genre-console:has(.multimodal-screen) .genre-console-title {
     font-size: 14px;
   }
 
-  .results-screen {
+  .multimodal-screen {
     min-height: 0;
     gap: 8px;
     padding: 14px;
   }
 
-  .results-screen .genre-gate-head {
+  .multimodal-screen .genre-gate-head {
     align-items: center;
     padding-bottom: 0;
   }
 
-  .results-screen .genre-brand-icon {
+  .multimodal-screen .genre-brand-icon {
     width: 30px;
     height: 30px;
   }
 
-  .results-screen .genre-brand-text {
+  .multimodal-screen .genre-brand-text {
     font-size: 14px;
   }
 
-  .results-screen .genre-title-group {
+  .multimodal-screen .genre-title-group {
     gap: 3px;
   }
 
-  .results-screen .genre-kicker {
+  .multimodal-screen .genre-kicker {
     font-size: 9px;
   }
 
-  .results-screen .genre-title-group h1 {
+  .multimodal-screen .genre-title-group h1 {
     font-size: 24px;
+  }
+
+  .upload-screen .upload-view {
+    min-height: clamp(477px, calc(823px - 22.9vw), 530px);
   }
 
   .results-view {

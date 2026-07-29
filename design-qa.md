@@ -80,6 +80,31 @@ final result: passed
 
 ---
 
+## AI Multimodal Shared Upload and Results Frame Follow-up
+
+- User-provided upload-page context: `/var/folders/22/2k2swhcn1zl1rf0pqjp4yt7w0000gn/T/codex-clipboard-6f8198d6-5a0d-4e3b-88b5-cbab91928d57.png`.
+- Source visual truth for the shared frame: `/private/tmp/ai-bpm-plus-fixed-1280x720-final.png`, the approved recommendation result at `1280x720`.
+- Browser-rendered implementation: `/private/tmp/ai-upload-shared-size-1280x720.jpg`, captured from the upload state in the in-app browser at a `1280x720` CSS viewport.
+- Combined full-view comparison: `/private/tmp/ai-multimodal-shared-frame-comparison.jpg`.
+- Source and implementation are both normalized `1280x720` pixel captures. No density scaling was required for the comparison.
+- State: empty AI upload page compared against the recommendation result only for the persistent hardware shell, black console frame, header footprint, and bottom title alignment. The differing inner content is intentional.
+- Earlier P2: the upload state did not inherit the result state's compact desktop shell. At `1280x720`, the document measured `784px` tall, the hardware panel started above the viewport, and the black screen measured about `637px` tall.
+- Fix: compact desktop shell, header, padding, and title sizing now target every `.multimodal-screen`; the upload content height scales within the same `1180–1512px` desktop breakpoint.
+- Post-fix evidence: the document now measures exactly `720px` high, the hardware frame stays inside the viewport, the black upload screen measures about `608px`, and both bottom actions remain fully visible. The combined comparison shows the same persistent frame footprint as the approved result state.
+- Fonts and typography: existing type families, weights, hierarchy, and copy remain unchanged; only the already-approved compact result header sizing is shared with upload.
+- Spacing and layout rhythm: outer gate padding, wood frame padding, console gap, header spacing, and content height now remain stable across the upload-to-results transition.
+- Colors and visual tokens: no palette, texture, border, shadow, or state-color changes.
+- Image quality and asset fidelity: no assets were added, replaced, scaled, or cropped.
+- Copy and content: all upload labels, file-format guidance, and actions remain unchanged.
+- Focused comparison was unnecessary because the requested change concerns the complete persistent frame, and all affected edges and alignments are clearly visible in the equal-size full-view comparison.
+- Primary interaction check: returned to genre selection and reopened AI upload successfully. Browser console contained only Vite connection/HMR and React development informational entries, with no application errors.
+- All `504` tests passed; `npm run lint`, `npm run build`, and `git diff --check` completed successfully. The existing Vite chunk-size warning remains non-blocking.
+- No remaining P0/P1/P2 findings.
+
+final result: passed
+
+---
+
 ## Chill Contextual Tutorial Follow-up
 
 - Selected reference: `/Users/nora/.codex/generated_images/019f92f6-c89f-77a3-995b-7500b4bd0830/call_pejFXbpH4Ib5u1Nilbvlfdya.png`
