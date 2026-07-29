@@ -5154,7 +5154,7 @@ button {
   --drum-row-gap: clamp(7px, 0.9vw, 12px);
 
   display: grid;
-  grid-template-columns: 108px minmax(0, 1fr);
+  grid-template-columns: 124px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
   align-self: center;
@@ -5182,6 +5182,55 @@ button {
   font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
+}
+
+.drum-performance-pad {
+  width: 100%;
+  padding: 0;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.drum-performance-pad:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.drum-performance-pad:active:not(:disabled) .drum-dot {
+  filter: brightness(1.2) saturate(1.1);
+  transform: translateY(1px) scale(0.96);
+}
+
+.drum-performance-pad:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--c-drums-ink) 72%, white);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+.drum-performance-pad:disabled {
+  cursor: default;
+  opacity: 0.46;
+}
+
+.drum-pad-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.drum-pad-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-left: auto;
+  color: currentColor;
+  font: 800 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: rgb(255 248 225 / 0.42);
+  border: 1px solid currentColor;
+  border-radius: 5px;
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.32);
 }
 
 .drum-dot {
@@ -8529,7 +8578,7 @@ body {
     --drum-group-padding: 4px;
     --drum-row-gap: 5px;
 
-    grid-template-columns: 70px minmax(0, 1fr);
+    grid-template-columns: 104px minmax(0, 1fr);
     gap: 6px;
     align-self: stretch;
     width: 100%;
@@ -9260,7 +9309,7 @@ body {
     --drum-group-header-height: 26px;
     --drum-group-padding: 4px;
 
-    grid-template-columns: 84px minmax(0, 1fr);
+    grid-template-columns: 124px minmax(0, 1fr);
     gap: 8px;
     width: 88%;
     min-width: min(100%, 880px);

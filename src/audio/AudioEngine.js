@@ -16,6 +16,8 @@ const DRUMS_SAMPLE_FILES = Object.freeze({
 });
 const SAMPLE_ASSET_VERSION = 'sample-refresh-20260608';
 const CHORD_SAMPLE_DURATION = '2s';
+const MAX_LIVE_INPUT_LATENCY_SECONDS = 0.25;
+const LAUNCHPAD_LIVE_INPUT_BIAS_SECONDS = 0.012;
 
 function createRootOctaveSampleFiles({ directory, prefix, roots, octaves, sampleVersion = 'v0.22' }) {
   return Object.freeze(Object.fromEntries(
@@ -178,6 +180,7 @@ export default class AudioEngine {
     this.matrixSource = options.matrixSource ?? null;
     this.volumeSource = options.volumeSource ?? null;
     this.onPositionChange = options.onPositionChange ?? null;
+    this.onScheduledPositionChange = options.onScheduledPositionChange ?? null;
     this.onPlaybackComplete = options.onPlaybackComplete ?? null;
     this.playerFactory = options.playerFactory ?? null;
     this.samplerFactory = options.samplerFactory ?? null;
@@ -187,6 +190,15 @@ export default class AudioEngine {
     this.fallbackSynthFactory = options.fallbackSynthFactory ?? null;
     this.chordSynthFactory = options.chordSynthFactory ?? null;
     this.now = options.now ?? (() => this.tone?.now?.() ?? 0);
+    this.immediate = options.immediate ?? (() => (
+      this.tone?.immediate?.()
+      ?? this.tone?.getContext?.()?.immediate?.()
+      ?? this.tone?.getContext?.()?.currentTime
+      ?? this.now()
+    ));
+    this.performanceNow = options.performanceNow ?? (() => (
+      globalThis.performance?.now?.() ?? 0
+    ));
     this.scheduleTimeout = options.scheduleTimeout ?? ((callback, delay) => (
       globalThis.setTimeout(callback, delay)
     ));
@@ -210,12 +222,77 @@ export default class AudioEngine {
     this.playedSteps = 0;
     this.currentBar = 0;
     this.currentStep = 0;
+    this.positionNotificationGeneration = 0;
+    this.transportRunning = false;
     this.chordClipPreviewRequestId = 0;
     this.chordClipPreviewSession = null;
   }
 
   get transport() {
     return this.tone?.Transport;
+  }
+
+  getToneContext() {
+    return this.tone?.getContext?.() ?? this.tone?.context ?? null;
+  }
+
+  getLiveInputLatencySeconds() {
+    const context = this.getToneContext();
+    const rawContext = context?.rawContext ?? context;
+    const latency = Number.isFinite(rawContext?.outputLatency)
+      ? rawContext.outputLatency
+      : rawContext?.baseLatency;
+
+    if (!Number.isFinite(latency) || latency <= 0) return 0;
+    return Math.min(latency, MAX_LIVE_INPUT_LATENCY_SECONDS);
+  }
+
+  getLiveInputPosition(inputTimestampMs, options = {}) {
+    const transport = this.getStartedTransport();
+    if (
+      !this.transportRunning
+      || typeof transport?.getTicksAtTime !== 'function'
+      || !Number.isFinite(transport.PPQ)
+      || transport.PPQ <= 0
+    ) {
+      return null;
+    }
+
+    const currentAudioTime = this.immediate();
+    if (!Number.isFinite(currentAudioTime)) return null;
+
+    const currentPerformanceTime = this.performanceNow();
+    const eventProcessingDelaySeconds = (
+      Number.isFinite(inputTimestampMs)
+      && Number.isFinite(currentPerformanceTime)
+      && currentPerformanceTime >= inputTimestampMs
+    )
+      ? Math.min(
+        (currentPerformanceTime - inputTimestampMs) / 1000,
+        MAX_LIVE_INPUT_LATENCY_SECONDS,
+      )
+      : 0;
+    const compensatedTime = Math.max(
+      0,
+      currentAudioTime
+        - eventProcessingDelaySeconds
+        - this.getLiveInputLatencySeconds()
+        + (options.source === 'launchpad' ? LAUNCHPAD_LIVE_INPUT_BIAS_SECONDS : 0),
+    );
+    const ticks = transport.getTicksAtTime(compensatedTime);
+    const ticksPerStep = transport.PPQ / 4;
+    if (!Number.isFinite(ticks) || !Number.isFinite(ticksPerStep) || ticksPerStep <= 0) {
+      return null;
+    }
+
+    const flatStep = Math.round(ticks / ticksPerStep);
+    const totalSteps = TOTAL_BARS * STEPS_PER_BAR;
+    if (flatStep < 0 || flatStep >= totalSteps) return null;
+
+    return {
+      bar: Math.floor(flatStep / STEPS_PER_BAR),
+      step: flatStep % STEPS_PER_BAR,
+    };
   }
 
   async ensureTone() {
@@ -490,14 +567,17 @@ export default class AudioEngine {
     return false;
   }
 
-  async triggerDrumsStep(instruments, time = this.now(), options = {}) {
+  async triggerDrumsStep(instruments, time, options = {}) {
     await this.startAudio();
 
     const trackId = options.trackId ?? 'drums';
+    const triggerTime = time ?? (options.immediate ? this.immediate() : this.now());
     const instrumentList = Array.isArray(instruments) ? instruments : [instruments];
     const volume = this.getTrackVolume(trackId);
     return instrumentList
-      .filter((instrument) => this.triggerDrumsInstrument(instrument, time, volume, trackId));
+      .filter((instrument) => (
+        this.triggerDrumsInstrument(instrument, triggerTime, volume, trackId)
+      ));
   }
 
   triggerChordNotes(
@@ -906,13 +986,39 @@ export default class AudioEngine {
     return this.hasStartedAudio() ? this.transport : null;
   }
 
-  clearMatrixPlaybackSchedule() {
+  clearMatrixPlaybackSchedule({ invalidatePositions = true } = {}) {
+    if (invalidatePositions) this.positionNotificationGeneration += 1;
     const transport = this.getStartedTransport();
     if (!this.hasTransportEvent() || !transport?.clear) return false;
 
     transport.clear(this.transportEventId);
     this.transportEventId = null;
     return true;
+  }
+
+  completeBoundedPlayback(position, time, notificationGeneration) {
+    const onPlaybackComplete = this.onPlaybackComplete;
+    const completion = {
+      bar: position.bar,
+      playedSteps: this.playedSteps,
+      step: position.step,
+    };
+    const transport = this.getStartedTransport();
+    transport?.stop?.(time);
+    this.stopMelodyVoices(time);
+    this.clearMatrixPlaybackSchedule({ invalidatePositions: false });
+
+    const completeAtAudibleTime = () => {
+      if (notificationGeneration !== this.positionNotificationGeneration) return;
+      this.transportRunning = false;
+      onPlaybackComplete?.(completion);
+    };
+    const draw = this.tone?.getDraw?.() ?? this.tone?.Draw;
+    if (typeof draw?.schedule === 'function') {
+      draw.schedule(completeAtAudibleTime, time);
+    } else {
+      completeAtAudibleTime();
+    }
   }
 
   getMatrixAdapter(matrixSource = this.matrixSource) {
@@ -930,12 +1036,24 @@ export default class AudioEngine {
     if (!adapter || !transport?.scheduleRepeat) return null;
 
     this.clearMatrixPlaybackSchedule();
+    const notificationGeneration = ++this.positionNotificationGeneration;
 
     this.transportEventId = transport.scheduleRepeat((time) => {
       const position = adapter.getPositionForFlatStep(this.transportFlatStep);
       this.currentBar = position.bar;
       this.currentStep = position.step;
-      this.onPositionChange?.(position.bar, position.step);
+      this.onScheduledPositionChange?.(position.bar, position.step);
+
+      const notifyAudiblePosition = () => {
+        if (notificationGeneration !== this.positionNotificationGeneration) return;
+        this.onPositionChange?.(position.bar, position.step);
+      };
+      const draw = this.tone?.getDraw?.() ?? this.tone?.Draw;
+      if (typeof draw?.schedule === 'function') {
+        draw.schedule(notifyAudiblePosition, time);
+      } else {
+        notifyAudiblePosition();
+      }
 
       for (const event of adapter.getEventsForStep(position.bar, position.step)) {
         if (this.audibleTrackIds && !this.audibleTrackIds.has(event.trackId)) continue;
@@ -980,14 +1098,7 @@ export default class AudioEngine {
       this.transportFlatStep = (this.transportFlatStep + 1) % adapter.totalSteps;
       this.playedSteps += 1;
       if (this.maxPlaybackSteps !== null && this.playedSteps >= this.maxPlaybackSteps) {
-        const onPlaybackComplete = this.onPlaybackComplete;
-        const completion = {
-          bar: position.bar,
-          playedSteps: this.playedSteps,
-          step: position.step,
-        };
-        void this.stop(time);
-        onPlaybackComplete?.(completion);
+        this.completeBoundedPlayback(position, time, notificationGeneration);
       }
     }, '16n');
 
@@ -1034,6 +1145,11 @@ export default class AudioEngine {
         ? options.onPositionChange
         : null;
     }
+    if (Object.hasOwn(options, 'onScheduledPositionChange')) {
+      this.onScheduledPositionChange = typeof options.onScheduledPositionChange === 'function'
+        ? options.onScheduledPositionChange
+        : null;
+    }
     if (Object.hasOwn(options, 'onPlaybackComplete')) {
       this.onPlaybackComplete = typeof options.onPlaybackComplete === 'function'
         ? options.onPlaybackComplete
@@ -1049,13 +1165,16 @@ export default class AudioEngine {
     }
 
     this.getStartedTransport()?.start?.();
+    this.transportRunning = true;
   }
 
   async pause() {
+    this.transportRunning = false;
     this.getStartedTransport()?.pause?.();
   }
 
   async stop(time = this.now()) {
+    this.transportRunning = false;
     this.stopChordClipSequencePreview();
     const transport = this.getStartedTransport();
     transport?.stop?.(time);

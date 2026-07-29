@@ -1294,10 +1294,13 @@ export default function App() {
   ]);
 
   useEffect(() => {
-    audioEngine.onPositionChange = (bar, step) => {
-      useMusicStore.getState().setTransportPosition(bar, step);
+    audioEngine.onScheduledPositionChange = (bar, step) => {
       handleDrumsRecordingTransportPosition(bar, step);
       handleMelodyRecordingTransportPosition(bar, step);
+    };
+
+    audioEngine.onPositionChange = (bar, step) => {
+      useMusicStore.getState().setTransportPosition(bar, step);
 
       if (
         tutorialActive
@@ -1335,6 +1338,7 @@ export default function App() {
 
     return () => {
       audioEngine.onPositionChange = null;
+      audioEngine.onScheduledPositionChange = null;
     };
   }, [
     applyTutorialActionProgress,
@@ -2111,7 +2115,11 @@ export default function App() {
     }
 
     if (command?.type === APP_COMMAND_TYPES.DRUMS_PREVIEW) {
-      drumsRecording.handlePadInput(command.instrument);
+      drumsRecording.handlePadInput(
+        command.instrument,
+        command.inputTimestampMs,
+        command.inputSource,
+      );
       const state = useMusicStore.getState();
       const trackId = getTrackType(state, state.activeTrackId) === 'drums'
         ? state.activeTrackId
@@ -3112,6 +3120,7 @@ export default function App() {
           onGenerateCurrentDrumsBar: handleGenerateCurrentDrumsBar,
           onNextBar: handleNextBar,
           onPreviousBar: handlePreviousBar,
+          onDrumsPadInput: drumsRecording.previewPadInput,
           onDrumsStepMove: handleDrumsStepMove,
           onDrumsStepToggle: handleDrumsStepToggle,
           onDrumsRecordCancel: drumsRecording.cancelRecord,

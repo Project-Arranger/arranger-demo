@@ -9,6 +9,7 @@ import {
   useState,
 } from 'react';
 import { STEPS_PER_BAR } from '../../domain/musicConstants.js';
+import { DRUM_INPUT_CELLS } from '../../input/drumsInputLayout.js';
 import {
   DRUM_SEQUENCER_ROWS,
   isDrumsStepActive,
@@ -134,6 +135,7 @@ function DrumSequencer({
   onGenerateCurrentBar,
   onNextBar = () => {},
   onPreviousBar = () => {},
+  onPadInput = () => {},
   onRecordCancel = () => {},
   onRecordConfirm = () => {},
   onStepMove,
@@ -484,13 +486,31 @@ function DrumSequencer({
           trackId: 'drums',
         }, (
           <div className="drum-sequencer-grid">
-            <div className="drum-row-labels" aria-hidden="true">
-              <div className="drum-row-label-spacer" />
-              {DRUM_SEQUENCER_ROWS.map((row) => (
-                <div className="drum-row-label" key={row.id}>
-                  <span className="drum-dot" data-instrument={row.id} />
-                  <span>{row.label}</span>
-                </div>
+            <div className="drum-row-labels" role="group" aria-label="虚拟鼓垫">
+              <div className="drum-row-label-spacer" aria-hidden="true" />
+              {DRUM_INPUT_CELLS.map((pad) => (
+                <button
+                  className="drum-row-label drum-performance-pad"
+                  type="button"
+                  data-instrument={pad.instrument}
+                  disabled={tutorialLocked}
+                  key={pad.instrument}
+                  aria-label={`${pad.label} 鼓垫，键盘 ${pad.keyLabel}`}
+                  onClick={(event) => {
+                    if (event.detail === 0) {
+                      onPadInput(pad.instrument, event.timeStamp);
+                    }
+                  }}
+                  onPointerDown={(event) => {
+                    if (event.button === 0) {
+                      onPadInput(pad.instrument, event.timeStamp);
+                    }
+                  }}
+                >
+                  <span className="drum-dot" data-instrument={pad.instrument} />
+                  <span className="drum-pad-label">{pad.label}</span>
+                  <kbd className="drum-pad-key">{pad.keyLabel}</kbd>
+                </button>
               ))}
             </div>
 

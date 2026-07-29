@@ -35,6 +35,23 @@ function createDrumsRecordingState(phase, overrides = {}) {
   };
 }
 
+function getDrumsRecordingContextTrackId({
+  pendingSession,
+  phase,
+  session,
+} = {}) {
+  if (
+    phase === DRUMS_RECORDING_PHASES.CONFIRM
+    || phase === DRUMS_RECORDING_PHASES.COUNT_IN
+  ) {
+    return pendingSession?.trackId ?? null;
+  }
+  if (phase === DRUMS_RECORDING_PHASES.RECORDING) {
+    return session?.trackId ?? null;
+  }
+  return null;
+}
+
 function getDrumsWriteBarRange(startBar, endBar = TOTAL_BARS - 1) {
   if (
     !Number.isInteger(startBar)
@@ -140,6 +157,7 @@ export {
   createDrumsLiveRecordPatch,
   createDrumsLiveRecordSession,
   DRUMS_RECORDING_PHASES,
+  getDrumsRecordingContextTrackId,
   getDrumsWriteBarRange,
   hasDrumsBarHits,
   hasDrumsHitsInRange,

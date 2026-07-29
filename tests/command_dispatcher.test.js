@@ -59,6 +59,20 @@ test('dispatchCommand rejects invalid commands before side effects', async () =>
   );
 
   assert.deepEqual(result, { ok: false, reason: 'invalid-command' });
+  assert.deepEqual(
+    await dispatchCommand(
+      { type: 'drums.preview', instrument: 'kick', inputTimestampMs: -1 },
+      { store },
+    ),
+    { ok: false, reason: 'invalid-command' },
+  );
+  assert.deepEqual(
+    await dispatchCommand(
+      { type: 'drums.preview', inputSource: 'keyboard', instrument: 'kick' },
+      { store },
+    ),
+    { ok: false, reason: 'invalid-command' },
+  );
   assert.deepEqual(store.calls, []);
 });
 
@@ -342,14 +356,28 @@ test('drums preview triggers audio without calling the matrix toggle handler', a
     },
   };
   const audio = {
-    triggerDrumsStep: (instrument) => calls.push(['audio.triggerDrumsStep', instrument]),
+    triggerDrumsStep: (instrument, time, options) => calls.push([
+      'audio.triggerDrumsStep',
+      instrument,
+      time,
+      options,
+    ]),
   };
 
   assert.deepEqual(
-    await dispatchCommand({ type: 'drums.preview', instrument: 'snare' }, { handlers, audio }),
+    await dispatchCommand({
+      type: 'drums.preview',
+      inputTimestampMs: 321.5,
+      instrument: 'snare',
+    }, { handlers, audio }),
     { ok: true },
   );
-  assert.deepEqual(calls, [['audio.triggerDrumsStep', 'snare']]);
+  assert.deepEqual(calls, [[
+    'audio.triggerDrumsStep',
+    'snare',
+    undefined,
+    { immediate: true },
+  ]]);
 });
 
 test('melody noteOn does not fall back to editor recording when audio preview is unavailable', async () => {
@@ -490,6 +518,48 @@ test('keyboard map turns common keys into app commands', () => {
   assert.equal(
     mapKeyboardEventToCommand({ type: 'keydown', code: 'KeyA', key: 'a', ctrlKey: true }, { activeTrackId: 'melody', melodyScaleId: 'major' }),
     null,
+  );
+  assert.deepEqual(
+    mapKeyboardEventToCommand(
+      { type: 'keydown', code: 'KeyA', key: 'a', timeStamp: 987.25 },
+      { activeTrackId: 'drums' },
+    ),
+    { type: 'drums.preview', inputTimestampMs: 987.25, instrument: 'kick' },
+  );
+  assert.deepEqual(
+    mapKeyboardEventToCommand(
+      { type: 'keydown', code: 'KeyS', key: 's' },
+      { activeTrackId: 'drums' },
+    ),
+    { type: 'drums.preview', instrument: 'snare' },
+  );
+  assert.deepEqual(
+    mapKeyboardEventToCommand(
+      { type: 'keydown', code: 'KeyD', key: 'd' },
+      { activeTrackId: 'drums' },
+    ),
+    { type: 'drums.preview', instrument: 'hihat' },
+  );
+  assert.equal(
+    mapKeyboardEventToCommand(
+      { type: 'keydown', code: 'KeyA', key: 'a', metaKey: true },
+      { activeTrackId: 'drums' },
+    ),
+    null,
+  );
+  assert.equal(
+    mapKeyboardEventToCommand(
+      { type: 'keydown', code: 'KeyA', key: 'a', repeat: true },
+      { activeTrackId: 'drums' },
+    ),
+    null,
+  );
+  assert.deepEqual(
+    mapKeyboardEventToCommand(
+      { type: 'keydown', code: 'KeyA', key: 'a' },
+      { activeTrackId: 'melody', melodyScaleId: 'major' },
+    ),
+    createMelodyNoteOn('C4', 'keyboard:KeyA'),
   );
   assert.deepEqual(
     mapKeyboardEventToCommand({ type: 'keydown', key: '4' }, { activeTrackId: 'chord' }),

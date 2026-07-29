@@ -73,8 +73,19 @@ function hasValidDrumsPayload(command) {
 
 function hasValidDrumsPreviewPayload(command) {
   return (
-    hasOnlyKeys(command, ['type', 'instrument', 'trackId'])
+    hasOnlyKeys(command, [
+      'type',
+      'inputSource',
+      'inputTimestampMs',
+      'instrument',
+      'trackId',
+    ])
     && DRUMS_INSTRUMENT_IDS.includes(command.instrument)
+    && (!('inputSource' in command) || command.inputSource === 'launchpad')
+    && (
+      !('inputTimestampMs' in command)
+      || (Number.isFinite(command.inputTimestampMs) && command.inputTimestampMs >= 0)
+    )
     && (!('trackId' in command) || getTrackTypeFromInstanceId(command.trackId) === 'drums')
   );
 }

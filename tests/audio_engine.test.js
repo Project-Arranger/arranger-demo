@@ -10,7 +10,7 @@ import AudioEngine, {
   formatToneTransportPosition,
 } from '../src/audio/AudioEngine.js';
 import createAudioEngine from '../src/audio/createAudioEngine.js';
-import { STEPS_PER_BAR } from '../src/domain/musicConstants.js';
+import { STEPS_PER_BAR, TOTAL_BARS } from '../src/domain/musicConstants.js';
 import createInitialMatrix from '../src/store/createInitialMatrix.js';
 
 const SAMPLE_ASSET_VERSION = 'sample-refresh-20260608';
@@ -51,6 +51,33 @@ function createFakeTone() {
     start: async () => calls.push(['tone.start']),
     Transport: transport,
   };
+}
+
+function createLiveInputTone({
+  baseLatency,
+  bpm = 120,
+  currentTime = 0,
+  outputLatency,
+  ppq = 192,
+} = {}) {
+  const tone = createFakeTone();
+  const sampledTimes = [];
+  const rawContext = {};
+  if (Number.isFinite(baseLatency)) rawContext.baseLatency = baseLatency;
+  if (Number.isFinite(outputLatency)) rawContext.outputLatency = outputLatency;
+
+  tone.immediate = () => currentTime;
+  tone.getContext = () => ({
+    immediate: () => currentTime,
+    rawContext,
+  });
+  tone.Transport.PPQ = ppq;
+  tone.Transport.getTicksAtTime = (time) => {
+    sampledTimes.push(time);
+    return time * ppq * bpm / 60;
+  };
+
+  return { sampledTimes, tone };
 }
 
 function createFakeToneWithEventIds(eventIds) {
@@ -351,6 +378,138 @@ test('AudioEngine starts audio and triggers drums samples', async () => {
     ['player.start', 'kick', versioned('/samples/Drums/Kick_v0.22.wav'), 12.5],
     ['player.start', 'snare', versioned('/samples/Drums/Snare_v0.22.wav'), 12.5],
   ]);
+});
+
+test('AudioEngine triggers performance drums without Tone lookAhead', async () => {
+  const tone = createFakeTone();
+  tone.immediate = () => 7.25;
+  const engine = new AudioEngine({
+    tone,
+    baseUrl: '/',
+    playerFactory: createPlayerFactory(tone.calls),
+  });
+
+  await engine.triggerDrumsStep('kick', undefined, { immediate: true });
+
+  assert.deepEqual(
+    tone.calls.find(([name]) => name === 'player.start'),
+    ['player.start', 'kick', versioned('/samples/Drums/Kick_v0.22.wav'), 7.25],
+  );
+});
+
+test('AudioEngine live drum positions compensate event and output latency at every BPM', async () => {
+  for (const bpm of [60, 88, 120, 180]) {
+    const targetFlatStep = 21;
+    const secondsPerStep = 60 / bpm / 4;
+    const processingDelay = 0.02;
+    const outputLatency = 0.03;
+    const currentTime = (targetFlatStep + 0.42) * secondsPerStep
+      + processingDelay
+      + outputLatency;
+    const { sampledTimes, tone } = createLiveInputTone({
+      baseLatency: 0.12,
+      bpm,
+      currentTime,
+      outputLatency,
+    });
+    const engine = new AudioEngine({
+      performanceNow: () => 1000,
+      playerFactory: createPlayerFactory(tone.calls),
+      tone,
+    });
+
+    await engine.play({ bpm });
+
+    assert.deepEqual(engine.getLiveInputPosition(980), { bar: 1, step: 5 });
+    assert.ok(Math.abs(
+      sampledTimes.at(-1) - ((targetFlatStep + 0.42) * secondsPerStep),
+    ) < 1e-9);
+  }
+});
+
+test('AudioEngine live drum positions use base latency fallback and nearest-step rounding', async () => {
+  const secondsPerStep = 60 / 120 / 4;
+  const { sampledTimes, tone } = createLiveInputTone({
+    baseLatency: 0.04,
+    bpm: 120,
+    currentTime: 17.51 * secondsPerStep + 0.04,
+  });
+  const engine = new AudioEngine({
+    performanceNow: () => 500,
+    playerFactory: createPlayerFactory(tone.calls),
+    tone,
+  });
+
+  await engine.play({ bpm: 120 });
+
+  assert.deepEqual(engine.getLiveInputPosition(500), { bar: 1, step: 2 });
+  assert.ok(Math.abs(sampledTimes.at(-1) - 17.51 * secondsPerStep) < 1e-9);
+});
+
+test('AudioEngine nudges Launchpad recording later without changing other live inputs', async () => {
+  const secondsPerStep = 60 / 120 / 4;
+  const { sampledTimes, tone } = createLiveInputTone({
+    bpm: 120,
+    currentTime: 10.45 * secondsPerStep,
+  });
+  const engine = new AudioEngine({
+    performanceNow: () => 1000,
+    playerFactory: createPlayerFactory(tone.calls),
+    tone,
+  });
+
+  await engine.play({ bpm: 120 });
+
+  assert.deepEqual(engine.getLiveInputPosition(), { bar: 0, step: 10 });
+  assert.deepEqual(
+    engine.getLiveInputPosition(undefined, { source: 'launchpad' }),
+    { bar: 0, step: 11 },
+  );
+  assert.ok(Math.abs(sampledTimes.at(-1) - sampledTimes.at(-2) - 0.012) < 1e-9);
+});
+
+test('AudioEngine clamps implausible live input latency and supports missing latency data', async () => {
+  const capped = createLiveInputTone({
+    bpm: 120,
+    currentTime: 1,
+    outputLatency: 2,
+  });
+  const cappedEngine = new AudioEngine({
+    playerFactory: createPlayerFactory(capped.tone.calls),
+    tone: capped.tone,
+  });
+  await cappedEngine.play({ bpm: 120 });
+  cappedEngine.getLiveInputPosition();
+  assert.equal(capped.sampledTimes.at(-1), 0.75);
+
+  const missing = createLiveInputTone({
+    bpm: 120,
+    currentTime: 1,
+  });
+  const missingEngine = new AudioEngine({
+    playerFactory: createPlayerFactory(missing.tone.calls),
+    tone: missing.tone,
+  });
+  await missingEngine.play({ bpm: 120 });
+  missingEngine.getLiveInputPosition();
+  assert.equal(missing.sampledTimes.at(-1), 1);
+});
+
+test('AudioEngine live drum positions reject stopped and out-of-range transport time', async () => {
+  const { tone } = createLiveInputTone({
+    bpm: 120,
+    currentTime: TOTAL_BARS * STEPS_PER_BAR * (60 / 120 / 4),
+  });
+  const engine = new AudioEngine({
+    playerFactory: createPlayerFactory(tone.calls),
+    tone,
+  });
+
+  assert.equal(engine.getLiveInputPosition(), null);
+  await engine.play({ bpm: 120 });
+  assert.equal(engine.getLiveInputPosition(), null);
+  await engine.pause();
+  assert.equal(engine.getLiveInputPosition(), null);
 });
 
 test('AudioEngine starts audio and triggers chord sampler notes', async () => {
@@ -858,6 +1017,70 @@ test('AudioEngine play position callback follows scheduled transport ticks', asy
   assert.equal(engine.currentBar, 0);
   assert.equal(engine.currentStep, 2);
   assert.equal(engine.transportFlatStep, 3);
+});
+
+test('AudioEngine prepares recording positions early and draws the playhead at audible time', async () => {
+  const tone = createFakeTone();
+  const drawEvents = [];
+  tone.getDraw = () => ({
+    schedule(callback, time) {
+      drawEvents.push({ callback, time });
+    },
+  });
+  const scheduledPositions = [];
+  const audiblePositions = [];
+  const engine = new AudioEngine({
+    tone,
+    matrixSource: createInitialMatrix(),
+    playerFactory: createPlayerFactory(tone.calls),
+  });
+
+  await engine.play({
+    bpm: 120,
+    onPositionChange: (bar, step) => audiblePositions.push([bar, step]),
+    onScheduledPositionChange: (bar, step) => scheduledPositions.push([bar, step]),
+  });
+  tone.Transport.scheduledCallback(24);
+
+  assert.deepEqual(scheduledPositions, [[0, 0]]);
+  assert.deepEqual(audiblePositions, []);
+  assert.equal(drawEvents[0].time, 24);
+
+  drawEvents[0].callback();
+  assert.deepEqual(audiblePositions, [[0, 0]]);
+
+  tone.Transport.scheduledCallback(24.125);
+  await engine.stop();
+  drawEvents[1].callback();
+  assert.deepEqual(audiblePositions, [[0, 0]]);
+});
+
+test('AudioEngine keeps live recording active until bounded playback is audibly complete', async () => {
+  const tone = createFakeTone();
+  const drawEvents = [];
+  tone.getDraw = () => ({
+    schedule(callback, time) {
+      drawEvents.push({ callback, time });
+    },
+  });
+  const completions = [];
+  const engine = new AudioEngine({
+    tone,
+    matrixSource: createInitialMatrix(),
+    onPlaybackComplete: (completion) => completions.push(completion),
+    playerFactory: createPlayerFactory(tone.calls),
+  });
+
+  await engine.play({ bpm: 120, maxPlaybackSteps: 1 });
+  tone.Transport.scheduledCallback(24);
+
+  assert.equal(engine.transportRunning, true);
+  assert.deepEqual(completions, []);
+  assert.equal(drawEvents.length, 2);
+
+  drawEvents.forEach(({ callback }) => callback());
+  assert.equal(engine.transportRunning, false);
+  assert.deepEqual(completions, [{ bar: 0, playedSteps: 1, step: 0 }]);
 });
 
 test('AudioEngine avoids touching Tone transport before audio starts', async () => {

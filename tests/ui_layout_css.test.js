@@ -409,7 +409,7 @@ test('fourteen inch mac demo viewport compresses the drum sequencer without inte
   assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.drum-seq-body\s*\{[^}]*padding:\s*6px 0 8px;[^}]*overflow:\s*hidden;/s);
   assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.track-editor-pager-content\s*\{[^}]*gap:\s*4px;/s);
   assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.drum-seq-panel\s*\{[^}]*--drum-step-size:\s*clamp\(34px,\s*calc\(\(var\(--app-editor-height\) - 104px\) \/ 4\.2\),\s*42px\);[^}]*--drum-row-gap:\s*clamp\(5px,\s*calc\(\(var\(--app-editor-height\) - 236px\) \/ 12\),\s*10px\);/s);
-  assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.drum-sequencer-grid\s*\{[^}]*--drum-group-header-height:\s*26px;[^}]*grid-template-columns:\s*84px minmax\(0,\s*1fr\);[^}]*gap:\s*8px;/s);
+  assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.drum-sequencer-grid\s*\{[^}]*--drum-group-header-height:\s*26px;[^}]*grid-template-columns:\s*124px minmax\(0,\s*1fr\);[^}]*gap:\s*8px;/s);
   assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.drum-step-group\s*\{[^}]*--drum-step-gap:\s*4px;[^}]*padding:\s*var\(--drum-group-padding\);/s);
   assert.match(css, /@media\s*\(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)\s*\{[\s\S]*\.drum-step\s*\{[^}]*width:\s*var\(--drum-step-size\);[^}]*height:\s*var\(--drum-step-size\);[^}]*min-height:\s*var\(--drum-step-size\);/s);
 });
@@ -649,7 +649,7 @@ test('drum sequencer uses four hardware beat frames and sixteen stable step posi
   assert.doesNotMatch(css, /\.drum-seq-panel\s*\{[^}]*max-width:/s);
   assert.match(css, /@media\s*\(max-width:\s*980px\)\s*\{[\s\S]*\.track-editor-pager-shell\s*\{[^}]*--track-page-btn-inset:\s*8px;/s);
   assert.match(css, /@media\s*\(max-width:\s*980px\)\s*\{[\s\S]*\.drum-seq-body\s*\{[^}]*padding:\s*16px 0;/s);
-  assert.match(css, /\.drum-sequencer-grid\s*\{[^}]*--drum-group-header-height:\s*30px;[^}]*grid-template-columns:\s*108px minmax\(0,\s*1fr\);[^}]*gap:\s*12px;[^}]*align-self:\s*center;[^}]*width:\s*82%;[^}]*min-width:\s*min\(100%,\s*940px\);/s);
+  assert.match(css, /\.drum-sequencer-grid\s*\{[^}]*--drum-group-header-height:\s*30px;[^}]*grid-template-columns:\s*124px minmax\(0,\s*1fr\);[^}]*gap:\s*12px;[^}]*align-self:\s*center;[^}]*width:\s*82%;[^}]*min-width:\s*min\(100%,\s*940px\);/s);
   assert.match(css, /\.drum-row-labels\s*\{[^}]*grid-template-rows:\s*var\(--drum-group-header-height\) repeat\(3,\s*var\(--drum-step-size\)\);[^}]*gap:\s*var\(--drum-row-gap\);/s);
   assert.match(css, /\.drum-step-groups\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\);[^}]*justify-content:\s*stretch;[^}]*gap:\s*var\(--drum-step-group-gap\);[^}]*justify-self:\s*stretch;[^}]*width:\s*100%;[^}]*min-width:\s*0;/s);
   assert.match(css, /\.drum-step-groups\s*\{[^}]*--drum-step-group-gap:\s*clamp\(10px,\s*1\.8vw,\s*18px\);/s);
@@ -697,7 +697,7 @@ test('drum sequencer uses four hardware beat frames and sixteen stable step posi
   assert.match(css, /@media\s*\(max-width:\s*980px\)\s*\{[\s\S]*\.drum-sequencer-grid\s*\{[^}]*grid-template-columns:\s*92px minmax\(0,\s*1fr\);[^}]*align-self:\s*stretch;[^}]*width:\s*100%;[^}]*min-width:\s*0;/s);
   assert.match(css, /@media\s*\(max-width:\s*980px\)\s*\{[\s\S]*\.drum-step-groups\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(112px,\s*1fr\)\);[^}]*gap:\s*12px;[^}]*justify-self:\s*stretch;[^}]*width:\s*100%;[^}]*min-width:\s*0;/s);
   assert.match(css, /@media\s*\(min-width:\s*981px\) and \(max-width:\s*1179px\)\s*\{[\s\S]*\.drum-seq-body\s*\{[^}]*padding:\s*4px 0;/s);
-  assert.match(css, /@media\s*\(min-width:\s*981px\) and \(max-width:\s*1179px\)\s*\{[\s\S]*\.drum-sequencer-grid\s*\{[^}]*--drum-group-header-height:\s*27px;[^}]*grid-template-columns:\s*70px minmax\(0,\s*1fr\);[^}]*align-self:\s*stretch;[^}]*width:\s*100%;[^}]*min-width:\s*0;/s);
+  assert.match(css, /@media\s*\(min-width:\s*981px\) and \(max-width:\s*1179px\)\s*\{[\s\S]*\.drum-sequencer-grid\s*\{[^}]*--drum-group-header-height:\s*27px;[^}]*grid-template-columns:\s*104px minmax\(0,\s*1fr\);[^}]*align-self:\s*stretch;[^}]*width:\s*100%;[^}]*min-width:\s*0;/s);
   assert.match(css, /@media\s*\(min-width:\s*981px\) and \(max-width:\s*1179px\)\s*\{[\s\S]*\.drum-row-label\s*\{[^}]*font-size:\s*11px;[^}]*line-height:\s*1;/s);
   assert.match(css, /@media\s*\(min-width:\s*981px\) and \(max-width:\s*1179px\)\s*\{[\s\S]*\.drum-step-groups\s*\{[^}]*justify-self:\s*stretch;[^}]*width:\s*100%;[^}]*min-width:\s*0;/s);
   assert.match(css, /@media\s*\(min-width:\s*981px\) and \(max-width:\s*1179px\)\s*\{[\s\S]*\.drum-step-group\s*\{[^}]*--drum-step-gap:\s*4px;[^}]*padding:\s*var\(--drum-group-padding\);/s);

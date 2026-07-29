@@ -6,6 +6,7 @@ import {
   createDrumsLiveRecordSession,
   createDrumsRecordingState,
   DRUMS_RECORDING_PHASES,
+  getDrumsRecordingContextTrackId,
   getDrumsWriteBarRange,
   hasDrumsBarHits,
   hasDrumsHitsInRange,
@@ -138,6 +139,29 @@ test('drums recording state keeps independent progress arrays', () => {
   assert.deepEqual(first.completedBars, [3]);
 });
 
+test('recording context follows the pending session through confirmation and count-in', () => {
+  const pendingSession = { trackId: 'drums-2' };
+  const session = { trackId: 'drums-2' };
+
+  assert.equal(getDrumsRecordingContextTrackId({
+    pendingSession,
+    phase: DRUMS_RECORDING_PHASES.CONFIRM,
+  }), 'drums-2');
+  assert.equal(getDrumsRecordingContextTrackId({
+    pendingSession,
+    phase: DRUMS_RECORDING_PHASES.COUNT_IN,
+  }), 'drums-2');
+  assert.equal(getDrumsRecordingContextTrackId({
+    phase: DRUMS_RECORDING_PHASES.RECORDING,
+    session,
+  }), 'drums-2');
+  assert.equal(getDrumsRecordingContextTrackId({
+    pendingSession,
+    phase: DRUMS_RECORDING_PHASES.IDLE,
+    session,
+  }), null);
+});
+
 test('controller uses count-in, delayed bar clearing, full-track playback, and bounded duration', async () => {
   const [source, melodyControllerSource] = await Promise.all([
     readFile(
@@ -151,6 +175,18 @@ test('controller uses count-in, delayed bar clearing, full-track playback, and b
   ]);
 
   assert.match(source, /tick\(4\)/);
+  assert.doesNotMatch(source, /pendingSessionRef\.current = null;\n {4}void beginCountIn/);
+  assert.match(
+    source,
+    /sessionRef\.current = session;\n {4}pendingSessionRef\.current = null;/,
+  );
+  assert.match(source, /getDrumsRecordingContextTrackId\(\{/);
+  assert.match(
+    source,
+    /const handlePadInput = useCallback\(\(instrument, inputTimestampMs, inputSource\) => \{[\s\S]*audioEngine\.getLiveInputPosition\?\.\(inputTimestampMs, \{[\s\S]*source: inputSource,[\s\S]*const \{ bar, step \} = position;/,
+  );
+  assert.doesNotMatch(source, /const bar = state\.currentBar;/);
+  assert.doesNotMatch(source, /const step = state\.currentStep;/);
   assert.match(source, /prepareRecordingBar\(session, pendingSession\.startBar\)/);
   assert.match(source, /step !== 0/);
   assert.match(
@@ -177,10 +213,11 @@ test('App gates preview recording through the controller and ends sessions on na
   const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
 
   assert.match(source, /useDrumsRecordingController\(\{/);
+  assert.match(source, /audioEngine\.onScheduledPositionChange = \(bar, step\) => \{/);
   assert.match(source, /handleDrumsRecordingTransportPosition\(bar, step\)/);
   assert.match(
     source,
-    /command\?\.type === APP_COMMAND_TYPES\.DRUMS_PREVIEW[\s\S]*drumsRecording\.handlePadInput\(command\.instrument\)[\s\S]*dispatchAppCommand\(command\)/,
+    /command\?\.type === APP_COMMAND_TYPES\.DRUMS_PREVIEW[\s\S]*drumsRecording\.handlePadInput\([\s\S]*command\.instrument,[\s\S]*command\.inputTimestampMs,[\s\S]*command\.inputSource,[\s\S]*dispatchAppCommand\(\{ \.\.\.command, trackId \}\)/,
   );
   assert.match(source, /const handleDrumsWriteToggle = useCallback/);
   assert.match(source, /stopDrumsRecording\(\{ stopTransport: false \}\)/);
@@ -202,6 +239,24 @@ test('Drums editor exposes the dedicated write workflow and keeps no-clip record
   assert.match(drumSource, /播放到每个小节时才会清空/);
   assert.match(drumSource, /event\.key !== 'Escape'/);
   assert.match(drumSource, /等待首次击打创建 Clip/);
+  assert.match(drumSource, /DRUM_INPUT_CELLS\.map/);
+  assert.match(drumSource, /onPointerDown=\{\(event\) => \{/);
+  assert.match(drumSource, /onPadInput\(pad\.instrument, event\.timeStamp\)/);
+  assert.match(drumSource, /if \(event\.detail === 0\)/);
   assert.match(bottomEditorSource, /selectedClipId \|\| drumsWriting/);
   assert.match(bottomEditorSource, /hasClip: Boolean\(selectedClipId\)/);
+  assert.match(bottomEditorSource, /onPadInput: onDrumsPadInput/);
+});
+
+test('Launchpad drum previews use dispatch time with a source-specific recording bias', async () => {
+  const source = await readFile(
+    new URL('../src/input/useLaunchpadXCommands.js', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(
+    source,
+    /const mappedCommand = mapLaunchpadXMessageToCommand\(event\.data, contextRef\.current\)[\s\S]*inputSource: 'launchpad'/,
+  );
+  assert.doesNotMatch(source, /inputTimestampMs: event\.timeStamp/);
 });

@@ -7,6 +7,7 @@ import {
   isMelodyInputKeyboardCode,
   MELODY_INPUT_SOURCES,
 } from './melodyInputLayout.js';
+import { getDrumsInstrumentByKeyboardCode } from './drumsInputLayout.js';
 
 function getEventKey(event) {
   if (event.code === 'Space') return ' ';
@@ -134,6 +135,23 @@ function mapKeyboardEventToCommand(event, state = {}) {
         inputId: getKeyboardMelodyInputId(event.code),
         note: cell.note,
         source: MELODY_INPUT_SOURCES.KEYBOARD,
+      };
+    }
+  }
+
+  if (
+    eventType === 'keydown'
+    && getTrackType(state, state.activeTrackId) === 'drums'
+    && !event.ctrlKey
+    && !event.metaKey
+    && !event.altKey
+  ) {
+    const instrument = getDrumsInstrumentByKeyboardCode(event.code);
+    if (instrument) {
+      return {
+        type: APP_COMMAND_TYPES.DRUMS_PREVIEW,
+        ...(Number.isFinite(event.timeStamp) ? { inputTimestampMs: event.timeStamp } : {}),
+        instrument,
       };
     }
   }

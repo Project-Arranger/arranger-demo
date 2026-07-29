@@ -177,10 +177,16 @@ async function dispatchHandlerCommand(command, deps) {
           'triggerDrumsStep',
           command.instrument,
           undefined,
-          { trackId: command.trackId },
+          { immediate: true, trackId: command.trackId },
         );
       } else {
-        await maybeCallMethod(deps.audio, 'triggerDrumsStep', command.instrument);
+        await maybeCallMethod(
+          deps.audio,
+          'triggerDrumsStep',
+          command.instrument,
+          undefined,
+          { immediate: true },
+        );
       }
       return { ok: true };
 

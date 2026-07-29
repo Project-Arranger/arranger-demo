@@ -249,7 +249,10 @@ function useLaunchpadXCommands({
     if (chordGestureRef.current.handle(event.data)) return;
 
     const message = parseLaunchpadXMessage(event.data);
-    const command = mapLaunchpadXMessageToCommand(event.data, contextRef.current);
+    const mappedCommand = mapLaunchpadXMessageToCommand(event.data, contextRef.current);
+    const command = mappedCommand?.type === APP_COMMAND_TYPES.DRUMS_PREVIEW
+      ? { ...mappedCommand, inputSource: 'launchpad' }
+      : mappedCommand;
     let melodyPadChanged = false;
     if (
       contextRef.current.melodyActive

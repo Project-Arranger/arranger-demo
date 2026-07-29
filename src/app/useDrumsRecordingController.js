@@ -15,6 +15,7 @@ import {
   createDrumsLiveRecordSession,
   createDrumsRecordingState,
   DRUMS_RECORDING_PHASES,
+  getDrumsRecordingContextTrackId,
   getDrumsWriteBarRange,
   hasDrumsBarHits,
   hasDrumsHitsInRange,
@@ -137,6 +138,7 @@ function useDrumsRecordingController({
       targetBars: [...pendingSession.targetBars],
     };
     sessionRef.current = session;
+    pendingSessionRef.current = null;
     prepareRecordingBar(session, pendingSession.startBar);
     updateRecordingState(createDrumsRecordingState(
       DRUMS_RECORDING_PHASES.RECORDING,
@@ -223,7 +225,6 @@ function useDrumsRecordingController({
   const startPendingSession = useCallback(() => {
     const pendingSession = pendingSessionRef.current;
     if (!pendingSession) return false;
-    pendingSessionRef.current = null;
     void beginCountIn(pendingSession);
     return true;
   }, [beginCountIn]);
@@ -315,11 +316,15 @@ function useDrumsRecordingController({
     return true;
   }, [clearTimers, updateRecordingState]);
 
-  const handlePadInput = useCallback((instrument) => {
+  const handlePadInput = useCallback((instrument, inputTimestampMs, inputSource) => {
     const session = sessionRef.current;
+    const position = audioEngine.getLiveInputPosition?.(inputTimestampMs, {
+      source: inputSource,
+    });
+    if (!position) return false;
+
     const state = useMusicStore.getState();
-    const bar = state.currentBar;
-    const step = state.currentStep;
+    const { bar, step } = position;
     if (!session?.targetBars.includes(bar)) return false;
 
     const patch = createDrumsLiveRecordPatch({
@@ -346,7 +351,23 @@ function useDrumsRecordingController({
         latestState.setCell(session.trackId, patch.bar, patch.step, patch.nextCell);
       }
     });
-  }, [runSessionMutation]);
+  }, [audioEngine, runSessionMutation]);
+
+  const previewPadInput = useCallback((instrument, inputTimestampMs) => {
+    handlePadInput(instrument, inputTimestampMs);
+    void dispatchAppCommand({
+      type: APP_COMMAND_TYPES.DRUMS_PREVIEW,
+      ...(Number.isFinite(inputTimestampMs) ? { inputTimestampMs } : {}),
+      instrument,
+      trackId: activeTrackType === 'drums' ? activeTrackId : 'drums',
+    });
+    return true;
+  }, [
+    activeTrackId,
+    activeTrackType,
+    dispatchAppCommand,
+    handlePadInput,
+  ]);
 
   const handleTransportPosition = useCallback((bar, step) => {
     const session = sessionRef.current;
@@ -374,11 +395,16 @@ function useDrumsRecordingController({
   }, [prepareRecordingBar, updateRecordingState]);
 
   useEffect(() => {
+    const recordingTrackId = getDrumsRecordingContextTrackId({
+      pendingSession: pendingSessionRef.current,
+      phase: recordingState.phase,
+      session: sessionRef.current,
+    });
     if (
       recordingState.phase !== DRUMS_RECORDING_PHASES.IDLE
       && (
         activeTrackType !== 'drums'
-        || activeTrackId !== sessionRef.current?.trackId
+        || activeTrackId !== recordingTrackId
       )
     ) {
       stopRecording();
@@ -396,6 +422,7 @@ function useDrumsRecordingController({
     confirmRecord,
     handlePadInput,
     handleTransportPosition,
+    previewPadInput,
     recordingState,
     requestWriteToggle,
     stopRecording,
