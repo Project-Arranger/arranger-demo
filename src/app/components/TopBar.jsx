@@ -1,4 +1,10 @@
-import { createElement } from 'react';
+import {
+  createElement,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+import { createPortal } from 'react-dom';
 import {
   ClipboardPaste,
   Copy,
@@ -15,11 +21,92 @@ import {
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
 import { formatDisplayPosition } from '../transportPosition.js';
 import { HardwareInputStatus } from './HardwareInputStatus.jsx';
+import { BpmControl } from './BpmControl.jsx';
 import { renderIcon } from './icons.js';
+
+function BpmPopoverControl({
+  bpm,
+  className = '',
+  locked = false,
+  lockReason = '',
+  onChange = () => {},
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef(null);
+  const popoverRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const handlePointerDown = (event) => {
+      const clickedTrigger = containerRef.current?.contains(event.target);
+      const clickedPopover = popoverRef.current?.contains(event.target);
+      if (!clickedTrigger && !clickedPopover) setOpen(false);
+    };
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div
+      ref={containerRef}
+      className={['bpm-popover-control', className].filter(Boolean).join(' ')}
+      onPointerDown={(event) => event.stopPropagation()}
+    >
+      <button
+        className="bpm-status-trigger"
+        type="button"
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        aria-label={`调整 BPM，当前 ${bpm}`}
+        data-locked={locked ? 'true' : undefined}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span className="bpm-status-label">BPM</span>
+        <span className="bpm-status-value mono">{bpm}</span>
+      </button>
+      {open ? createPortal(
+        <div
+          ref={popoverRef}
+          className={`bpm-popover bpm-popover-portal ${className}-popover`}
+          role="dialog"
+          aria-label="BPM 设置"
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <div className="bpm-popover-head">
+            <span>PROJECT TEMPO</span>
+            <strong className="mono">{bpm}</strong>
+          </div>
+          <BpmControl
+            disabled={locked}
+            idPrefix={className || 'topbar-bpm'}
+            value={bpm}
+            onChange={onChange}
+          />
+          {locked ? (
+            <p className="bpm-lock-reason" role="status">{lockReason}</p>
+          ) : (
+            <p className="bpm-popover-hint">播放时调整会立即改变速度，不会跳回开头。</p>
+          )}
+        </div>,
+        document.body,
+      ) : null}
+    </div>
+  );
+}
 
 function TopBar({
   activeTutorialTarget,
   bpm,
+  bpmLocked = false,
+  bpmLockReason = '',
   canCopyClip = false,
   canPasteClip = false,
   canRedo = false,
@@ -29,6 +116,7 @@ function TopBar({
   hardwareInput = null,
   isPlaying,
   onBackToStart,
+  onBpmChange = () => {},
   onNewSong = () => {},
   onPlayToggle,
   onCopyClip = () => {},
@@ -150,6 +238,14 @@ function TopBar({
             <span className="play-glyph" aria-hidden="true" />
           </button>
         </div>
+
+        <BpmPopoverControl
+          bpm={bpm}
+          className="mobile-bpm-control"
+          locked={bpmLocked}
+          lockReason={bpmLockReason}
+          onChange={onBpmChange}
+        />
       </div>
 
       <div className="topbar-center">
@@ -166,8 +262,13 @@ function TopBar({
               </div>
             </div>
             <div className="stat">
-              <div className="lbl">BPM</div>
-              <div className="val mono">{bpm}</div>
+              <BpmPopoverControl
+                bpm={bpm}
+                className="desktop-bpm-control"
+                locked={bpmLocked}
+                lockReason={bpmLockReason}
+                onChange={onBpmChange}
+              />
             </div>
             <div className="stat">
               <div className="lbl">Key</div>
@@ -207,5 +308,9 @@ function TopBar({
     </header>
   );
 }
+
+// JSX component references are not marked as reads by this repository's lint parser.
+void BpmControl;
+void BpmPopoverControl;
 
 export { TopBar };

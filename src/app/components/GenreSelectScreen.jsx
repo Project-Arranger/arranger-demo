@@ -1,39 +1,9 @@
 import { useState } from 'react';
-import { Volume2 } from 'lucide-react';
 import {
   CURRENT_GENRE_ID,
   GENRE_OPTIONS,
 } from '../genreOptions.js';
-import { renderIcon } from './icons.js';
-
-const LEFT_CONTROLS = [
-  { label: 'MASTER VOLUME', type: 'knob' },
-  { label: 'TUNE', type: 'knob' },
-  { label: 'FX', type: 'button', light: 'dot' },
-  { label: 'PRESET', type: 'button', light: 'bar' },
-];
-
-const RIGHT_CONTROLS = [
-  { label: 'TUNE', type: 'knob' },
-  { label: 'FX', type: 'button', light: 'bar' },
-  { label: 'MENU', type: 'button', light: 'bar' },
-  { label: 'PRESET', type: 'button', light: 'bar' },
-];
-
-function renderHardwareControl(control, key) {
-  return (
-    <div className={`genre-hardware-control ${control.type}`} key={key}>
-      {control.type === 'knob' ? (
-        <span className="genre-knob" aria-hidden="true" />
-      ) : (
-        <span className={`genre-control-button ${control.light}`} aria-hidden="true">
-          <span className="genre-control-light" />
-        </span>
-      )}
-      <span className="genre-control-label">{control.label}</span>
-    </div>
-  );
-}
+import { HardwareFlowShell } from './HardwareFlowShell.jsx';
 
 function GenreSelectScreen({
   currentGenreId = CURRENT_GENRE_ID,
@@ -44,109 +14,90 @@ function GenreSelectScreen({
 
   const handleGenreSelect = (genre) => {
     setSelectedPreviewGenreId(genre.id);
-    if (genre.id === currentGenreId) {
+    if (genre.enabled) {
       onGenreEnter(genre.id);
     }
   };
 
-  const handleGenreAudition = (genre) => {
+  const handleGenreAction = (genre) => {
     setSelectedPreviewGenreId(genre.id);
+    if (genre.entryType === 'multimodal') {
+      onGenreEnter(genre.id);
+    }
   };
 
   return (
-    <section className="genre-gate" aria-label="选择曲风">
-      <div className="genre-hardware">
-        <aside className="genre-side-rail left" aria-hidden="true">
-          {LEFT_CONTROLS.map((control) => (
-            renderHardwareControl(control, `left-${control.label}`)
-          ))}
-        </aside>
+    <HardwareFlowShell
+      ariaLabel="选择曲风"
+      consoleTitle="AETHER SYNTHESIZERS - GENRE SELECT"
+      kicker="GENRE SELECT"
+      title="选择曲风"
+    >
+      <div className="genre-grid" role="list" aria-label="曲风列表">
+        {options.map((genre) => {
+          const selected = genre.id === selectedPreviewGenreId;
+          const genreStyle = {
+            '--genre-ink': genre.ink,
+            '--genre-neon': genre.neon,
+            '--genre-tone': genre.tone,
+          };
+          const actionLabel = genre.actionLabel ?? '试听';
 
-        <main className="genre-console">
-          <div className="genre-screen">
-            <header className="genre-gate-head">
-              <div className="genre-brand-lockup">
-                <span className="genre-brand-icon" aria-hidden="true">{renderIcon(Volume2)}</span>
-                <span className="genre-brand-text">Aether Synthesizers</span>
-              </div>
-              <div className="genre-title-group">
-                <p className="genre-kicker">GENRE SELECT</p>
-                <h1>选择曲风</h1>
-              </div>
-            </header>
-
-            <div className="genre-grid" role="list" aria-label="曲风列表">
-              {options.map((genre) => {
-                const selected = genre.id === selectedPreviewGenreId;
-                const genreStyle = {
-                  '--genre-ink': genre.ink,
-                  '--genre-neon': genre.neon,
-                  '--genre-tone': genre.tone,
-                };
-
-                return (
-                  <div
-                    className="genre-card-shell"
-                    data-gem-tone={genre.gemTone ?? 'amber'}
-                    key={genre.id}
-                    role="listitem"
-                    style={genreStyle}
-                  >
-                    <button
-                      className="genre-card"
-                      type="button"
-                      style={genreStyle}
-                      aria-label={`选择${genre.displayTitle}`}
-                      aria-pressed={selected}
-                      data-enabled={genre.enabled ? 'true' : 'false'}
-                      data-genre-id={genre.id}
-                      data-selected={selected ? 'true' : undefined}
-                      onClick={() => handleGenreSelect(genre)}
-                    >
-                      <span className="genre-label">{genre.displayTitle}</span>
-                      <span className="genre-art-frame" aria-hidden="true">
-                        <img
-                          className="genre-art-image"
-                          src={genre.artImage}
-                          alt=""
-                          draggable="false"
-                          decoding="async"
-                        />
-                      </span>
-                      <span className="genre-description">{genre.description}</span>
-                      <span className="genre-status mono">
-                        {genre.enabled ? 'ENTER' : 'PREVIEW'}
-                      </span>
-                    </button>
-                    <button
-                      className="genre-gem-button"
-                      type="button"
-                      aria-label={`试听 ${genre.displayTitle}`}
-                      data-gem-tone={genre.gemTone ?? 'amber'}
-                      onClick={() => handleGenreAudition(genre)}
-                    >
-                      <span className="genre-gem-socket" aria-hidden="true">
-                        <span className="genre-gem" />
-                      </span>
-                      <span className="genre-gem-label" aria-hidden="true">试听</span>
-                    </button>
-                  </div>
-                );
-              })}
+          return (
+            <div
+              className="genre-card-shell"
+              data-gem-tone={genre.gemTone ?? 'amber'}
+              key={genre.id}
+              role="listitem"
+              style={genreStyle}
+            >
+              <button
+                className="genre-card"
+                type="button"
+                style={genreStyle}
+                aria-label={`选择${genre.displayTitle}`}
+                aria-pressed={selected}
+                data-enabled={genre.enabled ? 'true' : 'false'}
+                data-genre-id={genre.id}
+                data-selected={selected ? 'true' : undefined}
+                onClick={() => handleGenreSelect(genre)}
+              >
+                <span className="genre-label">{genre.displayTitle}</span>
+                <span className="genre-art-frame" aria-hidden="true">
+                  <img
+                    className="genre-art-image"
+                    src={genre.artImage}
+                    alt=""
+                    draggable="false"
+                    decoding="async"
+                  />
+                </span>
+                <span className="genre-description">{genre.description}</span>
+                <span className="genre-status mono">
+                  {genre.statusLabel ?? (genre.enabled ? 'ENTER' : 'PREVIEW')}
+                </span>
+              </button>
+              <button
+                className="genre-gem-button"
+                type="button"
+                aria-label={`${actionLabel} ${genre.displayTitle}`}
+                data-gem-tone={genre.gemTone ?? 'amber'}
+                onClick={() => handleGenreAction(genre)}
+              >
+                <span className="genre-gem-socket" aria-hidden="true">
+                  <span className="genre-gem" />
+                </span>
+                <span className="genre-gem-label" aria-hidden="true">{actionLabel}</span>
+              </button>
             </div>
-          </div>
-
-          <p className="genre-console-title">AETHER SYNTHESIZERS - GENRE SELECT</p>
-        </main>
-
-        <aside className="genre-side-rail right" aria-hidden="true">
-          {RIGHT_CONTROLS.map((control) => (
-            renderHardwareControl(control, `right-${control.label}`)
-          ))}
-        </aside>
+          );
+        })}
       </div>
-    </section>
+    </HardwareFlowShell>
   );
 }
+
+// JSX component references are not marked as reads by this repository's lint parser.
+void HardwareFlowShell;
 
 export { GenreSelectScreen };

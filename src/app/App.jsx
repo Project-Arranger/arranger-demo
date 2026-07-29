@@ -95,6 +95,7 @@ import { TutorialLibraryPanel } from './components/TutorialLibraryPanel.jsx';
 import { toggleInstrumentInCell } from './drumSequencerData.js';
 import { createDrumsCell, getDrumsCellInstruments } from '../domain/drumsCells.js';
 import { createDrumsStepMovePatch } from '../domain/drumsStepMove.js';
+import { normalizeBpm } from '../domain/bpm.js';
 import {
   canRemoveTrackInstance,
   getTrackInstanceIdsByType,
@@ -445,6 +446,26 @@ export default function App() {
   const stopDrumsRecording = drumsRecording.stopRecording;
   const handleMelodyRecordingTransportPosition = melodyRecording.handleTransportPosition;
   const stopMelodyRecording = melodyRecording.stopRecording;
+  const bpmLockedByTutorial = tutorialPanelState === 'running';
+  const bpmLockedByRecording = drumsRecording.workflowLocked || melodyRecording.workflowLocked;
+  const bpmLocked = bpmLockedByTutorial || bpmLockedByRecording;
+  const bpmLockReason = bpmLockedByTutorial
+    ? '教程正在使用固定速度，暂停或退出教程后可以调整。'
+    : bpmLockedByRecording
+      ? '录音或倒数期间暂时锁定速度。'
+      : '';
+  const handleBpmChange = useCallback((nextValue) => {
+    if (bpmLocked) return;
+
+    const state = useMusicStore.getState();
+    const nextBpm = normalizeBpm(nextValue, state.bpm);
+    if (nextBpm === state.bpm) return;
+
+    withUndoCheckpoint(() => {
+      state.setBpm(nextBpm);
+    });
+    audioEngine.setTempo?.(nextBpm);
+  }, [bpmLocked, withUndoCheckpoint]);
   const clearTimelineSelectionPlayback = useCallback(() => {
     if (!timelineSelectionPlaybackActive) return;
 
@@ -2796,6 +2817,8 @@ export default function App() {
         {createElement(TopBar, {
           activeTutorialTarget,
           bpm,
+          bpmLocked,
+          bpmLockReason,
           canCopyClip,
           canPasteClip,
           canRedo,
@@ -2809,6 +2832,7 @@ export default function App() {
             onConnect: handleLaunchpadConnect,
           },
           onBackToStart: handleBackToStart,
+          onBpmChange: handleBpmChange,
           onCopyClip: handleCopySelectedClip,
           onNewSong: requestNewSong,
           onPasteClip: handlePasteClipRequestWithMelodyStop,

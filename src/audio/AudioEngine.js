@@ -1003,6 +1003,15 @@ export default class AudioEngine {
     return this.seekToStep(bar, step);
   }
 
+  setTempo(bpm = DEFAULT_BPM) {
+    const normalizedBpm = Number.isFinite(bpm) && bpm > 0 ? bpm : DEFAULT_BPM;
+    const transport = this.getStartedTransport();
+    if (!transport?.bpm) return false;
+
+    transport.bpm.value = normalizedBpm;
+    return true;
+  }
+
   seekToStep(bar, step) {
     this.currentBar = bar;
     this.currentStep = step;

@@ -1073,6 +1073,7 @@ function useMelodyRecordingController({
     requestWriteToggle,
     selectTemplateStep,
     stopRecording,
+    workflowLocked: recordingState.phase !== MELODY_RECORDING_PHASES.IDLE,
   };
 }
 

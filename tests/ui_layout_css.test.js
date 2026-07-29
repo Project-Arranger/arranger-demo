@@ -297,7 +297,7 @@ test('topbar tutorial and save switches render as sculpted buttons without key s
   const topBarSource = await readFile(new URL('../src/app/components/TopBar.jsx', import.meta.url), 'utf8');
   const topbarCenterBlock = topBarSource.match(/<div className="topbar-center">([\s\S]*?)\n\s*<div className="right-tools">/)?.[1] ?? '';
 
-  assert.match(topBarSource, /<button className="btn-new"[\s\S]*<\/button>\s*\n\s*<div className="topbar-left-controls">[\s\S]*<div className="history-controls" role="toolbar" aria-label="History">[\s\S]*<div className=\{transportClassName\} role="toolbar" aria-label="Transport">[\s\S]*<\/div>\s*\n\s*<\/div>\s*\n\s*<div className="topbar-center">\s*\n\s*<div className="hardware-status-display">/);
+  assert.match(topBarSource, /<button className="btn-new"[\s\S]*<\/button>\s*\n\s*<div className="topbar-left-controls">[\s\S]*<div className="history-controls" role="toolbar" aria-label="History">[\s\S]*<div className=\{transportClassName\} role="toolbar" aria-label="Transport">[\s\S]*className="mobile-bpm-control"[\s\S]*<\/div>\s*\n\s*<div className="topbar-center">\s*\n\s*<div className="hardware-status-display">/);
   assert.doesNotMatch(topbarCenterBlock, /history-controls|transportClassName/);
   assert.match(css, /\.topbar-left-controls\s*\{[^}]*display:\s*flex;/s);
   assert.match(css, /\.topbar-left-controls\s*\{[^}]*grid-column:\s*3;/s);

@@ -811,6 +811,27 @@ test('AudioEngine syncs transport play pause stop and seek', async () => {
   ]);
 });
 
+test('AudioEngine changes live tempo without seeking or restarting transport', async () => {
+  const tone = createFakeTone();
+  const engine = new AudioEngine({
+    tone,
+    matrixSource: createInitialMatrix(),
+    playerFactory: createPlayerFactory(tone.calls),
+  });
+
+  assert.equal(engine.setTempo(104), false);
+  await engine.play({ bpm: 88, bar: 2, step: 4 });
+  const positionBeforeTempoChange = tone.Transport.position;
+  const callsBeforeTempoChange = [...tone.calls];
+
+  assert.equal(engine.setTempo(104), true);
+  assert.equal(tone.Transport.bpm.value, 104);
+  assert.equal(tone.Transport.position, positionBeforeTempoChange);
+  assert.equal(engine.currentBar, 2);
+  assert.equal(engine.currentStep, 4);
+  assert.deepEqual(tone.calls, callsBeforeTempoChange);
+});
+
 test('AudioEngine play position callback follows scheduled transport ticks', async () => {
   const tone = createFakeTone();
   const matrix = createInitialMatrix();

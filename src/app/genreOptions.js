@@ -1,4 +1,5 @@
 const CURRENT_GENRE_ID = 'pop';
+const MULTIMODAL_GENRE_ID = 'ai-multimodal';
 const ASSET_BASE_URL = (import.meta.env?.BASE_URL ?? '/').replace(/\/?$/, '/');
 const genreArt = (filename) => `${ASSET_BASE_URL}assets/genre-art/${filename}`;
 
@@ -74,22 +75,26 @@ const GENRE_OPTIONS = Object.freeze([
     note: 'Locked',
   }),
   Object.freeze({
-    id: 'jazz',
-    label: '爵士 Jazz',
-    shortLabel: 'JAZZ',
-    displayTitle: '爵士嘻哈',
-    description: '细腻温润的温暖音色，节奏轻盈摇摆，旋律富有迷离的都市感',
-    enabled: false,
-    tone: 'var(--c-bass)',
-    ink: 'var(--c-bass-ink)',
-    neon: '#63f1ff',
-    artImage: genreArt('jazz-neon.png'),
-    gemTone: 'blue',
-    note: 'Locked',
+    id: MULTIMODAL_GENRE_ID,
+    label: 'AI 多模态',
+    shortLabel: 'AI INPUT',
+    displayTitle: 'AI 多模态创作',
+    description: '上传图片或视频，让画面的色彩、情绪和动态变成一套编曲建议',
+    enabled: true,
+    entryType: 'multimodal',
+    tone: 'var(--c-melody)',
+    ink: 'var(--c-melody-ink)',
+    neon: '#5fe8ff',
+    artImage: genreArt('ai-multimodal-neon.png'),
+    gemTone: 'purple',
+    actionLabel: '上传',
+    statusLabel: 'UPLOAD',
+    note: 'Image / Video',
   }),
 ]);
 
 export {
   CURRENT_GENRE_ID,
   GENRE_OPTIONS,
+  MULTIMODAL_GENRE_ID,
 };
