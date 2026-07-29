@@ -13017,6 +13017,24 @@ body {
   border-radius: 7px;
 }
 
+.recommendation-bpm-panel {
+  min-width: 0;
+}
+
+.recommendation-bpm-panel .bpm-stepper {
+  grid-template-columns: 28px minmax(0, 1fr) 28px;
+  gap: 4px;
+}
+
+.recommendation-bpm-panel .bpm-value-field input {
+  padding: 2px 10px 2px 4px;
+}
+
+.recommendation-bpm-panel .bpm-unit {
+  right: 3px;
+  font-size: 5px;
+}
+
 .recommendation-static {
   justify-items: center;
 }

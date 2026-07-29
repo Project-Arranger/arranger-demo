@@ -561,3 +561,16 @@ final result: passed
 - All 494 tests passed; `npm run lint`, `npm run build`, and `git diff --check` completed successfully.
 
 final result: passed
+
+---
+
+## AI Recommendation BPM Plus-button Containment Follow-up
+
+- Source visual truth: `/var/folders/22/2k2swhcn1zl1rf0pqjp4yt7w0000gn/T/codex-clipboard-a8e61e1e-f765-4f99-a8f3-52e899c7d6b2.png` (`472x424px`, normalized to `236x212px`).
+- Browser-rendered implementation: `/private/tmp/ai-bpm-plus-fixed-1280x720-final.png` at a `1280x720` CSS viewport and `/private/tmp/ai-bpm-plus-fixed-focus-sips.png` (`230x213px`) for the focused comparison.
+- State: image recommendation result, BPM `88`, desktop compact layout. Full-view and normalized focused-region comparisons were both checked.
+- The original P2 showed the `+` step button overflowing the BPM panel and covering the time-signature label. The recommendation-page stepper now uses scoped `28px / flexible / 28px` columns, a `4px` gap, and compact value/unit padding.
+- Post-fix measurement places the `+` button completely inside the BPM card with `13px` remaining before the time-signature card. The BPM value remains `88`, the page stays at equal client/scroll dimensions, and no other typography, colors, assets, copy, or interaction structure changed.
+- Focused comparison evidence shows the overlap resolved with no remaining P0/P1/P2 findings.
+
+final result: passed

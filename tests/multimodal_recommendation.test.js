@@ -218,6 +218,7 @@ test('multimodal UI exposes upload results choices and reusable real BPM control
   assert.match(css, /\.results-media-frame\s*\{[^}]*width:\s*240px;[^}]*height:\s*135px;/s);
   assert.match(css, /\.track-recommendation-grid\s*\{[^}]*grid-template-columns:\s*repeat\(6,/s);
   assert.match(css, /\.recommendation-footer\s*\{[^}]*grid-template-columns:/s);
+  assert.match(css, /\.recommendation-bpm-panel \.bpm-stepper\s*\{[^}]*grid-template-columns:\s*28px minmax\(0,\s*1fr\) 28px;/s);
   assert.match(css, /@media \(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)/);
   assert.match(css, /\.bpm-popover\s*\{[^}]*position:\s*absolute;/s);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
