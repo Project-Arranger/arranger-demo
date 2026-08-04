@@ -1,3 +1,5 @@
+import { normalizeMelodyProjectState } from '../data/melodyStyleTemplates.js';
+
 const UNDO_HISTORY_LIMIT = 50;
 
 const UNDO_APP_STATE_KEYS = Object.freeze([
@@ -7,6 +9,7 @@ const UNDO_APP_STATE_KEYS = Object.freeze([
   'currentBar',
   'currentStep',
   'matrix',
+  'melodyRhythmTemplateId',
   'melodyScaleId',
   'mutedTracks',
   'nextTrackCreatedIndex',
@@ -163,7 +166,7 @@ function restoreUndoSnapshot({
 } = {}) {
   if (!snapshot) return false;
 
-  store?.setState?.(cloneValue(snapshot.appState));
+  store?.setState?.(normalizeMelodyProjectState(cloneValue(snapshot.appState)));
   setActiveTutorialId?.(cloneValue(snapshot.tutorialState.activeTutorialId));
   setCurrentTutorialStepIndex?.(cloneValue(snapshot.tutorialState.currentTutorialStepIndex));
   setTutorialProgress?.(cloneValue(snapshot.tutorialState.tutorialProgress));

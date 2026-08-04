@@ -71,9 +71,8 @@ test('secondary menus share outside-click dismissal without dismissing confirmat
   assert.doesNotMatch(bassSource, /className="tpl-confirm-overlay"[^>]*onClick=/);
 
   assert.match(melodySource, /active: pickerMode !== null/);
-  assert.match(melodySource, /mode === 'rhythm' \? null : 'rhythm'/);
-  assert.match(melodySource, /mode === 'scale' \? null : 'scale'/);
-  assert.match(melodySource, /ref=\{rhythmPickerRef\}/);
-  assert.match(melodySource, /ref=\{scalePickerRef\}/);
+  assert.match(melodySource, /mode === 'style' \? null : 'style'/);
+  assert.match(melodySource, /ref=\{stylePickerRef\}/);
+  assert.match(melodySource, /ref=\{styleTriggerRef\}/);
   assert.doesNotMatch(melodySource, /className="melody-record-confirm-overlay"[^>]*onClick=/);
 });

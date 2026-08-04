@@ -875,7 +875,7 @@ test('target 6 starts by filling melody clips from the melody track control', ()
   assert.equal(filled.nextProgress.melodyTrackClipsFilled, true);
 });
 
-test('target 6 melody scale step only accepts the pentatonic card', () => {
+test('target 6 melody style step advances only after applying Chinese globally', () => {
   const step = getStep(TUTORIAL_STEP_IDS.MELODY_SELECT_SCALE);
   assert.ok(step);
   const progress = {
@@ -891,21 +891,31 @@ test('target 6 melody scale step only accepts the pentatonic card', () => {
 
   assert.equal(viewModel.locked, true);
   assert.deepEqual(viewModel.targets.controls, [
-    { name: 'melody-scale-button', role: 'target' },
-    { name: 'melody-scale-card:pentatonic', role: 'target' },
+    { name: 'melody-style-button', role: 'target' },
+    { name: 'melody-style-card:chinese', role: 'target' },
+    { name: 'melody-style-apply-global', role: 'target' },
   ]);
 
-  const wrongScale = handleTutorialControlAction({
-    control: 'melody-scale-card:major',
+  const cardSelection = handleTutorialControlAction({
+    control: 'melody-style-card:chinese',
     progress,
     step,
   });
-  assert.equal(wrongScale.allowed, false);
+  assert.equal(cardSelection.allowed, false);
 
-  const selected = handleTutorialControlAction({
-    control: 'melody-scale-card:pentatonic',
+  const wrongStyle = handleTutorialControlAction({
+    control: 'melody-style-apply-global',
     progress,
     step,
+    templateId: 'blues',
+  });
+  assert.equal(wrongStyle.allowed, false);
+
+  const selected = handleTutorialControlAction({
+    control: 'melody-style-apply-global',
+    progress,
+    step,
+    templateId: 'chinese',
   });
   assert.equal(selected.allowed, true);
   assert.equal(selected.shouldAdvance, true);

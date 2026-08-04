@@ -154,7 +154,8 @@ test('applying the recommendation creates an exact empty eight-bar four-track fr
   assert.equal(state.bpm, 96);
   assert.equal(state.rootKey, 'C');
   assert.equal(state.scale, 'Ionian');
-  assert.equal(state.melodyScaleId, 'major');
+  assert.equal(state.melodyScaleId, 'chinese');
+  assert.equal(state.melodyRhythmTemplateId, null);
   assert.deepEqual(state.trackOrder, CORE_TRACK_IDS);
   assert.deepEqual(state.visibleTrackIds, CORE_TRACK_IDS);
   assert.equal(state.clips.ids.length, CORE_TRACK_IDS.length * TOTAL_BARS);

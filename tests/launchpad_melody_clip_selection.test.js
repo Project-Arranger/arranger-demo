@@ -25,15 +25,15 @@ function createHarness({ canSelectClip = () => true } = {}) {
   return { checkpoints, seeks, select };
 }
 
-test('hardware selection creates a missing Melody clip with the shared template field', () => {
+test('hardware selection creates a missing Melody clip without per-clip template state', () => {
   const { checkpoints, select } = createHarness();
 
   assert.deepEqual(select(4), { ok: true, created: true, bar: 4 });
   assert.equal(useMusicStore.getState().selectedClipId, 'melody-bar-4');
   assert.equal(useMusicStore.getState().selectedBar, 4);
   assert.equal(
-    useMusicStore.getState().clips.byId['melody-bar-4'].melodyRhythmTemplateId,
-    null,
+    Object.hasOwn(useMusicStore.getState().clips.byId['melody-bar-4'], 'melodyRhythmTemplateId'),
+    false,
   );
   assert.deepEqual(checkpoints, ['checkpoint']);
 
@@ -60,4 +60,14 @@ test('hardware Melody selection seeks to the target bar start', () => {
 
   assert.deepEqual(select(3), { ok: true, created: false, bar: 3 });
   assert.deepEqual(seeks, [[3, 0]]);
+});
+
+test('switching Melody clips never changes the global style', () => {
+  const { select } = createHarness();
+  useMusicStore.getState().setMelodyStyleTemplate('blues');
+  useMusicStore.getState().createClip('melody', 3);
+
+  assert.deepEqual(select(3), { ok: true, created: false, bar: 3 });
+  assert.equal(useMusicStore.getState().melodyScaleId, 'blues');
+  assert.equal(useMusicStore.getState().melodyRhythmTemplateId, 'blues');
 });

@@ -1,3 +1,5 @@
+import { normalizeMelodyProjectState } from '../data/melodyStyleTemplates.js';
+
 const CHECKPOINT_APP_STATE_KEYS = Object.freeze([
   'activeTrackId',
   'bpm',
@@ -5,6 +7,7 @@ const CHECKPOINT_APP_STATE_KEYS = Object.freeze([
   'currentBar',
   'currentStep',
   'matrix',
+  'melodyRhythmTemplateId',
   'melodyScaleId',
   'mutedTracks',
   'nextTrackCreatedIndex',
@@ -58,7 +61,7 @@ function restoreTutorialCheckpoint({
 } = {}) {
   if (!checkpoint) return false;
 
-  store?.setState?.(cloneValue(checkpoint.appState));
+  store?.setState?.(normalizeMelodyProjectState(cloneValue(checkpoint.appState)));
   setTutorialProgress?.(cloneValue(checkpoint.tutorialProgress));
   setAppliedTutorialSetups?.(cloneValue(checkpoint.appliedTutorialSetups));
   return true;

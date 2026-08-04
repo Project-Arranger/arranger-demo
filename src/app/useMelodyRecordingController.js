@@ -110,10 +110,15 @@ function createTemplateRecordingState(templateId, phase, overrides = {}) {
   };
 }
 
-function getMelodyRecordingRestState({ activeTrackId, activeTrackType, selectedClip } = {}) {
+function getMelodyRecordingRestState({
+  activeTrackId,
+  activeTrackType,
+  melodyRhythmTemplateId,
+  selectedClip,
+} = {}) {
   const melodyActive = activeTrackType === 'melody' || activeTrackId === 'melody';
   const templateId = melodyActive && selectedClip?.trackId === activeTrackId
-    ? selectedClip.melodyRhythmTemplateId
+    ? melodyRhythmTemplateId
     : null;
   const startBar = selectedClip?.bar;
   const targetBars = getMelodyWriteBarRange(startBar);
@@ -248,6 +253,7 @@ function useMelodyRecordingController({
   audioEngine,
   bpm,
   dispatchAppCommand,
+  melodyRhythmTemplateId,
   melodyScaleId,
   selectedClip,
   withUndoCheckpoint,
@@ -339,9 +345,10 @@ function useMelodyRecordingController({
     return getMelodyRecordingRestState({
       activeTrackId: state.activeTrackId,
       activeTrackType,
+      melodyRhythmTemplateId,
       selectedClip: state.clips.byId[state.selectedClipId],
     });
-  }, [activeTrackType]);
+  }, [activeTrackType, melodyRhythmTemplateId]);
 
   const pauseTransport = useCallback(async () => {
     if (!useMusicStore.getState().isPlaying) return;
@@ -592,7 +599,7 @@ function useMelodyRecordingController({
       ?? session?.templateId
       ?? currentRecordingState.templateId
       ?? (activeTrackType === 'melody' && clip?.trackId === state.activeTrackId
-        ? clip.melodyRhythmTemplateId
+        ? state.melodyRhythmTemplateId
         : null),
     );
     if (!template) return false;
@@ -657,7 +664,7 @@ function useMelodyRecordingController({
     const state = useMusicStore.getState();
     const clip = state.clips.byId[state.selectedClipId];
     if (activeTrackType !== 'melody' || clip?.trackId !== state.activeTrackId) return;
-    const templateId = clip.melodyRhythmTemplateId ?? null;
+    const templateId = state.melodyRhythmTemplateId ?? null;
     const targetBars = getMelodyWriteBarRange(clip.bar);
     const pendingSession = {
       bpm: Number.isFinite(state.bpm) && state.bpm > 0 ? state.bpm : bpm,
@@ -748,7 +755,7 @@ function useMelodyRecordingController({
   const selectTemplateStep = useCallback((bar, step) => {
     const state = useMusicStore.getState();
     const clip = state.clips.byId[state.selectedClipId];
-    const template = getMelodyRhythmTemplate(clip?.melodyRhythmTemplateId);
+    const template = getMelodyRhythmTemplate(state.melodyRhythmTemplateId);
     const currentPhase = recordingStateRef.current.phase;
     if (
       activeTrackType !== 'melody'
@@ -841,7 +848,7 @@ function useMelodyRecordingController({
     const hasTemplate = Boolean(getMelodyRhythmTemplate(
       current.templateId
       ?? (activeTrackType === 'melody' && clip?.trackId === state.activeTrackId
-        ? clip.melodyRhythmTemplateId
+        ? state.melodyRhythmTemplateId
         : null),
     ));
     if (
@@ -864,7 +871,7 @@ function useMelodyRecordingController({
     });
 
     if (current.phase === MELODY_RECORDING_PHASES.STEP_EDIT) {
-      const template = getMelodyRhythmTemplate(clip?.melodyRhythmTemplateId);
+      const template = getMelodyRhythmTemplate(state.melodyRhythmTemplateId);
       if (
         clip?.trackId !== state.activeTrackId
         || !Number.isInteger(current.selectedStep)

@@ -50,8 +50,8 @@ const ACTIVE_MELODY = Object.freeze({
   melodyActive: true,
   melodyClipBars: Object.freeze([0, 2, 3, 5]),
   melodyRecordingState: Object.freeze({ phase: 'overview' }),
-  melodyScaleId: 'major',
-  melodyTemplateSteps: Object.freeze([0, 6, 12]),
+  melodyScaleId: 'chinese',
+  melodyTemplateSteps: Object.freeze([2, 4, 8, 12, 14]),
   selectedBar: 3,
 });
 
@@ -306,18 +306,18 @@ test('Melody rows three through five map the selected scale across C3 to C5', ()
     { noteStart: 41, octave: 4 },
     { noteStart: 51, octave: 5 },
   ]);
-  assert.equal(getLaunchpadXMelodyNote(31, 'major'), 'C3');
-  assert.equal(getLaunchpadXMelodyNote(37, 'major'), 'B3');
-  assert.equal(getLaunchpadXMelodyNote(38, 'major'), null);
-  assert.equal(getLaunchpadXMelodyNote(41, 'major'), 'C4');
-  assert.equal(getLaunchpadXMelodyNote(47, 'major'), 'B4');
-  assert.equal(getLaunchpadXMelodyNote(51, 'major'), 'C5');
-  assert.equal(getLaunchpadXMelodyNote(57, 'major'), 'B5');
+  assert.equal(getLaunchpadXMelodyNote(31, 'chinese'), 'C3');
+  assert.equal(getLaunchpadXMelodyNote(35, 'chinese'), 'A3');
+  assert.equal(getLaunchpadXMelodyNote(36, 'chinese'), null);
+  assert.equal(getLaunchpadXMelodyNote(41, 'chinese'), 'C4');
+  assert.equal(getLaunchpadXMelodyNote(45, 'chinese'), 'A4');
+  assert.equal(getLaunchpadXMelodyNote(51, 'chinese'), 'C5');
+  assert.equal(getLaunchpadXMelodyNote(55, 'chinese'), 'A5');
 
-  assert.equal(getLaunchpadXMelodyNote(31, 'pentatonic'), 'C3');
-  assert.equal(getLaunchpadXMelodyNote(34, 'pentatonic'), 'G3');
-  assert.equal(getLaunchpadXMelodyNote(35, 'pentatonic'), 'A3');
-  assert.equal(getLaunchpadXMelodyNote(36, 'pentatonic'), null);
+  assert.equal(getLaunchpadXMelodyNote(31, 'blues'), 'C3');
+  assert.equal(getLaunchpadXMelodyNote(33, 'blues'), 'D#3');
+  assert.equal(getLaunchpadXMelodyNote(36, 'blues'), 'A3');
+  assert.equal(getLaunchpadXMelodyNote(37, 'blues'), null);
 });
 
 test('Melody pads emit note-on and note-off while unused pads stay dark and silent', () => {
@@ -349,13 +349,13 @@ test('Melody pads emit note-on and note-off while unused pads stay dark and sile
 });
 
 test('Melody step rows select template steps while overview keeps the note area playable', () => {
-  assert.deepEqual(mapLaunchpadXMessageToCommand([0x90, 81, 127], {
+  assert.deepEqual(mapLaunchpadXMessageToCommand([0x90, 83, 127], {
     ...ACTIVE_MELODY,
     melodyRecordingState: { phase: 'overview' },
   }), {
     type: APP_COMMAND_TYPES.MELODY_SELECT_STEP,
     bar: 3,
-    step: 0,
+    step: 2,
   });
   assert.deepEqual(mapLaunchpadXMessageToCommand([0x90, 75, 127], {
     ...ACTIVE_MELODY,
@@ -580,9 +580,9 @@ test('Melody LED frame lights three scale rows, pressed pads, clips, and transpo
     melodyActive: true,
     melodyClipBars: [0, 2, 5],
     melodyRecordingState: { phase: 'recording' },
-    melodyScaleId: 'major',
+    melodyScaleId: 'blues',
     mutedTracks: { melody: false },
-    pressedMelodyPads: new Set([31, 47]),
+    pressedMelodyPads: new Set([31, 46]),
     selectedBar: 2,
   });
 
@@ -593,8 +593,8 @@ test('Melody LED frame lights three scale rows, pressed pads, clips, and transpo
   assert.deepEqual(findMessage(frame, 0x90, 32), [
     0x90, 32, LAUNCHPAD_X_MELODY_LED_COLORS.note.inactive,
   ]);
-  assert.deepEqual(findMessage(frame, 0x90, 47), [
-    0x90, 47, LAUNCHPAD_X_MELODY_LED_COLORS.note.pressed,
+  assert.deepEqual(findMessage(frame, 0x90, 46), [
+    0x90, 46, LAUNCHPAD_X_MELODY_LED_COLORS.note.pressed,
   ]);
   assert.deepEqual(findMessage(frame, 0x90, 51), [
     0x90, 51, LAUNCHPAD_X_MELODY_LED_COLORS.note.pressed,

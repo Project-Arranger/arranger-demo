@@ -80,7 +80,7 @@ function getAdjacentLaunchpadXMelodyClipBar({
   return bars[(currentIndex + offset + bars.length) % bars.length];
 }
 
-function getLaunchpadXMelodyNote(note, melodyScaleId = 'major') {
+function getLaunchpadXMelodyNote(note, melodyScaleId = 'chinese') {
   return getMelodyInputCellByLaunchpadNote(note, melodyScaleId)?.note ?? null;
 }
 
@@ -185,7 +185,7 @@ function createLaunchpadXMelodyLedFrame({
   melodyActive = false,
   melodyClipBars = [],
   melodyRecordingState = null,
-  melodyScaleId = 'major',
+  melodyScaleId = 'chinese',
   melodyTemplateSteps = [],
   mutedTracks = null,
   pressedMelodyPads = null,

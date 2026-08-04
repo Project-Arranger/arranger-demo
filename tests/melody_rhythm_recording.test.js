@@ -2,12 +2,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
-  applyMelodyRhythmTemplateToBar,
-  applyMelodyRhythmTemplateToExistingClips,
-  clearMelodyRhythmTemplateFromBar,
-  clearMelodyRhythmTemplates,
-  getMelodyClipTemplateId,
+  getMelodyRhythmTemplate,
   MELODY_RHYTHM_TEMPLATES,
+  normalizeMelodyRhythmTemplateId,
 } from '../src/app/melodyRhythmTemplates.js';
 import {
   appendMelodySequenceNote,
@@ -28,43 +25,19 @@ import {
 import { replaceMelodyBarWithSequence } from '../src/app/melodyActions.js';
 import createInitialMatrix from '../src/store/createInitialMatrix.js';
 
-function createClips() {
-  const melodyClips = [0, 2, 5].map((bar) => ({
-    id: `melody-bar-${bar}`,
-    trackId: 'melody',
-    bar,
-    name: `Melody ${bar + 1}`,
-    melodyRhythmTemplateId: null,
-  }));
-  const drumsClip = {
-    id: 'drums-bar-0',
-    trackId: 'drums',
-    bar: 0,
-    name: 'Drum 01',
-  };
-  const allClips = [drumsClip, ...melodyClips];
-  return {
-    ids: allClips.map(({ id }) => id),
-    byId: Object.fromEntries(allClips.map((clip) => [clip.id, clip])),
-  };
-}
-
-test('melody rhythm templates expose the five requested one-based patterns', () => {
+test('melody rhythm templates expose only Chinese and Blues one-based patterns', () => {
   assert.deepEqual(
     MELODY_RHYTHM_TEMPLATES.map(({ name, steps }) => ({
       name,
       steps: steps.map((step) => step + 1),
     })),
     [
-      { name: '切分', steps: [1, 7, 13] },
-      { name: '跳跃切分', steps: [1, 7, 9, 13] },
-      { name: '二八', steps: [2, 8] },
-      { name: '四十六', steps: [1, 5, 9, 13] },
-      { name: '附点', steps: [1, 13] },
+      { name: '中国风', steps: [3, 5, 9, 13, 15] },
+      { name: '布鲁斯', steps: [3, 5, 7, 11, 12, 13, 15] },
     ],
   );
   assert.deepEqual(
-    createTemplateRecordingState('syncopation', MELODY_RECORDING_PHASES.SEQUENCE_CAPTURE, {
+    createTemplateRecordingState('chinese', MELODY_RECORDING_PHASES.SEQUENCE_CAPTURE, {
       currentBar: 5,
       endBar: 7,
       startBar: 5,
@@ -82,37 +55,13 @@ test('melody rhythm templates expose the five requested one-based patterns', () 
       selectedStep: null,
       sequenceNotes: [],
       startBar: 5,
-      templateId: 'syncopation',
+      templateId: 'chinese',
       totalBars: 3,
-      totalNotes: 9,
+      totalNotes: 15,
     },
   );
-});
-
-test('melody rhythm templates apply per clip or to existing Melody clips only', () => {
-  const clips = createClips();
-  const oneBar = applyMelodyRhythmTemplateToBar(clips, 2, 'syncopation');
-  assert.equal(getMelodyClipTemplateId(oneBar, 0), null);
-  assert.equal(getMelodyClipTemplateId(oneBar, 2), 'syncopation');
-  assert.equal(oneBar.byId['drums-bar-0'], clips.byId['drums-bar-0']);
-
-  const allMelody = applyMelodyRhythmTemplateToExistingClips(oneBar, 'dotted');
-  assert.deepEqual([0, 2, 5].map((bar) => getMelodyClipTemplateId(allMelody, bar)), [
-    'dotted',
-    'dotted',
-    'dotted',
-  ]);
-  assert.equal(allMelody.ids.includes('melody-bar-1'), false);
-
-  const clearedBar = clearMelodyRhythmTemplateFromBar(allMelody, 2);
-  assert.equal(getMelodyClipTemplateId(clearedBar, 2), null);
-  assert.equal(getMelodyClipTemplateId(clearedBar, 0), 'dotted');
-  const clearedTrack = clearMelodyRhythmTemplates(clearedBar);
-  assert.deepEqual([0, 2, 5].map((bar) => getMelodyClipTemplateId(clearedTrack, bar)), [
-    null,
-    null,
-    null,
-  ]);
+  assert.equal(getMelodyRhythmTemplate('syncopation'), null);
+  assert.equal(normalizeMelodyRhythmTemplateId('dotted'), null);
 });
 
 test('template recording fills highlighted steps in order and completes at the last slot', () => {
@@ -120,11 +69,11 @@ test('template recording fills highlighted steps in order and completes at the l
   let cursor = 0;
   const recorded = [];
 
-  for (const note of ['C4', 'D4', 'E4']) {
+  for (const note of ['C4', 'D4', 'E4', 'G4', 'A4']) {
     const result = recordTemplateMelodyNote(
       matrix,
       0,
-      'syncopation',
+      'chinese',
       cursor,
       note,
     );
@@ -134,21 +83,26 @@ test('template recording fills highlighted steps in order and completes at the l
   }
 
   assert.deepEqual(recorded, [
-    { complete: false, step: 0 },
-    { complete: false, step: 6 },
-    { complete: true, step: 12 },
+    { complete: false, step: 2 },
+    { complete: false, step: 4 },
+    { complete: false, step: 8 },
+    { complete: false, step: 12 },
+    { complete: true, step: 14 },
   ]);
   assert.deepEqual(matrix.melody[0].map((cell, step) => cell ? [step, cell.note] : null).filter(Boolean), [
-    [0, 'C4'],
-    [6, 'D4'],
-    [12, 'E4'],
+    [2, 'C4'],
+    [4, 'D4'],
+    [8, 'E4'],
+    [12, 'G4'],
+    [14, 'A4'],
   ]);
-  assert.equal(recordTemplateMelodyNote(matrix, 0, 'syncopation', cursor, 'G4').recorded, false);
+  assert.equal(recordTemplateMelodyNote(matrix, 0, 'chinese', cursor, 'G4').recorded, false);
 });
 
 test('free recording helpers quantize duration and choose mode from clip template state', () => {
   assert.equal(getMelodyRecordingMode(null), MELODY_RECORDING_MODES.FREE);
-  assert.equal(getMelodyRecordingMode('four-sixteen'), MELODY_RECORDING_MODES.TEMPLATE);
+  assert.equal(getMelodyRecordingMode('blues'), MELODY_RECORDING_MODES.TEMPLATE);
+  assert.equal(getMelodyRecordingMode('four-sixteen'), MELODY_RECORDING_MODES.FREE);
   assert.equal(getRecordedMelodyDurationSteps({
     bpm: 120,
     endedAt: 375,
@@ -175,18 +129,22 @@ test('template workflow exposes overview, step-edit, and capture state', () => {
   const templateClip = {
     id: 'melody-bar-0',
     trackId: 'melody',
-    melodyRhythmTemplateId: 'syncopation',
+    bar: 0,
   };
   assert.equal(getMelodyRecordingRestState({
     activeTrackId: 'melody',
+    activeTrackType: 'melody',
+    melodyRhythmTemplateId: 'chinese',
     selectedClip: templateClip,
   }).phase, MELODY_RECORDING_PHASES.OVERVIEW);
   assert.equal(getMelodyRecordingRestState({
     activeTrackId: 'drums',
+    activeTrackType: 'drums',
+    melodyRhythmTemplateId: 'chinese',
     selectedClip: templateClip,
   }).phase, MELODY_RECORDING_PHASES.IDLE);
   assert.deepEqual(
-    createTemplateRecordingState('syncopation', MELODY_RECORDING_PHASES.SEQUENCE_CAPTURE),
+    createTemplateRecordingState('chinese', MELODY_RECORDING_PHASES.SEQUENCE_CAPTURE),
     {
       barRecordedNotes: 0,
       completedBars: [],
@@ -199,9 +157,9 @@ test('template workflow exposes overview, step-edit, and capture state', () => {
       selectedStep: null,
       sequenceNotes: [],
       startBar: null,
-      templateId: 'syncopation',
+      templateId: 'chinese',
       totalBars: 1,
-      totalNotes: 3,
+      totalNotes: 5,
     },
   );
   assert.equal(MELODY_RECORDING_PHASES.AUDITION, undefined);

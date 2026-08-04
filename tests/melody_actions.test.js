@@ -36,21 +36,21 @@ test('melody input layout maps three QWERTY and Launchpad rows to dynamic scale 
   ]);
   assert.deepEqual(MELODY_INPUT_ROWS.map(({ octave }) => octave), [5, 4, 3]);
   assert.deepEqual(MELODY_INPUT_ROWS.map(({ launchpadNoteStart }) => launchpadNoteStart), [51, 41, 31]);
-  assert.deepEqual(getMelodyInputGrid('major').map((row) => row.map(({ note }) => note)), [
-    ['C5', 'D5', 'E5', 'F5', 'G5', 'A5', 'B5', null],
-    ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', null],
-    ['C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3', null],
-  ]);
-  assert.deepEqual(getMelodyInputGrid('pentatonic').map((row) => row.map(({ note }) => note)), [
+  assert.deepEqual(getMelodyInputGrid('chinese').map((row) => row.map(({ note }) => note)), [
     ['C5', 'D5', 'E5', 'G5', 'A5', null, null, null],
     ['C4', 'D4', 'E4', 'G4', 'A4', null, null, null],
     ['C3', 'D3', 'E3', 'G3', 'A3', null, null, null],
   ]);
-  assert.equal(getMelodyInputCellByCode('KeyQ', 'major').note, 'C5');
-  assert.equal(getMelodyInputCellByCode('Comma', 'major').note, null);
-  assert.equal(getMelodyInputCellByLaunchpadNote(47, 'major').note, 'B4');
-  assert.equal(getMelodyInputCellByLaunchpadNote(48, 'major').note, null);
-  assert.equal(getMelodyInputCellByCode('Digit1', 'major'), null);
+  assert.deepEqual(getMelodyInputGrid('blues').map((row) => row.map(({ note }) => note)), [
+    ['C5', 'D5', 'D#5', 'E5', 'G5', 'A5', null, null],
+    ['C4', 'D4', 'D#4', 'E4', 'G4', 'A4', null, null],
+    ['C3', 'D3', 'D#3', 'E3', 'G3', 'A3', null, null],
+  ]);
+  assert.equal(getMelodyInputCellByCode('KeyQ', 'chinese').note, 'C5');
+  assert.equal(getMelodyInputCellByCode('Comma', 'chinese').note, null);
+  assert.equal(getMelodyInputCellByLaunchpadNote(46, 'blues').note, 'A4');
+  assert.equal(getMelodyInputCellByLaunchpadNote(47, 'blues').note, null);
+  assert.equal(getMelodyInputCellByCode('Digit1', 'chinese'), null);
 });
 
 test('melody input visibility follows template workflow phases', () => {
@@ -62,20 +62,22 @@ test('melody input visibility follows template workflow phases', () => {
 });
 
 test('melody scale templates derive highlights and previews from the chromatic octave', () => {
-  assert.deepEqual(MELODY_SCALES.major.highlightedPitchClasses, ['C', 'D', 'E', 'F', 'G', 'A', 'B']);
-  assert.deepEqual(MELODY_SCALES.pentatonic.highlightedPitchClasses, ['C', 'D', 'E', 'G', 'A']);
-  assert.deepEqual(getMelodyScalePreviewNotes('major'), ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4']);
-  assert.deepEqual(getMelodyScalePreviewNotes('pentatonic'), ['C4', 'D4', 'E4', 'G4', 'A4']);
-  assert.deepEqual(getMelodyScalePreviewNotes('missing'), getMelodyScalePreviewNotes('major'));
-  assert.equal(isMelodyScalePitchClass('major', 'F'), true);
-  assert.equal(isMelodyScalePitchClass('pentatonic', 'F'), false);
-  assert.equal(isMelodyScalePitchClass('pentatonic', 'F#'), false);
-  assert.equal(getMelodyScaleNoteIds('major').length, 21);
-  assert.equal(getMelodyScaleNoteIds('pentatonic').length, 15);
-  assert.equal(getMelodyScaleNoteIds('major').includes('C3'), true);
-  assert.equal(getMelodyScaleNoteIds('major').includes('B5'), true);
-  assert.equal(isMelodyNoteInScale('pentatonic', 'G5'), true);
-  assert.equal(isMelodyNoteInScale('pentatonic', 'F5'), false);
+  assert.deepEqual(MELODY_SCALES.chinese.highlightedPitchClasses, ['C', 'D', 'E', 'G', 'A']);
+  assert.deepEqual(MELODY_SCALES.blues.highlightedPitchClasses, ['C', 'D', 'D#', 'E', 'G', 'A']);
+  assert.deepEqual(getMelodyScalePreviewNotes('chinese'), ['C4', 'D4', 'E4', 'G4', 'A4']);
+  assert.deepEqual(getMelodyScalePreviewNotes('blues'), ['C4', 'D4', 'D#4', 'E4', 'G4', 'A4']);
+  assert.deepEqual(getMelodyScalePreviewNotes('major'), getMelodyScalePreviewNotes('chinese'));
+  assert.deepEqual(getMelodyScalePreviewNotes('pentatonic'), getMelodyScalePreviewNotes('chinese'));
+  assert.deepEqual(getMelodyScalePreviewNotes('missing'), getMelodyScalePreviewNotes('chinese'));
+  assert.equal(isMelodyScalePitchClass('blues', 'D#'), true);
+  assert.equal(isMelodyScalePitchClass('chinese', 'F'), false);
+  assert.equal(isMelodyScalePitchClass('chinese', 'F#'), false);
+  assert.equal(getMelodyScaleNoteIds('blues').length, 18);
+  assert.equal(getMelodyScaleNoteIds('chinese').length, 15);
+  assert.equal(getMelodyScaleNoteIds('chinese').includes('C3'), true);
+  assert.equal(getMelodyScaleNoteIds('blues').includes('D#5'), true);
+  assert.equal(isMelodyNoteInScale('chinese', 'G5'), true);
+  assert.equal(isMelodyNoteInScale('chinese', 'F5'), false);
 });
 
 test('melody piano roll exposes three chromatic octaves with C4-B4 as its default window', () => {

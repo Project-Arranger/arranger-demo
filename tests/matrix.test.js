@@ -102,6 +102,8 @@ test('store starts with transport, context, volumes, and matrix defaults', () =>
   assert.equal(state.seekBar, 0);
   assert.equal(state.seekStep, 0);
   assert.equal(state.activeTrackId, 'drums');
+  assert.equal(state.melodyScaleId, 'chinese');
+  assert.equal(state.melodyRhythmTemplateId, null);
   assert.deepEqual(state.visibleTrackIds, CORE_TRACK_IDS);
   assert.equal(state.selectedBar, 0);
   assert.equal(state.selectedClipId, null);
@@ -110,6 +112,25 @@ test('store starts with transport, context, volumes, and matrix defaults', () =>
   assert.deepEqual(Object.keys(state.mutedTracks), CORE_TRACK_IDS);
   assert.equal(Object.values(state.mutedTracks).every((muted) => muted === false), true);
   assert.equal(everyCell(state.matrix, (cell) => cell === null), true);
+});
+
+test('Melody style application updates global scale and rhythm atomically', () => {
+  const store = useMusicStore.getState();
+  let notifications = 0;
+  const unsubscribe = useMusicStore.subscribe(() => {
+    notifications += 1;
+  });
+
+  assert.equal(store.setMelodyStyleTemplate('blues'), true);
+  unsubscribe();
+  assert.equal(notifications, 1);
+  assert.equal(useMusicStore.getState().melodyScaleId, 'blues');
+  assert.equal(useMusicStore.getState().melodyRhythmTemplateId, 'blues');
+  assert.equal(useMusicStore.getState().setMelodyStyleTemplate('syncopation'), false);
+  assert.equal(useMusicStore.getState().melodyScaleId, 'blues');
+  assert.equal(useMusicStore.getState().melodyRhythmTemplateId, 'blues');
+  useMusicStore.getState().setMelodyScaleId('major');
+  assert.equal(useMusicStore.getState().melodyScaleId, 'chinese');
 });
 
 test('addVisibleTrack adds optional tracks once and selects the new row', () => {

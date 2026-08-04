@@ -66,9 +66,6 @@ function findClipForTrackBar(clips, trackId, bar) {
 
 function createPastedClipRecord(state, snapshot, targetTrackId, targetBar) {
   const clip = createClipRecord(targetTrackId, targetBar);
-  if (getTrackType(state, targetTrackId) === 'melody') {
-    clip.melodyRhythmTemplateId = snapshot?.melodyRhythmTemplateId ?? null;
-  }
   if (snapshot?.customName === true) {
     return {
       ...clip,
@@ -91,9 +88,6 @@ function createClipClipboardData(state, clip) {
     sourceBar: clip.bar,
     name: clip.name,
     customName: clip.customName === true,
-    melodyRhythmTemplateId: getTrackType(state, clip.trackId) === 'melody'
-      ? clip.melodyRhythmTemplateId ?? null
-      : undefined,
     barData: cloneBarData(barData),
   };
 }

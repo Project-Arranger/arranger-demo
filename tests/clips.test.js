@@ -194,7 +194,7 @@ test('pasteClipClipboardSnapshot creates an empty target clip with copied conten
   assert.equal(useMusicStore.getState().selectedBar, 4);
 });
 
-test('pasteClipClipboardSnapshot overwrites same-track targets and preserves copied custom names', () => {
+test('pasteClipClipboardSnapshot preserves names and strips legacy per-clip Melody templates', () => {
   const state = useMusicStore.getState();
   state.setCell('melody', 0, 0, { type: 'melody', note: 'C4' });
   state.createClip('melody', 0);
@@ -222,7 +222,6 @@ test('pasteClipClipboardSnapshot overwrites same-track targets and preserves cop
     trackId: 'melody',
     bar: 3,
     name: 'Hook Lead',
-    melodyRhythmTemplateId: 'syncopation',
     customName: true,
   });
   assert.deepEqual(useMusicStore.getState().clips.ids.filter((id) => id === 'melody-bar-3'), ['melody-bar-3']);
@@ -423,7 +422,6 @@ test('createEmptyClipsForTrack skips existing clips and preserves matrix content
     trackId: 'melody',
     bar: 3,
     name: 'Custom Melody',
-    melodyRhythmTemplateId: null,
     customName: true,
   });
   assert.deepEqual(nextState.matrix.melody[3][4], { type: 'melody', note: 'E4' });

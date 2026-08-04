@@ -10,6 +10,10 @@ import {
   getTrackType,
 } from '../../domain/trackInstances.js';
 import { createEmptyTrackMatrix } from '../createInitialMatrix.js';
+import {
+  normalizeMelodyScaleId,
+  normalizeMelodyStyleTemplateId,
+} from '../../data/melodyStyleTemplates.js';
 
 function removeObjectKey(object, key) {
   const nextObject = { ...object };
@@ -22,7 +26,8 @@ export default function createContextSlice(set, get) {
 
   return {
     activeTrackId: 'drums',
-    melodyScaleId: 'major',
+    melodyRhythmTemplateId: null,
+    melodyScaleId: 'chinese',
     selectedBar: 0,
     selectedClipId: null,
     visibleTrackIds: [...CORE_TRACK_IDS],
@@ -154,7 +159,21 @@ export default function createContextSlice(set, get) {
       return trackId;
     },
     setActiveTrackId: (activeTrackId) => set({ activeTrackId }),
-    setMelodyScaleId: (melodyScaleId) => set({ melodyScaleId }),
+    setMelodyRhythmTemplateId: (melodyRhythmTemplateId) => set({
+      melodyRhythmTemplateId: normalizeMelodyStyleTemplateId(melodyRhythmTemplateId),
+    }),
+    setMelodyScaleId: (melodyScaleId) => set({
+      melodyScaleId: normalizeMelodyScaleId(melodyScaleId),
+    }),
+    setMelodyStyleTemplate: (templateId) => {
+      const normalizedTemplateId = normalizeMelodyStyleTemplateId(templateId);
+      if (!normalizedTemplateId) return false;
+      set({
+        melodyRhythmTemplateId: normalizedTemplateId,
+        melodyScaleId: normalizedTemplateId,
+      });
+      return true;
+    },
     setSelectedBar: (selectedBar) => set({ selectedBar }),
     setSelectedClipId: (selectedClipId) => set({ selectedClipId }),
   };

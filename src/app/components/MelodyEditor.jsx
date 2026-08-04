@@ -1,5 +1,4 @@
 import {
-  ChevronUp,
   SlidersHorizontal,
   X,
 } from 'lucide-react';
@@ -21,6 +20,9 @@ import {
   MELODY_SCALES,
 } from '../../data/melodyScales.js';
 import {
+  getMelodyStyleTemplate,
+} from '../../data/melodyStyleTemplates.js';
+import {
   getMelodyInputGrid,
   getVirtualMelodyInputId,
   isMelodyInputAreaVisible,
@@ -32,7 +34,6 @@ import {
 } from '../melodyActions.js';
 import {
   getMelodyRhythmTemplate,
-  MELODY_RHYTHM_TEMPLATES,
 } from '../melodyRhythmTemplates.js';
 import { MELODY_RECORDING_PHASES } from '../useMelodyRecordingController.js';
 import { getTutorialControlRole } from '../../tutorial/drumsTutorialRuntime.js';
@@ -50,9 +51,8 @@ const MELODY_EXAMPLE_DISPLAY_BY_TARGET = Object.freeze({
   FGDFGSFGAGAGASA: 'FGD FGS FGA GAGA SA',
 });
 
-const ICON_CLOSE_URL = `${import.meta.env.BASE_URL}assets/skeuo/icon-x.svg`;
-
 function renderMelodyMiniGroove(template) {
+  const rhythmSteps = template.rhythmSteps ?? template.steps ?? [];
   return BEAT_NUMBERS.map((beatNumber) => (
     <span
       className="chord-template-mini-beat-group"
@@ -63,7 +63,7 @@ function renderMelodyMiniGroove(template) {
 
         return (
           <span
-            className={template.steps.includes(step) ? 'on' : ''}
+            className={rhythmSteps.includes(step) ? 'on' : ''}
             key={`${template.id}-step-${step}`}
           />
         );
@@ -83,7 +83,7 @@ function MelodyEditor({
   matrix,
   melodyRecordingState,
   melodyRhythmTemplateId = null,
-  melodyScaleId = 'major',
+  melodyScaleId = 'chinese',
   onClearMelody,
   onClearMelodyBar,
   onClose = () => {},
@@ -95,8 +95,7 @@ function MelodyEditor({
   onMelodyRecordCancel = () => {},
   onMelodyRecordConfirm = () => {},
   onMelodyWriteToggle = () => {},
-  onMelodyRhythmTemplateApply = () => {},
-  onMelodyScaleChange = () => {},
+  onMelodyStyleTemplateApply = () => {},
   onMelodyStepToggle = () => {},
   onRenameClip,
   selectedBar,
@@ -106,26 +105,22 @@ function MelodyEditor({
   tutorialTargets,
 }) {
   const [pickerMode, setPickerMode] = useState(null);
-  const [selectedRhythmTemplateId, setSelectedRhythmTemplateId] = useState(
-    melodyRhythmTemplateId,
+  const [selectedStyleTemplateId, setSelectedStyleTemplateId] = useState(
+    melodyRhythmTemplateId ?? melodyScaleId,
   );
-  const rhythmPickerRef = useRef(null);
-  const rhythmTriggerRef = useRef(null);
-  const scalePickerRef = useRef(null);
-  const scaleTriggerRef = useRef(null);
+  const stylePickerRef = useRef(null);
+  const styleTriggerRef = useRef(null);
   const closePicker = useCallback(() => {
     setPickerMode(null);
   }, []);
-  const activePickerRef = pickerMode === 'scale' ? scalePickerRef : rhythmPickerRef;
-  const activeTriggerRef = pickerMode === 'scale' ? scaleTriggerRef : rhythmTriggerRef;
   useSecondaryMenuDismiss({
     active: pickerMode !== null,
-    menuRef: activePickerRef,
+    menuRef: stylePickerRef,
     onDismiss: closePicker,
-    triggerRef: activeTriggerRef,
+    triggerRef: styleTriggerRef,
   });
-  const scaleButtonRole = getTutorialControlRole(tutorialTargets, 'melody-scale-button');
-  const scaleButtonDisabled = tutorialLocked && scaleButtonRole !== 'target';
+  const styleButtonRole = getTutorialControlRole(tutorialTargets, 'melody-style-button');
+  const styleButtonDisabled = tutorialLocked && styleButtonRole !== 'target';
   const exampleKeysTarget = tutorialTargets?.controls?.find((target) => (
     target.name?.startsWith?.('melody-example-keys:')
   ));
@@ -133,6 +128,7 @@ function MelodyEditor({
   const exampleKeysId = exampleKeysTarget?.name?.slice('melody-example-keys:'.length) ?? '';
   const exampleKeysLabel = MELODY_EXAMPLE_DISPLAY_BY_TARGET[exampleKeysId] ?? exampleKeysId;
   const activeScale = getMelodyScale(melodyScaleId);
+  const selectedStyleTemplate = getMelodyStyleTemplate(selectedStyleTemplateId);
   const recordingPhase = melodyRecordingState?.phase ?? MELODY_RECORDING_PHASES.IDLE;
   const activeRhythmTemplate = getMelodyRhythmTemplate(
     melodyRecordingState?.templateId ?? melodyRhythmTemplateId,
@@ -253,38 +249,23 @@ function MelodyEditor({
             className={[
               'btn-template-groove',
               activeRhythmTemplate ? 'btn-template-groove-active' : '',
+              styleButtonRole === 'target' ? 'tutorial-control-target' : '',
             ].filter(Boolean).join(' ')}
-            ref={rhythmTriggerRef}
-            aria-label="选择旋律律动"
-            aria-expanded={pickerMode === 'rhythm'}
+            ref={styleTriggerRef}
+            aria-label="选择 Melody 风格模板"
+            aria-expanded={pickerMode === 'style'}
             aria-haspopup="dialog"
+            aria-disabled={styleButtonDisabled || workflowLocked}
+            data-tutorial-role={styleButtonRole ?? undefined}
             type="button"
-            disabled={tutorialLocked || workflowLocked}
+            disabled={styleButtonDisabled || workflowLocked}
             onClick={() => {
-              setSelectedRhythmTemplateId(activeRhythmTemplate?.id ?? melodyRhythmTemplateId);
-              setPickerMode((mode) => (mode === 'rhythm' ? null : 'rhythm'));
+              setSelectedStyleTemplateId(melodyRhythmTemplateId ?? melodyScaleId);
+              setPickerMode((mode) => (mode === 'style' ? null : 'style'));
             }}
           >
             {renderIcon(SlidersHorizontal)}
-            {activeRhythmTemplate?.name ?? '律动模板'}
-          </button>
-          <button
-            className={[
-              'btn-template-groove',
-              scaleButtonRole === 'target' ? 'tutorial-control-target' : '',
-            ].filter(Boolean).join(' ')}
-            ref={scaleTriggerRef}
-            aria-label="选择音阶"
-            aria-expanded={pickerMode === 'scale'}
-            aria-haspopup="dialog"
-            aria-disabled={scaleButtonDisabled || scaleChangeLocked}
-            data-tutorial-role={scaleButtonRole ?? undefined}
-            type="button"
-            disabled={scaleButtonDisabled || scaleChangeLocked}
-            onClick={() => setPickerMode((mode) => (mode === 'scale' ? null : 'scale'))}
-          >
-            {renderIcon(ChevronUp)}
-            选择音阶
+            {activeRhythmTemplate?.name ?? 'Melody 风格模板'}
           </button>
           <button
             className={[
@@ -441,19 +422,19 @@ function MelodyEditor({
 
       <section
         className="scale-picker melody-scale-workspace"
-        ref={scalePickerRef}
-        aria-labelledby="melodyScaleWorkspaceTitle"
+        ref={stylePickerRef}
+        aria-labelledby="melodyStyleWorkspaceTitle"
         aria-modal="true"
-        data-screen-label="Scale Picker"
-        hidden={pickerMode !== 'scale'}
+        data-screen-label="Melody Style Picker"
+        hidden={pickerMode !== 'style'}
         role="dialog"
       >
         <div className="melody-scale-workspace-panel">
           <header className="melody-scale-workspace-head">
             <div>
-              <h2 id="melodyScaleWorkspaceTitle">旋律音阶</h2>
+              <h2 id="melodyStyleWorkspaceTitle">Melody 风格模板</h2>
               <span>
-                音阶库 · {Object.keys(MELODY_SCALES).length} 个
+                音阶 + 律动 · {Object.keys(MELODY_SCALES).length} 个
               </span>
             </div>
             <button
@@ -469,71 +450,75 @@ function MelodyEditor({
 
           <div className="melody-scale-workspace-body">
             <div className="melody-scale-workspace-label">
-              <strong>选择旋律音阶</strong>
-              <span>MELODY SCALE</span>
-              <p>音阶只改变高亮和试听，十二个半音始终可以编辑。</p>
+              <strong>选择旋律风格</strong>
+              <span>MELODY STYLE</span>
+              <p>一次设置整条 Melody 轨的可用音和律动位置，切换 Clip 不会改变。</p>
             </div>
 
-            <div className="melody-scale-options" id="scaleList" aria-label="选择旋律音阶">
-              {Object.values(MELODY_SCALES).map((scale) => {
-                const scaleCardRole = getTutorialControlRole(tutorialTargets, `melody-scale-card:${scale.id}`);
-                const scaleCardDisabled = tutorialLocked && scaleCardRole !== 'target';
+            <div className="melody-scale-options" id="styleList" aria-label="选择 Melody 风格模板">
+              {Object.values(MELODY_SCALES).map((styleTemplate) => {
+                const styleCardRole = getTutorialControlRole(
+                  tutorialTargets,
+                  `melody-style-card:${styleTemplate.id}`,
+                );
+                const styleCardDisabled = tutorialLocked && styleCardRole !== 'target';
+                const selected = styleTemplate.id === selectedStyleTemplateId;
 
                 return (
                   <article
                     className={[
                       'sctpl-card',
                       'melody-scale-card',
-                      scale.id === activeScale.id ? 'selected' : '',
-                      scaleCardRole === 'target' ? 'tutorial-control-target' : '',
+                      selected ? 'selected' : '',
+                      styleCardRole === 'target' ? 'tutorial-control-target' : '',
                     ].filter(Boolean).join(' ')}
-                    aria-disabled={scaleCardDisabled}
-                    data-scale={scale.id}
-                    data-tutorial-role={scaleCardRole ?? undefined}
-                    key={scale.id}
+                    aria-disabled={styleCardDisabled}
+                    data-scale={styleTemplate.id}
+                    data-tutorial-role={styleCardRole ?? undefined}
+                    key={styleTemplate.id}
                   >
                     <button
                       className="melody-scale-card-select"
-                      aria-label={`选择${scale.label}`}
-                      aria-pressed={scale.id === activeScale.id}
-                      disabled={scaleCardDisabled}
+                      aria-label={`选择${styleTemplate.label}风格模板`}
+                      aria-pressed={selected}
+                      disabled={styleCardDisabled}
                       type="button"
-                      onClick={() => {
-                        onMelodyScaleChange(scale.id);
-                        setPickerMode(null);
-                      }}
+                      onClick={() => setSelectedStyleTemplateId(styleTemplate.id)}
                     >
                       <span className="sctpl-name-row">
-                        <strong className="sctpl-name">{scale.label}</strong>
-                        {scale.tag ? <span className="sctpl-default-tag">{scale.tag}</span> : null}
+                        <strong className="sctpl-name">{styleTemplate.label}</strong>
+                        {styleTemplate.tag ? <span className="sctpl-default-tag">{styleTemplate.tag}</span> : null}
                       </span>
                       <span className="sctpl-notes" aria-label="音阶包含的音符">
                         {MELODY_PITCH_CLASSES.map((pitchClass) => {
-                          const scaleTone = isMelodyScalePitchClass(scale.id, pitchClass);
+                          const scaleTone = isMelodyScalePitchClass(styleTemplate.id, pitchClass);
                           return (
                             <span
                               className={[
                                 'sctpl-note',
                                 scaleTone ? 'scale-tone' : '',
                               ].filter(Boolean).join(' ')}
-                              key={`${scale.id}-${pitchClass}`}
+                              key={`${styleTemplate.id}-${pitchClass}`}
                             >
                               {pitchClass}
                             </span>
                           );
                         })}
                       </span>
-                      <span className="sctpl-desc">{scale.description}</span>
+                      <span className="chord-template-mini-groove melody-style-mini-groove" aria-label={`律动位置 ${styleTemplate.rhythmSteps.map((step) => step + 1).join('、')}`}>
+                        {renderMelodyMiniGroove(styleTemplate)}
+                      </span>
+                      <span className="sctpl-desc">{styleTemplate.description}</span>
                     </button>
                     <div className="sctpl-foot">
-                      <span className="sctpl-foot-label">{scale.footLabel}</span>
+                      <span className="sctpl-foot-label">{styleTemplate.footLabel}</span>
                       <button
                         className="sctpl-play"
-                        aria-label={`试听${scale.label}`}
+                        aria-label={`试听${styleTemplate.label}音阶`}
                         data-action="preview"
                         type="button"
-                        disabled={scaleCardDisabled}
-                        onClick={() => onMelodyPreview(getMelodyScalePreviewNotes(scale.id))}
+                        disabled={styleCardDisabled}
+                        onClick={() => onMelodyPreview(getMelodyScalePreviewNotes(styleTemplate.id))}
                       >
                         {renderPlayGlyph()}
                         试听
@@ -543,81 +528,27 @@ function MelodyEditor({
                 );
               })}
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section
-        className="chord-template-workspace melody-rhythm-workspace"
-        ref={rhythmPickerRef}
-        aria-labelledby="melodyRhythmWorkspaceTitle"
-        aria-modal="true"
-        data-screen-label="Melody Rhythm Picker"
-        hidden={pickerMode !== 'rhythm'}
-        role="dialog"
-      >
-        <div className="chord-template-workspace-panel melody-rhythm-workspace-panel">
-          <header className="chord-template-workspace-head melody-rhythm-workspace-head">
-            <h2 id="melodyRhythmWorkspaceTitle">旋律律动模板</h2>
-            <button
-              className="chord-template-workspace-icon-button close"
-              aria-label="关闭律动菜单"
-              title="关闭二级菜单"
-              type="button"
-              onClick={() => setPickerMode(null)}
-            >
-              <img src={ICON_CLOSE_URL} alt="" aria-hidden="true" />
-            </button>
-          </header>
-          <div className="chord-template-workspace-body melody-rhythm-workspace-body">
-            <div className="chord-template-workspace-label melody-rhythm-workspace-label">
-              <strong>选择律动节奏</strong>
-              <span>MELODY RHYTHM</span>
-              <p>先选择模板，再决定应用到当前小节或所有已有 Melody Clips。</p>
-            </div>
-            <div
-              className="chord-template-groove-options melody-rhythm-options"
-              aria-label="选择旋律律动模板"
-            >
-              {MELODY_RHYTHM_TEMPLATES.map((template) => (
-                <button
-                  aria-pressed={template.id === selectedRhythmTemplateId}
-                  data-template-id={template.id}
-                  key={template.id}
-                  type="button"
-                  onClick={() => setSelectedRhythmTemplateId(template.id)}
-                >
-                  <strong>{template.name}</strong>
-                  <span className="chord-template-mini-groove" aria-hidden="true">
-                    {renderMelodyMiniGroove(template)}
-                  </span>
-                  <span className="chord-template-card-description">
-                    第 {template.steps.map((step) => step + 1).join('、')} 格
-                  </span>
-                  <span className="chord-template-groove-meta">
-                    {template.steps.length} 个音 / 小节
-                  </span>
-                </button>
-              ))}
-            </div>
-            <div aria-hidden="true" />
-            <div className="chord-template-workspace-actions melody-rhythm-actions">
+            <div className="melody-style-actions">
               <button
-                className="primary"
+                className={[
+                  'primary',
+                  getTutorialControlRole(tutorialTargets, 'melody-style-apply-global') === 'target'
+                    ? 'tutorial-control-target'
+                    : '',
+                ].filter(Boolean).join(' ')}
+                aria-disabled={!selectedStyleTemplate}
+                data-tutorial-role={getTutorialControlRole(
+                  tutorialTargets,
+                  'melody-style-apply-global',
+                ) ?? undefined}
+                disabled={!selectedStyleTemplate || (
+                  tutorialLocked
+                  && getTutorialControlRole(tutorialTargets, 'melody-style-apply-global') !== 'target'
+                )}
                 type="button"
-                disabled={!getMelodyRhythmTemplate(selectedRhythmTemplateId)}
                 onClick={() => {
-                  onMelodyRhythmTemplateApply(selectedRhythmTemplateId, 'bar');
-                  setPickerMode(null);
-                }}
-              >
-                应用到本小节
-              </button>
-              <button
-                type="button"
-                disabled={!getMelodyRhythmTemplate(selectedRhythmTemplateId)}
-                onClick={() => {
-                  onMelodyRhythmTemplateApply(selectedRhythmTemplateId, 'global');
+                  if (!selectedStyleTemplate) return;
+                  onMelodyStyleTemplateApply(selectedStyleTemplate.id);
                   setPickerMode(null);
                 }}
               >

@@ -73,7 +73,7 @@ function useLaunchpadXCommands({
   melodyActive = false,
   melodyClipBars = [],
   melodyRecordingState = null,
-  melodyScaleId = 'major',
+  melodyScaleId = 'chinese',
   melodyTemplateSteps = [],
   mutedTracks = null,
   selectedBar = 0,

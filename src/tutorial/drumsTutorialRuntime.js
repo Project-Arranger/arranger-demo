@@ -389,8 +389,9 @@ function getTutorialViewModel({
 
   if (step.id === TUTORIAL_STEP_IDS.MELODY_SELECT_SCALE) {
     targets.controls = [
-      { name: TUTORIAL_CONTROL_TARGETS.MELODY_SCALE_BUTTON, role: 'target' },
-      { name: `${TUTORIAL_CONTROL_TARGETS.MELODY_SCALE_CARD_PREFIX}:pentatonic`, role: 'target' },
+      { name: TUTORIAL_CONTROL_TARGETS.MELODY_STYLE_BUTTON, role: 'target' },
+      { name: `${TUTORIAL_CONTROL_TARGETS.MELODY_STYLE_CARD_PREFIX}:chinese`, role: 'target' },
+      { name: TUTORIAL_CONTROL_TARGETS.MELODY_STYLE_APPLY_GLOBAL, role: 'target' },
     ];
   }
 
@@ -438,6 +439,7 @@ function handleTutorialControlAction({
   progress = createTutorialState(),
   selectedBar = DRUMS_TUTORIAL_FIRST_BAR,
   step,
+  templateId,
 } = {}) {
   const allowedControls = [
     step?.completion?.control,
@@ -514,6 +516,7 @@ function handleTutorialControlAction({
   }
 
   if (step.id === TUTORIAL_STEP_IDS.MELODY_SELECT_SCALE) {
+    if (templateId !== step.completion.templateId) return createRejectedAction(progress);
     return createAllowedAction({
       ...progress,
       melodyScaleSelected: true,

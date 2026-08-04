@@ -300,7 +300,7 @@ function mapLaunchpadXMessageToCommand(data, {
   melodyActive = false,
   melodyClipBars = [],
   melodyRecordingState = null,
-  melodyScaleId = 'major',
+  melodyScaleId = 'chinese',
   melodyTemplateSteps = [],
   matrix = null,
   selectedBar = 0,

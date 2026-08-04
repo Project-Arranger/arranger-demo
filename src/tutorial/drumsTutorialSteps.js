@@ -9,7 +9,7 @@ const SECTION_TARGET_5 = '目标5\n完成编辑Bass轨';
 const SECTION_TARGET_6 = '目标6\n在Melody轨即兴弹奏';
 const BASS_TARGET_COPY = '创建完整的低音音轨\n\n选择一个你喜欢的低音律动\n低音虽存在感低，但不可或缺，它让你的音乐听起来更加丰满完整。现在，你可以简单地选择一个律动模板，系统会自动让低音旋律和你所选择的和弦进行相匹配。';
 const BASS_LISTEN_COPY = `${BASS_TARGET_COPY}\n觉得满意后，点击[继续探索]以继续`;
-const MELODY_TARGET_COPY = '尝试弹奏你喜欢的旋律乐句\n\n选择一个弹奏音阶\n音阶指一系列特定顺序的音符，使用不同特色的音阶可以创作出你所喜欢的各种旋律。推荐你从五声音阶开始，因为它无论怎么弹都好听，也是中国音乐最常用的一个音阶。';
+const MELODY_TARGET_COPY = '尝试弹奏你喜欢的旋律乐句\n\n选择一个 Melody 风格模板\n风格模板会同时设置可用音和旋律落下的律动位置。先选中“中国风”，再点击“应用到全局”，整条 Melody 轨会使用同一套风格。';
 const MELODY_EXAMPLE_INTRO_COPY = '尝试弹奏你喜欢的旋律乐句\n\n弹奏示例乐句\n任何时候，你的耳朵永远都是创造旋律最好的工具。现在，我们将给出一些基于五声音阶创作的经典旋律，你将尝试让你的手指找到弹奏的感觉。';
 const MELODY_EXAMPLE_TIP_COPY = '尝试弹奏你喜欢的旋律乐句\n\n让旋律变好听的秘诀\n把旋律想象成一根线条，它可以从低往高、从高往低，也可以曲折往返，并在它流淌的过程中偶有重复或中断；你将通过尝试弹奏两个经典例子来体会这一点。';
 
@@ -203,19 +203,19 @@ const DRUMS_TUTORIAL_STEPS = [
     id: TUTORIAL_STEP_IDS.MELODY_SELECT_SCALE,
     section: SECTION_TARGET_6,
     trigger: '点击Melody轨填充整轨按钮',
-    uiEvent: '选择音阶按钮闪烁，选择二级菜单后五声音阶卡片闪烁',
+    uiEvent: 'Melody 风格模板入口、中国风卡片和应用到全局按钮闪烁',
     copy: MELODY_TARGET_COPY,
     primaryLabel: '下一步',
     completion: {
-      type: 'melody-scale',
-      control: `${TUTORIAL_CONTROL_TARGETS.MELODY_SCALE_CARD_PREFIX}:pentatonic`,
-      scaleId: 'pentatonic',
+      type: 'melody-style-template',
+      control: TUTORIAL_CONTROL_TARGETS.MELODY_STYLE_APPLY_GLOBAL,
+      templateId: 'chinese',
     },
   },
   {
     id: TUTORIAL_STEP_IDS.MELODY_EXAMPLE_INTRO_1,
     section: SECTION_TARGET_6,
-    trigger: '用户选择五声音阶卡片',
+    trigger: '用户将中国风模板应用到全局',
     uiEvent: '无',
     copy: MELODY_EXAMPLE_INTRO_COPY,
     primaryLabel: '开始弹奏',

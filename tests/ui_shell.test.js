@@ -823,6 +823,7 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   );
   const audioBridgeSource = await readFile(new URL('../src/app/audioUiBridge.js', import.meta.url), 'utf8');
   const melodyDataSource = await readFile(new URL('../src/data/melodyScales.js', import.meta.url), 'utf8');
+  const melodyStyleDataSource = await readFile(new URL('../src/data/melodyStyleTemplates.js', import.meta.url), 'utf8');
   const uiDataSource = await readFile(new URL('../src/app/uiShellData.js', import.meta.url), 'utf8');
   const contextSliceSource = await readFile(
     new URL('../src/store/slices/contextSlice.js', import.meta.url),
@@ -847,13 +848,15 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
   assert.match(uiDataSource, /melody:\s*'Melody'/);
-  assert.match(contextSliceSource, /melodyScaleId:\s*'major'/);
+  assert.match(contextSliceSource, /melodyScaleId:\s*'chinese'/);
+  assert.match(contextSliceSource, /melodyRhythmTemplateId:\s*null/);
   assert.match(contextSliceSource, /setMelodyScaleId/);
+  assert.match(contextSliceSource, /setMelodyStyleTemplate/);
   assert.match(bottomEditorSource, /MelodyEditor/);
   assert.match(bottomEditorSource, /activeTrackType === 'melody' && selectedClipId/);
   assert.match(bottomEditorSource, /onMelodyStepToggle/);
   assert.match(bottomEditorSource, /onMelodyPreview/);
-  assert.match(bottomEditorSource, /onMelodyScaleChange/);
+  assert.match(bottomEditorSource, /onMelodyStyleTemplateApply/);
   assert.match(bottomEditorSource, /createElement\(MelodyEditor,[\s\S]*tutorialLocked,[\s\S]*tutorialTargets/);
   assert.match(melodyEditorSource, /data-screen-label="Melody Editor"/);
   assert.match(melodyEditorSource, /tutorialLocked = false/);
@@ -863,14 +866,15 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(melodyEditorSource, /MELODY EDITOR - BAR/);
   assert.match(melodyEditorSource, /keyboard-strip/);
   assert.match(melodyEditorSource, /QWERTY、网页与 Launchpad 音阶对应关系/);
-  assert.match(melodyEditorSource, /选择音阶/);
-  assert.match(melodyEditorSource, /melody-scale-button/);
-  assert.match(melodyEditorSource, /melody-scale-card:\$\{scale\.id\}/);
+  assert.match(melodyEditorSource, /Melody 风格模板/);
+  assert.match(melodyEditorSource, /melody-style-button/);
+  assert.match(melodyEditorSource, /melody-style-card:\$\{styleTemplate\.id\}/);
+  assert.match(melodyEditorSource, /melody-style-apply-global/);
   assert.match(melodyEditorSource, /tutorial-control-target/);
-  assert.match(melodyEditorSource, /data-tutorial-role=\{scaleButtonRole/);
-  assert.match(melodyEditorSource, /data-tutorial-role=\{scaleCardRole/);
-  assert.match(melodyEditorSource, /aria-disabled=\{scaleCardDisabled\}/);
-  assert.match(melodyEditorSource, /Scale Picker/);
+  assert.match(melodyEditorSource, /data-tutorial-role=\{styleButtonRole/);
+  assert.match(melodyEditorSource, /data-tutorial-role=\{styleCardRole/);
+  assert.match(melodyEditorSource, /aria-disabled=\{styleCardDisabled\}/);
+  assert.match(melodyEditorSource, /Melody Style Picker/);
   assert.match(melodyEditorSource, /className="scale-picker melody-scale-workspace"/);
   assert.match(melodyEditorSource, /className="melody-scale-workspace-panel"/);
   assert.match(melodyEditorSource, /className="melody-scale-workspace-head"/);
@@ -878,9 +882,9 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(melodyEditorSource, /className="melody-scale-workspace-label"/);
   assert.match(melodyEditorSource, /className="melody-scale-options"/);
   assert.match(melodyEditorSource, /className="melody-scale-workspace-icon-button close"/);
-  assert.match(melodyEditorSource, /aria-labelledby="melodyScaleWorkspaceTitle"/);
+  assert.match(melodyEditorSource, /aria-labelledby="melodyStyleWorkspaceTitle"/);
   assert.match(melodyEditorSource, /aria-modal="true"/);
-  assert.match(melodyEditorSource, /className="melody-scale-card-select"[\s\S]*aria-pressed=\{scale\.id === activeScale\.id\}/);
+  assert.match(melodyEditorSource, /className="melody-scale-card-select"[\s\S]*aria-pressed=\{selected\}/);
   assert.doesNotMatch(melodyEditorSource, /className="tpl-head"|className="tpl-body"|className="tpl-list"/);
   assert.doesNotMatch(melodyEditorSource, /className="melody-beat-number-row"/);
   assert.doesNotMatch(melodyEditorSource, /className="beat-num mono"/);
@@ -907,8 +911,9 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.doesNotMatch(melodyEditorSource, /handlePitchWheel/);
   assert.doesNotMatch(melodyEditorSource, /scrollPitchByOctave/);
   assert.doesNotMatch(melodyEditorSource, /className="scale-notes-viewport"|className="beat-cells-viewport"|pitch-grid-head-spacer/);
-  assert.match(melodyDataSource, /自然大调音阶/);
-  assert.match(melodyDataSource, /五声音阶/);
+  assert.match(melodyDataSource, /MELODY_STYLE_TEMPLATES/);
+  assert.match(melodyStyleDataSource, /chinese:[\s\S]*\['C', 'D', 'E', 'G', 'A'\]/);
+  assert.match(melodyStyleDataSource, /blues:[\s\S]*\['C', 'D', 'D#', 'E', 'G', 'A'\]/);
   assert.match(melodyEditorSource, /清空本小节/);
   assert.match(melodyEditorSource, /清空整轨/);
   assert.match(melodyEditorSource, /'btn-template',\s*'melody-record-button'/);
@@ -926,22 +931,11 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(melodyEditorSource, /activePlayedNotes/);
   assert.match(melodyEditorSource, /onMelodyNoteOn\(\{/);
   assert.match(melodyEditorSource, /onMelodyNoteOff\(\{/);
-  assert.match(melodyEditorSource, /Melody Rhythm Picker/);
-  assert.match(
-    melodyEditorSource,
-    /className="chord-template-workspace melody-rhythm-workspace"/,
-  );
-  assert.match(
-    melodyEditorSource,
-    /className="chord-template-workspace-panel melody-rhythm-workspace-panel"/,
-  );
-  assert.match(
-    melodyEditorSource,
-    /className="chord-template-groove-options melody-rhythm-options"/,
-  );
+  assert.doesNotMatch(melodyEditorSource, /Melody Rhythm Picker|Scale Picker/);
+  assert.match(melodyEditorSource, /className="melody-style-actions"/);
   assert.match(melodyEditorSource, /function renderMelodyMiniGroove\(template\)/);
   assert.match(melodyEditorSource, /className="chord-template-mini-beat-group"/);
-  assert.match(melodyEditorSource, /className="chord-template-mini-groove"/);
+  assert.match(melodyEditorSource, /chord-template-mini-groove melody-style-mini-groove/);
   assert.doesNotMatch(melodyEditorSource, /melody-rhythm-mini-grid/);
   assert.match(
     melodyEditorSource,
@@ -951,19 +945,14 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(pianoRollSource, /data-rhythm-template=/);
   assert.match(pianoRollSource, /rhythm-step-marker/);
   assert.match(pianoRollSource, /rhythm-column-next/);
-  assert.match(css, /\.melody-rhythm-workspace\s*\{[^}]*display:\s*block;/s);
-  assert.match(
-    css,
-    /\.melody-rhythm-workspace-body\s*\{[^}]*grid-template-rows:\s*minmax\(0,\s*1fr\) auto;/s,
-  );
+  assert.match(css, /\.melody-style-actions\s*\{[^}]*justify-content:\s*flex-end;/s);
   assert.match(css, /\.melody-seq-body \.rhythm-step-marker\.highlighted/);
   assert.match(
     css,
     /\.melody-seq-body \.rhythm-step-marker\.highlighted::before\s*\{[^}]*var\(--melody-amethyst\)/s,
   );
-  assert.doesNotMatch(css, /\.melody-rhythm-options > button(?:\[[^\]]+\])?\s*\{/s);
   assert.match(css, /\.chord-template-groove-options > button\[aria-pressed="true"\]/);
-  assert.match(css, /\.melody-rhythm-options \.chord-template-mini-beat-group > span\.on/);
+  assert.match(css, /\.melody-style-mini-groove \.chord-template-mini-beat-group > span\.on/);
   assert.doesNotMatch(css, /\.melody-rhythm-mini-grid/);
   assert.match(css, /\.melody-cell\.rhythm-column::before/);
   assert.match(css, /@keyframes melody-rhythm-guide-pulse/);
@@ -1002,9 +991,9 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(source, /melodyScaleId/);
   assert.match(source, /handleMelodyStepToggle/);
   assert.match(source, /handleMelodyPreview/);
-  assert.match(source, /handleMelodyScaleChange/);
+  assert.match(source, /handleMelodyStyleTemplateApply/);
   assert.match(source, /currentTutorialStep\?\.id === TUTORIAL_STEP_IDS\.MELODY_SELECT_SCALE/);
-  assert.match(source, /control:\s*`melody-scale-card:\$\{scaleId\}`/);
+  assert.match(source, /control:\s*TUTORIAL_CONTROL_TARGETS\.MELODY_STYLE_APPLY_GLOBAL/);
   assert.match(source, /handleClearMelodyBar/);
   assert.match(source, /state\.clearTrack\(action\.trackId\)/);
   assert.match(source, /activeTrackType === 'melody' && selectedClipId/);
