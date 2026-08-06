@@ -9,6 +9,7 @@ const CHECKPOINT_APP_STATE_KEYS = Object.freeze([
   'matrix',
   'melodyRhythmTemplateId',
   'melodyScaleId',
+  'melodyTimbreId',
   'mutedTracks',
   'nextTrackCreatedIndex',
   'nextTrackOrdinalByType',

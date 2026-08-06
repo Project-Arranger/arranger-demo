@@ -845,10 +845,15 @@ test('melody editor mirrors the reference keyboard strip and style picker layout
   assert.match(css, /\.melody-scale-workspace-icon-button\s*\{[^}]*width:\s*36px;[^}]*height:\s*36px;[^}]*var\(--asset-brass\)/s);
   assert.match(css, /\.melody-scale-workspace-body\s*\{[^}]*grid-template-columns:\s*178px minmax\(0,\s*1fr\);/s);
   assert.match(css, /\.melody-scale-options\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/s);
+  assert.match(css, /\.melody-timbre-section\s*\{[^}]*grid-template-columns:\s*124px minmax\(0,\s*1fr\);/s);
+  assert.match(css, /\.melody-timbre-options\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\);/s);
+  assert.match(css, /\.melody-timbre-card\.selected\s*\{[^}]*border-color:\s*rgb\(255 220 153 \/ 0\.76\);/s);
+  assert.match(css, /\.melody-style-actions > \.melody-style-preview-action\s*\{[^}]*color:\s*#d9bd94;[^}]*#28180f;/s);
   assert.match(css, /\.melody-scale-card\s*\{[^}]*border-radius:\s*10px;[^}]*text-align:\s*left;/s);
   assert.match(css, /\.melody-scale-card\.selected\s*\{[^}]*border-color:\s*rgb\(255 220 153 \/ 0\.82\);/s);
   assert.match(css, /\.melody-style-actions\s*\{[^}]*justify-content:\s*flex-end;/s);
   assert.match(css, /\.melody-style-mini-groove\s*\{[^}]*min-height:\s*34px;/s);
+  assert.match(css, /@media\s*\(max-height:\s*720px\)\s*\{[\s\S]*?\.melody-timbre-card\s*\{[^}]*min-height:\s*44px;/s);
   assert.match(css, /\.melody-seq-body \.rhythm-step-ruler\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\);/s);
   assert.match(css, /--c-melody:\s*#b889c4;/);
   assert.match(css, /--melody-amethyst:\s*#9870a8;/);

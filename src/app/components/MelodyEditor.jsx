@@ -5,6 +5,7 @@ import {
 import {
   createElement,
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -22,6 +23,10 @@ import {
 import {
   getMelodyStyleTemplate,
 } from '../../data/melodyStyleTemplates.js';
+import {
+  getMelodyTimbre,
+  MELODY_TIMBRES,
+} from '../../data/melodyTimbres.js';
 import {
   getMelodyInputGrid,
   getVirtualMelodyInputId,
@@ -72,10 +77,6 @@ function renderMelodyMiniGroove(template) {
   ));
 }
 
-function renderPlayGlyph() {
-  return <span className="play-glyph" aria-hidden="true" />;
-}
-
 function MelodyEditor({
   activeInputNotes = new Set(),
   canPageBars = false,
@@ -84,18 +85,21 @@ function MelodyEditor({
   melodyRecordingState,
   melodyRhythmTemplateId = null,
   melodyScaleId = 'chinese',
+  melodyTimbreId = 'piano',
   onClearMelody,
   onClearMelodyBar,
   onClose = () => {},
   onNextBar = () => {},
   onPreviousBar = () => {},
   onMelodyPreview = () => {},
+  onMelodyPreviewStop = () => {},
   onMelodyNoteOff = () => {},
   onMelodyNoteOn = () => {},
   onMelodyRecordCancel = () => {},
   onMelodyRecordConfirm = () => {},
   onMelodyWriteToggle = () => {},
   onMelodyStyleTemplateApply = () => {},
+  onMelodyTimbrePrepare = () => Promise.resolve(false),
   onMelodyStepToggle = () => {},
   onRenameClip,
   selectedBar,
@@ -108,11 +112,18 @@ function MelodyEditor({
   const [selectedStyleTemplateId, setSelectedStyleTemplateId] = useState(
     melodyRhythmTemplateId ?? melodyScaleId,
   );
+  const [selectedTimbreId, setSelectedTimbreId] = useState(melodyTimbreId);
+  const [timbreActionState, setTimbreActionState] = useState('idle');
   const stylePickerRef = useRef(null);
   const styleTriggerRef = useRef(null);
+  const timbreRequestIdRef = useRef(0);
   const closePicker = useCallback(() => {
+    timbreRequestIdRef.current += 1;
+    onMelodyPreviewStop();
+    setTimbreActionState('idle');
     setPickerMode(null);
-  }, []);
+  }, [onMelodyPreviewStop]);
+  useEffect(() => () => onMelodyPreviewStop(), [onMelodyPreviewStop]);
   useSecondaryMenuDismiss({
     active: pickerMode !== null,
     menuRef: stylePickerRef,
@@ -128,7 +139,9 @@ function MelodyEditor({
   const exampleKeysId = exampleKeysTarget?.name?.slice('melody-example-keys:'.length) ?? '';
   const exampleKeysLabel = MELODY_EXAMPLE_DISPLAY_BY_TARGET[exampleKeysId] ?? exampleKeysId;
   const activeScale = getMelodyScale(melodyScaleId);
+  const activeTimbre = getMelodyTimbre(melodyTimbreId);
   const selectedStyleTemplate = getMelodyStyleTemplate(selectedStyleTemplateId);
+  const selectedTimbre = getMelodyTimbre(selectedTimbreId);
   const recordingPhase = melodyRecordingState?.phase ?? MELODY_RECORDING_PHASES.IDLE;
   const activeRhythmTemplate = getMelodyRhythmTemplate(
     melodyRecordingState?.templateId ?? melodyRhythmTemplateId,
@@ -211,8 +224,58 @@ function MelodyEditor({
     }
   };
   const handleClose = () => {
-    setPickerMode(null);
+    closePicker();
     onClose();
+  };
+  const resetTimbreAction = () => {
+    timbreRequestIdRef.current += 1;
+    onMelodyPreviewStop();
+    setTimbreActionState('idle');
+  };
+  const handleStyleSelect = (templateId) => {
+    const template = getMelodyStyleTemplate(templateId);
+    if (!template) return;
+    resetTimbreAction();
+    setSelectedStyleTemplateId(template.id);
+    setSelectedTimbreId(template.recommendedTimbreId);
+  };
+  const handleTimbreSelect = (timbreId) => {
+    resetTimbreAction();
+    setSelectedTimbreId(timbreId);
+  };
+  const handleCurrentCombinationPreview = async () => {
+    if (!selectedStyleTemplate || !selectedTimbre) return;
+    const requestId = ++timbreRequestIdRef.current;
+    onMelodyPreviewStop();
+    setTimbreActionState('preview-loading');
+    const played = await onMelodyPreview(
+      getMelodyScalePreviewNotes(selectedStyleTemplate.id),
+      { timbreId: selectedTimbre.id },
+    );
+    if (requestId !== timbreRequestIdRef.current) return;
+    setTimbreActionState(played === false ? 'error' : 'idle');
+  };
+  const handleStyleApply = async () => {
+    if (!selectedStyleTemplate || !selectedTimbre) return;
+    const requestId = ++timbreRequestIdRef.current;
+    onMelodyPreviewStop();
+    setTimbreActionState('apply-loading');
+    const prepared = await onMelodyTimbrePrepare(selectedTimbre.id);
+    if (requestId !== timbreRequestIdRef.current) return;
+    if (!prepared) {
+      setTimbreActionState('error');
+      return;
+    }
+    const applied = await onMelodyStyleTemplateApply(
+      selectedStyleTemplate.id,
+      selectedTimbre.id,
+    );
+    if (requestId !== timbreRequestIdRef.current) return;
+    if (applied === false) {
+      setTimbreActionState('error');
+      return;
+    }
+    closePicker();
   };
 
   return (
@@ -260,12 +323,16 @@ function MelodyEditor({
             type="button"
             disabled={styleButtonDisabled || workflowLocked}
             onClick={() => {
+              resetTimbreAction();
               setSelectedStyleTemplateId(melodyRhythmTemplateId ?? melodyScaleId);
+              setSelectedTimbreId(melodyTimbreId);
               setPickerMode((mode) => (mode === 'style' ? null : 'style'));
             }}
           >
             {renderIcon(SlidersHorizontal)}
-            {activeRhythmTemplate?.name ?? 'Melody 风格模板'}
+            {activeRhythmTemplate
+              ? `${activeRhythmTemplate.name} · ${activeTimbre.label.split(' · ')[0]}`
+              : `Melody 风格 · ${activeTimbre.label.split(' · ')[0]}`}
           </button>
           <button
             className={[
@@ -432,9 +499,9 @@ function MelodyEditor({
         <div className="melody-scale-workspace-panel">
           <header className="melody-scale-workspace-head">
             <div>
-              <h2 id="melodyStyleWorkspaceTitle">Melody 风格模板</h2>
+              <h2 id="melodyStyleWorkspaceTitle">Melody 风格与音色</h2>
               <span>
-                音阶 + 律动 · {Object.keys(MELODY_SCALES).length} 个
+                {Object.keys(MELODY_SCALES).length} 个风格 · {Object.keys(MELODY_TIMBRES).length} 个音色
               </span>
             </div>
             <button
@@ -451,8 +518,8 @@ function MelodyEditor({
           <div className="melody-scale-workspace-body">
             <div className="melody-scale-workspace-label">
               <strong>选择旋律风格</strong>
-              <span>MELODY STYLE</span>
-              <p>一次设置整条 Melody 轨的可用音和律动位置，切换 Clip 不会改变。</p>
+              <span>STYLE + TIMBRE</span>
+              <p>选择音阶、律动与推荐音色。也可以保留 Piano，设置会应用到整条 Melody 轨。</p>
             </div>
 
             <div className="melody-scale-options" id="styleList" aria-label="选择 Melody 风格模板">
@@ -483,7 +550,7 @@ function MelodyEditor({
                       aria-pressed={selected}
                       disabled={styleCardDisabled}
                       type="button"
-                      onClick={() => setSelectedStyleTemplateId(styleTemplate.id)}
+                      onClick={() => handleStyleSelect(styleTemplate.id)}
                     >
                       <span className="sctpl-name-row">
                         <strong className="sctpl-name">{styleTemplate.label}</strong>
@@ -511,24 +578,66 @@ function MelodyEditor({
                       <span className="sctpl-desc">{styleTemplate.description}</span>
                     </button>
                     <div className="sctpl-foot">
-                      <span className="sctpl-foot-label">{styleTemplate.footLabel}</span>
-                      <button
-                        className="sctpl-play"
-                        aria-label={`试听${styleTemplate.label}音阶`}
-                        data-action="preview"
-                        type="button"
-                        disabled={styleCardDisabled}
-                        onClick={() => onMelodyPreview(getMelodyScalePreviewNotes(styleTemplate.id))}
-                      >
-                        {renderPlayGlyph()}
-                        试听
-                      </button>
+                      <span className="sctpl-foot-label">
+                        {styleTemplate.footLabel}
+                        {' · 推荐 '}
+                        {getMelodyTimbre(styleTemplate.recommendedTimbreId).label.split(' · ')[0]}
+                      </span>
                     </div>
                   </article>
                 );
               })}
             </div>
+
+            <section className="melody-timbre-section" aria-labelledby="melodyTimbreTitle">
+              <div className="melody-timbre-section-label">
+                <strong id="melodyTimbreTitle">选择音色</strong>
+                <span>音色与风格可以自由组合</span>
+              </div>
+              <div className="melody-timbre-options" role="group" aria-label="选择 Melody 音色">
+                {Object.values(MELODY_TIMBRES).map((timbre) => {
+                  const selected = timbre.id === selectedTimbre.id;
+                  const recommended = timbre.id === selectedStyleTemplate?.recommendedTimbreId;
+                  return (
+                    <button
+                      className={[
+                        'melody-timbre-card',
+                        selected ? 'selected' : '',
+                      ].filter(Boolean).join(' ')}
+                      aria-pressed={selected}
+                      disabled={tutorialLocked || timbreActionState.endsWith('loading')}
+                      key={timbre.id}
+                      type="button"
+                      onClick={() => handleTimbreSelect(timbre.id)}
+                    >
+                      <span className="melody-timbre-name-row">
+                        <strong>{timbre.label}</strong>
+                        {recommended ? <span>模板推荐</span> : timbre.tag ? <span>{timbre.tag}</span> : null}
+                      </span>
+                      <small>{timbre.detail}</small>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
             <div className="melody-style-actions">
+              {timbreActionState === 'error' ? (
+                <span className="melody-timbre-error visible" role="status" aria-live="polite">
+                  音色加载失败，请重试或选择 Piano。
+                </span>
+              ) : <span className="melody-timbre-error" aria-hidden="true" />}
+              <button
+                className="melody-style-preview-action"
+                disabled={
+                  tutorialLocked
+                  || !selectedStyleTemplate
+                  || timbreActionState.endsWith('loading')
+                }
+                type="button"
+                onClick={handleCurrentCombinationPreview}
+              >
+                {timbreActionState === 'preview-loading' ? '加载音色…' : '试听当前组合'}
+              </button>
               <button
                 className={[
                   'primary',
@@ -536,23 +645,19 @@ function MelodyEditor({
                     ? 'tutorial-control-target'
                     : '',
                 ].filter(Boolean).join(' ')}
-                aria-disabled={!selectedStyleTemplate}
+                aria-disabled={!selectedStyleTemplate || timbreActionState.endsWith('loading')}
                 data-tutorial-role={getTutorialControlRole(
                   tutorialTargets,
                   'melody-style-apply-global',
                 ) ?? undefined}
-                disabled={!selectedStyleTemplate || (
+                disabled={!selectedStyleTemplate || timbreActionState.endsWith('loading') || (
                   tutorialLocked
                   && getTutorialControlRole(tutorialTargets, 'melody-style-apply-global') !== 'target'
                 )}
                 type="button"
-                onClick={() => {
-                  if (!selectedStyleTemplate) return;
-                  onMelodyStyleTemplateApply(selectedStyleTemplate.id);
-                  setPickerMode(null);
-                }}
+                onClick={handleStyleApply}
               >
-                应用到全局
+                {timbreActionState === 'apply-loading' ? '加载并应用…' : '应用到全局'}
               </button>
             </div>
           </div>

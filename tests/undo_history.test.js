@@ -38,6 +38,7 @@ function createAppState() {
     matrix,
     melodyRhythmTemplateId: 'blues',
     melodyScaleId: 'major',
+    melodyTimbreId: 'blues',
     rootKey: 'C',
     scale: 'major',
     seekBar: 1,
@@ -267,6 +268,7 @@ test('restoreUndoSnapshot restores app store and tutorial state', () => {
   assert.deepEqual(calls, [['store.setState', false]]);
   assert.deepEqual(store.state.matrix.drums[0][0], { instruments: ['kick'] });
   assert.equal(store.state.melodyScaleId, 'chinese');
+  assert.equal(store.state.melodyTimbreId, 'blues');
   assert.equal(store.state.melodyRhythmTemplateId, 'blues');
   assert.equal(restored.currentTutorialStepIndex, 6);
   assert.equal(restored.activeTutorialId, 'chill-rainy-street');

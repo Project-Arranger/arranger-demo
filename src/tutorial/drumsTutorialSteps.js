@@ -9,7 +9,7 @@ const SECTION_TARGET_5 = '目标5\n完成编辑Bass轨';
 const SECTION_TARGET_6 = '目标6\n在Melody轨即兴弹奏';
 const BASS_TARGET_COPY = '创建完整的低音音轨\n\n选择一个你喜欢的低音律动\n低音虽存在感低，但不可或缺，它让你的音乐听起来更加丰满完整。现在，你可以简单地选择一个律动模板，系统会自动让低音旋律和你所选择的和弦进行相匹配。';
 const BASS_LISTEN_COPY = `${BASS_TARGET_COPY}\n觉得满意后，点击[继续探索]以继续`;
-const MELODY_TARGET_COPY = '尝试弹奏你喜欢的旋律乐句\n\n选择一个 Melody 风格模板\n风格模板会同时设置可用音和旋律落下的律动位置。先选中“中国风”，再点击“应用到全局”，整条 Melody 轨会使用同一套风格。';
+const MELODY_TARGET_COPY = '尝试弹奏你喜欢的旋律乐句\n\n选择一个 Melody 风格模板\n风格模板会同时设置可用音、律动位置和推荐音色。先选中“中国风”，再点击“应用到全局”，整条 Melody 轨会使用同一套风格。';
 const MELODY_EXAMPLE_INTRO_COPY = '尝试弹奏你喜欢的旋律乐句\n\n弹奏示例乐句\n任何时候，你的耳朵永远都是创造旋律最好的工具。现在，我们将给出一些基于五声音阶创作的经典旋律，你将尝试让你的手指找到弹奏的感觉。';
 const MELODY_EXAMPLE_TIP_COPY = '尝试弹奏你喜欢的旋律乐句\n\n让旋律变好听的秘诀\n把旋律想象成一根线条，它可以从低往高、从高往低，也可以曲折往返，并在它流淌的过程中偶有重复或中断；你将通过尝试弹奏两个经典例子来体会这一点。';
 

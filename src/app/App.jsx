@@ -198,6 +198,7 @@ export default function App() {
   const activeTrackId = useMusicStore((state) => state.activeTrackId);
   const melodyRhythmTemplateId = useMusicStore((state) => state.melodyRhythmTemplateId);
   const melodyScaleId = useMusicStore((state) => state.melodyScaleId);
+  const melodyTimbreId = useMusicStore((state) => state.melodyTimbreId);
   const selectedBar = useMusicStore((state) => state.selectedBar);
   const selectedClipId = useMusicStore((state) => state.selectedClipId);
   const clips = useMusicStore((state) => state.clips);
@@ -526,9 +527,20 @@ export default function App() {
   }, [handlePasteClipRequest, stopDrumsRecording, stopMelodyRecording]);
 
   useEffect(() => {
-    if (!melodyEditorIsOpen) return;
-    void audioEngine.startAudio();
-  }, [melodyEditorIsOpen]);
+    audioEngine.setMelodyTimbreSource?.(() => useMusicStore.getState().melodyTimbreId);
+    return () => audioEngine.setMelodyTimbreSource?.(null);
+  }, []);
+
+  useEffect(() => {
+    if (!melodyEditorIsOpen) return undefined;
+    let cancelled = false;
+    void audioEngine.prepareMelodyTimbre?.(melodyTimbreId).then((ready) => {
+      if (!cancelled && ready) audioEngine.activateMelodyTimbre?.(melodyTimbreId);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [melodyEditorIsOpen, melodyTimbreId]);
 
   useEffect(() => () => {
     chillPreviewGenerationRef.current += 1;
@@ -1728,17 +1740,27 @@ export default function App() {
     });
   }, [melodyRecording, selectedBar, withUndoCheckpoint]);
 
-  const handleMelodyPreview = useCallback((noteOrNotes) => {
+  const handleMelodyPreview = useCallback((noteOrNotes, options = {}) => {
     const trackId = useMusicStore.getState().activeTrackId;
     if (Array.isArray(noteOrNotes)) {
-      void audioEngine.previewMelodySequence(noteOrNotes, { trackId });
-      return;
+      return audioEngine.previewMelodySequence(noteOrNotes, {
+        trackId,
+        timbreId: options.timbreId,
+      });
     }
 
-    void audioEngine.triggerMelodyInputOneShot(noteOrNotes, undefined, { trackId });
+    return audioEngine.triggerMelodyInputOneShot(noteOrNotes, undefined, { trackId });
   }, []);
 
-  const handleMelodyStyleTemplateApply = useCallback((templateId) => {
+  const handleMelodyPreviewStop = useCallback(() => {
+    audioEngine.stopMelodyPreview?.();
+  }, []);
+
+  const handleMelodyTimbrePrepare = useCallback((timbreId) => (
+    audioEngine.prepareMelodyTimbre?.(timbreId) ?? Promise.resolve(false)
+  ), []);
+
+  const handleMelodyStyleTemplateApply = useCallback((templateId, timbreId) => {
     let tutorialAction = null;
     if (tutorialActive && currentTutorialStep?.id === TUTORIAL_STEP_IDS.MELODY_SELECT_SCALE) {
       tutorialAction = handleTutorialControlAction({
@@ -1753,10 +1775,12 @@ export default function App() {
 
     melodyRecording.stopRecording();
     melodyRecording.clearActiveNotes();
-    withUndoCheckpoint(() => {
-      const applied = useMusicStore.getState().setMelodyStyleTemplate(templateId);
+    return withUndoCheckpoint(() => {
+      const applied = useMusicStore.getState().setMelodyStyleTemplate(templateId, timbreId);
       if (!applied) return;
+      audioEngine.activateMelodyTimbre?.(timbreId);
       if (tutorialAction) applyTutorialActionProgress(tutorialAction);
+      return true;
     }, { force: Boolean(tutorialAction) });
   }, [
     applyTutorialActionProgress,
@@ -3051,6 +3075,7 @@ export default function App() {
           clips: editorClips,
           drumsRecordingState: drumsRecording.recordingState,
           melodyScaleId,
+          melodyTimbreId,
           melodyActiveInputNotes: melodyRecording.activeInputNotes,
           melodyRecordingState: melodyRecording.recordingState,
           melodyRhythmTemplateId,
@@ -3075,12 +3100,14 @@ export default function App() {
           onClearMelody: handleClearMelody,
           onClearMelodyBar: handleClearMelodyBar,
           onMelodyPreview: handleMelodyPreview,
+          onMelodyPreviewStop: handleMelodyPreviewStop,
           onMelodyNoteOff: melodyRecording.handleNoteOff,
           onMelodyNoteOn: melodyRecording.handleNoteOn,
           onMelodyRecordCancel: melodyRecording.cancelRecord,
           onMelodyRecordConfirm: melodyRecording.confirmRecord,
           onMelodyWriteToggle: melodyRecording.requestWriteToggle,
           onMelodyStyleTemplateApply: handleMelodyStyleTemplateApply,
+          onMelodyTimbrePrepare: handleMelodyTimbrePrepare,
           onMelodyStepToggle: handleMelodyStepToggle,
           onRenameClip: handleRenameClip,
           onClearCurrentDrumsBar: handleClearCurrentDrumsBar,

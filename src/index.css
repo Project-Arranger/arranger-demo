@@ -11431,15 +11431,15 @@ body {
 .melody-scale-workspace-body {
   display: grid;
   grid-template-columns: 178px minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr) auto;
-  gap: 24px;
+  grid-template-rows: minmax(0, 1fr) auto auto;
+  gap: 12px 24px;
   min-height: 0;
   padding: 16px 20px 14px;
 }
 
 .melody-scale-workspace-label {
   align-self: center;
-  grid-row: 1 / 3;
+  grid-row: 1 / 4;
   color: #c9aa7e;
   font-size: 13px;
   line-height: 1.35;
@@ -11471,11 +11471,110 @@ body {
 .melody-scale-options {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-auto-rows: minmax(188px, 220px);
+  grid-auto-rows: minmax(154px, 194px);
   align-content: center;
   gap: 12px;
   min-width: 0;
   min-height: 0;
+}
+
+.melody-timbre-section {
+  display: grid;
+  grid-template-columns: 124px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.melody-timbre-section-label {
+  display: grid;
+  gap: 3px;
+  color: #c9aa7e;
+}
+
+.melody-timbre-section-label strong {
+  font-size: 11px;
+}
+
+.melody-timbre-section-label span {
+  color: #7f6348;
+  font-size: 8px;
+}
+
+.melody-timbre-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+
+.melody-timbre-card {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  min-height: 54px;
+  padding: 8px 10px;
+  color: #a98a67;
+  background: rgb(27 17 11 / 0.88);
+  border: 1px solid rgb(255 219 157 / 0.2);
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.melody-timbre-card:hover:not(:disabled),
+.melody-timbre-card:focus-visible:not(:disabled) {
+  color: #efd2a6;
+  border-color: rgb(255 225 170 / 0.56);
+  outline: 2px solid rgb(255 226 174 / 0.28);
+  outline-offset: 1px;
+}
+
+.melody-timbre-card.selected {
+  color: #f4d6aa;
+  background:
+    linear-gradient(180deg, rgb(255 226 181 / 0.16), rgb(15 8 4 / 0.42)),
+    #4e382c;
+  border-color: rgb(255 220 153 / 0.76);
+  box-shadow: 0 0 0 2px rgb(229 154 69 / 0.18);
+}
+
+.melody-timbre-card:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.melody-timbre-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}
+
+.melody-timbre-name-row strong {
+  overflow: hidden;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.melody-timbre-name-row > span {
+  flex: 0 0 auto;
+  padding: 2px 5px;
+  color: #2b180d;
+  background: #c89a61;
+  border-radius: 999px;
+  font-size: 7px;
+  font-weight: 900;
+}
+
+.melody-timbre-card small {
+  overflow: hidden;
+  color: #7f6348;
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .melody-style-mini-groove {
@@ -11491,8 +11590,21 @@ body {
 
 .melody-style-actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 8px;
   padding-top: 10px;
+}
+
+.melody-timbre-error {
+  margin-right: auto;
+  color: #df8f7c;
+  font-size: 9px;
+  opacity: 0;
+}
+
+.melody-timbre-error.visible {
+  opacity: 1;
 }
 
 .melody-style-actions > button {
@@ -11523,6 +11635,14 @@ body {
   cursor: not-allowed;
   filter: saturate(0.4);
   opacity: 0.55;
+}
+
+.melody-style-actions > .melody-style-preview-action {
+  color: #d9bd94;
+  background:
+    linear-gradient(180deg, rgb(255 225 174 / 0.14), rgb(10 6 4 / 0.44)),
+    #28180f;
+  border-color: rgb(255 221 160 / 0.3);
 }
 
 .melody-scale-card {
@@ -12182,6 +12302,7 @@ body {
   }
 
   .melody-scale-workspace-body {
+    row-gap: 6px;
     padding: 8px 10px;
   }
 
@@ -12197,6 +12318,24 @@ body {
   .melody-scale-card-select {
     gap: 5px;
     padding: 8px;
+  }
+
+  .melody-scale-options {
+    grid-auto-rows: minmax(126px, 154px);
+  }
+
+  .melody-timbre-card {
+    min-height: 44px;
+    padding: 6px 8px;
+  }
+
+  .melody-timbre-card small,
+  .melody-timbre-section-label span {
+    display: none;
+  }
+
+  .melody-style-actions {
+    padding-top: 2px;
   }
 
   .melody-scale-card .sctpl-note {

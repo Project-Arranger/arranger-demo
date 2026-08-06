@@ -6,6 +6,10 @@ import {
 } from '../domain/musicConstants.js';
 import { getTrackTypeFromInstanceId } from '../domain/trackInstances.js';
 import { clampTrackVolume } from '../domain/trackVolume.js';
+import {
+  getMelodyTimbre,
+  normalizeMelodyTimbreId,
+} from '../data/melodyTimbres.js';
 import { AUDIO_STATUSES } from './audioStatus.js';
 import { createMatrixPlaybackAdapter } from './matrixPlaybackAdapter.js';
 
@@ -29,13 +33,6 @@ function createRootOctaveSampleFiles({ directory, prefix, roots, octaves, sample
 }
 
 const NATURAL_SAMPLE_ROOTS = Object.freeze(['A', 'B', 'C', 'D', 'E', 'F', 'G']);
-
-const MELODY_SAMPLE_FILES = createRootOctaveSampleFiles({
-  directory: 'Melody',
-  prefix: 'Melody',
-  roots: NATURAL_SAMPLE_ROOTS,
-  octaves: [2, 3, 4],
-});
 
 const CHORD_SAMPLE_FILES = createRootOctaveSampleFiles({
   directory: 'Chords',
@@ -85,11 +82,12 @@ function createDrumsSampleUrls(baseUrl = '/') {
   );
 }
 
-function createMelodySampleUrls(baseUrl = '/') {
+function createMelodySampleUrls(baseUrl = '/', timbreId = 'piano') {
   const normalizedBaseUrl = baseUrl === '/' ? '' : trimTrailingSlash(baseUrl);
+  const sampleFiles = getMelodyTimbre(timbreId).sampleFiles;
 
   return Object.fromEntries(
-    Object.entries(MELODY_SAMPLE_FILES).map(([note, file]) => [
+    Object.entries(sampleFiles).map(([note, file]) => [
       note,
       createSampleUrl(normalizedBaseUrl, file),
     ]),
@@ -160,6 +158,16 @@ function applyVolume(node, volume) {
   node.set?.({ volume });
 }
 
+function disposeAudioNode(node, time) {
+  node?.releaseAll?.(time);
+  node?.dispose?.();
+}
+
+function getMelodyVolume(trackVolume, timbreId) {
+  if (trackVolume === -Infinity) return -Infinity;
+  return trackVolume + getMelodyTimbre(timbreId).gainDb;
+}
+
 function normalizeAudibleTrackIds(trackIds) {
   if (!Array.isArray(trackIds)) return null;
   return new Set(trackIds.filter((trackId) => typeof trackId === 'string' && trackId.length > 0));
@@ -179,6 +187,7 @@ export default class AudioEngine {
     this.baseUrl = options.baseUrl ?? getDefaultBaseUrl();
     this.matrixSource = options.matrixSource ?? null;
     this.volumeSource = options.volumeSource ?? null;
+    this.melodyTimbreSource = options.melodyTimbreSource ?? null;
     this.onPositionChange = options.onPositionChange ?? null;
     this.onScheduledPositionChange = options.onScheduledPositionChange ?? null;
     this.onPlaybackComplete = options.onPlaybackComplete ?? null;
@@ -211,6 +220,12 @@ export default class AudioEngine {
     this.melodySampler = null;
     this.melodyInputSampler = null;
     this.melodyOneShotSampler = null;
+    this.melodySamplerTimbreId = null;
+    this.melodyInputSamplerTimbreId = null;
+    this.melodyOneShotSamplerTimbreId = null;
+    this.melodyPreviewBanks = new Map();
+    this.melodyPreviewRequestId = 0;
+    this.melodyPreviewSession = null;
     this.melodyInputRequestId = 0;
     this.bassSampler = null;
     this.instanceAudioNodes = new Map();
@@ -318,8 +333,8 @@ export default class AudioEngine {
     return createDrumsSampleUrls(this.baseUrl);
   }
 
-  getMelodySampleUrls() {
-    return createMelodySampleUrls(this.baseUrl);
+  getMelodySampleUrls(timbreId = this.getMelodyTimbreId()) {
+    return createMelodySampleUrls(this.baseUrl, timbreId);
   }
 
   getBassSampleUrls() {
@@ -332,6 +347,18 @@ export default class AudioEngine {
 
   getTrackVolume(trackId) {
     return getVolumeForTrack(this.volumeSource, trackId);
+  }
+
+  getMelodyTimbreId(timbreId) {
+    if (timbreId) return normalizeMelodyTimbreId(timbreId);
+    const sourceValue = typeof this.melodyTimbreSource === 'function'
+      ? this.melodyTimbreSource()
+      : this.melodyTimbreSource;
+    return normalizeMelodyTimbreId(sourceValue);
+  }
+
+  getMelodyTrackVolume(trackId, timbreId) {
+    return getMelodyVolume(this.getTrackVolume(trackId), this.getMelodyTimbreId(timbreId));
   }
 
   refreshTrackVolume(trackId) {
@@ -349,9 +376,11 @@ export default class AudioEngine {
     }
     if (trackType === 'bass') applyVolume(nodes?.bassSampler, volume);
     if (trackType === 'melody') {
-      applyVolume(nodes?.melodySampler, volume);
-      applyVolume(nodes?.melodyInputSampler, volume);
-      applyVolume(nodes?.melodyOneShotSampler, volume);
+      const timbreId = this.getMelodyTimbreId(nodes?.melodyTimbreId);
+      const melodyVolume = getMelodyVolume(volume, timbreId);
+      applyVolume(nodes?.melodySampler, melodyVolume);
+      applyVolume(nodes?.melodyInputSampler, melodyVolume);
+      applyVolume(nodes?.melodyOneShotSampler, melodyVolume);
       if (volume === -Infinity) this.stopMelodyVoices(this.now(), trackId);
     }
     return volume;
@@ -370,6 +399,7 @@ export default class AudioEngine {
         melodyInputSampler: this.melodyInputSampler,
         melodyOneShotSampler: this.melodyOneShotSampler,
         melodySampler: this.melodySampler,
+        melodyTimbreId: this.getMelodyTimbreId(),
       };
     }
 
@@ -384,6 +414,7 @@ export default class AudioEngine {
         melodyInputSampler: null,
         melodyOneShotSampler: null,
         melodySampler: null,
+        melodyTimbreId: null,
       };
       this.instanceAudioNodes.set(trackId, nodes);
     }
@@ -411,10 +442,17 @@ export default class AudioEngine {
       nodes.bassSampler = nodes.bassSampler ?? this.createBassSampler();
     }
     if (trackType === 'melody') {
-      nodes.melodySampler = nodes.melodySampler ?? this.createMelodySampler();
-      nodes.melodyInputSampler = nodes.melodyInputSampler ?? this.createMelodyInputSampler();
-      nodes.melodyOneShotSampler = nodes.melodyOneShotSampler
-        ?? this.createMelodyOneShotSampler();
+      const timbreId = this.getMelodyTimbreId();
+      if (nodes.melodyTimbreId !== timbreId) {
+        const time = this.now();
+        disposeAudioNode(nodes.melodySampler, time);
+        disposeAudioNode(nodes.melodyInputSampler, time);
+        disposeAudioNode(nodes.melodyOneShotSampler, time);
+        nodes.melodySampler = this.createMelodySampler(timbreId);
+        nodes.melodyInputSampler = this.createMelodyInputSampler(timbreId);
+        nodes.melodyOneShotSampler = this.createMelodyOneShotSampler(timbreId);
+        nodes.melodyTimbreId = timbreId;
+      }
     }
     return nodes;
   }
@@ -446,16 +484,16 @@ export default class AudioEngine {
     return callToDestination(synth);
   }
 
-  createMelodySampler() {
-    const urls = this.getMelodySampleUrls();
+  createMelodySampler(timbreId = this.getMelodyTimbreId()) {
+    const urls = this.getMelodySampleUrls(timbreId);
     if (this.samplerFactory) return callToDestination(this.samplerFactory(urls));
     if (!this.tone?.Sampler) return null;
 
     return callToDestination(new this.tone.Sampler({ urls }));
   }
 
-  createMelodyInputSampler() {
-    const urls = this.getMelodySampleUrls();
+  createMelodyInputSampler(timbreId = this.getMelodyTimbreId()) {
+    const urls = this.getMelodySampleUrls(timbreId);
     const factory = this.melodyInputSamplerFactory ?? this.samplerFactory;
     if (factory) return callToDestination(factory(urls));
     if (!this.tone?.Sampler) return null;
@@ -463,13 +501,93 @@ export default class AudioEngine {
     return callToDestination(new this.tone.Sampler({ urls }));
   }
 
-  createMelodyOneShotSampler() {
-    const urls = this.getMelodySampleUrls();
+  createMelodyOneShotSampler(timbreId = this.getMelodyTimbreId()) {
+    const urls = this.getMelodySampleUrls(timbreId);
     const factory = this.melodyOneShotSamplerFactory ?? this.samplerFactory;
     if (factory) return callToDestination(factory(urls));
     if (!this.tone?.Sampler) return null;
 
     return callToDestination(new this.tone.Sampler({ urls }));
+  }
+
+  createMelodyPreviewSampler(timbreId = this.getMelodyTimbreId()) {
+    return this.createMelodyInputSampler(timbreId);
+  }
+
+  ensureGlobalMelodySampler(kind, timbreId = this.getMelodyTimbreId()) {
+    const normalizedTimbreId = this.getMelodyTimbreId(timbreId);
+    const fieldByKind = {
+      input: ['melodyInputSampler', 'melodyInputSamplerTimbreId', 'createMelodyInputSampler'],
+      oneShot: ['melodyOneShotSampler', 'melodyOneShotSamplerTimbreId', 'createMelodyOneShotSampler'],
+      playback: ['melodySampler', 'melodySamplerTimbreId', 'createMelodySampler'],
+    };
+    const fields = fieldByKind[kind];
+    if (!fields) return null;
+    const [samplerField, timbreField, createMethod] = fields;
+    if (this[samplerField] && this[timbreField] === normalizedTimbreId) {
+      return this[samplerField];
+    }
+
+    disposeAudioNode(this[samplerField], this.now());
+    this[samplerField] = this[createMethod](normalizedTimbreId);
+    this[timbreField] = this[samplerField] ? normalizedTimbreId : null;
+    return this[samplerField];
+  }
+
+  async prepareMelodyTimbre(timbreId) {
+    const normalizedTimbreId = this.getMelodyTimbreId(timbreId);
+    await this.startAudio();
+
+    const cached = this.melodyPreviewBanks.get(normalizedTimbreId);
+    if (cached?.ready) return true;
+    if (cached?.promise) return cached.promise;
+
+    let sampler = null;
+    try {
+      sampler = this.createMelodyPreviewSampler(normalizedTimbreId);
+      if (!sampler) return false;
+    } catch {
+      return false;
+    }
+
+    const entry = {
+      promise: null,
+      ready: false,
+      sampler,
+    };
+    entry.promise = Promise.resolve(this.tone?.loaded?.())
+      .then(() => {
+        entry.ready = true;
+        entry.promise = null;
+        return true;
+      })
+      .catch(() => {
+        disposeAudioNode(entry.sampler, this.now());
+        this.melodyPreviewBanks.delete(normalizedTimbreId);
+        return false;
+      });
+    this.melodyPreviewBanks.set(normalizedTimbreId, entry);
+    return entry.promise;
+  }
+
+  activateMelodyTimbre(timbreId) {
+    const normalizedTimbreId = this.getMelodyTimbreId(timbreId);
+    this.stopMelodyVoices(this.now());
+    this.ensureGlobalMelodySampler('playback', normalizedTimbreId);
+    this.ensureGlobalMelodySampler('input', normalizedTimbreId);
+    this.ensureGlobalMelodySampler('oneShot', normalizedTimbreId);
+
+    this.instanceAudioNodes.forEach((nodes) => {
+      if (!nodes.melodyTimbreId) return;
+      disposeAudioNode(nodes.melodySampler, this.now());
+      disposeAudioNode(nodes.melodyInputSampler, this.now());
+      disposeAudioNode(nodes.melodyOneShotSampler, this.now());
+      nodes.melodySampler = this.createMelodySampler(normalizedTimbreId);
+      nodes.melodyInputSampler = this.createMelodyInputSampler(normalizedTimbreId);
+      nodes.melodyOneShotSampler = this.createMelodyOneShotSampler(normalizedTimbreId);
+      nodes.melodyTimbreId = normalizedTimbreId;
+    });
+    return true;
   }
 
   createChordSampler() {
@@ -504,7 +622,7 @@ export default class AudioEngine {
       this.fallbackSynth = this.fallbackSynth ?? this.createFallbackSynth();
       this.chordSampler = this.chordSampler ?? this.createChordSampler();
       this.chordSynth = this.chordSynth ?? this.createChordSynth();
-      this.melodySampler = this.melodySampler ?? this.createMelodySampler();
+      this.ensureGlobalMelodySampler('playback');
       this.loadDrumsPlayers();
       this.status = AUDIO_STATUSES.READY;
     } catch {
@@ -512,7 +630,7 @@ export default class AudioEngine {
       this.fallbackSynth = this.createFallbackSynth();
       this.chordSampler = this.chordSampler ?? this.createChordSampler();
       this.chordSynth = this.chordSynth ?? this.createChordSynth();
-      this.melodySampler = this.melodySampler ?? this.createMelodySampler();
+      this.ensureGlobalMelodySampler('playback');
       this.status = this.fallbackSynth
         ? AUDIO_STATUSES.SAMPLE_FALLBACK
         : AUDIO_STATUSES.ERROR;
@@ -617,7 +735,12 @@ export default class AudioEngine {
     return this.triggerChordNotes(notes, duration, time);
   }
 
-  triggerMelodySampler(note, duration = '16n', time = this.now(), volume = this.getTrackVolume('melody')) {
+  triggerMelodySampler(
+    note,
+    duration = '16n',
+    time = this.now(),
+    volume = this.getMelodyTrackVolume('melody'),
+  ) {
     void duration;
     return this.triggerMelodyOneShot(note, time, volume);
   }
@@ -625,15 +748,14 @@ export default class AudioEngine {
   triggerMelodyOneShot(
     note,
     time = this.now(),
-    volume = this.getTrackVolume('melody'),
+    volume = this.getMelodyTrackVolume('melody'),
     trackId = 'melody',
   ) {
     const nodes = trackId === 'melody'
       ? null
       : this.ensureInstanceAudioNodes(trackId, 'melody');
     if (trackId === 'melody') {
-      this.melodyOneShotSampler = this.melodyOneShotSampler
-        ?? this.createMelodyOneShotSampler();
+      this.ensureGlobalMelodySampler('oneShot');
     }
     const sampler = trackId === 'melody'
       ? this.melodyOneShotSampler
@@ -659,7 +781,7 @@ export default class AudioEngine {
     note,
     duration = '16n',
     time = this.now(),
-    volume = this.getTrackVolume('melody'),
+    volume = this.getMelodyTrackVolume('melody'),
   ) {
     void duration;
     return this.triggerMelodyInputOneShotSampler(note, time, volume);
@@ -668,9 +790,9 @@ export default class AudioEngine {
   triggerMelodyInputOneShotSampler(
     note,
     time = this.now(),
-    volume = this.getTrackVolume('melody'),
+    volume = this.getMelodyTrackVolume('melody'),
   ) {
-    this.melodyInputSampler = this.melodyInputSampler ?? this.createMelodyInputSampler();
+    this.ensureGlobalMelodySampler('input');
     if (!this.melodyInputSampler?.triggerAttack) return false;
 
     try {
@@ -702,7 +824,7 @@ export default class AudioEngine {
     const sampler = nodes?.melodyInputSampler;
     if (!sampler?.triggerAttack) return false;
     try {
-      applyVolume(sampler, this.getTrackVolume(trackId));
+      applyVolume(sampler, this.getMelodyTrackVolume(trackId));
       sampler.triggerAttack(note, time ?? this.now());
       return true;
     } catch {
@@ -739,6 +861,17 @@ export default class AudioEngine {
     });
   }
 
+  stopMelodyPreview(time = this.now()) {
+    this.melodyPreviewRequestId += 1;
+    const session = this.melodyPreviewSession;
+    if (session) {
+      session.timerIds.forEach((timerId) => this.cancelTimeout(timerId));
+      session.sampler?.releaseAll?.(time);
+      this.melodyPreviewSession = null;
+    }
+    return Boolean(session);
+  }
+
   triggerBassSampler(note, duration = '16n', time = this.now(), volume = this.getTrackVolume('bass')) {
     this.bassSampler = this.bassSampler ?? this.createBassSampler();
     if (!this.bassSampler?.triggerAttackRelease) return false;
@@ -770,27 +903,40 @@ export default class AudioEngine {
 
   async previewMelodySequence(notes, options = {}) {
     const {
-      intervalSeconds = 0.16,
+      intervalSeconds = 0.24,
       trackId = 'melody',
+      timbreId = this.getMelodyTimbreId(),
     } = options;
+    const normalizedNotes = Array.isArray(notes)
+      ? notes.filter((note) => typeof note === 'string' && note.length > 0)
+      : [];
+    if (!normalizedNotes.length) return false;
 
-    await this.startAudio();
+    this.stopMelodyPreview();
+    const requestId = this.melodyPreviewRequestId;
+    const normalizedTimbreId = this.getMelodyTimbreId(timbreId);
+    const prepared = await this.prepareMelodyTimbre(normalizedTimbreId);
+    if (!prepared || requestId !== this.melodyPreviewRequestId) return false;
 
-    const startTime = this.now();
-    const volume = this.getTrackVolume(trackId);
-    if (trackId === 'melody') {
-      return notes.map((note, index) => this.triggerMelodyInputOneShotSampler(
-        note,
-        startTime + index * intervalSeconds,
-        volume,
-      ));
-    }
-    const nodes = this.ensureInstanceAudioNodes(trackId, 'melody');
-    return notes.map((note, index) => {
-      applyVolume(nodes?.melodyInputSampler, volume);
-      nodes?.melodyInputSampler?.triggerAttack?.(note, startTime + index * intervalSeconds);
-      return Boolean(nodes?.melodyInputSampler);
+    const sampler = this.melodyPreviewBanks.get(normalizedTimbreId)?.sampler;
+    if (!sampler?.triggerAttack) return false;
+    const volume = this.getMelodyTrackVolume(trackId, normalizedTimbreId);
+    const session = {
+      requestId,
+      sampler,
+      timerIds: new Set(),
+    };
+    this.melodyPreviewSession = session;
+    normalizedNotes.forEach((note, index) => {
+      const timerId = this.scheduleTimeout(() => {
+        session.timerIds.delete(timerId);
+        if (this.melodyPreviewSession !== session) return;
+        applyVolume(sampler, volume);
+        sampler.triggerAttack(note, this.now());
+      }, index * intervalSeconds * 1000);
+      session.timerIds.add(timerId);
     });
+    return true;
   }
 
   async previewChordSequence(noteGroups, options = {}) {
@@ -967,6 +1113,10 @@ export default class AudioEngine {
     this.volumeSource = volumeSource;
   }
 
+  setMelodyTimbreSource(melodyTimbreSource) {
+    this.melodyTimbreSource = melodyTimbreSource;
+  }
+
   setPlaybackCompleteHandler(handler) {
     this.onPlaybackComplete = typeof handler === 'function' ? handler : null;
   }
@@ -1085,7 +1235,7 @@ export default class AudioEngine {
           this.triggerChordEvent(event, time);
         }
         if (event.type === 'melody') {
-          const melodyVolume = this.getTrackVolume(event.trackId ?? 'melody');
+          const melodyVolume = this.getMelodyTrackVolume(event.trackId ?? 'melody');
           this.triggerMelodyOneShot(
             event.note,
             time,
@@ -1140,6 +1290,9 @@ export default class AudioEngine {
     if (Object.hasOwn(options, 'volumeSource')) {
       this.setVolumeSource(options.volumeSource);
     }
+    if (Object.hasOwn(options, 'melodyTimbreSource')) {
+      this.setMelodyTimbreSource(options.melodyTimbreSource);
+    }
     if (Object.hasOwn(options, 'onPositionChange')) {
       this.onPositionChange = typeof options.onPositionChange === 'function'
         ? options.onPositionChange
@@ -1176,6 +1329,7 @@ export default class AudioEngine {
   async stop(time = this.now()) {
     this.transportRunning = false;
     this.stopChordClipSequencePreview();
+    this.stopMelodyPreview(time);
     const transport = this.getStartedTransport();
     transport?.stop?.(time);
     this.stopMelodyVoices(time);
