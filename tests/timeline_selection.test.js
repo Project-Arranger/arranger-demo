@@ -8,9 +8,33 @@ import {
   getTimelineSelectionClipIds,
   getTimelineSelectionPlaybackOptions,
   isTimelineCellSelected,
+  shouldStartTimelineMarquee,
 } from '../src/app/timelineSelection.js';
 
 const TRACK_IDS = ['drums', 'chord', 'bass', 'melody'];
+
+test('track marquee starts only for an unlocked Shift + primary-button gesture', () => {
+  assert.equal(shouldStartTimelineMarquee({
+    button: 0,
+    shiftKey: true,
+    tutorialLocked: false,
+  }), true);
+  assert.equal(shouldStartTimelineMarquee({
+    button: 0,
+    shiftKey: false,
+    tutorialLocked: false,
+  }), false);
+  assert.equal(shouldStartTimelineMarquee({
+    button: 1,
+    shiftKey: true,
+    tutorialLocked: false,
+  }), false);
+  assert.equal(shouldStartTimelineMarquee({
+    button: 0,
+    shiftKey: true,
+    tutorialLocked: true,
+  }), false);
+});
 
 test('timeline pointer positions clamp to visible track and bar cells', () => {
   const rect = {
@@ -57,6 +81,21 @@ test('timeline selection normalizes reverse drags into a rectangular range', () 
   assert.equal(isTimelineCellSelected(selection, 'bass', 4), true);
   assert.equal(isTimelineCellSelected(selection, 'drums', 4), false);
   assert.equal(isTimelineCellSelected(selection, 'melody', 6), false);
+});
+
+test('timeline selection treats a Shift click as a single track and bar cell', () => {
+  assert.deepEqual(
+    createTimelineSelection(
+      { bar: 3, trackId: 'bass' },
+      { bar: 3, trackId: 'bass' },
+      TRACK_IDS,
+    ),
+    {
+      startBar: 3,
+      endBar: 3,
+      trackIds: ['bass'],
+    },
+  );
 });
 
 test('ruler selection starts at the first visible track and follows the grid focus', () => {

@@ -21,6 +21,7 @@ import {
   createTimelineSelection,
   getTimelineCellFromPoint,
   isTimelineCellSelected,
+  shouldStartTimelineMarquee,
 } from '../timelineSelection.js';
 import { BAR_NUMBERS } from '../uiShellData.js';
 import { renderIcon } from './icons.js';
@@ -224,10 +225,11 @@ const Timeline = forwardRef(function Timeline(
   const [marqueeSession, setMarqueeSession] = useState(null);
   const [suppressNextClick, setSuppressNextClick] = useState(false);
   const feedbackTimerRef = useRef(null);
+  const gridClickResetTimerRef = useRef(null);
   const gridRef = useRef(null);
   const rulerClickResetTimerRef = useRef(null);
   const rulerRef = useRef(null);
-  const suppressTrackRowClickRef = useRef(false);
+  const suppressGridClickRef = useRef(false);
   const suppressRulerClickRef = useRef(false);
   const trackIds = useMemo(() => tracks.map((track) => track.id), [tracks]);
   const displayedTimelineSelection = marqueeSelection ?? timelineSelection;
@@ -264,6 +266,14 @@ const Timeline = forwardRef(function Timeline(
     }, 0);
   }, []);
 
+  const suppressGridClickAfterMarquee = useCallback(() => {
+    window.clearTimeout(gridClickResetTimerRef.current);
+    suppressGridClickRef.current = true;
+    gridClickResetTimerRef.current = window.setTimeout(() => {
+      suppressGridClickRef.current = false;
+    }, 0);
+  }, []);
+
   const startMarqueeSession = (event, anchor, source) => {
     flushSync(() => setMarqueeSession({
       anchor,
@@ -275,13 +285,7 @@ const Timeline = forwardRef(function Timeline(
 
   const handleClipMouseDown = (event, clip, trackId) => {
     event.stopPropagation();
-    if (event.shiftKey && !tutorialLocked) {
-      startMarqueeSession(event, {
-        bar: clip.bar,
-        trackId,
-      }, 'clip');
-      return;
-    }
+    if (event.shiftKey) return;
 
     flushSync(() => setDragSession({
       clipId: clip.id,
@@ -301,11 +305,6 @@ const Timeline = forwardRef(function Timeline(
   }, []);
 
   const handleTrackRowClick = (event, trackId) => {
-    if (suppressTrackRowClickRef.current) {
-      suppressTrackRowClickRef.current = false;
-      return;
-    }
-
     const target = event.target;
     if (target.closest('button')) return;
 
@@ -326,13 +325,35 @@ const Timeline = forwardRef(function Timeline(
     onTrackSelect(trackId, Number.isInteger(barIndex) ? barIndex : undefined);
   };
 
-  const handleMarqueeMouseDown = (event, trackId) => {
-    if (event.button !== 0 || tutorialLocked || event.target.closest('button')) return;
+  const handleGridMouseDownCapture = (event) => {
+    if (!shouldStartTimelineMarquee({
+      button: event.button,
+      shiftKey: event.shiftKey,
+      tutorialLocked,
+    })) {
+      return;
+    }
 
-    const bar = getBarFromRow(event.currentTarget, event.clientX);
-    if (bar === null) return;
+    const anchor = getTimelineCellFromPoint({
+      clientX: event.clientX,
+      clientY: event.clientY,
+      rect: gridRef.current?.getBoundingClientRect(),
+      trackIds,
+    });
+    if (!anchor) return;
 
-    startMarqueeSession(event, { bar, trackId }, 'grid');
+    event.preventDefault();
+    event.stopPropagation();
+    startMarqueeSession(event, anchor, 'track');
+  };
+
+  const handleGridClickCapture = (event) => {
+    if (!suppressGridClickRef.current) return;
+
+    window.clearTimeout(gridClickResetTimerRef.current);
+    suppressGridClickRef.current = false;
+    event.preventDefault();
+    event.stopPropagation();
   };
 
   const handleRulerMouseDown = (event) => {
@@ -378,6 +399,7 @@ const Timeline = forwardRef(function Timeline(
 
   useEffect(() => () => {
     window.clearTimeout(feedbackTimerRef.current);
+    window.clearTimeout(gridClickResetTimerRef.current);
     window.clearTimeout(rulerClickResetTimerRef.current);
   }, []);
 
@@ -437,14 +459,27 @@ const Timeline = forwardRef(function Timeline(
     if (!marqueeSession) return undefined;
 
     let dragged = false;
-    let latestSelection = null;
+    let latestSelection = marqueeSession.source === 'track'
+      ? createTimelineSelection(marqueeSession.anchor, marqueeSession.anchor, trackIds)
+      : null;
 
     const getSelectionAtPoint = (clientX, clientY) => {
       const gridRect = gridRef.current?.getBoundingClientRect();
+      if (!gridRect) return null;
       if (
         marqueeSession.source === 'ruler'
         && (
-          !gridRect
+          clientY < gridRect.top
+          || clientY > gridRect.bottom
+        )
+      ) {
+        return null;
+      }
+      if (
+        marqueeSession.source === 'track'
+        && (
+          clientX < gridRect.left
+          || clientX > gridRect.right
           || clientY < gridRect.top
           || clientY > gridRect.bottom
         )
@@ -482,19 +517,19 @@ const Timeline = forwardRef(function Timeline(
     };
 
     const handleMouseUp = (event) => {
-      if (dragged) {
-        const selection = getSelectionAtPoint(event.clientX, event.clientY)
-          ?? latestSelection;
-        if (marqueeSession.source === 'clip') {
-          suppressClipClickAfterDrag();
+      const selection = dragged
+        ? getSelectionAtPoint(event.clientX, event.clientY) ?? latestSelection
+        : latestSelection;
+
+      if (selection) {
+        if (marqueeSession.source === 'track') {
+          suppressGridClickAfterMarquee();
         } else if (marqueeSession.source === 'ruler') {
           window.clearTimeout(rulerClickResetTimerRef.current);
           suppressRulerClickRef.current = true;
           rulerClickResetTimerRef.current = window.setTimeout(() => {
             suppressRulerClickRef.current = false;
           }, 0);
-        } else {
-          suppressTrackRowClickRef.current = true;
         }
         onTimelineSelectionChange(selection);
       }
@@ -513,7 +548,7 @@ const Timeline = forwardRef(function Timeline(
   }, [
     marqueeSession,
     onTimelineSelectionChange,
-    suppressClipClickAfterDrag,
+    suppressGridClickAfterMarquee,
     trackIds,
   ]);
 
@@ -586,6 +621,8 @@ const Timeline = forwardRef(function Timeline(
           'grid',
           marqueeSession ? 'marquee-selecting' : '',
         ].filter(Boolean).join(' ')}
+        onClickCapture={handleGridClickCapture}
+        onMouseDownCapture={handleGridMouseDownCapture}
         ref={gridRef}
       >
         <div className="grid-glass" aria-hidden="true" />
@@ -608,7 +645,6 @@ const Timeline = forwardRef(function Timeline(
               data-track-index={trackIndex}
               key={track.id}
               onClick={(event) => handleTrackRowClick(event, track.id)}
-              onMouseDown={(event) => handleMarqueeMouseDown(event, track.id)}
             >
               {track.bars.map((bar) => {
                 const dropZoneClass = getDropZoneClass(track.id, bar.bar, dragOverBar, dragFeedback);

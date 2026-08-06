@@ -276,12 +276,15 @@ test('app shell renders the v0.22 arranger tracks and eight-bar timeline', async
   assert.match(timelineSource, /suppressRulerClickRef\.current = true/);
   assert.match(timelineSource, /if \(suppressRulerClickRef\.current\)/);
   assert.match(timelineSource, /rulerClickResetTimerRef\.current = window\.setTimeout/);
-  assert.match(timelineSource, /event\.shiftKey && !tutorialLocked/);
-  assert.match(timelineSource, /startMarqueeSession\(event,[\s\S]*clip\.bar,[\s\S]*trackId,[\s\S]*'clip'\)/);
+  assert.match(timelineSource, /shouldStartTimelineMarquee\(\{[\s\S]*button: event\.button,[\s\S]*shiftKey: event\.shiftKey,[\s\S]*tutorialLocked/);
+  assert.match(timelineSource, /startMarqueeSession\(event, anchor, 'track'\)/);
+  assert.match(timelineSource, /onMouseDownCapture=\{handleGridMouseDownCapture\}/);
+  assert.match(timelineSource, /onClickCapture=\{handleGridClickCapture\}/);
   assert.match(timelineSource, /startMarqueeSession\(event,[\s\S]*trackIds\[0\],[\s\S]*'ruler'\)/);
   assert.match(timelineSource, /createRulerTimelineSelection\([\s\S]*marqueeSession\.anchor\.bar,[\s\S]*focus,[\s\S]*trackIds/);
   assert.match(timelineSource, /const suppressClipClickAfterDrag = useCallback\(\(\) => \{[\s\S]*setSuppressNextClick\(true\);[\s\S]*window\.setTimeout\(\(\) => \{[\s\S]*setSuppressNextClick\(false\)/);
-  assert.match(timelineSource, /marqueeSession\.source === 'clip'[\s\S]*suppressClipClickAfterDrag\(\)/);
+  assert.match(timelineSource, /const suppressGridClickAfterMarquee = useCallback\(\(\) => \{[\s\S]*suppressGridClickRef\.current = true/);
+  assert.match(timelineSource, /marqueeSession\.source === 'track'[\s\S]*suppressGridClickAfterMarquee\(\)/);
   assert.match(timelineSource, /marqueeSession\.source === 'ruler'[\s\S]*suppressRulerClickRef\.current = true/);
   assert.match(timelineSource, /handlePlayheadMouseDown/);
   assert.match(timelineSource, /const handlePlayheadMouseDown = \(event\) => \{[\s\S]*event\.stopPropagation\(\)/);

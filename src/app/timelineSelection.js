@@ -7,6 +7,14 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
+function shouldStartTimelineMarquee({
+  button,
+  shiftKey,
+  tutorialLocked,
+} = {}) {
+  return button === 0 && shiftKey === true && tutorialLocked !== true;
+}
+
 function getTimelineCellFromPoint({
   clientX,
   clientY,
@@ -124,4 +132,5 @@ export {
   getTimelineSelectionClipIds,
   getTimelineSelectionPlaybackOptions,
   isTimelineCellSelected,
+  shouldStartTimelineMarquee,
 };
