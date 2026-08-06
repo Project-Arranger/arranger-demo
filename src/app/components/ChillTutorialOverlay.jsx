@@ -1,8 +1,6 @@
 import {
   ChevronLeft,
   ChevronRight,
-  Maximize2,
-  Minimize2,
   Pause,
   X,
 } from 'lucide-react';
@@ -12,7 +10,10 @@ import {
   useRef,
   useState,
 } from 'react';
-import { getContextualTutorialPosition } from '../../tutorial/contextualTutorialPosition.js';
+import {
+  getContextualTutorialPosition,
+  getUnionRect,
+} from '../../tutorial/contextualTutorialPosition.js';
 import { CHILL_TUTORIAL_RUN_STATES } from '../../tutorial/chillTutorialRuntime.js';
 import { renderIcon } from './icons.js';
 
@@ -28,14 +29,17 @@ function createRectSnapshot(rect) {
   };
 }
 
+function getStepTargets(step) {
+  return (step?.anchorSelectors ?? [])
+    .flatMap((selector) => [...document.querySelectorAll(selector)]);
+}
+
 function ChillTutorialOverlay({
   alreadyApplied = false,
-  expanded = false,
   onBack = () => {},
   onExit = () => {},
   onPause = () => {},
   onPrimary = () => {},
-  onToggleExpanded = () => {},
   runState = CHILL_TUTORIAL_RUN_STATES.IDLE,
   step,
   stepIndex = 0,
@@ -46,12 +50,15 @@ function ChillTutorialOverlay({
   const [targetMissing, setTargetMissing] = useState(false);
 
   const updatePosition = useCallback(() => {
-    const target = document.querySelector(step?.anchorSelector);
+    const targets = getStepTargets(step);
     const card = cardRef.current;
-    if (!target || !card) {
+    const targetRect = getUnionRect(
+      targets.map((target) => createRectSnapshot(target.getBoundingClientRect())),
+    );
+    if (!targetRect || !card) {
       setTargetMissing(true);
       setPosition({
-        left: Math.max(12, (window.innerWidth - 360) / 2),
+        left: Math.max(12, (window.innerWidth - 336) / 2),
         placement: 'safe',
         top: Math.max(88, window.innerHeight * 0.2),
       });
@@ -62,7 +69,7 @@ function ChillTutorialOverlay({
     const nextPosition = getContextualTutorialPosition({
       cardRect: createRectSnapshot(card.getBoundingClientRect()),
       placements: step.preferredPlacements,
-      targetRect: createRectSnapshot(target.getBoundingClientRect()),
+      targetRect,
       viewport: {
         height: window.innerHeight,
         width: window.innerWidth,
@@ -72,12 +79,14 @@ function ChillTutorialOverlay({
   }, [step]);
 
   useEffect(() => {
-    const target = document.querySelector(step?.anchorSelector);
-    target?.classList.add('chill-tutorial-target');
-    target?.setAttribute('data-chill-tutorial-target', 'true');
+    const targets = getStepTargets(step);
+    targets.forEach((target) => {
+      target.classList.add('chill-tutorial-target');
+      target.setAttribute('data-chill-tutorial-target', 'true');
+    });
 
     const resizeObserver = new ResizeObserver(updatePosition);
-    if (target) resizeObserver.observe(target);
+    targets.forEach((target) => resizeObserver.observe(target));
     if (cardRef.current) resizeObserver.observe(cardRef.current);
     const mutationObserver = new MutationObserver(updatePosition);
     mutationObserver.observe(document.body, {
@@ -89,8 +98,10 @@ function ChillTutorialOverlay({
     window.addEventListener('scroll', updatePosition, true);
     const animationFrameId = window.requestAnimationFrame(updatePosition);
     return () => {
-      target?.classList.remove('chill-tutorial-target');
-      target?.removeAttribute('data-chill-tutorial-target');
+      targets.forEach((target) => {
+        target.classList.remove('chill-tutorial-target');
+        target.removeAttribute('data-chill-tutorial-target');
+      });
       resizeObserver.disconnect();
       mutationObserver.disconnect();
       window.cancelAnimationFrame(animationFrameId);
@@ -105,16 +116,22 @@ function ChillTutorialOverlay({
   const primaryLabel = previewing
     ? '正在试听…'
     : completed
-      ? '听完了 ✓'
-      : alreadyApplied && !step.explicit
+      ? step.explicit ? '完成 ✓' : '听完了 ✓'
+      : alreadyApplied
         ? '重新试听并继续'
         : step.primaryLabel;
+  const message = targetMissing
+    ? '正在定位这一步，请稍候…'
+    : completed && step.explicit
+      ? step.completionMessage
+      : previewing || completed
+        ? step.listenFor
+        : step.instruction;
 
   return (
     <section
       className={[
         'chill-coachmark',
-        expanded ? 'expanded' : '',
         previewing ? 'previewing' : '',
         completed ? 'completed' : '',
         targetMissing ? 'target-missing' : '',
@@ -128,54 +145,12 @@ function ChillTutorialOverlay({
       aria-live="polite"
     >
       <div className="chill-coachmark-heading">
-        <div>
-          <span className="chill-coachmark-stage">
-            {step.stageLabel}
-            {' · '}
-            {step.trackId ? step.trackId.toUpperCase() : 'PLAYBACK'}
-          </span>
-          <h2>
-            {previewing
-              ? `正在试听：${step.title}`
-              : completed ? '听完了 ✓' : step.title}
-          </h2>
-        </div>
-        <button
-          className="chill-coachmark-icon"
-          type="button"
-          aria-label="退出教程"
-          title="退出教程"
-          onClick={onExit}
-        >
-          {renderIcon(X)}
-        </button>
+        <span className="chill-coachmark-stage">
+          {stepIndex + 1}/{stepCount} · {step.stageLabel}
+        </span>
       </div>
 
-      <p className="chill-coachmark-copy">
-        {targetMissing
-          ? '正在同步到这一步需要的轨道与编辑位置，请稍候。'
-          : step.detail}
-      </p>
-      {!targetMissing && step.actionSummary ? (
-        <div className="chill-coachmark-technical">
-          <span>编曲动作</span>
-          <p>{step.actionSummary}</p>
-        </div>
-      ) : null}
-      {expanded ? (
-        <p className="chill-coachmark-detail">
-          为什么这样编：鼓负责节奏、和弦负责气氛、低音负责方向、旋律负责记忆点，
-          再用留白让整段音乐保持松弛。
-        </p>
-      ) : null}
-
-      <div className="chill-coachmark-progress">
-        <span>进度</span>
-        <div className="chill-coachmark-progress-track" aria-hidden="true">
-          <span style={{ width: `${((stepIndex + 1) / stepCount) * 100}%` }} />
-        </div>
-        <strong className="mono">{stepIndex + 1}/{stepCount}</strong>
-      </div>
+      <p className="chill-coachmark-copy">{message}</p>
 
       <div className="chill-coachmark-actions">
         <button
@@ -192,13 +167,13 @@ function ChillTutorialOverlay({
             {renderIcon(ChevronLeft)}
             上一步
           </button>
-          <button type="button" onClick={onToggleExpanded}>
-            {renderIcon(expanded ? Minimize2 : Maximize2)}
-            {expanded ? '收起说明' : '展开说明'}
-          </button>
           <button type="button" onClick={onPause}>
             {renderIcon(Pause)}
-            暂停教程
+            暂停
+          </button>
+          <button type="button" onClick={onExit}>
+            {renderIcon(X)}
+            退出教程
           </button>
         </div>
       </div>

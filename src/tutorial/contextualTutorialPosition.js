@@ -37,6 +37,30 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), Math.max(min, max));
 }
 
+function getUnionRect(rects = []) {
+  const validRects = rects.filter((rect) => (
+    rect
+    && Number.isFinite(rect.left)
+    && Number.isFinite(rect.right)
+    && Number.isFinite(rect.top)
+    && Number.isFinite(rect.bottom)
+  ));
+  if (validRects.length === 0) return null;
+
+  const left = Math.min(...validRects.map((rect) => rect.left));
+  const right = Math.max(...validRects.map((rect) => rect.right));
+  const top = Math.min(...validRects.map((rect) => rect.top));
+  const bottom = Math.max(...validRects.map((rect) => rect.bottom));
+  return {
+    bottom,
+    height: bottom - top,
+    left,
+    right,
+    top,
+    width: right - left,
+  };
+}
+
 function getContextualTutorialPosition({
   cardRect,
   gap = DEFAULT_GAP,
@@ -67,4 +91,5 @@ export {
   DEFAULT_GAP,
   DEFAULT_MARGIN,
   getContextualTutorialPosition,
+  getUnionRect,
 };

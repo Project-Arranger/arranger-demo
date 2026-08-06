@@ -19,7 +19,7 @@ function TutorialLibraryPanel({
         <div>
           <span className="tutorial-library-kicker">LEARNING DECK</span>
           <h2>选择一个教程</h2>
-          <p>每个教程会独立保存编曲与进度。</p>
+          <p>每个教程会分别保存作品和进度。</p>
         </div>
         <button type="button" className="tutorial-library-close" onClick={onClose}>
           关闭
@@ -52,7 +52,7 @@ function TutorialLibraryPanel({
                   type="button"
                   onClick={() => onSelect(tutorial.id)}
                 >
-                  {canContinue ? '继续教程' : session?.completed ? '再次进入' : '开始教程'}
+                  {canContinue ? '继续教程' : session?.completed ? '再次体验' : '开始教程'}
                 </button>
                 {session?.hasStarted ? (
                   <button

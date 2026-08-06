@@ -1248,7 +1248,7 @@ test('tutorial navigation buttons interrupt preview playback', async () => {
   assert.match(source, /let tutorialAutoAdvanceTimerId = null/);
   assert.match(source, /function clearTutorialAutoAdvanceTimer\(\)/);
   assert.match(source, /window\.clearTimeout\(tutorialAutoAdvanceTimerId\)/);
-  assert.match(source, /function scheduleTutorialAutoAdvance\(callback\)/);
+  assert.match(source, /function scheduleTutorialAutoAdvance\(callback, delay = TUTORIAL_AUTO_ADVANCE_MS\)/);
   assert.match(tutorialControllerSource, /const \[tutorialCountInValue,\s*setTutorialCountInValue\] = useState\(null\);/);
   assert.match(tutorialControllerSource, /const tutorialCountInTimerIdsRef = useRef\(\[\]\);/);
   assert.match(tutorialControllerSource, /const clearTutorialCountIn = useCallback\(\(\) => \{[\s\S]*tutorialCountInTimerIdsRef\.current\.forEach\(\(timerId\) => window\.clearTimeout\(timerId\)\);[\s\S]*setTutorialCountInValue\(null\);/);
