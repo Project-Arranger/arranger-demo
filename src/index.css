@@ -10957,8 +10957,8 @@ body {
 .chill-coachmark {
   position: fixed;
   z-index: 160;
-  width: min(370px, calc(100vw - 24px));
-  padding: 17px;
+  width: min(336px, calc(100vw - 24px));
+  padding: 15px;
   color: #f2e6d2;
   border: 1px solid rgb(243 183 103 / 0.42);
   border-radius: 12px;
@@ -10993,9 +10993,7 @@ body {
 
 .chill-coachmark-heading {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+  align-items: center;
 }
 
 .chill-coachmark-stage,
@@ -11007,100 +11005,18 @@ body {
   text-transform: uppercase;
 }
 
-.chill-coachmark h2 {
-  margin: 5px 0 0;
-  color: #fff1d8;
-  font-size: 18px;
-  line-height: 1.24;
-}
-
-.chill-coachmark-icon {
-  display: inline-flex;
-  width: 30px;
-  height: 30px;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  color: #c7ae8e;
-  border: 1px solid rgb(225 186 133 / 0.2);
-  border-radius: 7px;
-  background: rgb(11 9 8 / 0.35);
-}
-
-.chill-coachmark-icon svg {
-  width: 15px;
-  height: 15px;
-}
-
-.chill-coachmark-copy,
-.chill-coachmark-detail {
-  margin: 13px 0 0;
-  color: #d8c6ad;
-  font-size: 13px;
-  line-height: 1.58;
-}
-
-.chill-coachmark-technical {
-  margin-top: 10px;
-  padding: 9px 10px;
-  color: #d8c2a3;
-  border: 1px solid rgb(226 169 97 / 0.2);
-  border-radius: 7px;
-  background: rgb(8 7 6 / 0.3);
-}
-
-.chill-coachmark-technical > span {
-  display: block;
-  margin-bottom: 4px;
-  color: #d8964d;
-  font-size: 9px;
-  font-weight: 850;
-  letter-spacing: 0.12em;
-}
-
-.chill-coachmark-technical > p {
-  margin: 0;
-  font-size: 11px;
-  line-height: 1.58;
-}
-
-.chill-coachmark-detail {
-  padding: 10px 11px;
-  color: #bfae98;
-  border-left: 2px solid rgb(224 151 75 / 0.7);
-  background: rgb(12 10 9 / 0.24);
-}
-
-.chill-coachmark-progress {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 9px;
-  margin-top: 14px;
-  color: #a9957d;
-  font-size: 10px;
-}
-
-.chill-coachmark-progress-track {
-  height: 4px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: rgb(10 8 7 / 0.68);
-  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.7);
-}
-
-.chill-coachmark-progress-track > span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #b56729, #f0b45e);
+.chill-coachmark-copy {
+  min-height: 43px;
+  margin: 11px 0 0;
+  color: #e0ceb5;
+  font-size: 14px;
+  line-height: 1.55;
 }
 
 .chill-coachmark-actions {
   display: grid;
-  gap: 9px;
-  margin-top: 15px;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .chill-coachmark-primary,
@@ -11143,7 +11059,7 @@ body {
 .chill-coachmark-tools button {
   display: inline-flex;
   min-height: 29px;
-  flex: 1 1 auto;
+  flex: 1 1 0;
   align-items: center;
   justify-content: center;
   gap: 5px;

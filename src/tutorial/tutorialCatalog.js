@@ -7,8 +7,8 @@ const TUTORIAL_CATALOG = Object.freeze([
   Object.freeze({
     id: TUTORIAL_IDS.CHILL_RAINY_STREET,
     title: 'Chill：雨夜街头',
-    description: '用 88 BPM 的四轨编曲，做出霓虹雨夜里松弛散步的画面。',
-    duration: '5–8 分钟',
+    description: '用 88 BPM 和四条轨道，完成一段有前奏、主题、变化和收尾的 8 小节编曲。',
+    duration: '3–4 分钟',
     runtime: 'contextual',
   }),
   Object.freeze({

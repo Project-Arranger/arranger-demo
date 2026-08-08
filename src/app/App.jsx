@@ -47,10 +47,10 @@ import {
   createChillTutorialSession,
 } from '../tutorial/chillTutorialSteps.js';
 import {
-  applyChillTutorialRecipe,
   createChillTutorialAppState,
   isChillTutorialScoreComplete,
 } from '../tutorial/chillTutorialScore.js';
+import { applyChillTutorialRecipeSequence } from '../tutorial/chillTutorialRecipeSequence.js';
 import {
   TUTORIAL_IDS,
 } from '../tutorial/tutorialCatalog.js';
@@ -143,6 +143,8 @@ import {
 } from './uiShellData.js';
 
 const TUTORIAL_AUTO_ADVANCE_MS = 450;
+const CHILL_STEP_AUTO_ADVANCE_MS = 300;
+const CHILL_COMPLETE_AUTO_ADVANCE_MS = 800;
 const CLEAR_TRACK_LABELS = Object.freeze({
   bass: 'Bass',
   chord: 'Chord',
@@ -163,12 +165,12 @@ function clearTutorialAutoAdvanceTimer() {
   tutorialAutoAdvanceTimerId = null;
 }
 
-function scheduleTutorialAutoAdvance(callback) {
+function scheduleTutorialAutoAdvance(callback, delay = TUTORIAL_AUTO_ADVANCE_MS) {
   clearTutorialAutoAdvanceTimer();
   tutorialAutoAdvanceTimerId = window.setTimeout(() => {
     tutorialAutoAdvanceTimerId = null;
     callback();
-  }, TUTORIAL_AUTO_ADVANCE_MS);
+  }, delay);
 }
 
 function createTrackActionScope(state, trackId = state.activeTrackId) {
@@ -2589,10 +2591,13 @@ export default function App() {
     const targetStepIndex = chillTutorialSession.stepIndex - 1;
     const checkpoint = chillStepCheckpointsRef.current[targetStepIndex];
     if (checkpoint?.appState) useMusicStore.setState(checkpoint.appState);
+    const completedSteps = CHILL_TUTORIAL_STEPS.slice(0, targetStepIndex);
     updateTutorialSession(TUTORIAL_IDS.CHILL_RAINY_STREET, (session) => ({
       ...session,
-      appliedRecipeIds: session.appliedRecipeIds.slice(0, targetStepIndex),
+      appliedRecipeIds: completedSteps.flatMap((step) => step.recipeIds),
       completed: false,
+      completedStepIds: completedSteps.map((step) => step.id),
+      runState: CHILL_TUTORIAL_RUN_STATES.IDLE,
       stepIndex: targetStepIndex,
     }));
   }, [
@@ -2629,7 +2634,10 @@ export default function App() {
     chillPreviewGenerationRef.current = generation;
     chillPreviewLifecycleRef.current = CHILL_TUTORIAL_RUN_STATES.PREVIEWING;
     updateTutorialSession(TUTORIAL_IDS.CHILL_RAINY_STREET, (session) => (
-      beginChillTutorialPreview(session, step.recipeId)
+      beginChillTutorialPreview(session, {
+        recipeIds: step.recipeIds,
+        stepId: step.id,
+      })
     ));
 
     audioEngine.setPlaybackCompleteHandler?.(() => {
@@ -2666,7 +2674,7 @@ export default function App() {
             ? advanceChillTutorialStep(session, CHILL_TUTORIAL_STEPS.length)
             : cancelChillTutorialPreview(session)
         ));
-      });
+      }, step.explicit ? CHILL_COMPLETE_AUTO_ADVANCE_MS : CHILL_STEP_AUTO_ADVANCE_MS);
     });
 
     void (async () => {
@@ -2714,9 +2722,16 @@ export default function App() {
     }
 
     const currentStepIndex = chillTutorialSession.stepIndex;
-    const recipeAlreadyApplied = chillTutorialSession.appliedRecipeIds.includes(step.recipeId);
-    if (!recipeAlreadyApplied) {
-      const recipePatch = applyChillTutorialRecipe(useMusicStore.getState(), step.recipeId);
+    const stepAlreadyApplied = chillTutorialSession.completedStepIds?.includes(step.id) ?? false;
+    if (!stepAlreadyApplied) {
+      const recipePatch = applyChillTutorialRecipeSequence(
+        useMusicStore.getState(),
+        step.recipeIds,
+        {
+          focusBar: step.focusBar,
+          focusTrackId: step.focusTrackId,
+        },
+      );
       if (!recipePatch) return;
       chillStepCheckpointsRef.current[currentStepIndex] = createTutorialCheckpoint({
         appState: useMusicStore.getState(),
@@ -2727,7 +2742,7 @@ export default function App() {
     }
     startChillTutorialPreview(step, currentStepIndex);
   }, [
-    chillTutorialSession.appliedRecipeIds,
+    chillTutorialSession.completedStepIds,
     chillTutorialSession.runState,
     chillTutorialSession.stepIndex,
     chillTutorialStep,
@@ -2735,24 +2750,17 @@ export default function App() {
     withUndoCheckpoint,
   ]);
 
-  const handleChillTutorialExpandedToggle = useCallback(() => {
-    updateTutorialSession(TUTORIAL_IDS.CHILL_RAINY_STREET, (session) => ({
-      ...session,
-      expanded: !session.expanded,
-    }));
-  }, [updateTutorialSession]);
-
   useEffect(() => {
-    if (!chillTutorialActive || !chillTutorialStep?.trackId) return undefined;
+    if (!chillTutorialActive || !chillTutorialStep?.focusTrackId) return undefined;
     const state = useMusicStore.getState();
     const clip = state.getClipForTrackBar(
-      chillTutorialStep.trackId,
-      chillTutorialStep.anchorBar,
+      chillTutorialStep.focusTrackId,
+      chillTutorialStep.focusBar,
     );
     if (clip && state.selectedClipId !== clip.id) state.selectClip(clip.id);
 
     const frameId = window.requestAnimationFrame(() => {
-      document.querySelector(chillTutorialStep.anchorSelector)?.scrollIntoView?.({
+      document.querySelector(chillTutorialStep.anchorSelectors[0])?.scrollIntoView?.({
         block: 'nearest',
         inline: 'nearest',
         behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -2871,12 +2879,12 @@ export default function App() {
       && !tutorialSidebarCollapsed
     );
   const tutorialToggleLabel = chillTutorialSession.paused
-    ? '恢复教程'
+    ? '继续教程'
     : tutorialPanelState === 'library'
       ? '关闭教程列表'
       : tutorialPanelState === 'running'
         ? '返回教程列表'
-        : '打开教程';
+        : '教程';
   const appClassName = [
     'app',
     tutorialSidebarOpen ? 'tutorial-sidebar-open' : 'tutorial-sidebar-collapsed',
@@ -3220,15 +3228,11 @@ export default function App() {
         })}
         {chillTutorialActive ? (
           <ChillTutorialOverlay
-            alreadyApplied={chillTutorialStep.recipeId
-              ? chillTutorialSession.appliedRecipeIds.includes(chillTutorialStep.recipeId)
-              : false}
-            expanded={chillTutorialSession.expanded}
+            alreadyApplied={chillTutorialSession.completedStepIds?.includes(chillTutorialStep.id)}
             onBack={handleChillTutorialBack}
             onExit={handleChillTutorialExit}
             onPause={handleChillTutorialPause}
             onPrimary={handleChillTutorialPrimary}
-            onToggleExpanded={handleChillTutorialExpandedToggle}
             runState={chillTutorialSession.runState}
             step={chillTutorialStep}
             stepCount={CHILL_TUTORIAL_STEPS.length}

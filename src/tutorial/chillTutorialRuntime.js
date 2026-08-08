@@ -4,15 +4,17 @@ const CHILL_TUTORIAL_RUN_STATES = Object.freeze({
   PREVIEWING: 'previewing',
 });
 
-function addAppliedRecipeId(appliedRecipeIds, recipeId) {
-  if (!recipeId || appliedRecipeIds.includes(recipeId)) return appliedRecipeIds;
-  return [...appliedRecipeIds, recipeId];
+function addUniqueIds(currentIds = [], nextIds = []) {
+  const uniqueIds = new Set(currentIds);
+  nextIds.filter(Boolean).forEach((id) => uniqueIds.add(id));
+  return [...uniqueIds];
 }
 
-function beginChillTutorialPreview(session, recipeId = null) {
+function beginChillTutorialPreview(session, { recipeIds = [], stepId = null } = {}) {
   return {
     ...session,
-    appliedRecipeIds: addAppliedRecipeId(session.appliedRecipeIds, recipeId),
+    appliedRecipeIds: addUniqueIds(session.appliedRecipeIds, recipeIds),
+    completedStepIds: addUniqueIds(session.completedStepIds, [stepId]),
     hasStarted: true,
     runState: CHILL_TUTORIAL_RUN_STATES.PREVIEWING,
   };
