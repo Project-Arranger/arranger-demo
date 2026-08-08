@@ -7,6 +7,10 @@ import {
   useState,
 } from 'react';
 import audioEngine from '../audio/audioEngineSingleton.js';
+import { getAudioExportTrackIds, renderProjectToWav } from '../export/audioFile.js';
+import { createExportFilename, downloadBlob } from '../export/download.js';
+import { createMidiFileBlob } from '../export/midiFile.js';
+import { createProjectFileBlob } from '../export/projectFile.js';
 import { APP_COMMAND_TYPES } from '../input/appCommands.js';
 import useKeyboardCommands from '../input/useKeyboardCommands.js';
 import useLaunchpadXCommands from '../input/useLaunchpadXCommands.js';
@@ -81,6 +85,7 @@ import {
   getMelodyRhythmTemplate,
 } from './melodyRhythmTemplates.js';
 import { BottomEditor } from './components/BottomEditor.jsx';
+import { ExportDialog } from './components/ExportDialog.jsx';
 import { Timeline } from './components/Timeline.jsx';
 import { TopBar } from './components/TopBar.jsx';
 import { TracksColumn } from './components/TracksColumn.jsx';
@@ -253,6 +258,8 @@ export default function App() {
     [activeTrackId, clips, melodyActive],
   );
   const [isNewSongConfirmOpen, setIsNewSongConfirmOpen] = useState(false);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [exportState, setExportState] = useState({ error: '', isExporting: false });
   const [pendingClearAction, setPendingClearAction] = useState(null);
   const [timelineSelection, setTimelineSelection] = useState(null);
   const [
@@ -682,6 +689,79 @@ export default function App() {
 
   const requestNewSong = useCallback(() => {
     setIsNewSongConfirmOpen(true);
+  }, []);
+
+  const openExportDialog = useCallback(() => {
+    setExportState({ error: '', isExporting: false });
+    setIsExportDialogOpen(true);
+  }, []);
+
+  const closeExportDialog = useCallback(() => {
+    if (exportState.isExporting) return;
+    setIsExportDialogOpen(false);
+  }, [exportState.isExporting]);
+
+  const handleExportAudio = useCallback(async () => {
+    setExportState({ error: '', isExporting: true });
+    try {
+      const { blob } = await renderProjectToWav(useMusicStore.getState());
+      downloadBlob(blob, createExportFilename('wav'));
+      setExportState({ error: '', isExporting: false });
+    } catch (error) {
+      setExportState({
+        error: error instanceof Error ? error.message : '音频导出失败，请再试一次。',
+        isExporting: false,
+      });
+    }
+  }, []);
+
+  const handleExportStems = useCallback(async () => {
+    setExportState({ error: '', isExporting: true });
+    try {
+      const state = useMusicStore.getState();
+      const trackIds = getAudioExportTrackIds(state);
+      if (trackIds.length === 0) {
+        throw new Error('工程里还没有可导出的音符。请先添加节奏或音符。');
+      }
+
+      for (const trackId of trackIds) {
+        const { blob } = await renderProjectToWav(state, { trackIds: [trackId] });
+        downloadBlob(
+          blob,
+          createExportFilename('wav', `project-arranger-${trackId}`),
+        );
+      }
+      setExportState({ error: '', isExporting: false });
+    } catch (error) {
+      setExportState({
+        error: error instanceof Error ? error.message : '音频分轨导出失败，请再试一次。',
+        isExporting: false,
+      });
+    }
+  }, []);
+
+  const handleExportMidi = useCallback(() => {
+    try {
+      downloadBlob(createMidiFileBlob(useMusicStore.getState()), createExportFilename('mid'));
+      setExportState({ error: '', isExporting: false });
+    } catch (error) {
+      setExportState({
+        error: error instanceof Error ? error.message : 'MIDI 导出失败，请再试一次。',
+        isExporting: false,
+      });
+    }
+  }, []);
+
+  const handleExportProject = useCallback(() => {
+    try {
+      downloadBlob(createProjectFileBlob(useMusicStore.getState()), createExportFilename('json'));
+      setExportState({ error: '', isExporting: false });
+    } catch (error) {
+      setExportState({
+        error: error instanceof Error ? error.message : '工程备份导出失败，请再试一次。',
+        isExporting: false,
+      });
+    }
   }, []);
 
   const cancelNewSong = useCallback(() => {
@@ -2839,6 +2919,7 @@ export default function App() {
           onBackToStart: handleBackToStart,
           onBpmChange: handleBpmChange,
           onCopyClip: handleCopySelectedClip,
+          onExport: openExportDialog,
           onNewSong: requestNewSong,
           onPasteClip: handlePasteClipRequestWithMelodyStop,
           onPlayToggle: handlePlayToggle,
@@ -2854,6 +2935,15 @@ export default function App() {
           tutorialToggleLabel,
           tutorialTargets: activeTutorialTargets,
         })}
+        {isExportDialogOpen ? createElement(ExportDialog, {
+          error: exportState.error,
+          isExporting: exportState.isExporting,
+          onClose: closeExportDialog,
+          onExportAudio: handleExportAudio,
+          onExportStems: handleExportStems,
+          onExportMidi: handleExportMidi,
+          onExportProject: handleExportProject,
+        }) : null}
         {chillTutorialActive ? createElement(ChillTutorialStageRail, {
           activeStageIndex: chillTutorialStep.stageIndex,
           stages: CHILL_TUTORIAL_STAGES,
