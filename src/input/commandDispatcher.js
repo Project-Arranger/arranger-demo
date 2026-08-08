@@ -36,6 +36,7 @@ function createAudioPlayOptions(store, state, audio, command = {}) {
         trackOrder: currentState.trackOrder,
       };
     },
+    melodyTimbreSource: () => store.getState().melodyTimbreId,
     onPositionChange: (bar, step) => {
       syncStoreTransportPosition(store, bar, step);
       positionObserver?.(bar, step);

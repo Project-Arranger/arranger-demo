@@ -148,14 +148,14 @@ test('drums tutorial v0.2 targets 1-6 keep exact table source columns', () => {
       section: '目标6\n在Melody轨即兴弹奏',
       trigger: '点击[继续探索]按钮',
       uiEvent: 'Melody轨填充整轨按钮闪烁',
-      copy: '尝试弹奏你喜欢的旋律乐句\n\n选择一个 Melody 风格模板\n风格模板会同时设置可用音和旋律落下的律动位置。先选中“中国风”，再点击“应用到全局”，整条 Melody 轨会使用同一套风格。',
+      copy: '尝试弹奏你喜欢的旋律乐句\n\n选择一个 Melody 风格模板\n风格模板会同时设置可用音、律动位置和推荐音色。先选中“中国风”，再点击“应用到全局”，整条 Melody 轨会使用同一套风格。',
       primaryLabel: '下一步',
     },
     {
       section: '目标6\n在Melody轨即兴弹奏',
       trigger: '点击Melody轨填充整轨按钮',
       uiEvent: 'Melody 风格模板入口、中国风卡片和应用到全局按钮闪烁',
-      copy: '尝试弹奏你喜欢的旋律乐句\n\n选择一个 Melody 风格模板\n风格模板会同时设置可用音和旋律落下的律动位置。先选中“中国风”，再点击“应用到全局”，整条 Melody 轨会使用同一套风格。',
+      copy: '尝试弹奏你喜欢的旋律乐句\n\n选择一个 Melody 风格模板\n风格模板会同时设置可用音、律动位置和推荐音色。先选中“中国风”，再点击“应用到全局”，整条 Melody 轨会使用同一套风格。',
       primaryLabel: '下一步',
     },
     {

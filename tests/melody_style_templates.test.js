@@ -14,10 +14,12 @@ test('Melody style templates contain the approved scales and rhythms only', () =
     'C', 'D', 'E', 'G', 'A',
   ]);
   assert.deepEqual(MELODY_STYLE_TEMPLATES.chinese.rhythmSteps, [2, 4, 8, 12, 14]);
+  assert.equal(MELODY_STYLE_TEMPLATES.chinese.recommendedTimbreId, 'yangqin');
   assert.deepEqual(MELODY_STYLE_TEMPLATES.blues.highlightedPitchClasses, [
     'C', 'D', 'D#', 'E', 'G', 'A',
   ]);
   assert.deepEqual(MELODY_STYLE_TEMPLATES.blues.rhythmSteps, [2, 4, 6, 10, 11, 12, 14]);
+  assert.equal(MELODY_STYLE_TEMPLATES.blues.recommendedTimbreId, 'blues');
 });
 
 test('legacy Melody state falls back to Chinese and drops per-clip rhythms', () => {
@@ -41,6 +43,7 @@ test('legacy Melody state falls back to Chinese and drops per-clip rhythms', () 
 
   assert.equal(normalized.melodyScaleId, 'chinese');
   assert.equal(normalized.melodyRhythmTemplateId, null);
+  assert.equal(normalized.melodyTimbreId, 'piano');
   assert.equal(
     Object.hasOwn(normalized.clips.byId['melody-bar-0'], 'melodyRhythmTemplateId'),
     false,

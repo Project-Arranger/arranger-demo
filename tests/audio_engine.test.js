@@ -306,6 +306,8 @@ test('createDrumsSampleUrls maps drums instruments to v0.22 samples', () => {
 
 test('createMelodySampleUrls maps melody anchor samples for sampler playback', () => {
   const urls = createMelodySampleUrls('/arranger/');
+  const yangqinUrls = createMelodySampleUrls('/arranger/', 'yangqin');
+  const bluesUrls = createMelodySampleUrls('/arranger/', 'blues');
 
   assert.equal(urls.C2, versioned('/arranger/samples/Melody/Melody_C2_v0.22.wav'));
   assert.equal(urls.C3, versioned('/arranger/samples/Melody/Melody_C3_v0.22.wav'));
@@ -318,6 +320,15 @@ test('createMelodySampleUrls maps melody anchor samples for sampler playback', (
   assert.equal(urls['C#4'], undefined);
   assert.ok(Object.values(urls).every((url) => url.includes('/samples/Melody/')));
   assert.ok(Object.values(urls).every((url) => !url.includes('/lead-old/')));
+  assert.equal(
+    yangqinUrls.C3,
+    versioned('/arranger/samples/Melody/Yangqin/Yangqin_C3.wav'),
+  );
+  assert.equal(
+    bluesUrls['D#3'],
+    versioned('/arranger/samples/Melody/Blues/Blues_DSharp3.wav'),
+  );
+  assert.equal(bluesUrls.F3, undefined);
 });
 
 test('createBassSampleUrls maps v0.22 bass anchor samples for sampler playback', () => {
@@ -717,6 +728,7 @@ test('AudioEngine cancels pending free-playing attacks when input voices are cle
 
 test('AudioEngine previews Melody sequences as timed input one-shots', async () => {
   const tone = createFakeTone();
+  const timers = createManualTimers();
   const inputSampler = {
     toDestination: () => inputSampler,
     triggerAttack: (note, time) => tone.calls.push(['input.triggerAttack', note, time]),
@@ -726,16 +738,46 @@ test('AudioEngine previews Melody sequences as timed input one-shots', async () 
     melodyInputSamplerFactory: () => inputSampler,
     playerFactory: createPlayerFactory(tone.calls),
     samplerFactory: createSamplerFactory(tone.calls),
+    scheduleTimeout: timers.scheduleTimeout,
+    cancelTimeout: timers.cancelTimeout,
   });
 
-  assert.deepEqual(await engine.previewMelodySequence(
+  assert.equal(await engine.previewMelodySequence(
     ['C4', 'E4', 'G4'],
     { duration: '32n', intervalSeconds: 0.2 },
-  ), [true, true, true]);
+  ), true);
+  assert.deepEqual(timers.getDelays(), [0, 200, 400]);
+  timers.runThrough(400);
   assert.deepEqual(tone.calls.filter(([name]) => name.startsWith('input.')), [
     ['input.triggerAttack', 'C4', 12.5],
-    ['input.triggerAttack', 'E4', 12.7],
-    ['input.triggerAttack', 'G4', 12.9],
+    ['input.triggerAttack', 'E4', 12.5],
+    ['input.triggerAttack', 'G4', 12.5],
+  ]);
+});
+
+test('AudioEngine cancels stale Melody previews before their scheduled notes fire', async () => {
+  const tone = createFakeTone();
+  const timers = createManualTimers();
+  const inputSampler = {
+    releaseAll: (time) => tone.calls.push(['input.releaseAll', time]),
+    toDestination: () => inputSampler,
+    triggerAttack: (note, time) => tone.calls.push(['input.triggerAttack', note, time]),
+  };
+  const engine = new AudioEngine({
+    tone,
+    melodyInputSamplerFactory: () => inputSampler,
+    playerFactory: createPlayerFactory(tone.calls),
+    samplerFactory: createSamplerFactory(tone.calls),
+    scheduleTimeout: timers.scheduleTimeout,
+    cancelTimeout: timers.cancelTimeout,
+  });
+
+  assert.equal(await engine.previewMelodySequence(['C4', 'E4']), true);
+  assert.equal(engine.stopMelodyPreview(), true);
+  timers.runThrough(1000);
+  assert.deepEqual(tone.calls.filter(([name]) => name === 'input.triggerAttack'), []);
+  assert.deepEqual(tone.calls.filter(([name]) => name === 'input.releaseAll'), [
+    ['input.releaseAll', 12.5],
   ]);
 });
 
@@ -1290,6 +1332,114 @@ test('AudioEngine applies current track volumes to matrix playback events', asyn
       createMelodySampleUrls(),
     ],
   ]);
+});
+
+test('AudioEngine uses the selected Melody timbre bank and its configured gain', async () => {
+  const tone = createFakeTone();
+  const matrix = createInitialMatrix();
+  matrix.melody[0][0] = { type: 'melody', note: 'D#4' };
+  const engine = new AudioEngine({
+    tone,
+    matrixSource: matrix,
+    melodyTimbreSource: () => 'blues',
+    volumeSource: () => ({ melody: -4 }),
+    playerFactory: createVolumeAwarePlayerFactory(tone.calls),
+    samplerFactory: createVolumeAwareSamplerFactory(tone.calls),
+  });
+
+  await engine.play({ bpm: 120 });
+  tone.Transport.scheduledCallback(24);
+
+  assert.deepEqual(tone.calls.filter(([name]) => name === 'sampler.triggerAttack'), [[
+    'sampler.triggerAttack',
+    'D#4',
+    24,
+    -7,
+    createMelodySampleUrls('/', 'blues'),
+  ]]);
+});
+
+test('AudioEngine prepares each Melody timbre once and reuses its preview bank', async () => {
+  const tone = createFakeTone();
+  tone.loaded = async () => tone.calls.push(['tone.loaded']);
+  let previewFactoryCalls = 0;
+  const engine = new AudioEngine({
+    tone,
+    melodyInputSamplerFactory: (urls) => {
+      previewFactoryCalls += 1;
+      tone.calls.push(['preview.urls', urls]);
+      return {
+        toDestination() { return this; },
+      };
+    },
+    playerFactory: createPlayerFactory(tone.calls),
+    samplerFactory: createSamplerFactory(tone.calls),
+  });
+
+  assert.equal(await engine.prepareMelodyTimbre('yangqin'), true);
+  assert.equal(await engine.prepareMelodyTimbre('yangqin'), true);
+  assert.equal(previewFactoryCalls, 1);
+  assert.equal(tone.calls.filter(([name]) => name === 'tone.loaded').length, 1);
+  assert.equal(
+    tone.calls.find(([name]) => name === 'preview.urls')[1].C3,
+    createMelodySampleUrls('/', 'yangqin').C3,
+  );
+});
+
+test('AudioEngine clears a failed Melody timbre load so the same bank can be retried', async () => {
+  const tone = createFakeTone();
+  let loadAttempts = 0;
+  tone.loaded = async () => {
+    loadAttempts += 1;
+    if (loadAttempts === 1) throw new Error('sample load failed');
+  };
+  let previewFactoryCalls = 0;
+  const engine = new AudioEngine({
+    tone,
+    melodyInputSamplerFactory: () => {
+      previewFactoryCalls += 1;
+      return {
+        dispose: () => tone.calls.push(['preview.dispose']),
+        releaseAll: () => tone.calls.push(['preview.releaseAll']),
+        toDestination() { return this; },
+      };
+    },
+    playerFactory: createPlayerFactory(tone.calls),
+    samplerFactory: createSamplerFactory(tone.calls),
+  });
+
+  assert.equal(await engine.prepareMelodyTimbre('yangqin'), false);
+  assert.equal(await engine.prepareMelodyTimbre('yangqin'), true);
+  assert.equal(previewFactoryCalls, 2);
+  assert.equal(loadAttempts, 2);
+  assert.equal(tone.calls.some(([name]) => name === 'preview.dispose'), true);
+});
+
+test('AudioEngine changes prepared Melody timbres during playback without stopping Transport', async () => {
+  const tone = createFakeTone();
+  const matrix = createInitialMatrix();
+  matrix.melody[0][0] = { type: 'melody', note: 'C4' };
+  matrix.melody[0][1] = { type: 'melody', note: 'D4' };
+  let timbreId = 'piano';
+  const engine = new AudioEngine({
+    tone,
+    matrixSource: matrix,
+    melodyTimbreSource: () => timbreId,
+    playerFactory: createPlayerFactory(tone.calls),
+    samplerFactory: createSamplerFactory(tone.calls),
+  });
+
+  await engine.play({ bpm: 120 });
+  tone.Transport.scheduledCallback(24);
+  timbreId = 'blues';
+  assert.equal(await engine.prepareMelodyTimbre(timbreId), true);
+  assert.equal(engine.activateMelodyTimbre(timbreId), true);
+  tone.Transport.scheduledCallback(24.125);
+
+  const melodyCalls = tone.calls.filter(([name]) => name === 'sampler.triggerAttack');
+  assert.equal(melodyCalls[0][3].C4, createMelodySampleUrls('/', 'piano').C4);
+  assert.equal(melodyCalls[1][3].C4, createMelodySampleUrls('/', 'blues').C4);
+  assert.equal(tone.calls.some(([name]) => name === 'transport.stop'), false);
 });
 
 test('AudioEngine keeps duplicate track instance volume and mute channels independent', async () => {

@@ -11,9 +11,11 @@ import {
 } from '../../domain/trackInstances.js';
 import { createEmptyTrackMatrix } from '../createInitialMatrix.js';
 import {
+  getMelodyStyleTemplate,
   normalizeMelodyScaleId,
   normalizeMelodyStyleTemplateId,
 } from '../../data/melodyStyleTemplates.js';
+import { normalizeMelodyTimbreId } from '../../data/melodyTimbres.js';
 
 function removeObjectKey(object, key) {
   const nextObject = { ...object };
@@ -28,6 +30,7 @@ export default function createContextSlice(set, get) {
     activeTrackId: 'drums',
     melodyRhythmTemplateId: null,
     melodyScaleId: 'chinese',
+    melodyTimbreId: 'piano',
     selectedBar: 0,
     selectedClipId: null,
     visibleTrackIds: [...CORE_TRACK_IDS],
@@ -165,12 +168,19 @@ export default function createContextSlice(set, get) {
     setMelodyScaleId: (melodyScaleId) => set({
       melodyScaleId: normalizeMelodyScaleId(melodyScaleId),
     }),
-    setMelodyStyleTemplate: (templateId) => {
+    setMelodyTimbreId: (melodyTimbreId) => set({
+      melodyTimbreId: normalizeMelodyTimbreId(melodyTimbreId),
+    }),
+    setMelodyStyleTemplate: (templateId, timbreId) => {
       const normalizedTemplateId = normalizeMelodyStyleTemplateId(templateId);
       if (!normalizedTemplateId) return false;
+      const template = getMelodyStyleTemplate(normalizedTemplateId);
       set({
         melodyRhythmTemplateId: normalizedTemplateId,
         melodyScaleId: normalizedTemplateId,
+        melodyTimbreId: normalizeMelodyTimbreId(
+          timbreId ?? template?.recommendedTimbreId,
+        ),
       });
       return true;
     },

@@ -7,6 +7,10 @@ import {
   useState,
 } from 'react';
 import audioEngine from '../audio/audioEngineSingleton.js';
+import { getAudioExportTrackIds, renderProjectToWav } from '../export/audioFile.js';
+import { createExportFilename, downloadBlob } from '../export/download.js';
+import { createMidiFileBlob } from '../export/midiFile.js';
+import { createProjectFileBlob } from '../export/projectFile.js';
 import { APP_COMMAND_TYPES } from '../input/appCommands.js';
 import useKeyboardCommands from '../input/useKeyboardCommands.js';
 import useLaunchpadXCommands from '../input/useLaunchpadXCommands.js';
@@ -81,6 +85,7 @@ import {
   getMelodyRhythmTemplate,
 } from './melodyRhythmTemplates.js';
 import { BottomEditor } from './components/BottomEditor.jsx';
+import { ExportDialog } from './components/ExportDialog.jsx';
 import { Timeline } from './components/Timeline.jsx';
 import { TopBar } from './components/TopBar.jsx';
 import { TracksColumn } from './components/TracksColumn.jsx';
@@ -198,6 +203,7 @@ export default function App() {
   const activeTrackId = useMusicStore((state) => state.activeTrackId);
   const melodyRhythmTemplateId = useMusicStore((state) => state.melodyRhythmTemplateId);
   const melodyScaleId = useMusicStore((state) => state.melodyScaleId);
+  const melodyTimbreId = useMusicStore((state) => state.melodyTimbreId);
   const selectedBar = useMusicStore((state) => state.selectedBar);
   const selectedClipId = useMusicStore((state) => state.selectedClipId);
   const clips = useMusicStore((state) => state.clips);
@@ -252,6 +258,8 @@ export default function App() {
     [activeTrackId, clips, melodyActive],
   );
   const [isNewSongConfirmOpen, setIsNewSongConfirmOpen] = useState(false);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [exportState, setExportState] = useState({ error: '', isExporting: false });
   const [pendingClearAction, setPendingClearAction] = useState(null);
   const [timelineSelection, setTimelineSelection] = useState(null);
   const [
@@ -526,9 +534,20 @@ export default function App() {
   }, [handlePasteClipRequest, stopDrumsRecording, stopMelodyRecording]);
 
   useEffect(() => {
-    if (!melodyEditorIsOpen) return;
-    void audioEngine.startAudio();
-  }, [melodyEditorIsOpen]);
+    audioEngine.setMelodyTimbreSource?.(() => useMusicStore.getState().melodyTimbreId);
+    return () => audioEngine.setMelodyTimbreSource?.(null);
+  }, []);
+
+  useEffect(() => {
+    if (!melodyEditorIsOpen) return undefined;
+    let cancelled = false;
+    void audioEngine.prepareMelodyTimbre?.(melodyTimbreId).then((ready) => {
+      if (!cancelled && ready) audioEngine.activateMelodyTimbre?.(melodyTimbreId);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [melodyEditorIsOpen, melodyTimbreId]);
 
   useEffect(() => () => {
     chillPreviewGenerationRef.current += 1;
@@ -670,6 +689,79 @@ export default function App() {
 
   const requestNewSong = useCallback(() => {
     setIsNewSongConfirmOpen(true);
+  }, []);
+
+  const openExportDialog = useCallback(() => {
+    setExportState({ error: '', isExporting: false });
+    setIsExportDialogOpen(true);
+  }, []);
+
+  const closeExportDialog = useCallback(() => {
+    if (exportState.isExporting) return;
+    setIsExportDialogOpen(false);
+  }, [exportState.isExporting]);
+
+  const handleExportAudio = useCallback(async () => {
+    setExportState({ error: '', isExporting: true });
+    try {
+      const { blob } = await renderProjectToWav(useMusicStore.getState());
+      downloadBlob(blob, createExportFilename('wav'));
+      setExportState({ error: '', isExporting: false });
+    } catch (error) {
+      setExportState({
+        error: error instanceof Error ? error.message : '音频导出失败，请再试一次。',
+        isExporting: false,
+      });
+    }
+  }, []);
+
+  const handleExportStems = useCallback(async () => {
+    setExportState({ error: '', isExporting: true });
+    try {
+      const state = useMusicStore.getState();
+      const trackIds = getAudioExportTrackIds(state);
+      if (trackIds.length === 0) {
+        throw new Error('工程里还没有可导出的音符。请先添加节奏或音符。');
+      }
+
+      for (const trackId of trackIds) {
+        const { blob } = await renderProjectToWav(state, { trackIds: [trackId] });
+        downloadBlob(
+          blob,
+          createExportFilename('wav', `project-arranger-${trackId}`),
+        );
+      }
+      setExportState({ error: '', isExporting: false });
+    } catch (error) {
+      setExportState({
+        error: error instanceof Error ? error.message : '音频分轨导出失败，请再试一次。',
+        isExporting: false,
+      });
+    }
+  }, []);
+
+  const handleExportMidi = useCallback(() => {
+    try {
+      downloadBlob(createMidiFileBlob(useMusicStore.getState()), createExportFilename('mid'));
+      setExportState({ error: '', isExporting: false });
+    } catch (error) {
+      setExportState({
+        error: error instanceof Error ? error.message : 'MIDI 导出失败，请再试一次。',
+        isExporting: false,
+      });
+    }
+  }, []);
+
+  const handleExportProject = useCallback(() => {
+    try {
+      downloadBlob(createProjectFileBlob(useMusicStore.getState()), createExportFilename('json'));
+      setExportState({ error: '', isExporting: false });
+    } catch (error) {
+      setExportState({
+        error: error instanceof Error ? error.message : '工程备份导出失败，请再试一次。',
+        isExporting: false,
+      });
+    }
   }, []);
 
   const cancelNewSong = useCallback(() => {
@@ -1728,17 +1820,27 @@ export default function App() {
     });
   }, [melodyRecording, selectedBar, withUndoCheckpoint]);
 
-  const handleMelodyPreview = useCallback((noteOrNotes) => {
+  const handleMelodyPreview = useCallback((noteOrNotes, options = {}) => {
     const trackId = useMusicStore.getState().activeTrackId;
     if (Array.isArray(noteOrNotes)) {
-      void audioEngine.previewMelodySequence(noteOrNotes, { trackId });
-      return;
+      return audioEngine.previewMelodySequence(noteOrNotes, {
+        trackId,
+        timbreId: options.timbreId,
+      });
     }
 
-    void audioEngine.triggerMelodyInputOneShot(noteOrNotes, undefined, { trackId });
+    return audioEngine.triggerMelodyInputOneShot(noteOrNotes, undefined, { trackId });
   }, []);
 
-  const handleMelodyStyleTemplateApply = useCallback((templateId) => {
+  const handleMelodyPreviewStop = useCallback(() => {
+    audioEngine.stopMelodyPreview?.();
+  }, []);
+
+  const handleMelodyTimbrePrepare = useCallback((timbreId) => (
+    audioEngine.prepareMelodyTimbre?.(timbreId) ?? Promise.resolve(false)
+  ), []);
+
+  const handleMelodyStyleTemplateApply = useCallback((templateId, timbreId) => {
     let tutorialAction = null;
     if (tutorialActive && currentTutorialStep?.id === TUTORIAL_STEP_IDS.MELODY_SELECT_SCALE) {
       tutorialAction = handleTutorialControlAction({
@@ -1753,10 +1855,12 @@ export default function App() {
 
     melodyRecording.stopRecording();
     melodyRecording.clearActiveNotes();
-    withUndoCheckpoint(() => {
-      const applied = useMusicStore.getState().setMelodyStyleTemplate(templateId);
+    return withUndoCheckpoint(() => {
+      const applied = useMusicStore.getState().setMelodyStyleTemplate(templateId, timbreId);
       if (!applied) return;
+      audioEngine.activateMelodyTimbre?.(timbreId);
       if (tutorialAction) applyTutorialActionProgress(tutorialAction);
+      return true;
     }, { force: Boolean(tutorialAction) });
   }, [
     applyTutorialActionProgress,
@@ -2815,6 +2919,7 @@ export default function App() {
           onBackToStart: handleBackToStart,
           onBpmChange: handleBpmChange,
           onCopyClip: handleCopySelectedClip,
+          onExport: openExportDialog,
           onNewSong: requestNewSong,
           onPasteClip: handlePasteClipRequestWithMelodyStop,
           onPlayToggle: handlePlayToggle,
@@ -2830,6 +2935,15 @@ export default function App() {
           tutorialToggleLabel,
           tutorialTargets: activeTutorialTargets,
         })}
+        {isExportDialogOpen ? createElement(ExportDialog, {
+          error: exportState.error,
+          isExporting: exportState.isExporting,
+          onClose: closeExportDialog,
+          onExportAudio: handleExportAudio,
+          onExportStems: handleExportStems,
+          onExportMidi: handleExportMidi,
+          onExportProject: handleExportProject,
+        }) : null}
         {chillTutorialActive ? createElement(ChillTutorialStageRail, {
           activeStageIndex: chillTutorialStep.stageIndex,
           stages: CHILL_TUTORIAL_STAGES,
@@ -3051,6 +3165,7 @@ export default function App() {
           clips: editorClips,
           drumsRecordingState: drumsRecording.recordingState,
           melodyScaleId,
+          melodyTimbreId,
           melodyActiveInputNotes: melodyRecording.activeInputNotes,
           melodyRecordingState: melodyRecording.recordingState,
           melodyRhythmTemplateId,
@@ -3075,12 +3190,14 @@ export default function App() {
           onClearMelody: handleClearMelody,
           onClearMelodyBar: handleClearMelodyBar,
           onMelodyPreview: handleMelodyPreview,
+          onMelodyPreviewStop: handleMelodyPreviewStop,
           onMelodyNoteOff: melodyRecording.handleNoteOff,
           onMelodyNoteOn: melodyRecording.handleNoteOn,
           onMelodyRecordCancel: melodyRecording.cancelRecord,
           onMelodyRecordConfirm: melodyRecording.confirmRecord,
           onMelodyWriteToggle: melodyRecording.requestWriteToggle,
           onMelodyStyleTemplateApply: handleMelodyStyleTemplateApply,
+          onMelodyTimbrePrepare: handleMelodyTimbrePrepare,
           onMelodyStepToggle: handleMelodyStepToggle,
           onRenameClip: handleRenameClip,
           onClearCurrentDrumsBar: handleClearCurrentDrumsBar,

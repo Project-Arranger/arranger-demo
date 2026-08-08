@@ -240,6 +240,7 @@ function createMultimodalRecommendationAppState({ bpm = RECOMMENDED_BPM } = {}) 
     matrix: createInitialMatrix(),
     melodyRhythmTemplateId: null,
     melodyScaleId: 'chinese',
+    melodyTimbreId: 'piano',
     mutedTracks: Object.fromEntries(CORE_TRACK_IDS.map((trackId) => [trackId, false])),
     rootKey: ROOT_KEY,
     scale: SCALE,

@@ -120,6 +120,7 @@ function TopBar({
   onNewSong = () => {},
   onPlayToggle,
   onCopyClip = () => {},
+  onExport = () => {},
   onPasteClip = () => {},
   onStop,
   onTutorialToggle,
@@ -300,7 +301,15 @@ function TopBar({
           <span className="dot" />
           Saved
         </div>
-        <button className="hardware-export">Export</button>
+        <button
+          className="hardware-export"
+          type="button"
+          aria-label="导出项目"
+          title="导出音频、MIDI 或工程备份"
+          onClick={onExport}
+        >
+          Export
+        </button>
         <button className="icon-btn" aria-label="Settings" title="Settings">
           {renderIcon(Settings)}
         </button>

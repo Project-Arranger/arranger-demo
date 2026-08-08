@@ -1,3 +1,5 @@
+import { normalizeMelodyTimbreId } from './melodyTimbres.js';
+
 const MELODY_STYLE_TEMPLATES = Object.freeze({
   chinese: Object.freeze({
     id: 'chinese',
@@ -7,6 +9,7 @@ const MELODY_STYLE_TEMPLATES = Object.freeze({
     rhythmSteps: Object.freeze([2, 4, 8, 12, 14]),
     description: '五声音阶搭配留白充足的律动，旋律简洁、清晰。',
     footLabel: '5 个音 · 5 个律动位置',
+    recommendedTimbreId: 'yangqin',
   }),
   blues: Object.freeze({
     id: 'blues',
@@ -16,6 +19,7 @@ const MELODY_STYLE_TEMPLATES = Object.freeze({
     rhythmSteps: Object.freeze([2, 4, 6, 10, 11, 12, 14]),
     description: '加入 D# 布鲁斯音，配合更密的切分律动，带来更强的摇摆感。',
     footLabel: '6 个音 · 7 个律动位置',
+    recommendedTimbreId: 'blues',
   }),
 });
 
@@ -54,6 +58,7 @@ function normalizeMelodyProjectState(state = {}) {
       state.melodyRhythmTemplateId,
     ),
     melodyScaleId: normalizeMelodyScaleId(state.melodyScaleId),
+    melodyTimbreId: normalizeMelodyTimbreId(state.melodyTimbreId),
   };
 }
 
