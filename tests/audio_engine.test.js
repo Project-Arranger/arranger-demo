@@ -322,13 +322,22 @@ test('createMelodySampleUrls maps melody anchor samples for sampler playback', (
   assert.ok(Object.values(urls).every((url) => !url.includes('/lead-old/')));
   assert.equal(
     yangqinUrls.C3,
-    versioned('/arranger/samples/Melody/Yangqin/Yangqin_C3.wav'),
+    versioned('/arranger/samples/Melody/Yangqin/Yangqin_C2.wav'),
+  );
+  assert.equal(
+    yangqinUrls.C5,
+    versioned('/arranger/samples/Melody/Yangqin/Yangqin_C4.wav'),
   );
   assert.equal(
     bluesUrls['D#3'],
-    versioned('/arranger/samples/Melody/Blues/Blues_DSharp3.wav'),
+    versioned('/arranger/samples/Melody/Blues/Blues_DSharp2.wav'),
+  );
+  assert.equal(
+    bluesUrls['D#5'],
+    versioned('/arranger/samples/Melody/Blues/Blues_DSharp4.wav'),
   );
   assert.equal(bluesUrls.F3, undefined);
+  assert.equal(yangqinUrls.C2, undefined);
 });
 
 test('createBassSampleUrls maps v0.22 bass anchor samples for sampler playback', () => {

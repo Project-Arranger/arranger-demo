@@ -19,7 +19,7 @@ test('Melody timbres expose Piano plus the two approved template recommendations
   assert.equal(normalizeMelodyTimbreId(null), 'piano');
 });
 
-test('Melody timbre sample maps cover the intended three-octave anchors', () => {
+test('Melody timbre sample maps align provided 2–4 labels with UI octaves 3–5', () => {
   const piano = getMelodyTimbre('piano').sampleFiles;
   const yangqin = getMelodyTimbre('yangqin').sampleFiles;
   const blues = getMelodyTimbre('blues').sampleFiles;
@@ -27,12 +27,13 @@ test('Melody timbre sample maps cover the intended three-octave anchors', () => 
   assert.equal(Object.keys(piano).length, 21);
   assert.equal(Object.keys(yangqin).length, 21);
   assert.equal(Object.keys(blues).length, 18);
-  assert.equal(yangqin.C2, 'samples/Melody/Yangqin/Yangqin_C2.wav');
-  assert.equal(yangqin.B4, 'samples/Melody/Yangqin/Yangqin_B4.wav');
-  assert.equal(blues['D#2'], 'samples/Melody/Blues/Blues_DSharp2.wav');
-  assert.equal(blues['D#4'], 'samples/Melody/Blues/Blues_DSharp4.wav');
+  assert.equal(yangqin.C3, 'samples/Melody/Yangqin/Yangqin_C2.wav');
+  assert.equal(yangqin.B5, 'samples/Melody/Yangqin/Yangqin_B4.wav');
+  assert.equal(blues['D#3'], 'samples/Melody/Blues/Blues_DSharp2.wav');
+  assert.equal(blues['D#5'], 'samples/Melody/Blues/Blues_DSharp4.wav');
   assert.equal(blues.F3, undefined);
-  assert.equal(blues.C5, undefined);
+  assert.equal(blues.C2, undefined);
+  assert.equal(yangqin.C2, undefined);
 });
 
 test('all configured non-Piano Melody samples exist in public assets', async () => {
