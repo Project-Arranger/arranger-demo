@@ -12,6 +12,7 @@ import {
   normalizeBpm,
 } from '../domain/bpm.js';
 import createInitialMatrix from '../store/createInitialMatrix.js';
+import { createChillTutorialMatrix } from '../tutorial/chillTutorialScore.js';
 
 const MULTIMODAL_MEDIA_LIMITS = Object.freeze({
   image: 20 * 1024 * 1024,
@@ -229,6 +230,7 @@ function createMultimodalClips() {
 }
 
 function createMultimodalRecommendationAppState({ bpm = RECOMMENDED_BPM } = {}) {
+  const matrix = createInitialMatrix();
   return {
     ...createDefaultTrackState(),
     activeTrackId: 'drums',
@@ -237,7 +239,10 @@ function createMultimodalRecommendationAppState({ bpm = RECOMMENDED_BPM } = {}) 
     currentBar: 0,
     currentStep: 0,
     isPlaying: false,
-    matrix: createInitialMatrix(),
+    matrix: {
+      ...matrix,
+      ...createChillTutorialMatrix(),
+    },
     melodyRhythmTemplateId: null,
     melodyScaleId: 'chinese',
     melodyTimbreId: 'piano',
