@@ -276,7 +276,7 @@ function PianoRoll({
                           onPointerDown={(event) => {
                             if (!onCellPressStart) return;
                             event.currentTarget.setPointerCapture?.(event.pointerId);
-                            onCellPressStart(step, note.note);
+                            onCellPressStart(step, note.note, event);
                           }}
                           onPointerUp={(event) => {
                             if (!onCellPressEnd) return;

@@ -1,6 +1,39 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { getMelodyInputContextKey } from '../src/input/useLaunchpadXCommands.js';
+
+test('free Melody recording keeps held Launchpad notes across automatic bar selection', () => {
+  const recordingState = { mode: 'free', phase: 'recording' };
+  assert.equal(
+    getMelodyInputContextKey({
+      melodyActive: true,
+      melodyRecordingState: recordingState,
+      melodyScaleId: 'chinese',
+      selectedBar: 2,
+    }),
+    getMelodyInputContextKey({
+      melodyActive: true,
+      melodyRecordingState: recordingState,
+      melodyScaleId: 'chinese',
+      selectedBar: 3,
+    }),
+  );
+  assert.notEqual(
+    getMelodyInputContextKey({
+      melodyActive: true,
+      melodyRecordingState: { mode: null, phase: 'idle' },
+      melodyScaleId: 'chinese',
+      selectedBar: 2,
+    }),
+    getMelodyInputContextKey({
+      melodyActive: true,
+      melodyRecordingState: { mode: null, phase: 'idle' },
+      melodyScaleId: 'chinese',
+      selectedBar: 3,
+    }),
+  );
+});
 
 test('App shares one UI-aware command entry point between keyboard and Launchpad X', async () => {
   const source = await readFile(new URL('../src/app/App.jsx', import.meta.url), 'utf8');
@@ -49,6 +82,7 @@ test('Launchpad X hook requests non-SysEx access, binds both ports, and redraws 
   assert.match(source, /findLaunchpadXMidiInput\(access\.inputs\.values\(\)\)/);
   assert.match(source, /findLaunchpadXMidiOutput\(access\.outputs\.values\(\)\)/);
   assert.match(source, /mapLaunchpadXMessageToCommand\(event\.data, contextRef\.current\)/);
+  assert.match(source, /mappedCommand\?\.type === APP_COMMAND_TYPES\.MELODY_NOTE_ON[\s\S]*inputTimestampMs: midiTimestampMs/);
   assert.match(source, /createLaunchpadXChordGestureController/);
   assert.match(source, /chordGestureRef\.current\.handle\(event\.data\)/);
   assert.match(source, /command\?\.type === APP_COMMAND_TYPES\.DRUMS_SELECT_CLIP[\s\S]*contextRef\.current = \{[\s\S]*selectedBar: command\.bar/);

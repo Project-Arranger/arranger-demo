@@ -52,6 +52,24 @@ function getErrorMessage(error) {
   return '无法访问 MIDI 设备';
 }
 
+function getMelodyInputContextKey({
+  melodyActive,
+  melodyRecordingState,
+  melodyScaleId,
+  selectedBar,
+}) {
+  const keepNotesAcrossPlaybackBars = (
+    melodyRecordingState?.mode === 'free'
+    && melodyRecordingState?.phase === 'recording'
+  );
+  return [
+    melodyActive ? 'active' : 'inactive',
+    melodyRecordingState?.phase ?? 'idle',
+    melodyScaleId,
+    keepNotesAcrossPlaybackBars ? 'free-recording' : selectedBar,
+  ].join(':');
+}
+
 function detachInput(input) {
   if (!input) return;
   input.onmidimessage = null;
@@ -250,9 +268,13 @@ function useLaunchpadXCommands({
 
     const message = parseLaunchpadXMessage(event.data);
     const mappedCommand = mapLaunchpadXMessageToCommand(event.data, contextRef.current);
+    const midiTimestampMs = event.timeStamp;
     const command = mappedCommand?.type === APP_COMMAND_TYPES.DRUMS_PREVIEW
       ? { ...mappedCommand, inputSource: 'launchpad' }
-      : mappedCommand;
+      : mappedCommand?.type === APP_COMMAND_TYPES.MELODY_NOTE_ON
+        && Number.isFinite(midiTimestampMs)
+        ? { ...mappedCommand, inputTimestampMs: midiTimestampMs }
+        : mappedCommand;
     let melodyPadChanged = false;
     if (
       contextRef.current.melodyActive
@@ -323,12 +345,12 @@ function useLaunchpadXCommands({
     if (melodyPadChanged) sendLedFrame();
   }, [sendLedFrame]);
 
-  const melodyInputContextKey = [
-    melodyActive ? 'active' : 'inactive',
-    melodyRecordingState?.phase ?? 'idle',
+  const melodyInputContextKey = getMelodyInputContextKey({
+    melodyActive,
+    melodyRecordingState,
     melodyScaleId,
     selectedBar,
-  ].join(':');
+  });
   const melodyInputContextKeyRef = useRef(melodyInputContextKey);
 
   useEffect(() => {
@@ -513,5 +535,9 @@ function useLaunchpadXCommands({
   };
 }
 
-export { MIDI_CONNECTION_STATUS, useLaunchpadXCommands };
+export {
+  getMelodyInputContextKey,
+  MIDI_CONNECTION_STATUS,
+  useLaunchpadXCommands,
+};
 export default useLaunchpadXCommands;

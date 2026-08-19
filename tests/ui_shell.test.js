@@ -850,6 +850,10 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   );
   const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
 
+  assert.match(
+    source,
+    /const melodyEditorIsOpen = activeTrackType === 'melody' && Boolean\(selectedClipId\);/,
+  );
   assert.match(uiDataSource, /melody:\s*'Melody'/);
   assert.match(contextSliceSource, /melodyScaleId:\s*'chinese'/);
   assert.match(contextSliceSource, /melodyRhythmTemplateId:\s*null/);
@@ -1012,7 +1016,7 @@ test('app exposes the melody editor and keeps melody as the internal track id', 
   assert.match(source, /control:\s*TUTORIAL_CONTROL_TARGETS\.MELODY_STYLE_APPLY_GLOBAL/);
   assert.match(source, /handleClearMelodyBar/);
   assert.match(source, /state\.clearTrack\(action\.trackId\)/);
-  assert.match(source, /activeTrackType === 'melody' && selectedClipId/);
+  assert.match(source, /activeTrackType === 'melody' && Boolean\(selectedClipId\)/);
   assert.match(source, /audioEngine\.startAudio/);
 });
 

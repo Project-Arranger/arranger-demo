@@ -210,6 +210,7 @@ function MelodyEditor({
     event.currentTarget.setPointerCapture?.(event.pointerId);
     onMelodyNoteOn({
       inputId: getVirtualMelodyInputId(cell.rowIndex, cell.column, event.pointerId),
+      inputTimestampMs: event.timeStamp,
       note: cell.note,
       source: MELODY_INPUT_SOURCES.VIRTUAL,
     });
@@ -468,8 +469,9 @@ function MelodyEditor({
             ? (_step, note) => onMelodyNoteOff({ inputId: `virtual:piano-roll:${note}`, note })
             : undefined,
           onCellPressStart: recordingActive
-            ? (_step, note) => onMelodyNoteOn({
+            ? (_step, note, event) => onMelodyNoteOn({
               inputId: `virtual:piano-roll:${note}`,
+              inputTimestampMs: event.timeStamp,
               note,
               source: MELODY_INPUT_SOURCES.VIRTUAL,
             })
