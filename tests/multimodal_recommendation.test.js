@@ -23,6 +23,10 @@ import {
   STEPS_PER_BAR,
   TOTAL_BARS,
 } from '../src/domain/musicConstants.js';
+import {
+  createChillTutorialMatrix,
+  isChillTutorialScoreComplete,
+} from '../src/tutorial/chillTutorialScore.js';
 
 test('BPM controls normalize integer values into the supported project range', () => {
   assert.equal(BPM_MIN, 60);
@@ -148,8 +152,9 @@ test('per-track timbre selection accepts only options owned by that track', () =
   );
 });
 
-test('applying the recommendation creates an exact empty eight-bar four-track framework', () => {
+test('applying the recommendation loads the complete eight-bar Chill arrangement', () => {
   const state = createMultimodalRecommendationAppState({ bpm: 96 });
+  const expectedMatrix = createChillTutorialMatrix();
 
   assert.equal(state.bpm, 96);
   assert.equal(state.rootKey, 'C');
@@ -166,6 +171,7 @@ test('applying the recommendation creates an exact empty eight-bar four-track fr
   assert.equal(state.currentBar, 0);
   assert.equal(state.currentStep, 0);
   assert.equal(state.isPlaying, false);
+  assert.equal(isChillTutorialScoreComplete(state.matrix), true);
 
   CORE_TRACK_IDS.forEach((trackId) => {
     assert.equal(
@@ -173,9 +179,9 @@ test('applying the recommendation creates an exact empty eight-bar four-track fr
       TOTAL_BARS,
     );
     assert.equal(state.matrix[trackId].length, TOTAL_BARS);
-    state.matrix[trackId].forEach((bar) => {
+    state.matrix[trackId].forEach((bar, barIndex) => {
       assert.equal(bar.length, STEPS_PER_BAR);
-      assert.equal(bar.every((cell) => cell === null), true);
+      assert.deepEqual(bar, expectedMatrix[trackId][barIndex]);
     });
   });
 });
