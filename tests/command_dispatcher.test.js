@@ -504,6 +504,13 @@ test('keyboard map turns common keys into app commands', () => {
     createMelodyNoteOn('C5', 'keyboard:KeyQ'),
   );
   assert.deepEqual(
+    mapKeyboardEventToCommand(
+      { type: 'keydown', code: 'KeyQ', key: 'q', timeStamp: 654.25 },
+      { activeTrackId: 'melody', melodyScaleId: 'major' },
+    ),
+    { ...createMelodyNoteOn('C5', 'keyboard:KeyQ'), inputTimestampMs: 654.25 },
+  );
+  assert.deepEqual(
     mapKeyboardEventToCommand({ type: 'keyup', code: 'KeyQ', key: 'й' }, { activeTrackId: 'drums', melodyScaleId: 'pentatonic' }),
     createMelodyNoteOff('keyboard:KeyQ'),
   );

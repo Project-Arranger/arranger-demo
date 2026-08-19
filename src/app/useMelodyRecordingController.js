@@ -225,6 +225,22 @@ function normalizeMelodyNoteOffInput(input) {
   return input ?? {};
 }
 
+function resolveFreeMelodyRecordingPosition(session, position) {
+  if (
+    session?.mode !== MELODY_RECORDING_MODES.FREE
+    || !Number.isInteger(position?.bar)
+    || !Number.isInteger(position?.step)
+    || position.step < 0
+    || position.step >= STEPS_PER_BAR
+    || !session.targetBars.includes(position.bar)
+    || !session.preparedBars.has(position.bar)
+  ) {
+    return null;
+  }
+
+  return { bar: position.bar, step: position.step };
+}
+
 function registerActiveMelodyInput(activeInputMap, inputId, note) {
   if (!(activeInputMap instanceof Map) || activeInputMap.has(inputId)) {
     return { accepted: false, firstSourceForNote: false };
@@ -837,7 +853,12 @@ function useMelodyRecordingController({
   }, [clearActiveNotes, dispatchAppCommand, setTemplateOverview, updateRecordingState]);
 
   const handleNoteOn = useCallback((input) => {
-    const { inputId, note } = normalizeMelodyNoteOnInput(input);
+    const {
+      inputId,
+      inputTimestampMs,
+      note,
+      source,
+    } = normalizeMelodyNoteOnInput(input);
     if (typeof inputId !== 'string' || !inputId || typeof note !== 'string') {
       return { recorded: false };
     }
@@ -933,30 +954,32 @@ function useMelodyRecordingController({
       return { recorded: false };
     }
 
-    if (
-      state.currentBar !== session.currentBar
-      || !session.preparedBars.has(session.currentBar)
-    ) {
-      return { recorded: false };
-    }
-    const step = Math.max(0, Math.min(STEPS_PER_BAR - 1, state.currentStep));
+    const position = resolveFreeMelodyRecordingPosition(
+      session,
+      audioEngine.getLiveInputPosition?.(inputTimestampMs, { source }),
+    );
+    if (!position) return { recorded: false };
+    const { bar, step } = position;
     if (activeFreeNoteRef.current) {
-      const previousStartStep = activeFreeNoteRef.current.startStep;
+      const previousNote = activeFreeNoteRef.current;
+      const availableDuration = previousNote.bar === bar
+        ? step - previousNote.startStep
+        : STEPS_PER_BAR - previousNote.startStep;
       finalizeActiveNote({
-        maxDurationSteps: Math.max(1, step - previousStartStep),
+        maxDurationSteps: Math.max(1, availableDuration),
       });
     }
     const currentState = useMusicStore.getState();
     const nextMatrix = setMelodyCell(
       { ...currentState.matrix, melody: currentState.matrix[session.trackId] },
-      session.currentBar,
+      bar,
       step,
       note,
       1,
     );
     writeMelodyMatrix(nextMatrix, session.trackId);
     activeFreeNoteRef.current = {
-      bar: session.currentBar,
+      bar,
       note,
       startedAt: nowMilliseconds(),
       startStep: step,
@@ -1100,5 +1123,6 @@ export {
   recordTemplateMelodyNote,
   registerActiveMelodyInput,
   releaseActiveMelodyInput,
+  resolveFreeMelodyRecordingPosition,
   useMelodyRecordingController,
 };

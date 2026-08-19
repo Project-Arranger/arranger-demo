@@ -21,6 +21,7 @@ import {
   recordTemplateMelodyNote,
   registerActiveMelodyInput,
   releaseActiveMelodyInput,
+  resolveFreeMelodyRecordingPosition,
 } from '../src/app/useMelodyRecordingController.js';
 import { replaceMelodyBarWithSequence } from '../src/app/melodyActions.js';
 import createInitialMatrix from '../src/store/createInitialMatrix.js';
@@ -123,6 +124,26 @@ test('free recording helpers quantize duration and choose mode from clip templat
   assert.deepEqual(getMelodyWriteBarRange(-1), []);
   assert.equal(hasMelodyNotesInRange(matrix, 0, 7), true);
   assert.equal(hasMelodyNotesInRange(matrix, 1, 7), false);
+});
+
+test('free recording resolves note-on from live audio time across a scheduled bar boundary', () => {
+  const session = {
+    currentBar: 4,
+    mode: MELODY_RECORDING_MODES.FREE,
+    preparedBars: new Set([3, 4]),
+    targetBars: [3, 4, 5],
+  };
+
+  assert.deepEqual(
+    resolveFreeMelodyRecordingPosition(session, { bar: 3, step: 15 }),
+    { bar: 3, step: 15 },
+  );
+  assert.deepEqual(
+    resolveFreeMelodyRecordingPosition(session, { bar: 4, step: 0 }),
+    { bar: 4, step: 0 },
+  );
+  assert.equal(resolveFreeMelodyRecordingPosition(session, { bar: 5, step: 0 }), null);
+  assert.equal(resolveFreeMelodyRecordingPosition(session, { bar: 6, step: 0 }), null);
 });
 
 test('template workflow exposes overview, step-edit, and capture state', () => {

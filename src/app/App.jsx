@@ -215,7 +215,7 @@ export default function App() {
   const trackOrder = useMusicStore((state) => state.trackOrder);
   const primaryChordTrackId = useMusicStore((state) => state.primaryChordTrackId);
   const activeTrackType = getTrackType({ trackInstancesById }, activeTrackId);
-  const melodyEditorIsOpen = activeTrackType === 'melody' && selectedClipId;
+  const melodyEditorIsOpen = activeTrackType === 'melody' && Boolean(selectedClipId);
   const chordActive = activeTrackType === 'chord'
     && Boolean(selectedClipId)
     && clips.byId[selectedClipId]?.trackId === activeTrackId;

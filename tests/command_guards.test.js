@@ -285,6 +285,7 @@ test('melody note commands only accept configured melody notes', () => {
     ...overrides,
   });
   assert.equal(isValidAppCommand(noteOn('D4')), true);
+  assert.equal(isValidAppCommand(noteOn('D4', { inputTimestampMs: 321.5 })), true);
   assert.equal(isValidAppCommand({ type: 'melody.noteOff', inputId: 'keyboard:KeyA' }), true);
   assert.equal(isValidAppCommand({ type: 'melody.noteOff', inputId: 'virtual:1:0:4', note: 'E4' }), true);
   assert.equal(isValidAppCommand(noteOn('C#4')), true);
@@ -293,6 +294,7 @@ test('melody note commands only accept configured melody notes', () => {
   assert.equal(isValidAppCommand(noteOn('B2')), false);
   assert.equal(isValidAppCommand(noteOn('C6')), false);
   assert.equal(isValidAppCommand(noteOn('C4', { source: 'mouse' })), false);
+  assert.equal(isValidAppCommand(noteOn('C4', { inputTimestampMs: -1 })), false);
   assert.equal(isValidAppCommand({ type: 'melody.noteOn', note: 'C4' }), false);
   assert.equal(isValidAppCommand({ type: 'melody.noteOff', inputId: '', note: 'D4' }), false);
   assert.equal(isValidAppCommand({ type: 'melody.noteOff', inputId: 'keyboard:KeyA', velocity: 100 }), false);

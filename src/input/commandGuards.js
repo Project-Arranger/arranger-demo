@@ -149,11 +149,15 @@ function hasValidChordClearCellPayload(command) {
 function hasValidMelodyPayload(command) {
   if (command.type === APP_COMMAND_TYPES.MELODY_NOTE_ON) {
     return (
-      hasOnlyKeys(command, ['type', 'note', 'inputId', 'source'])
+      hasOnlyKeys(command, ['type', 'note', 'inputId', 'inputTimestampMs', 'source'])
       && MELODY_NOTE_IDS.includes(command.note)
       && typeof command.inputId === 'string'
       && command.inputId.length > 0
       && Object.values(MELODY_INPUT_SOURCES).includes(command.source)
+      && (
+        !('inputTimestampMs' in command)
+        || (Number.isFinite(command.inputTimestampMs) && command.inputTimestampMs >= 0)
+      )
     );
   }
 

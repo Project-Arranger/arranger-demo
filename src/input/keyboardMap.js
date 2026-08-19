@@ -133,6 +133,7 @@ function mapKeyboardEventToCommand(event, state = {}) {
       return {
         type: APP_COMMAND_TYPES.MELODY_NOTE_ON,
         inputId: getKeyboardMelodyInputId(event.code),
+        ...(Number.isFinite(event.timeStamp) ? { inputTimestampMs: event.timeStamp } : {}),
         note: cell.note,
         source: MELODY_INPUT_SOURCES.KEYBOARD,
       };
