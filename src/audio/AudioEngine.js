@@ -239,6 +239,7 @@ export default class AudioEngine {
     this.currentStep = 0;
     this.positionNotificationGeneration = 0;
     this.transportRunning = false;
+    this.playRequestId = 0;
     this.chordClipPreviewRequestId = 0;
     this.chordClipPreviewSession = null;
   }
@@ -637,6 +638,19 @@ export default class AudioEngine {
     }
 
     return this.status;
+  }
+
+  async prepareMatrixPlaybackSamples() {
+    try {
+      this.bassSampler = this.bassSampler ?? this.createBassSampler();
+      this.ensureGlobalMelodySampler('oneShot');
+      if (typeof this.tone?.loaded === 'function') {
+        await this.tone.loaded();
+      }
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   loadDrumsPlayers() {
@@ -1286,6 +1300,7 @@ export default class AudioEngine {
 
   async play(options = {}) {
     this.stopChordClipSequencePreview();
+    const requestId = ++this.playRequestId;
     await this.startAudio();
     if (Object.hasOwn(options, 'volumeSource')) {
       this.setVolumeSource(options.volumeSource);
@@ -1308,6 +1323,8 @@ export default class AudioEngine {
         ? options.onPlaybackComplete
         : null;
     }
+    await this.prepareMatrixPlaybackSamples();
+    if (requestId !== this.playRequestId) return false;
     this.audibleTrackIds = normalizeAudibleTrackIds(options.audibleTrackIds);
     this.maxPlaybackSteps = normalizeMaxPlaybackSteps(options.maxPlaybackSteps);
     this.playedSteps = 0;
@@ -1319,14 +1336,17 @@ export default class AudioEngine {
 
     this.getStartedTransport()?.start?.();
     this.transportRunning = true;
+    return true;
   }
 
   async pause() {
+    this.playRequestId += 1;
     this.transportRunning = false;
     this.getStartedTransport()?.pause?.();
   }
 
   async stop(time = this.now()) {
+    this.playRequestId += 1;
     this.transportRunning = false;
     this.stopChordClipSequencePreview();
     this.stopMelodyPreview(time);
