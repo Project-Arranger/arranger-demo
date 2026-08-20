@@ -1021,6 +1021,85 @@ test('AudioEngine syncs transport play pause stop and seek', async () => {
   ]);
 });
 
+test('AudioEngine waits for matrix samples before starting first playback', async () => {
+  const tone = createFakeTone();
+  const matrix = createInitialMatrix();
+  const chordSampleCalls = [];
+  const chordFallbackCalls = [];
+  let resolveSamples;
+  let markSamplesLoading;
+  let samplesReady = false;
+  matrix.chord[0][0] = { root: 'C', quality: 'maj', label: 'C' };
+  const samplesLoading = new Promise((resolve) => {
+    markSamplesLoading = resolve;
+  });
+  tone.loaded = () => {
+    tone.calls.push(['tone.loaded']);
+    markSamplesLoading();
+    return new Promise((resolve) => {
+      resolveSamples = resolve;
+    });
+  };
+  const engine = new AudioEngine({
+    tone,
+    matrixSource: matrix,
+    playerFactory: createPlayerFactory(tone.calls),
+    chordSamplerFactory: () => ({
+      triggerAttackRelease: (notes) => {
+        if (!samplesReady) throw new Error('chord sample is not ready');
+        chordSampleCalls.push(notes);
+      },
+    }),
+    chordSynthFactory: () => ({
+      triggerAttackRelease: (notes) => chordFallbackCalls.push(notes),
+    }),
+    samplerFactory: createSamplerFactory(tone.calls),
+  });
+
+  const playPromise = engine.play({ bpm: 88 });
+  await samplesLoading;
+
+  assert.equal(tone.calls.some(([name]) => name === 'tone.loaded'), true);
+  assert.equal(tone.calls.some(([name]) => name === 'transport.start'), false);
+
+  samplesReady = true;
+  resolveSamples();
+  assert.equal(await playPromise, true);
+  assert.equal(tone.calls.some(([name]) => name === 'transport.start'), true);
+  tone.Transport.scheduledCallback(24);
+  assert.deepEqual(chordSampleCalls, [['C4', 'E4', 'G4']]);
+  assert.deepEqual(chordFallbackCalls, []);
+});
+
+test('AudioEngine does not start stale playback after stopping during sample loading', async () => {
+  const tone = createFakeTone();
+  let resolveSamples;
+  let markSamplesLoading;
+  const samplesLoading = new Promise((resolve) => {
+    markSamplesLoading = resolve;
+  });
+  tone.loaded = () => {
+    markSamplesLoading();
+    return new Promise((resolve) => {
+      resolveSamples = resolve;
+    });
+  };
+  const engine = new AudioEngine({
+    tone,
+    matrixSource: createInitialMatrix(),
+    playerFactory: createPlayerFactory(tone.calls),
+    samplerFactory: createSamplerFactory(tone.calls),
+  });
+
+  const playPromise = engine.play({ bpm: 88 });
+  await samplesLoading;
+  await engine.stop();
+  resolveSamples();
+
+  assert.equal(await playPromise, false);
+  assert.equal(tone.calls.some(([name]) => name === 'transport.start'), false);
+});
+
 test('AudioEngine changes live tempo without seeking or restarting transport', async () => {
   const tone = createFakeTone();
   const engine = new AudioEngine({
