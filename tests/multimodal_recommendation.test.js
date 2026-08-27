@@ -186,7 +186,7 @@ test('applying the recommendation loads the complete eight-bar Chill arrangement
   });
 });
 
-test('multimodal UI keeps upload intact and presents a simplified recommendation summary', async () => {
+test('multimodal UI keeps the approved Notion analysis copy and interactive instrument picker', async () => {
   const [
     screenSource,
     bpmSource,
@@ -205,26 +205,54 @@ test('multimodal UI keeps upload intact and presents a simplified recommendation
   assert.match(screenSource, /controls[\s\S]*muted[\s\S]*playsInline/);
   assert.match(screenSource, /BpmControl/);
   assert.doesNotMatch(screenSource, /function ChoiceChips/);
-  assert.match(screenSource, /TrackRecommendationPicker/);
-  assert.match(screenSource, /results-summary/);
-  assert.match(screenSource, /Chill · 雨夜街头/);
-  assert.match(screenSource, /C 大调/);
-  assert.match(screenSource, /8 小节/);
-  assert.match(screenSource, /slice\(0, 4\)/);
+  assert.match(screenSource, /function TrackRecommendationPicker/);
+  assert.match(screenSource, /MULTIMODAL_RECOMMENDATION\.tracks\.slice\(0, 4\)/);
   assert.match(screenSource, /track-recommendation-list/);
-  assert.match(screenSource, /track-recommendation-row/);
   assert.match(screenSource, /track-timbre-options/);
-  assert.match(screenSource, /已选择 \{selectedTrackIds\.length\} 条/);
-  assert.match(screenSource, /AI 推荐这 4 条轨道/);
-  assert.match(screenSource, /鼓定节拍，和弦铺底，低音衔接，旋律形成记忆点/);
-  assert.match(screenSource, /雨夜街头画面，适合舒缓速度、柔和鼓点和温暖电钢琴/);
-  assert.match(screenSource, /还想加其他声音/);
-  assert.match(screenSource, /氛围铺底 \/ 环境声/);
-  assert.match(screenSource, /查看和弦顺序与段落安排/);
-  assert.match(screenSource, /disabled=\{selected && selectedTrackIds\.length === 1\}/);
-  assert.match(screenSource, /role="radiogroup"/);
-  assert.match(screenSource, /生成完整编曲/);
+  assert.match(screenSource, /results-copy-only/);
+  assert.match(screenSource, /showFallbackCopy=\{false\}/);
+  assert.match(screenSource, /unit="bpm"/);
+
+  const resultsViewSource = screenSource.slice(
+    screenSource.indexOf('function ResultsView'),
+    screenSource.indexOf('function MultimodalFlowScreen'),
+  );
+  [
+    '画面描述',
+    '地面略微潮湿，刚下过雨，几个滑板青年悠闲地在街头漫步，穿着打扮符合日式街头潮流',
+    '曲风描述',
+    '整体应接近City Pop质感，音色听起来温暖、柔和；节奏中速偏慢，听起来悠闲舒缓的同时有较强的律动感，符合图中人物穿着的潮流感和街头感；旋律应偏向轻松明亮，同时有一定都市霓虹的现代感',
+    'AI音乐风格建议',
+    '速度和节奏',
+    '中速偏慢 |',
+    '4/4拍，节奏设计密集且律动感强',
+    '乐器搭配',
+    '旋律和声',
+    'C大调，流行音乐最常用的Doo-Wop和弦进行，听感和谐流畅；配合七和弦增加听觉色彩和张力',
+    'Cmaj7 - Am7 - Fmaj7 - G7',
+  ].forEach((copy) => assert.match(resultsViewSource, new RegExp(copy.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))));
+
+  [
+    'Chill · 雨夜街头',
+    'AI 推荐这 4 条轨道',
+    '画面分析完成',
+    '生成完整编曲',
+    '查看和弦顺序与段落安排',
+    '8 小节',
+  ].forEach((copy) => assert.doesNotMatch(resultsViewSource, new RegExp(copy.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))));
+  [
+    '鼓',
+    '和弦',
+    '低音',
+    '旋律',
+    '柔和电子鼓',
+    '温暖电钢琴',
+    '圆润电贝司',
+    '空气感合成器',
+  ].forEach((copy) => assert.match(screenSource, new RegExp(copy)));
   assert.match(bpmSource, /BPM_PRESETS\.map/);
+  assert.match(bpmSource, /unit = 'BPM'/);
+  assert.match(bpmSource, />\{unit\}<\/span>/);
   assert.match(bpmSource, /min=\{BPM_MIN\}/);
   assert.match(bpmSource, /max=\{BPM_MAX\}/);
   assert.match(bpmSource, /event\.key === 'ArrowUp'/);
@@ -234,19 +262,13 @@ test('multimodal UI keeps upload intact and presents a simplified recommendation
   assert.match(appSource, /audioEngine\.setTempo\?\.\(nextBpm\)/);
   assert.match(appSource, /drumsRecording\.workflowLocked \|\| melodyRecording\.workflowLocked/);
   assert.match(appSource, /tutorialPanelState === 'running'/);
-  assert.match(css, /\.results-summary\s*\{[^}]*grid-template-columns:\s*220px minmax\(0,\s*1fr\) auto;/s);
-  assert.match(css, /\.results-summary-media \.results-media-frame\s*\{[^}]*width:\s*220px;[^}]*height:\s*124px;/s);
-  assert.match(css, /\.track-recommendation-list\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*112px\);/s);
-  assert.match(css, /\.track-recommendation-row\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\);[^}]*width:\s*112px;[^}]*min-height:\s*88px;/s);
-  assert.match(css, /\.track-recommendation-header\s*\{[^}]*width:\s*min\(100%,\s*520px\);/s);
-  assert.match(css, /\.track-recommendation-copy strong\s*\{[^}]*font-size:\s*11px;/s);
-  assert.match(css, /\.track-recommendation-change\s*\{[^}]*width:\s*auto;[^}]*min-height:\s*22px;/s);
-  assert.match(css, /\.track-timbre-options\s*\{[^}]*display:\s*flex;[^}]*justify-content:\s*center;/s);
-  assert.match(css, /\.recommendation-additional-toggle\s*\{[^}]*width:\s*fit-content;/s);
-  assert.match(css, /\.apply-recommendation\s*\{[^}]*width:\s*auto;[^}]*min-width:\s*168px;/s);
-  assert.match(css, /\.results-summary-bpm \.bpm-presets\s*\{[^}]*display:\s*none;/s);
-  assert.match(css, /\.recommendation-footer\s*\{[^}]*grid-template-columns:/s);
-  assert.match(css, /\.results-summary-bpm \.bpm-stepper\s*\{[^}]*grid-template-columns:\s*30px 88px 30px;/s);
+  assert.match(css, /\.results-copy-overview\s*\{[^}]*grid-template-columns:\s*220px minmax\(0,\s*1fr\);/s);
+  assert.match(css, /\.results-copy-media\s*\{[^}]*width:\s*220px;[^}]*height:\s*148px;/s);
+  assert.match(css, /\.results-advice-grid\s*\{[^}]*grid-template-columns:\s*280px minmax\(0,\s*1fr\);/s);
+  assert.match(css, /\.results-instrument-card\s*\{[^}]*grid-column:\s*1 \/ -1;[^}]*grid-row:\s*2;/s);
+  assert.match(css, /\.results-tempo-line \.bpm-presets\s*\{[^}]*display:\s*none;/s);
+  assert.match(css, /\.results-icon-action\s*\{[^}]*width:\s*36px;[^}]*height:\s*36px;/s);
+  assert.match(css, /\.genre-hardware:has\(\.results-copy-only\) \.genre-brand-text,[\s\S]*visibility:\s*hidden;/s);
   assert.match(css, /@media \(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)/);
   assert.match(css, /\.genre-gate:has\(\.multimodal-screen\)\s*\{[^}]*padding:\s*12px;[^}]*overflow:\s*hidden;/s);
   assert.match(css, /\.genre-hardware:has\(\.multimodal-screen\)\s*\{[^}]*min-height:\s*calc\(100dvh - 24px\);[^}]*padding:\s*18px;[^}]*gap:\s*12px;/s);

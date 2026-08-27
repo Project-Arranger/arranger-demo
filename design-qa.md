@@ -123,6 +123,20 @@ final result: passed
 
 ---
 
+## AI Recommendation Notion Copy-only Follow-up
+
+- Copy source of truth: `多模态AI入口文案for demo` in the user-provided Notion page.
+- The results page uses the approved picture description, style description, speed/rhythm, and melody/harmony copy. Instrument pairing intentionally retains the approved four square track cards and the active track's three timbre choices; optional tracks, arrangement detail, explanatory labels, and the text CTA remain removed.
+- Drums, Chord, Bass, and Melody render as `112px` square-like cards. Browser interaction switched Chord to `柔和罗兹电钢琴`, restored `温暖电钢琴`, deselected and reselected Melody, and confirmed every state updated independently.
+- Back and apply remain available as compact icon actions so the flow stays operable without introducing copy outside the approved document.
+- BPM remains a real control. Browser interaction verified `88 → 89 → 88`, while the displayed unit is the approved lowercase `bpm`; other product BPM controls retain their existing uppercase unit.
+- At both `1280x720` and `1512x760`, document height equals viewport height. The four track cards measure `112x104.5px`; at `390x844` the page stacks normally with no horizontal overflow.
+- The browser console reported no errors or warnings. All `530` tests passed; lint, production build, and `git diff --check` completed successfully. The existing production chunk-size warning remains non-blocking.
+
+final result: passed
+
+---
+
 ## AI Multimodal Shared Upload and Results Frame Follow-up
 
 - User-provided upload-page context: `/var/folders/22/2k2swhcn1zl1rf0pqjp4yt7w0000gn/T/codex-clipboard-6f8198d6-5a0d-4e3b-88b5-cbab91928d57.png`.
