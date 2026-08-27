@@ -87,13 +87,6 @@ function Root() {
     setView(ROOT_VIEWS.ARRANGER);
   };
 
-  const handleSelectionChange = (group, value) => {
-    setSelections((current) => ({
-      ...current,
-      [group]: value,
-    }));
-  };
-
   const handleRecommendationTrackFocus = (trackId) => {
     setSelections((current) => ({
       ...current,
@@ -159,7 +152,6 @@ function Root() {
       onRecommendationTimbreChange: handleRecommendationTimbreChange,
       onRecommendationTrackFocus: handleRecommendationTrackFocus,
       onRecommendationTrackToggle: handleRecommendationTrackToggle,
-      onSelectionChange: handleSelectionChange,
       previewUrl,
       selections,
       stageIndex: analysisStageIndex,

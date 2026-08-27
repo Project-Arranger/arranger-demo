@@ -186,7 +186,7 @@ test('applying the recommendation loads the complete eight-bar Chill arrangement
   });
 });
 
-test('multimodal UI exposes upload results choices and reusable real BPM controls', async () => {
+test('multimodal UI keeps upload intact and presents a simplified recommendation summary', async () => {
   const [
     screenSource,
     bpmSource,
@@ -204,14 +204,26 @@ test('multimodal UI exposes upload results choices and reusable real BPM control
   assert.match(screenSource, /accept=\{MULTIMODAL_ACCEPT\}/);
   assert.match(screenSource, /controls[\s\S]*muted[\s\S]*playsInline/);
   assert.match(screenSource, /BpmControl/);
-  assert.match(screenSource, /ChoiceChips/);
+  assert.doesNotMatch(screenSource, /function ChoiceChips/);
   assert.match(screenSource, /TrackRecommendationPicker/);
-  assert.match(screenSource, /track-recommendation-grid/);
+  assert.match(screenSource, /results-summary/);
+  assert.match(screenSource, /Chill · 雨夜街头/);
+  assert.match(screenSource, /C 大调/);
+  assert.match(screenSource, /8 小节/);
+  assert.match(screenSource, /slice\(0, 4\)/);
+  assert.match(screenSource, /track-recommendation-list/);
+  assert.match(screenSource, /track-recommendation-row/);
   assert.match(screenSource, /track-timbre-options/);
-  assert.match(screenSource, /已推荐 \{selectedTrackIds\.length\}/);
+  assert.match(screenSource, /已选择 \{selectedTrackIds\.length\} 条/);
+  assert.match(screenSource, /AI 推荐这 4 条轨道/);
+  assert.match(screenSource, /鼓定节拍，和弦铺底，低音衔接，旋律形成记忆点/);
+  assert.match(screenSource, /雨夜街头画面，适合舒缓速度、柔和鼓点和温暖电钢琴/);
+  assert.match(screenSource, /还想加其他声音/);
+  assert.match(screenSource, /氛围铺底 \/ 环境声/);
+  assert.match(screenSource, /查看和弦顺序与段落安排/);
   assert.match(screenSource, /disabled=\{selected && selectedTrackIds\.length === 1\}/);
   assert.match(screenSource, /role="radiogroup"/);
-  assert.match(screenSource, /使用这个方案/);
+  assert.match(screenSource, /生成完整编曲/);
   assert.match(bpmSource, /BPM_PRESETS\.map/);
   assert.match(bpmSource, /min=\{BPM_MIN\}/);
   assert.match(bpmSource, /max=\{BPM_MAX\}/);
@@ -222,11 +234,19 @@ test('multimodal UI exposes upload results choices and reusable real BPM control
   assert.match(appSource, /audioEngine\.setTempo\?\.\(nextBpm\)/);
   assert.match(appSource, /drumsRecording\.workflowLocked \|\| melodyRecording\.workflowLocked/);
   assert.match(appSource, /tutorialPanelState === 'running'/);
-  assert.match(css, /\.results-overview\s*\{[^}]*grid-template-columns:\s*240px minmax\(0,\s*1fr\);/s);
-  assert.match(css, /\.results-media-frame\s*\{[^}]*width:\s*240px;[^}]*height:\s*135px;/s);
-  assert.match(css, /\.track-recommendation-grid\s*\{[^}]*grid-template-columns:\s*repeat\(6,/s);
+  assert.match(css, /\.results-summary\s*\{[^}]*grid-template-columns:\s*220px minmax\(0,\s*1fr\) auto;/s);
+  assert.match(css, /\.results-summary-media \.results-media-frame\s*\{[^}]*width:\s*220px;[^}]*height:\s*124px;/s);
+  assert.match(css, /\.track-recommendation-list\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*112px\);/s);
+  assert.match(css, /\.track-recommendation-row\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\);[^}]*width:\s*112px;[^}]*min-height:\s*88px;/s);
+  assert.match(css, /\.track-recommendation-header\s*\{[^}]*width:\s*min\(100%,\s*520px\);/s);
+  assert.match(css, /\.track-recommendation-copy strong\s*\{[^}]*font-size:\s*11px;/s);
+  assert.match(css, /\.track-recommendation-change\s*\{[^}]*width:\s*auto;[^}]*min-height:\s*22px;/s);
+  assert.match(css, /\.track-timbre-options\s*\{[^}]*display:\s*flex;[^}]*justify-content:\s*center;/s);
+  assert.match(css, /\.recommendation-additional-toggle\s*\{[^}]*width:\s*fit-content;/s);
+  assert.match(css, /\.apply-recommendation\s*\{[^}]*width:\s*auto;[^}]*min-width:\s*168px;/s);
+  assert.match(css, /\.results-summary-bpm \.bpm-presets\s*\{[^}]*display:\s*none;/s);
   assert.match(css, /\.recommendation-footer\s*\{[^}]*grid-template-columns:/s);
-  assert.match(css, /\.recommendation-bpm-panel \.bpm-stepper\s*\{[^}]*grid-template-columns:\s*28px minmax\(0,\s*1fr\) 28px;/s);
+  assert.match(css, /\.results-summary-bpm \.bpm-stepper\s*\{[^}]*grid-template-columns:\s*30px 88px 30px;/s);
   assert.match(css, /@media \(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)/);
   assert.match(css, /\.genre-gate:has\(\.multimodal-screen\)\s*\{[^}]*padding:\s*12px;[^}]*overflow:\s*hidden;/s);
   assert.match(css, /\.genre-hardware:has\(\.multimodal-screen\)\s*\{[^}]*min-height:\s*calc\(100dvh - 24px\);[^}]*padding:\s*18px;[^}]*gap:\s*12px;/s);

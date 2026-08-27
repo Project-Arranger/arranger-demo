@@ -20,31 +20,63 @@ import { BpmControl } from './BpmControl.jsx';
 import { HardwareFlowShell } from './HardwareFlowShell.jsx';
 import { TRACK_ICONS, renderIcon } from './icons.js';
 
-function ChoiceChips({
-  group,
-  label,
-  onChange,
-  value,
-}) {
-  return (
-    <div className="recommendation-choice">
-      <span className="recommendation-choice-label">{label}</span>
-      <div className="recommendation-chips" role="group" aria-label={label}>
-        {group.options.map((option) => (
-          <button
-            className="recommendation-chip"
-            data-active={option.id === value ? 'true' : undefined}
-            key={option.id}
-            type="button"
-            aria-pressed={option.id === value}
-            onClick={() => onChange(option.id)}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+const TRACK_RECOMMENDATION_COPY = Object.freeze({
+  drums: Object.freeze({
+    label: '鼓',
+    timbres: Object.freeze({
+      'soft-electronic-kit': '柔和电子鼓',
+      'dusty-tape-kit': '复古磁带鼓',
+      'clean-digital-kit': '清晰数码鼓',
+    }),
+  }),
+  chord: Object.freeze({
+    label: '和弦',
+    timbres: Object.freeze({
+      'warm-electric-piano': '温暖电钢琴',
+      'muted-rhodes': '柔和罗兹电钢琴',
+      'glass-electric-keys': '透亮电钢琴',
+    }),
+  }),
+  bass: Object.freeze({
+    label: '低音',
+    timbres: Object.freeze({
+      'round-electric-bass': '圆润电贝司',
+      'soft-sub-bass': '柔和次低音',
+      'fm-round-bass': 'FM 圆润贝司',
+    }),
+  }),
+  melody: Object.freeze({
+    label: '旋律',
+    timbres: Object.freeze({
+      'airy-synth-lead': '空气感合成器',
+      'hazy-bell-lead': '朦胧铃音主奏',
+      'soft-pluck-lead': '柔和拨弦主奏',
+    }),
+  }),
+  pad: Object.freeze({
+    label: '氛围铺底',
+    timbres: Object.freeze({
+      'rain-glow-pad': '雨夜氛围铺底',
+      'tape-bloom-pad': '磁带感氛围铺底',
+      'glass-air-pad': '透亮空气铺底',
+    }),
+  }),
+  sample: Object.freeze({
+    label: '环境采样',
+    timbres: Object.freeze({
+      'rain-street-texture': '雨夜街头环境声',
+      'vinyl-room-texture': '黑胶房间环境声',
+      'city-field-ambience': '城市场景环境声',
+    }),
+  }),
+});
+
+function getTrackRecommendationLabel(track) {
+  return TRACK_RECOMMENDATION_COPY[track.id]?.label ?? track.label;
+}
+
+function getTrackTimbreLabel(track, timbre) {
+  return TRACK_RECOMMENDATION_COPY[track.id]?.timbres?.[timbre.id] ?? timbre.label;
 }
 
 function MediaPreview({
@@ -242,85 +274,87 @@ function TrackRecommendationPicker({
   selectedTrackIds,
   timbreByTrackId,
 }) {
+  const [additionalTracksOpen, setAdditionalTracksOpen] = useState(false);
   const activeTrack = MULTIMODAL_RECOMMENDATION.tracks.find(
     (track) => track.id === activeTrackId,
   ) ?? MULTIMODAL_RECOMMENDATION.tracks[0];
   const activeTimbreId = timbreByTrackId[activeTrack.id] ?? activeTrack.timbres[0].id;
+  const primaryTracks = MULTIMODAL_RECOMMENDATION.tracks.slice(0, 4);
+  const additionalTracks = MULTIMODAL_RECOMMENDATION.tracks.slice(4);
+
+  const renderTrackRow = (track) => {
+    const Icon = TRACK_ICONS[track.id];
+    const selected = selectedTrackIds.includes(track.id);
+    const active = track.id === activeTrack.id;
+    const selectedTimbre = track.timbres.find(
+      (timbre) => timbre.id === timbreByTrackId[track.id],
+    ) ?? track.timbres[0];
+    const trackLabel = getTrackRecommendationLabel(track);
+
+    return (
+      <div
+        className="track-recommendation-row"
+        data-active={active ? 'true' : undefined}
+        data-selected={selected ? 'true' : undefined}
+        data-track={track.id}
+        key={track.id}
+        role="listitem"
+      >
+        <button
+          className="track-recommendation-toggle"
+          type="button"
+          aria-label={`${selected ? '取消推荐' : '加入推荐'}：${trackLabel}`}
+          aria-pressed={selected}
+          disabled={selected && selectedTrackIds.length === 1}
+          onClick={() => onTrackToggle(track.id)}
+        >
+          {renderIcon(Check)}
+        </button>
+        <span className="track-recommendation-icon" aria-hidden="true">
+          {renderIcon(Icon)}
+        </span>
+        <span className="track-recommendation-copy">
+          <strong>{trackLabel}</strong>
+          <small>{getTrackTimbreLabel(track, selectedTimbre)}</small>
+        </span>
+        <button
+          className="track-recommendation-change"
+          type="button"
+          aria-pressed={active}
+          aria-label={`选择${trackLabel}的声音`}
+          onClick={() => onTrackFocus(track.id)}
+        >
+          选声音
+        </button>
+      </div>
+    );
+  };
 
   return (
     <section className="track-recommendation" aria-labelledby="track-recommendation-title">
       <header className="track-recommendation-header">
         <div>
-          <span className="recommendation-choice-label">推荐生成轨道</span>
-          <strong id="track-recommendation-title">选择画面需要的音乐层次</strong>
+          <strong id="track-recommendation-title">AI 推荐这 4 条轨道</strong>
+          <small>鼓定节拍，和弦铺底，低音衔接，旋律形成记忆点。</small>
         </div>
-        <span className="track-recommendation-count mono" role="status">
-          已推荐 {selectedTrackIds.length} / {MULTIMODAL_RECOMMENDATION.tracks.length}
+        <span className="track-recommendation-count" role="status">
+          已选择 {selectedTrackIds.length} 条
         </span>
       </header>
 
-      <div className="track-recommendation-grid" role="list" aria-label="推荐轨道">
-        {MULTIMODAL_RECOMMENDATION.tracks.map((track) => {
-          const Icon = TRACK_ICONS[track.id];
-          const selected = selectedTrackIds.includes(track.id);
-          const active = track.id === activeTrack.id;
-          const selectedTimbre = track.timbres.find(
-            (timbre) => timbre.id === timbreByTrackId[track.id],
-          ) ?? track.timbres[0];
-
-          return (
-            <div
-              className="track-recommendation-card"
-              data-active={active ? 'true' : undefined}
-              data-selected={selected ? 'true' : undefined}
-              data-track={track.id}
-              key={track.id}
-              role="listitem"
-            >
-              <button
-                className="track-recommendation-focus"
-                type="button"
-                aria-pressed={active}
-                aria-label={`查看 ${track.label} 推荐音色`}
-                onClick={() => onTrackFocus(track.id)}
-              >
-                <span className="track-recommendation-icon" aria-hidden="true">
-                  {renderIcon(Icon)}
-                </span>
-                <span>
-                  <strong>{track.label}</strong>
-                  <small>{selectedTimbre.label}</small>
-                </span>
-              </button>
-              <button
-                className="track-recommendation-toggle"
-                type="button"
-                aria-label={`${selected ? '取消推荐' : '加入推荐'} ${track.label}`}
-                aria-pressed={selected}
-                disabled={selected && selectedTrackIds.length === 1}
-                onClick={() => onTrackToggle(track.id)}
-              >
-                {renderIcon(Check)}
-              </button>
-            </div>
-          );
-        })}
+      <div className="track-recommendation-list" role="list" aria-label="推荐轨道">
+        {primaryTracks.map(renderTrackRow)}
       </div>
 
       <div className="track-timbre-detail" data-track={activeTrack.id}>
-        <div className="track-timbre-identity">
-          <span className="track-recommendation-icon" aria-hidden="true">
-            {renderIcon(TRACK_ICONS[activeTrack.id])}
-          </span>
-          <span>
-            <small>当前轨道</small>
-            <strong>{activeTrack.label}</strong>
-          </span>
+        <div className="track-timbre-heading">
+          <strong>为{getTrackRecommendationLabel(activeTrack)}选择声音</strong>
+          <small>已默认选择最匹配画面的声音</small>
         </div>
         <div
           className="track-timbre-options"
           role="radiogroup"
-          aria-label={`${activeTrack.label} 推荐音色`}
+          aria-label={`${getTrackRecommendationLabel(activeTrack)}的声音选择`}
         >
           {activeTrack.timbres.map((timbre, index) => (
             <button
@@ -332,12 +366,28 @@ function TrackRecommendationPicker({
               aria-checked={timbre.id === activeTimbreId}
               onClick={() => onTimbreChange(activeTrack.id, timbre.id)}
             >
-              <span>{timbre.label}</span>
-              {index === 0 ? <small>AI 推荐</small> : null}
+              <span>{getTrackTimbreLabel(activeTrack, timbre)}</span>
+              {index === 0 ? <small>最推荐</small> : null}
             </button>
           ))}
         </div>
       </div>
+
+      <button
+        className="recommendation-additional-toggle"
+        type="button"
+        aria-expanded={additionalTracksOpen}
+        onClick={() => setAdditionalTracksOpen((open) => !open)}
+      >
+        <span>＋ 还想加其他声音</span>
+        <small>氛围铺底 / 环境声</small>
+      </button>
+
+      {additionalTracksOpen ? (
+        <div className="track-recommendation-list additional" role="list" aria-label="其他推荐轨道">
+          {additionalTracks.map(renderTrackRow)}
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -352,78 +402,51 @@ function ResultsView({
   onRecommendationTimbreChange,
   onRecommendationTrackFocus,
   onRecommendationTrackToggle,
-  onSelectionChange,
   previewUrl,
   selections,
 }) {
   return (
     <div className="multimodal-content results-view">
-      <div className="results-overview">
-        <section className="results-media-column" aria-label="素材预览">
+      <section className="results-summary" aria-label="AI 推荐概览">
+        <div className="results-summary-media">
           <div className="results-media-frame">
             <MediaPreview file={file} kind={kind} previewUrl={previewUrl} />
             <span className="results-analysis-badge mono">
               <span aria-hidden="true">{renderIcon(Check)}</span>
-              ANALYZED
+              画面分析完成
             </span>
           </div>
-          <div className="results-source-meta">
-            <span>{kind === 'image' ? 'IMAGE SOURCE' : 'VIDEO SOURCE'}</span>
-            <strong>{file?.name}</strong>
-          </div>
-          <button className="hardware-flow-button ghost" type="button" onClick={onBack}>
-            <span aria-hidden="true">{renderIcon(RefreshCw)}</span>
-            更换素材
-          </button>
-        </section>
+          <strong className="results-source-name">{file?.name}</strong>
+        </div>
 
-        <section className="recommendation-console" aria-label="AI 编曲建议">
-          <div className="recommendation-intro">
-            <span className="recommendation-confidence mono">MATCH 92%</span>
-            <div>
-              <p>画面音乐画像</p>
-              <h2>松弛、潮湿、有城市微光</h2>
+        <div className="results-summary-copy">
+          <p className="results-summary-kicker">画面分析结果</p>
+          <h2>Chill · 雨夜街头</h2>
+          <p className="results-summary-description">
+            雨夜街头画面，适合舒缓速度、柔和鼓点和温暖电钢琴。
+          </p>
+          <div className="results-summary-controls">
+            <div className="results-summary-bpm">
+              <span>速度</span>
+              <BpmControl
+                idPrefix="recommendation-bpm"
+                value={bpm}
+                onChange={onBpmChange}
+              />
+            </div>
+            <div className="results-summary-meta" aria-label="方案基本信息">
+              <span>C 大调</span>
+              <span>{MULTIMODAL_RECOMMENDATION.timeSignature}</span>
+              <span>8 小节</span>
             </div>
           </div>
+        </div>
 
-          <div className="recommendation-quick-grid">
-            <ChoiceChips
-              group={MULTIMODAL_RECOMMENDATION.style}
-              label="风格"
-              value={selections.style}
-              onChange={(value) => onSelectionChange('style', value)}
-            />
-
-            <div className="recommendation-row">
-              <div className="recommendation-bpm-panel">
-                <span className="recommendation-choice-label">速度</span>
-                <BpmControl
-                  idPrefix="recommendation-bpm"
-                  value={bpm}
-                  onChange={onBpmChange}
-                />
-              </div>
-              <div className="recommendation-static">
-                <span>拍号</span>
-                <strong className="mono">{MULTIMODAL_RECOMMENDATION.timeSignature}</strong>
-              </div>
-            </div>
-
-            <ChoiceChips
-              group={MULTIMODAL_RECOMMENDATION.mode}
-              label="调式"
-              value={selections.mode}
-              onChange={(value) => onSelectionChange('mode', value)}
-            />
-            <ChoiceChips
-              group={MULTIMODAL_RECOMMENDATION.harmony}
-              label="和声"
-              value={selections.harmony}
-              onChange={(value) => onSelectionChange('harmony', value)}
-            />
-          </div>
-        </section>
-      </div>
+        <button className="hardware-flow-button ghost results-change-source" type="button" onClick={onBack}>
+          <span aria-hidden="true">{renderIcon(RefreshCw)}</span>
+          换一张图片或视频
+        </button>
+      </section>
 
       <section className="recommendation-track-console" aria-label="轨道与音色推荐">
         <TrackRecommendationPicker
@@ -435,18 +458,23 @@ function ResultsView({
           timbreByTrackId={selections.timbreByTrackId}
         />
 
-        <footer className="recommendation-footer">
-          <div className="recommendation-structure">
-            <span>结构</span>
-            <strong>{MULTIMODAL_RECOMMENDATION.structure}</strong>
+        <details className="recommendation-details">
+          <summary>查看和弦顺序与段落安排</summary>
+          <div>
+            <span><small>和声</small>{MULTIMODAL_RECOMMENDATION.harmony.options[0].label}</span>
+            <span><small>结构</small>{MULTIMODAL_RECOMMENDATION.structure}</span>
           </div>
+        </details>
+
+        <footer className="recommendation-footer">
+          <p>点击后会生成完整的 4 轨、8 小节音乐</p>
           <button
             className="hardware-flow-button primary apply-recommendation"
             type="button"
             onClick={onApply}
           >
             <span aria-hidden="true">{renderIcon(Sparkles)}</span>
-            使用这个方案
+            生成完整编曲
           </button>
         </footer>
       </section>
@@ -468,7 +496,6 @@ function MultimodalFlowScreen({
   onRecommendationTimbreChange,
   onRecommendationTrackFocus,
   onRecommendationTrackToggle,
-  onSelectionChange,
   previewUrl,
   selections,
   stageIndex,
@@ -528,7 +555,6 @@ function MultimodalFlowScreen({
           onRecommendationTimbreChange={onRecommendationTimbreChange}
           onRecommendationTrackFocus={onRecommendationTrackFocus}
           onRecommendationTrackToggle={onRecommendationTrackToggle}
-          onSelectionChange={onSelectionChange}
           previewUrl={previewUrl}
           selections={selections}
         />
@@ -540,7 +566,6 @@ function MultimodalFlowScreen({
 // JSX component references are not marked as reads by this repository's lint parser.
 void BpmControl;
 void HardwareFlowShell;
-void ChoiceChips;
 void MediaPreview;
 void UploadView;
 void AnalyzingView;
