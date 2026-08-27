@@ -6,9 +6,12 @@ import {
   collectProjectEvents,
   getAudioExportTrackIds,
   getDurationSeconds,
+  getEventVolume,
+  getEventTime,
 } from '../src/export/audioFile.js';
 import {
   createMidiFile,
+  createNoteEvents,
   MIDI_TICKS_PER_STEP,
   noteNameToMidi,
 } from '../src/export/midiFile.js';
@@ -65,6 +68,50 @@ test('MIDI note and duration conversion preserve editable musical timing', () =>
   assert.equal(getDurationSeconds({ duration: '8n' }, 120), 0.25);
   assert.equal(getDurationSeconds({ durationSteps: 3 }, 120), 0.375);
   assert.equal(MIDI_TICKS_PER_STEP, 120);
+});
+
+test('audio and MIDI exports preserve drum swing timing and hit strength', () => {
+  const state = createExportState();
+  state.matrix.drums[0][3] = {
+    instruments: ['snare'],
+    timingOffsets: { snare: 0.16 },
+    velocities: { snare: 0.72 },
+  };
+  const event = collectProjectEvents(state).find((item) => (
+    item.type === 'drums' && item.instrument === 'snare'
+  ));
+
+  assert.equal(event.timingOffset, 0.16);
+  assert.equal(event.velocity, 0.72);
+  assert.equal(getEventTime(event, 120), 0.395);
+  assert.deepEqual(createNoteEvents({ channel: 9, event }), [
+    { bytes: [0x99, 38, 91], priority: 1, tick: 379 },
+    { bytes: [0x89, 38, 0], priority: 0, tick: 499 },
+  ]);
+});
+
+test('audio and MIDI exports preserve chord preset timing and dynamics', () => {
+  const state = createExportState();
+  state.matrix.chord[0][3] = {
+    type: 'notes',
+    notes: ['C3', 'E3'],
+    label: 'C3/E3',
+    duration: '16n',
+    timingOffset: 0.1,
+    velocity: 0.5,
+  };
+  const event = collectProjectEvents(state).find((item) => (
+    item.type === 'chord' && item.step === 3
+  ));
+
+  assert.equal(getEventTime(event, 120), 0.3875);
+  assert.equal(getEventVolume(state, event), -6.020599913279624);
+  assert.deepEqual(createNoteEvents({ channel: 0, event }), [
+    { bytes: [0x90, 48, 64], priority: 1, tick: 372 },
+    { bytes: [0x80, 48, 0], priority: 0, tick: 492 },
+    { bytes: [0x90, 52, 64], priority: 1, tick: 372 },
+    { bytes: [0x80, 52, 0], priority: 0, tick: 492 },
+  ]);
 });
 
 test('exported project backup preserves the arrangement and useful project settings', () => {

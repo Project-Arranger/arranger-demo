@@ -1,13 +1,21 @@
 import {
   AudioWaveform,
+  Play,
+  Square,
   X,
 } from 'lucide-react';
 import {
   createElement,
+  useCallback,
   useEffect,
   useRef,
   useState,
 } from 'react';
+import {
+  getDrumTemplateGenre,
+  getDrumTemplateHitFeel,
+  getDrumTemplatesForGenre,
+} from '../../data/drumStyleTemplates.js';
 import { STEPS_PER_BAR } from '../../domain/musicConstants.js';
 import { DRUM_INPUT_CELLS } from '../../input/drumsInputLayout.js';
 import {
@@ -16,7 +24,6 @@ import {
 } from '../drumSequencerData.js';
 import { DRUMS_RECORDING_PHASES } from '../drumsLiveRecording.js';
 import {
-  createDefaultDrumsPattern,
   hasExistingDrumsClipContent,
 } from '../drumsPatternActions.js';
 import { formatDisplayPosition } from '../transportPosition.js';
@@ -37,16 +44,8 @@ const STEP_GROUPS = Array.from(
   ),
 );
 const DRAG_THRESHOLD_PX = 6;
-const BASIC_DRUM_TEMPLATE = Object.freeze({
-  id: 'basic-drums-groove',
-  name: '基础律动',
-  tag: '默认',
-  desc: 'Kick 落在开头，Snare 稳住第三拍，Hi-Hat 给出清晰脉冲。',
-  detail: '适合先搭出稳定节拍，再手动添加变化。',
-});
-const BASIC_DRUM_TEMPLATE_HITS = new Set(
-  createDefaultDrumsPattern().map(({ instrument, step }) => `${instrument}:${step}`),
-);
+const EMPTY_TEMPLATE_PREVIEW = async () => 'empty';
+const NOOP_TEMPLATE_PREVIEW_STOP = () => {};
 const DRUM_TEMPLATE_HIT_LABELS = Object.freeze({
   hihat: 'H',
   kick: 'K',
@@ -105,13 +104,13 @@ function getTutorialCellClasses(tutorialRole) {
   return [];
 }
 
-function getDrumTemplateHitLabel(rowId, stepIndex) {
-  if (!BASIC_DRUM_TEMPLATE_HITS.has(`${rowId}:${stepIndex}`)) return null;
+function getDrumTemplateHitLabel(template, rowId, stepIndex) {
+  if (!template?.hits?.[rowId]?.includes(stepIndex)) return null;
   return DRUM_TEMPLATE_HIT_LABELS[rowId] ?? null;
 }
 
-function getDrumTemplateStepClass(rowId, stepIndex) {
-  const hitLabel = getDrumTemplateHitLabel(rowId, stepIndex);
+function getDrumTemplateStepClass(template, rowId, stepIndex) {
+  const hitLabel = getDrumTemplateHitLabel(template, rowId, stepIndex);
 
   return [
     'gtpl-step',
@@ -121,12 +120,21 @@ function getDrumTemplateStepClass(rowId, stepIndex) {
   ].filter(Boolean).join(' ');
 }
 
+function getDrumTemplateHitStrength(template, rowId, stepIndex) {
+  if (!getDrumTemplateHitLabel(template, rowId, stepIndex)) return null;
+  const { velocity } = getDrumTemplateHitFeel(template, rowId, stepIndex);
+  if (velocity >= 0.9) return 'accent';
+  if (velocity <= 0.45) return 'ghost';
+  return 'normal';
+}
+
 function DrumSequencer({
   clips,
   matrix,
   canPageBars = false,
   clipName,
   drumsRecordingState,
+  genreId = 'pop',
   hasClip = true,
   onClose = () => {},
   onClearCurrentBar,
@@ -140,6 +148,8 @@ function DrumSequencer({
   onRecordConfirm = () => {},
   onStepMove,
   onStepToggle,
+  onTemplatePreview = EMPTY_TEMPLATE_PREVIEW,
+  onTemplatePreviewStop = NOOP_TEMPLATE_PREVIEW_STOP,
   onWriteToggle = () => {},
   onRenameClip,
   selectedBar,
@@ -151,11 +161,20 @@ function DrumSequencer({
   const [dragOverStep, setDragOverStep] = useState(null);
   const [drumTemplatePickerOpen, setDrumTemplatePickerOpen] = useState(false);
   const [confirmApplyAllOpen, setConfirmApplyAllOpen] = useState(false);
-  const [selectedDrumTemplateId, setSelectedDrumTemplateId] = useState(BASIC_DRUM_TEMPLATE.id);
+  const drumTemplateGenre = getDrumTemplateGenre(genreId);
+  const drumTemplates = getDrumTemplatesForGenre(genreId);
+  const [selectedDrumTemplateId, setSelectedDrumTemplateId] = useState(
+    () => drumTemplates.find((template) => template.default)?.id ?? drumTemplates[0]?.id,
+  );
+  const [previewingTemplateId, setPreviewingTemplateId] = useState(null);
   const [suppressNextClick, setSuppressNextClick] = useState(false);
   const dragSessionRef = useRef(null);
+  const previewRequestRef = useRef(0);
   const templatePickerRef = useRef(null);
   const templateTriggerRef = useRef(null);
+  const selectedDrumTemplate = drumTemplates.find(
+    (template) => template.id === selectedDrumTemplateId,
+  ) ?? drumTemplates[0];
   const recordingPhase = drumsRecordingState?.phase ?? DRUMS_RECORDING_PHASES.IDLE;
   const recordingActive = [
     DRUMS_RECORDING_PHASES.COUNT_IN,
@@ -202,6 +221,44 @@ function DrumSequencer({
     'drum-template-apply',
     generateAllRole === 'target' ? 'tutorial-control-target' : '',
   ].filter(Boolean).join(' ');
+
+  const stopTemplatePreview = useCallback(() => {
+    previewRequestRef.current += 1;
+    onTemplatePreviewStop();
+    setPreviewingTemplateId(null);
+  }, [onTemplatePreviewStop]);
+
+  const closeTemplatePicker = useCallback(() => {
+    stopTemplatePreview();
+    setConfirmApplyAllOpen(false);
+    setDrumTemplatePickerOpen(false);
+  }, [stopTemplatePreview]);
+
+  const selectDrumTemplate = (templateId) => {
+    if (templateId !== previewingTemplateId) stopTemplatePreview();
+    setSelectedDrumTemplateId(templateId);
+  };
+
+  const handleTemplatePreview = async (templateId) => {
+    if (previewingTemplateId === templateId) {
+      stopTemplatePreview();
+      return;
+    }
+
+    onTemplatePreviewStop();
+    const requestId = previewRequestRef.current + 1;
+    previewRequestRef.current = requestId;
+    setSelectedDrumTemplateId(templateId);
+    setPreviewingTemplateId(templateId);
+
+    try {
+      await onTemplatePreview(templateId);
+    } finally {
+      if (previewRequestRef.current === requestId) {
+        setPreviewingTemplateId(null);
+      }
+    }
+  };
 
   const handleMouseDownStep = (event, instrument, step, canDrag) => {
     if (!canDrag || event.button !== 0) return;
@@ -254,10 +311,23 @@ function DrumSequencer({
     };
   }, [dragSource, onStepMove]);
 
+  useEffect(() => {
+    onTemplatePreviewStop();
+  }, [drumTemplateGenre.id, onTemplatePreviewStop]);
+
+  useEffect(() => {
+    if (workflowLocked) onTemplatePreviewStop();
+  }, [onTemplatePreviewStop, workflowLocked]);
+
+  useEffect(() => () => {
+    previewRequestRef.current += 1;
+    onTemplatePreviewStop();
+  }, [onTemplatePreviewStop]);
+
   useSecondaryMenuDismiss({
     active: drumTemplatePickerOpen && !confirmApplyAllOpen,
     menuRef: templatePickerRef,
-    onDismiss: () => setDrumTemplatePickerOpen(false),
+    onDismiss: closeTemplatePicker,
     triggerRef: templateTriggerRef,
   });
 
@@ -289,41 +359,44 @@ function DrumSequencer({
     return () => window.removeEventListener('keydown', handleRecordConfirmKeyDown, true);
   }, [onRecordCancel, recordingPhase]);
 
-  const handleTemplateCardKeyDown = (event) => {
+  const handleTemplateCardKeyDown = (event, templateId) => {
     if (event.key !== 'Enter' && event.key !== ' ') return;
     event.preventDefault();
-    setSelectedDrumTemplateId(BASIC_DRUM_TEMPLATE.id);
+    selectDrumTemplate(templateId);
   };
 
   const handleApplyCurrentTemplate = () => {
-    onGenerateCurrentBar?.(selectedDrumTemplateId);
+    stopTemplatePreview();
+    onGenerateCurrentBar?.(selectedDrumTemplate?.id);
     setConfirmApplyAllOpen(false);
     setDrumTemplatePickerOpen(false);
   };
 
   const handleApplyAllTemplate = () => {
+    stopTemplatePreview();
     if (hasExistingDrumsClipContent(matrix, clips)) {
       setConfirmApplyAllOpen(true);
       return;
     }
 
-    onGenerateAllBars?.(selectedDrumTemplateId);
+    onGenerateAllBars?.(selectedDrumTemplate?.id);
     setDrumTemplatePickerOpen(false);
   };
 
   const applyAllTemplate = () => {
-    onGenerateAllBars?.(selectedDrumTemplateId);
+    stopTemplatePreview();
+    onGenerateAllBars?.(selectedDrumTemplate?.id);
     setConfirmApplyAllOpen(false);
     setDrumTemplatePickerOpen(false);
   };
 
   const handleClose = () => {
-    setConfirmApplyAllOpen(false);
-    setDrumTemplatePickerOpen(false);
+    closeTemplatePicker();
     onClose();
   };
 
   const handleWriteButtonClick = () => {
+    stopTemplatePreview();
     setConfirmApplyAllOpen(false);
     setDrumTemplatePickerOpen(false);
     if (recordingPhase === DRUMS_RECORDING_PHASES.CONFIRM) {
@@ -425,7 +498,13 @@ function DrumSequencer({
             aria-haspopup="dialog"
             data-tutorial-role={templateButtonRole}
             disabled={templateButtonLocked}
-            onClick={() => setDrumTemplatePickerOpen((isOpen) => !isOpen)}
+            onClick={() => {
+              if (drumTemplatePickerOpen) {
+                closeTemplatePicker();
+              } else {
+                setDrumTemplatePickerOpen(true);
+              }
+            }}
           >
             {renderIcon(AudioWaveform)}
             选择律动模板
@@ -453,7 +532,10 @@ function DrumSequencer({
             className="btn-template drum-clear-action"
             type="button"
             disabled={workflowLocked || !hasClip}
-            onClick={onClearCurrentBar}
+            onClick={() => {
+              stopTemplatePreview();
+              onClearCurrentBar?.();
+            }}
           >
             清本小节
           </button>
@@ -461,7 +543,10 @@ function DrumSequencer({
             className="btn-template drum-clear-action"
             type="button"
             disabled={workflowLocked || !hasClip}
-            onClick={onClearDrums}
+            onClick={() => {
+              stopTemplatePreview();
+              onClearDrums?.();
+            }}
           >
             清整轨
           </button>
@@ -571,20 +656,22 @@ function DrumSequencer({
       >
         <header className="tpl-head">
           <div className="tpl-head-left">
-            <button className="btn-template-groove-active" aria-label="关闭选择律动模板" type="button" onClick={() => setDrumTemplatePickerOpen(false)}>
+            <button className="btn-template-groove-active" aria-label="关闭选择律动模板" type="button" onClick={closeTemplatePicker}>
               {renderIcon(AudioWaveform)}
               选择律动模板
             </button>
             <span className="tpl-meta">
-              Drums 律动模板库 ·
+              {drumTemplateGenre.label}
               {' '}
-              <span className="mono">1</span>
+              ·
+              {' '}
+              <span className="mono">{drumTemplates.length}</span>
               {' '}
               个
             </span>
           </div>
           <div className="tpl-head-right">
-            <button className="tpl-close" aria-label="关闭" type="button" onClick={() => setDrumTemplatePickerOpen(false)}>
+            <button className="tpl-close" aria-label="关闭" type="button" onClick={closeTemplatePicker}>
               {renderIcon(X)}
             </button>
           </div>
@@ -592,64 +679,110 @@ function DrumSequencer({
 
         <div className="tpl-body">
           <div className="tpl-list drum-template-list">
-            <article
-              className={[
-                'gtpl-card',
-                'drum-template-card',
-                selectedDrumTemplateId === BASIC_DRUM_TEMPLATE.id ? 'selected' : '',
-              ].filter(Boolean).join(' ')}
-              data-drum-template={BASIC_DRUM_TEMPLATE.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => setSelectedDrumTemplateId(BASIC_DRUM_TEMPLATE.id)}
-              onKeyDown={handleTemplateCardKeyDown}
-            >
-              <div className="gtpl-name-row">
-                <h3 className="gtpl-name">{BASIC_DRUM_TEMPLATE.name}</h3>
-                <span className="gtpl-default-tag">{BASIC_DRUM_TEMPLATE.tag}</span>
-              </div>
-              <div className="gtpl-rhythm drum-template-rhythm" aria-label={`律动预览·${BASIC_DRUM_TEMPLATE.name}`}>
-                <div className="drum-template-beat-markers" aria-hidden="true">
-                  <span />
-                  <div className="drum-template-beat-marker-grid">
-                    {STEP_NUMBERS.map((stepNumber) => (
-                      <span className="drum-template-beat-marker mono" key={`beat-marker-${stepNumber}`}>
-                        {DRUM_TEMPLATE_BEAT_MARKERS.has(stepNumber) ? stepNumber : ''}
-                      </span>
+            {drumTemplates.map((template) => {
+              const previewing = previewingTemplateId === template.id;
+
+              return (
+                <article
+                  className={[
+                    'gtpl-card',
+                    'drum-template-card',
+                    selectedDrumTemplate?.id === template.id ? 'selected' : '',
+                    previewing ? 'is-previewing' : '',
+                  ].filter(Boolean).join(' ')}
+                  data-drum-template={template.id}
+                  key={template.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => selectDrumTemplate(template.id)}
+                  onKeyDown={(event) => handleTemplateCardKeyDown(event, template.id)}
+                >
+                  <div className="gtpl-name-row">
+                    <h3 className="gtpl-name">{template.name}</h3>
+                    {template.default ? (
+                      <span className="gtpl-default-tag">默认</span>
+                    ) : null}
+                  </div>
+                  <div className="drum-template-feel">
+                    <span>{template.feel.label}</span>
+                    <span className="mono">
+                      {template.feel.swing > 0
+                        ? `Swing ${Math.round(template.feel.swing * 100)}%`
+                        : 'Straight'}
+                    </span>
+                  </div>
+                  <div className="gtpl-rhythm drum-template-rhythm" aria-label={`律动预览·${template.name}`}>
+                    <div className="drum-template-beat-markers" aria-hidden="true">
+                      <span />
+                      <div className="drum-template-beat-marker-grid">
+                        {STEP_NUMBERS.map((stepNumber) => (
+                          <span className="drum-template-beat-marker mono" key={`beat-marker-${template.id}-${stepNumber}`}>
+                            {DRUM_TEMPLATE_BEAT_MARKERS.has(stepNumber) ? stepNumber : ''}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    {DRUM_SEQUENCER_ROWS.map((row) => (
+                      <div className="drum-template-row" key={row.id}>
+                        <span className="drum-template-row-label">{row.label}</span>
+                        <div className="drum-template-row-grid">
+                          {STEP_NUMBERS.map((stepNumber) => {
+                            const stepIndex = stepNumber - 1;
+                            const hitLabel = getDrumTemplateHitLabel(
+                              template,
+                              row.id,
+                              stepIndex,
+                            );
+                            const hitStrength = getDrumTemplateHitStrength(
+                              template,
+                              row.id,
+                              stepIndex,
+                            );
+
+                            return (
+                              <span
+                                className={getDrumTemplateStepClass(template, row.id, stepIndex)}
+                                data-instrument={row.id}
+                                data-hit-label={hitLabel ?? undefined}
+                                data-hit-strength={hitStrength ?? undefined}
+                                key={`${template.id}-${row.id}-${stepNumber}`}
+                                aria-label={hitLabel ? `${row.label} hit at step ${stepNumber}` : `${row.label} rest at step ${stepNumber}`}
+                              >
+                                {hitLabel ? (
+                                  <span className="drum-template-hit-label" aria-hidden="true">
+                                    {hitLabel}
+                                  </span>
+                                ) : null}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
                     ))}
                   </div>
-                </div>
-                {DRUM_SEQUENCER_ROWS.map((row) => (
-                  <div className="drum-template-row" key={row.id}>
-                    <span className="drum-template-row-label">{row.label}</span>
-                    <div className="drum-template-row-grid">
-                      {STEP_NUMBERS.map((stepNumber) => {
-                        const stepIndex = stepNumber - 1;
-                        const hitLabel = getDrumTemplateHitLabel(row.id, stepIndex);
-
-                        return (
-                          <span
-                            className={getDrumTemplateStepClass(row.id, stepIndex)}
-                            data-instrument={row.id}
-                            data-hit-label={hitLabel ?? undefined}
-                            key={`${row.id}-${stepNumber}`}
-                            aria-label={hitLabel ? `${row.label} hit at step ${stepNumber}` : `${row.label} rest at step ${stepNumber}`}
-                          >
-                            {hitLabel ? (
-                              <span className="drum-template-hit-label" aria-hidden="true">
-                                {hitLabel}
-                              </span>
-                            ) : null}
-                          </span>
-                        );
-                      })}
-                    </div>
+                  <div className="drum-template-card-footer">
+                    <p className="gtpl-desc">{template.description}</p>
+                    <button
+                      aria-label={`${previewing ? '停止试听' : '试听'} ${template.name}`}
+                      aria-pressed={previewing}
+                      className={[
+                        'drum-template-preview',
+                        previewing ? 'is-playing' : '',
+                      ].filter(Boolean).join(' ')}
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void handleTemplatePreview(template.id);
+                      }}
+                      onKeyDown={(event) => event.stopPropagation()}
+                    >
+                      {renderIcon(previewing ? Square : Play)}
+                      {previewing ? '停止' : '试听'}
+                    </button>
                   </div>
-                ))}
-              </div>
-              <p className="gtpl-desc">{BASIC_DRUM_TEMPLATE.desc}</p>
-              <p className="gtpl-detail">{BASIC_DRUM_TEMPLATE.detail}</p>
-            </article>
+                </article>
+              );
+            })}
           </div>
         </div>
 
@@ -692,7 +825,7 @@ function DrumSequencer({
             </p>
             <div className="tpl-confirm-template">
               <strong className="tpl-confirm-template-name">
-                {BASIC_DRUM_TEMPLATE.name}
+                {selectedDrumTemplate?.name}
               </strong>
               <span className="tpl-confirm-template-chords">
                 应用到整轨

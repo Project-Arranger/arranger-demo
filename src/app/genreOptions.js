@@ -1,5 +1,13 @@
 const CURRENT_GENRE_ID = 'pop';
 const MULTIMODAL_GENRE_ID = 'ai-multimodal';
+const MULTIMODAL_DRUM_TEMPLATE_GENRE_ID = 'electronic-edm';
+const ARRANGER_GENRE_IDS = Object.freeze([
+  'pop',
+  'hip-hop',
+  'r-and-b',
+  'electronic-edm',
+  'rock',
+]);
 const ASSET_BASE_URL = (import.meta.env?.BASE_URL ?? '/').replace(/\/?$/, '/');
 const genreArt = (filename) => `${ASSET_BASE_URL}assets/genre-art/${filename}`;
 
@@ -16,6 +24,7 @@ const GENRE_OPTIONS = Object.freeze([
     neon: '#53c7ff',
     artImage: genreArt('pop-neon.png'),
     gemTone: 'blue',
+    actionLabel: '进入',
     note: 'Doo-wop / I-vi-IV-V',
   }),
   Object.freeze({
@@ -24,13 +33,14 @@ const GENRE_OPTIONS = Object.freeze([
     shortLabel: 'HIP-HOP',
     displayTitle: 'City Pop',
     description: '90年代的日本大都会独有的霓虹感，听感浪漫惬意',
-    enabled: false,
+    enabled: true,
     tone: 'var(--c-bass)',
     ink: 'var(--c-bass-ink)',
     neon: '#ff50f0',
     artImage: genreArt('hip-hop-neon.png'),
     gemTone: 'purple',
-    note: 'Locked',
+    actionLabel: '进入',
+    note: 'Night drive / syncopated groove',
   }),
   Object.freeze({
     id: 'r-and-b',
@@ -38,13 +48,14 @@ const GENRE_OPTIONS = Object.freeze([
     shortLabel: 'R&B',
     displayTitle: '现代独立流行',
     description: '质感暧昧朦胧，旋律暧昧飘忽，节奏富有律动，在极简的编曲中释放细腻而深沉的情绪。',
-    enabled: false,
+    enabled: true,
     tone: 'var(--c-melody)',
     ink: 'var(--c-melody-ink)',
     neon: '#ff9a45',
     artImage: genreArt('rnb-neon.png'),
     gemTone: 'amber',
-    note: 'Locked',
+    actionLabel: '进入',
+    note: 'Hazy / minimal groove',
   }),
   Object.freeze({
     id: 'electronic-edm',
@@ -52,13 +63,14 @@ const GENRE_OPTIONS = Object.freeze([
     shortLabel: 'ELECTRONIC',
     displayTitle: 'Lofi电子乐',
     description: '细腻朦胧的怀旧氛围，鼓点克制却富有律动，旋律平静舒缓',
-    enabled: false,
+    enabled: true,
     tone: 'var(--c-drums)',
     ink: 'var(--c-drums-ink)',
     neon: '#5cff76',
     artImage: genreArt('electronic-neon.png'),
     gemTone: 'green',
-    note: 'Locked',
+    actionLabel: '进入',
+    note: 'Dusty / relaxed beat',
   }),
   Object.freeze({
     id: 'rock',
@@ -66,13 +78,14 @@ const GENRE_OPTIONS = Object.freeze([
     shortLabel: 'ROCK',
     displayTitle: '复古摇滚',
     description: '明亮粗粝的吉他质感，鼓点直接有力，旋律鲜明上口，听感热烈自由',
-    enabled: false,
+    enabled: true,
     tone: 'var(--c-vocal)',
     ink: 'var(--c-vocal-ink)',
     neon: '#fff15b',
     artImage: genreArt('rock-neon.png'),
     gemTone: 'amber',
-    note: 'Locked',
+    actionLabel: '进入',
+    note: 'Straight eighths / live drive',
   }),
   Object.freeze({
     id: MULTIMODAL_GENRE_ID,
@@ -94,7 +107,9 @@ const GENRE_OPTIONS = Object.freeze([
 ]);
 
 export {
+  ARRANGER_GENRE_IDS,
   CURRENT_GENRE_ID,
   GENRE_OPTIONS,
+  MULTIMODAL_DRUM_TEMPLATE_GENRE_ID,
   MULTIMODAL_GENRE_ID,
 };

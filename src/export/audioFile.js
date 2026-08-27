@@ -83,12 +83,25 @@ function getDurationSeconds(event, bpm) {
 }
 
 function getEventTime(event, bpm) {
-  return (event.bar * STEPS_PER_BAR + event.step) * (60 / bpm / 4);
+  return Math.max(
+    0,
+    (event.bar * STEPS_PER_BAR + event.step + (event.timingOffset ?? 0)) * (60 / bpm / 4),
+  );
 }
 
 function getGainValue(volume) {
   if (volume === -Infinity) return 0;
   return Number.isFinite(volume) ? Math.pow(10, volume / 20) : 1;
+}
+
+function getEventVolume(state, event) {
+  const trackVolume = state.volumes?.[event.trackId];
+  if (!['chord', 'drums'].includes(event.type) || !Number.isFinite(event.velocity)) {
+    return trackVolume;
+  }
+  if (trackVolume === -Infinity) return -Infinity;
+  const normalizedVelocity = Math.min(1, Math.max(0.2, event.velocity));
+  return (Number.isFinite(trackVolume) ? trackVolume : 0) + (20 * Math.log10(normalizedVelocity));
 }
 
 function collectProjectEvents(state, options = {}) {
@@ -160,13 +173,13 @@ async function loadSampleBuffers(context, files) {
   return new Map(entries);
 }
 
-function scheduleFallbackTone(context, destination, time, duration, noteMidi, isDrum) {
+function scheduleFallbackTone(context, destination, time, duration, noteMidi, isDrum, volume = 0) {
   const oscillator = context.createOscillator();
   const gain = context.createGain();
   const midi = Number.isInteger(noteMidi) ? noteMidi : 36;
   oscillator.type = isDrum ? 'sine' : 'triangle';
   oscillator.frequency.value = isDrum ? 75 : 440 * (2 ** ((midi - 69) / 12));
-  gain.gain.setValueAtTime(isDrum ? 0.16 : 0.1, time);
+  gain.gain.setValueAtTime((isDrum ? 0.16 : 0.1) * getGainValue(volume), time);
   gain.gain.exponentialRampToValueAtTime(0.001, time + Math.min(duration, isDrum ? 0.18 : 0.45));
   oscillator.connect(gain).connect(destination);
   oscillator.start(time);
@@ -186,7 +199,7 @@ function scheduleSample(context, destination, buffer, selection, event, state, b
   source.playbackRate.value = Number.isInteger(selection.noteMidi)
     ? 2 ** ((selection.noteMidi - selection.sampleMidi) / 12)
     : 1;
-  gain.gain.value = getGainValue(state.volumes?.[event.trackId]);
+  gain.gain.value = getGainValue(getEventVolume(state, event));
   source.connect(gain).connect(destination);
   source.start(time);
   if (event.type !== 'drums' && event.type !== 'melody') {
@@ -275,6 +288,7 @@ async function renderProjectToWav(state, options = {}) {
           duration,
           selection.noteMidi,
           event.type === 'drums',
+          getEventVolume(state, event),
         );
       }
     });
@@ -293,5 +307,7 @@ export {
   collectProjectEvents,
   getAudioExportTrackIds,
   getDurationSeconds,
+  getEventVolume,
+  getEventTime,
   renderProjectToWav,
 };

@@ -99,8 +99,14 @@ function noteNameToMidi(note) {
 }
 
 function createNoteEvents({ channel, event, velocity = 100 }) {
-  const tick = (event.bar * STEPS_PER_BAR + event.step) * MIDI_TICKS_PER_STEP;
+  const timingOffset = Number.isFinite(event.timingOffset) ? event.timingOffset : 0;
+  const tick = Math.max(0, Math.round(
+    (event.bar * STEPS_PER_BAR + event.step + timingOffset) * MIDI_TICKS_PER_STEP,
+  ));
   const duration = Math.max(1, durationToTicks(event));
+  const noteVelocity = ['chord', 'drums'].includes(event.type) && Number.isFinite(event.velocity)
+    ? event.velocity * 127
+    : velocity;
   const notes = event.type === 'drums'
     ? [DRUM_MIDI_NOTES[event.instrument]].filter(Number.isInteger)
     : (event.type === 'chord' ? event.notes : [event.note])
@@ -108,7 +114,7 @@ function createNoteEvents({ channel, event, velocity = 100 }) {
       .filter(Number.isInteger);
 
   return notes.flatMap((note) => [
-    { bytes: [0x90 | channel, note, clampMidiByte(velocity)], priority: 1, tick },
+    { bytes: [0x90 | channel, note, clampMidiByte(noteVelocity)], priority: 1, tick },
     { bytes: [0x80 | channel, note, 0], priority: 0, tick: tick + duration },
   ]);
 }
@@ -194,6 +200,7 @@ export {
   MIDI_TICKS_PER_STEP,
   createMidiFile,
   createMidiFileBlob,
+  createNoteEvents,
   durationToTicks,
   noteNameToMidi,
 };

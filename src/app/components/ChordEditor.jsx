@@ -8,6 +8,13 @@ import {
 } from 'react';
 import { Square } from 'lucide-react';
 import {
+  getChordStyleChordTemplate,
+  getChordStyleChordTemplatesForGenre,
+  getChordStyleGenre,
+  getChordStyleGrooveTemplate,
+  getChordStyleGrooveTemplatesForGenre,
+} from '../../data/chordStylePresets.js';
+import {
   CHORD_TEMPLATES,
   getChordToneRoots,
   getChordVariantOptions,
@@ -25,6 +32,9 @@ import {
   getChordSelectedGrooveTemplateId,
   getSourceChordLabel,
 } from '../chordGrooveActions.js';
+import {
+  getAppliedChordStyleSelection,
+} from '../chordStylePresetActions.js';
 import {
   getExistingChordClipBars,
   hasExistingChordClipContent,
@@ -78,13 +88,13 @@ function getGrooveStatusLabel(grooveTemplateId) {
 
 function renderMiniGroove(template) {
   return Array.from({ length: STEPS_PER_BAR / STEPS_PER_BEAT }, (_, beat) => (
-    <span className="chord-template-mini-beat-group" key={`${template.id}-mini-beat-${beat}`}>
+    <span className="chord-template-mini-beat-group" key={`${template.id ?? 'groove'}-mini-beat-${beat}`}>
       {Array.from({ length: STEPS_PER_BEAT }, (__, beatStep) => {
         const step = beat * STEPS_PER_BEAT + beatStep;
         return (
           <span
             className={template.steps.includes(step) ? 'on' : ''}
-            key={`${template.id}-mini-step-${step}`}
+            key={`${template.id ?? 'groove'}-mini-step-${step}`}
           />
         );
       })}
@@ -289,6 +299,7 @@ function ChordEditor({
   canPageBars = false,
   clips,
   clipName,
+  genreId = 'pop',
   launchpadHarmonySelection = null,
   launchpadHarmonyTarget = null,
   matrix,
@@ -312,11 +323,26 @@ function ChordEditor({
   tutorialLocked = false,
   tutorialTargets,
 }) {
+  const legacyTemplateMode = Boolean(tutorialTargets);
   const templates = useMemo(() => Object.values(CHORD_TEMPLATES), []);
-  const pageCount = Math.ceil(templates.length / TEMPLATE_PAGE_SIZE);
+  const styleChordTemplates = getChordStyleChordTemplatesForGenre(genreId);
+  const styleGrooveTemplates = getChordStyleGrooveTemplatesForGenre(genreId);
+  const styleGenre = getChordStyleGenre(genreId);
+  const legacyPageCount = Math.ceil(templates.length / TEMPLATE_PAGE_SIZE);
+  const stylePageCount = Math.ceil(styleChordTemplates.length / TEMPLATE_PAGE_SIZE);
+  const styleGroovePageCount = Math.ceil(styleGrooveTemplates.length / TEMPLATE_PAGE_SIZE);
+  const pageCount = legacyTemplateMode ? legacyPageCount : stylePageCount;
   const appliedTemplateId = getAppliedChordProgressionTemplateId(matrix, clips, selectedBar);
+  const appliedStyleSelection = getAppliedChordStyleSelection(matrix, clips);
   const appliedGrooveTemplateId = getChordSelectedGrooveTemplateId(matrix, selectedBar);
   const activeTemplate = appliedTemplateId ? CHORD_TEMPLATES[appliedTemplateId] : null;
+  const activeStyleChordTemplate = appliedStyleSelection?.chordTemplateId
+    ? getChordStyleChordTemplate(appliedStyleSelection.chordTemplateId)
+    : null;
+  const activeStyleGrooveTemplate = appliedStyleSelection?.grooveTemplateId
+    ? getChordStyleGrooveTemplate(appliedStyleSelection.grooveTemplateId)
+    : null;
+  const displayedTemplate = legacyTemplateMode ? activeTemplate : activeStyleChordTemplate;
   const currentChord = getSourceChordLabel(matrix, selectedBar);
   const nextChordBar = getNextChordClipBar(clips, selectedBar);
   const nextChord = nextChordBar === null ? null : getSourceChordLabel(matrix, nextChordBar);
@@ -329,9 +355,16 @@ function ChordEditor({
   const hasPlayableChordContent = activeSteps.size > 0;
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [templatePage, setTemplatePage] = useState(0);
+  const [grooveTemplatePage, setGrooveTemplatePage] = useState(0);
   const [pendingTemplateId, setPendingTemplateId] = useState(DEFAULT_TEMPLATE_ID);
   const [pendingGrooveTemplateId, setPendingGrooveTemplateId] = useState(DEFAULT_GROOVE_TEMPLATE_ID);
-  const [previewing, setPreviewing] = useState(false);
+  const [pendingStyleChordTemplateId, setPendingStyleChordTemplateId] = useState(
+    () => styleChordTemplates.find((template) => template.default)?.id ?? styleChordTemplates[0]?.id,
+  );
+  const [pendingStyleGrooveTemplateId, setPendingStyleGrooveTemplateId] = useState(
+    () => styleGrooveTemplates.find((template) => template.default)?.id ?? styleGrooveTemplates[0]?.id,
+  );
+  const [previewingTemplateId, setPreviewingTemplateId] = useState(null);
   const [confirmApplyOpen, setConfirmApplyOpen] = useState(false);
   const [harmonyPanel, setHarmonyPanel] = useState(null);
   const [harmonyPreviewOptionKey, setHarmonyPreviewOptionKey] = useState(null);
@@ -347,11 +380,25 @@ function ChordEditor({
     templatePage * TEMPLATE_PAGE_SIZE,
     templatePage * TEMPLATE_PAGE_SIZE + TEMPLATE_PAGE_SIZE,
   );
+  const visibleStyleChordTemplates = styleChordTemplates.slice(
+    templatePage * TEMPLATE_PAGE_SIZE,
+    templatePage * TEMPLATE_PAGE_SIZE + TEMPLATE_PAGE_SIZE,
+  );
+  const visibleStyleGrooveTemplates = styleGrooveTemplates.slice(
+    grooveTemplatePage * TEMPLATE_PAGE_SIZE,
+    grooveTemplatePage * TEMPLATE_PAGE_SIZE + TEMPLATE_PAGE_SIZE,
+  );
+  const selectedStyleChordTemplate = styleChordTemplates.find(
+    (template) => template.id === pendingStyleChordTemplateId,
+  ) ?? styleChordTemplates[0];
+  const selectedStyleGrooveTemplate = styleGrooveTemplates.find(
+    (template) => template.id === pendingStyleGrooveTemplateId,
+  ) ?? styleGrooveTemplates[0];
 
   const stopPreview = useCallback(() => {
     previewRunRef.current += 1;
     onChordTemplateWorkspacePreviewStop();
-    setPreviewing(false);
+    setPreviewingTemplateId(null);
   }, [onChordTemplateWorkspacePreviewStop]);
 
   const closeWorkspace = useCallback(() => {
@@ -418,39 +465,75 @@ function ChordEditor({
   }, [closeHarmonyPanel, closeWorkspace, confirmApplyOpen, harmonyPanel, workspaceOpen]);
 
   const openWorkspace = () => {
+    if (!legacyTemplateMode) {
+      const nextStyleChordTemplateId = styleChordTemplates.some(
+        (template) => template.id === appliedStyleSelection?.chordTemplateId,
+      )
+        ? appliedStyleSelection.chordTemplateId
+        : styleChordTemplates.find((template) => template.default)?.id
+          ?? styleChordTemplates[0]?.id;
+      const nextStyleGrooveTemplateId = styleGrooveTemplates.some(
+        (template) => template.id === appliedStyleSelection?.grooveTemplateId,
+      )
+        ? appliedStyleSelection.grooveTemplateId
+        : styleGrooveTemplates.find((template) => template.default)?.id
+          ?? styleGrooveTemplates[0]?.id;
+      const nextTemplateIndex = Math.max(
+        0,
+        styleChordTemplates.findIndex((template) => template.id === nextStyleChordTemplateId),
+      );
+      const nextGrooveTemplateIndex = Math.max(
+        0,
+        styleGrooveTemplates.findIndex((template) => template.id === nextStyleGrooveTemplateId),
+      );
+      setPendingStyleChordTemplateId(nextStyleChordTemplateId);
+      setPendingStyleGrooveTemplateId(nextStyleGrooveTemplateId);
+      setTemplatePage(Math.floor(nextTemplateIndex / TEMPLATE_PAGE_SIZE));
+      setGrooveTemplatePage(Math.floor(nextGrooveTemplateIndex / TEMPLATE_PAGE_SIZE));
+      setConfirmApplyOpen(false);
+      setWorkspaceOpen(true);
+    } else {
+      const nextTemplateId = appliedTemplateId ?? DEFAULT_TEMPLATE_ID;
+      const nextTemplateIndex = Math.max(0, templates.findIndex((template) => template.id === nextTemplateId));
+      setPendingTemplateId(nextTemplateId);
+      setPendingGrooveTemplateId(
+        CHORD_GROOVE_TEMPLATES.some((template) => template.id === appliedGrooveTemplateId)
+          ? appliedGrooveTemplateId
+          : DEFAULT_GROOVE_TEMPLATE_ID,
+      );
+      setTemplatePage(Math.floor(nextTemplateIndex / TEMPLATE_PAGE_SIZE));
+      setConfirmApplyOpen(false);
+      setWorkspaceOpen(true);
+    }
     stopPreview();
     closeHarmonyPanel();
-    const nextTemplateId = appliedTemplateId ?? DEFAULT_TEMPLATE_ID;
-    const nextTemplateIndex = Math.max(0, templates.findIndex((template) => template.id === nextTemplateId));
-    setPendingTemplateId(nextTemplateId);
-    setPendingGrooveTemplateId(
-      CHORD_GROOVE_TEMPLATES.some((template) => template.id === appliedGrooveTemplateId)
-        ? appliedGrooveTemplateId
-        : DEFAULT_GROOVE_TEMPLATE_ID,
-    );
-    setTemplatePage(Math.floor(nextTemplateIndex / TEMPLATE_PAGE_SIZE));
-    setConfirmApplyOpen(false);
-    setWorkspaceOpen(true);
   };
 
   const handlePreview = async () => {
-    if (previewing) {
+    const previewId = legacyTemplateMode ? 'legacy' : 'style-selection';
+    if (previewingTemplateId === previewId) {
       stopPreview();
       return;
     }
 
+    onChordTemplateWorkspacePreviewStop();
     const runId = previewRunRef.current + 1;
     previewRunRef.current = runId;
-    setPreviewing(true);
+    setPreviewingTemplateId(previewId);
     try {
-      await onChordTemplateWorkspacePreview({
-        progressionTemplateId: pendingTemplateId,
-        grooveTemplateId: pendingGrooveTemplateId,
-      });
+      await onChordTemplateWorkspacePreview(legacyTemplateMode
+        ? {
+          progressionTemplateId: pendingTemplateId,
+          grooveTemplateId: pendingGrooveTemplateId,
+        }
+        : {
+          styleChordTemplateId: pendingStyleChordTemplateId,
+          styleGrooveTemplateId: pendingStyleGrooveTemplateId,
+        });
     } catch {
       // The preview is optional UI feedback; keep the workspace usable if audio startup fails.
     } finally {
-      if (previewRunRef.current === runId) setPreviewing(false);
+      if (previewRunRef.current === runId) setPreviewingTemplateId(null);
     }
   };
 
@@ -476,10 +559,15 @@ function ChordEditor({
   const applyWorkspaceSelection = () => {
     stopPreview();
     closeHarmonyPanel();
-    onChordTemplateWorkspaceApply({
-      progressionTemplateId: pendingTemplateId,
-      grooveTemplateId: pendingGrooveTemplateId,
-    });
+    onChordTemplateWorkspaceApply(legacyTemplateMode
+      ? {
+        progressionTemplateId: pendingTemplateId,
+        grooveTemplateId: pendingGrooveTemplateId,
+      }
+      : {
+        styleChordTemplateId: pendingStyleChordTemplateId,
+        styleGrooveTemplateId: pendingStyleGrooveTemplateId,
+      });
     setConfirmApplyOpen(false);
     setWorkspaceOpen(false);
   };
@@ -505,6 +593,18 @@ function ChordEditor({
     if (templateId === pendingGrooveTemplateId) return;
     stopPreview();
     setPendingGrooveTemplateId(templateId);
+  };
+
+  const handleStyleChordTemplateSelect = (templateId) => {
+    if (templateId === pendingStyleChordTemplateId) return;
+    stopPreview();
+    setPendingStyleChordTemplateId(templateId);
+  };
+
+  const handleStyleGrooveTemplateSelect = (templateId) => {
+    if (templateId === pendingStyleGrooveTemplateId) return;
+    stopPreview();
+    setPendingStyleGrooveTemplateId(templateId);
   };
 
   const handleHarmonyPanelOpen = (stepIndex, element, source = 'pointer') => {
@@ -688,10 +788,10 @@ function ChordEditor({
                 <div className="chord-rhythm-progression-info">
                   <span className="chord-rhythm-eyebrow">Progression</span>
                   <strong className="chord-rhythm-progression-name">
-                    {activeTemplate?.name ?? '自定义'}
+                    {displayedTemplate?.name ?? '自定义'}
                   </strong>
                   <span className="chord-rhythm-progression-chords">
-                    {activeTemplate?.chords.join(' · ') ?? currentChord}
+                    {displayedTemplate?.chords.join(' · ') ?? currentChord}
                   </span>
                 </div>
               ) : null}
@@ -729,7 +829,13 @@ function ChordEditor({
             </div>
             <div className="chord-rhythm-status">
               <span className="chord-rhythm-status-lamp" aria-hidden="true" />
-              <span>GROOVE · {getGrooveStatusLabel(appliedGrooveTemplateId)}</span>
+              <span>
+                GROOVE ·
+                {' '}
+                {legacyTemplateMode
+                  ? getGrooveStatusLabel(appliedGrooveTemplateId)
+                  : activeStyleGrooveTemplate?.name ?? '自定义律动'}
+              </span>
             </div>
           </div>
 
@@ -817,21 +923,23 @@ function ChordEditor({
       >
         <div className="chord-template-workspace-panel">
           <header className="chord-template-workspace-head">
-            <h2 id="chordTemplateWorkspaceTitle">和弦模板与弹奏律动</h2>
+            <h2 id="chordTemplateWorkspaceTitle">
+              和弦模板与弹奏律动
+            </h2>
             <div>
               <button
                 className={[
                   'chord-template-workspace-icon-button',
                   'preview',
-                  previewing ? 'is-playing' : '',
+                  previewingTemplateId ? 'is-playing' : '',
                 ].filter(Boolean).join(' ')}
-                aria-label={previewing ? '停止试听' : '试听所选和弦与律动'}
-                aria-pressed={previewing}
-                title={previewing ? '停止试听' : '试听所选和弦与律动'}
+                aria-label={previewingTemplateId ? '停止试听' : '试听所选和弦与律动'}
+                aria-pressed={Boolean(previewingTemplateId)}
+                title={previewingTemplateId ? '停止试听' : '试听所选和弦与律动'}
                 type="button"
-                onClick={handlePreview}
+                onClick={() => void handlePreview()}
               >
-                {previewing
+                {previewingTemplateId
                   ? renderIcon(Square)
                   : <img src={ICON_PLAY_URL} alt="" aria-hidden="true" />}
               </button>
@@ -847,7 +955,12 @@ function ChordEditor({
             </div>
           </header>
 
-          <div className="chord-template-workspace-body">
+          <div className={[
+            'chord-template-workspace-body',
+            legacyTemplateMode ? '' : 'chord-style-selection-workspace-body',
+          ].filter(Boolean).join(' ')}>
+            {legacyTemplateMode ? (
+              <>
             <div className="chord-template-workspace-label progression">
               <strong>选择和弦模板</strong>
               <span>CHORD PROGRESSION</span>
@@ -935,8 +1048,122 @@ function ChordEditor({
                 );
               })}
             </div>
+              </>
+            ) : (
+              <>
+                <div className="chord-template-workspace-label progression">
+                  <strong>选择和弦模板</strong>
+                  <span>{styleGenre.label} · CHORD PROGRESSION</span>
+                  <div className="chord-template-page-controls">
+                    <button
+                      type="button"
+                      disabled={templatePage === 0}
+                      onClick={() => setTemplatePage((page) => Math.max(0, page - 1))}
+                    >
+                      上一页
+                    </button>
+                    <span>{templatePage + 1} / {pageCount}</span>
+                    <button
+                      type="button"
+                      disabled={templatePage === pageCount - 1}
+                      onClick={() => setTemplatePage((page) => Math.min(pageCount - 1, page + 1))}
+                    >
+                      下一页
+                    </button>
+                  </div>
+                </div>
+                <div
+                  className="chord-template-progression-options"
+                  aria-label={`${styleGenre.label}和弦模板`}
+                >
+                  {visibleStyleChordTemplates.map((template) => (
+                    <button
+                      aria-pressed={selectedStyleChordTemplate?.id === template.id}
+                      data-chord-style-chord-template={template.id}
+                      key={template.id}
+                      type="button"
+                      onClick={() => handleStyleChordTemplateSelect(template.id)}
+                    >
+                      <span className="chord-template-card-head">
+                        <strong>{template.name}</strong>
+                        <span>{template.default ? '默认' : template.voicing === 'open' ? '开放' : template.voicing === 'low' ? '低位' : template.voicing === 'power' ? '强力' : '扩展'}</span>
+                      </span>
+                      <span className="chord-template-card-chords">
+                        {template.chords.map((chord, index) => (
+                          <span className="chord-template-card-chord-wrap" key={`${template.id}-${chord}-${index}`}>
+                            <span className="chord-template-card-chord">{chord}</span>
+                            {index < template.chords.length - 1 ? (
+                              <span className="chord-template-card-separator">–</span>
+                            ) : null}
+                          </span>
+                        ))}
+                      </span>
+                      <span className="chord-template-card-description">{template.description}</span>
+                    </button>
+                  ))}
+                </div>
 
-            <div aria-hidden="true" />
+                <div className="chord-template-workspace-label groove">
+                  <strong>选择和弦弹奏律动模板</strong>
+                  <span>{styleGenre.label} · CHORD GROOVE</span>
+                  <div className="chord-template-page-controls">
+                    <button
+                      type="button"
+                      disabled={grooveTemplatePage === 0}
+                      onClick={() => setGrooveTemplatePage((page) => Math.max(0, page - 1))}
+                    >
+                      上一页
+                    </button>
+                    <span>{grooveTemplatePage + 1} / {styleGroovePageCount}</span>
+                    <button
+                      type="button"
+                      disabled={grooveTemplatePage === styleGroovePageCount - 1}
+                      onClick={() => setGrooveTemplatePage((page) => (
+                        Math.min(styleGroovePageCount - 1, page + 1)
+                      ))}
+                    >
+                      下一页
+                    </button>
+                  </div>
+                </div>
+                <div
+                  className="chord-template-groove-options chord-style-groove-options"
+                  aria-label={`${styleGenre.label}和弦弹奏律动模板`}
+                >
+                  {visibleStyleGrooveTemplates.map((template) => (
+                    <button
+                      aria-pressed={selectedStyleGrooveTemplate?.id === template.id}
+                      data-chord-style-groove-template={template.id}
+                      key={template.id}
+                      type="button"
+                      onClick={() => handleStyleGrooveTemplateSelect(template.id)}
+                    >
+                      <span className="chord-template-card-head">
+                        <strong>{template.name}</strong>
+                        <span>{template.mode === 'arp' ? 'A · 分解' : 'B · 柱式'}</span>
+                      </span>
+                      <span className="chord-template-mini-groove" aria-hidden="true">
+                        {renderMiniGroove(template)}
+                      </span>
+                      <span className="chord-template-card-description">
+                        {template.duration === '8n' ? '八分音符延音' : '十六分音符短奏'}
+                        {' · '}
+                        {template.swing > 0
+                          ? `Swing ${Math.round(template.swing * 100)}%`
+                          : '直拍'}
+                      </span>
+                      <span className="chord-template-groove-meta">
+                        {template.steps.length} HITS
+                        {template.lateOffset > 0 ? ' · LATE 8%' : ''}
+                        {template.default ? ' · DEFAULT' : ''}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <div className="chord-template-workspace-action-spacer" aria-hidden="true" />
             <div className="chord-template-workspace-actions">
               <button
                 className={[
@@ -971,10 +1198,14 @@ function ChordEditor({
               </p>
               <div className="tpl-confirm-template">
                 <strong className="tpl-confirm-template-name">
-                  {CHORD_TEMPLATES[pendingTemplateId]?.name ?? '所选和弦模板'}
+                  {legacyTemplateMode
+                    ? CHORD_TEMPLATES[pendingTemplateId]?.name ?? '所选和弦模板'
+                    : `${selectedStyleChordTemplate?.name ?? '所选和弦模板'} + ${selectedStyleGrooveTemplate?.name ?? '所选律动'}`}
                 </strong>
                 <span className="tpl-confirm-template-chords">
-                  {CHORD_TEMPLATES[pendingTemplateId]?.chords.join(' · ')}
+                  {legacyTemplateMode
+                    ? CHORD_TEMPLATES[pendingTemplateId]?.chords.join(' · ')
+                    : selectedStyleChordTemplate?.chords.join(' · ')}
                 </span>
               </div>
               <div className="tpl-confirm-actions">

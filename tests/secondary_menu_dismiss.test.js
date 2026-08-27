@@ -56,7 +56,8 @@ test('secondary menus share outside-click dismissal without dismissing confirmat
   assert.doesNotMatch(tracksSource, /track-manager-overlay"[^>]*onClick=/);
 
   assert.match(drumsSource, /active: drumTemplatePickerOpen/);
-  assert.match(drumsSource, /setDrumTemplatePickerOpen\(\(isOpen\) => !isOpen\)/);
+  assert.match(drumsSource, /if \(drumTemplatePickerOpen\) \{[\s\S]*closeTemplatePicker\(\);[\s\S]*setDrumTemplatePickerOpen\(true\);/);
+  assert.match(drumsSource, /onDismiss:\s*closeTemplatePicker/);
   assert.match(drumsSource, /ref=\{templatePickerRef\}/);
   assert.match(drumsSource, /ref=\{templateTriggerRef\}/);
 
