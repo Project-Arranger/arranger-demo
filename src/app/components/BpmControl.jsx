@@ -15,6 +15,7 @@ function BpmControl({
   disabled = false,
   idPrefix = 'bpm',
   onChange = () => {},
+  unit = 'BPM',
   value,
 }) {
   const inputRef = useRef(null);
@@ -77,7 +78,7 @@ function BpmControl({
             onBlur={(event) => commit(event.currentTarget.value)}
             onKeyDown={handleInputKeyDown}
           />
-          <span className="bpm-unit" aria-hidden="true">BPM</span>
+          <span className="bpm-unit" aria-hidden="true">{unit}</span>
         </label>
         <button
           className="bpm-step-button"

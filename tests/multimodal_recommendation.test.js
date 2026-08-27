@@ -186,7 +186,7 @@ test('applying the recommendation loads the complete eight-bar Chill arrangement
   });
 });
 
-test('multimodal UI exposes upload results choices and reusable real BPM controls', async () => {
+test('multimodal UI keeps the approved Notion analysis copy and interactive instrument picker', async () => {
   const [
     screenSource,
     bpmSource,
@@ -204,15 +204,55 @@ test('multimodal UI exposes upload results choices and reusable real BPM control
   assert.match(screenSource, /accept=\{MULTIMODAL_ACCEPT\}/);
   assert.match(screenSource, /controls[\s\S]*muted[\s\S]*playsInline/);
   assert.match(screenSource, /BpmControl/);
-  assert.match(screenSource, /ChoiceChips/);
-  assert.match(screenSource, /TrackRecommendationPicker/);
-  assert.match(screenSource, /track-recommendation-grid/);
+  assert.doesNotMatch(screenSource, /function ChoiceChips/);
+  assert.match(screenSource, /function TrackRecommendationPicker/);
+  assert.match(screenSource, /MULTIMODAL_RECOMMENDATION\.tracks\.slice\(0, 4\)/);
+  assert.match(screenSource, /track-recommendation-list/);
   assert.match(screenSource, /track-timbre-options/);
-  assert.match(screenSource, /已推荐 \{selectedTrackIds\.length\}/);
-  assert.match(screenSource, /disabled=\{selected && selectedTrackIds\.length === 1\}/);
-  assert.match(screenSource, /role="radiogroup"/);
-  assert.match(screenSource, /使用这个方案/);
+  assert.match(screenSource, /results-copy-only/);
+  assert.match(screenSource, /showFallbackCopy=\{false\}/);
+  assert.match(screenSource, /unit="bpm"/);
+
+  const resultsViewSource = screenSource.slice(
+    screenSource.indexOf('function ResultsView'),
+    screenSource.indexOf('function MultimodalFlowScreen'),
+  );
+  [
+    '画面描述',
+    '地面略微潮湿，刚下过雨，几个滑板青年悠闲地在街头漫步，穿着打扮符合日式街头潮流',
+    '曲风描述',
+    '整体应接近City Pop质感，音色听起来温暖、柔和；节奏中速偏慢，听起来悠闲舒缓的同时有较强的律动感，符合图中人物穿着的潮流感和街头感；旋律应偏向轻松明亮，同时有一定都市霓虹的现代感',
+    'AI音乐风格建议',
+    '速度和节奏',
+    '中速偏慢 |',
+    '4/4拍，节奏设计密集且律动感强',
+    '乐器搭配',
+    '旋律和声',
+    'C大调，流行音乐最常用的Doo-Wop和弦进行，听感和谐流畅；配合七和弦增加听觉色彩和张力',
+    'Cmaj7 - Am7 - Fmaj7 - G7',
+  ].forEach((copy) => assert.match(resultsViewSource, new RegExp(copy.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))));
+
+  [
+    'Chill · 雨夜街头',
+    'AI 推荐这 4 条轨道',
+    '画面分析完成',
+    '生成完整编曲',
+    '查看和弦顺序与段落安排',
+    '8 小节',
+  ].forEach((copy) => assert.doesNotMatch(resultsViewSource, new RegExp(copy.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))));
+  [
+    '鼓',
+    '和弦',
+    '低音',
+    '旋律',
+    '柔和电子鼓',
+    '温暖电钢琴',
+    '圆润电贝司',
+    '空气感合成器',
+  ].forEach((copy) => assert.match(screenSource, new RegExp(copy)));
   assert.match(bpmSource, /BPM_PRESETS\.map/);
+  assert.match(bpmSource, /unit = 'BPM'/);
+  assert.match(bpmSource, />\{unit\}<\/span>/);
   assert.match(bpmSource, /min=\{BPM_MIN\}/);
   assert.match(bpmSource, /max=\{BPM_MAX\}/);
   assert.match(bpmSource, /event\.key === 'ArrowUp'/);
@@ -222,11 +262,13 @@ test('multimodal UI exposes upload results choices and reusable real BPM control
   assert.match(appSource, /audioEngine\.setTempo\?\.\(nextBpm\)/);
   assert.match(appSource, /drumsRecording\.workflowLocked \|\| melodyRecording\.workflowLocked/);
   assert.match(appSource, /tutorialPanelState === 'running'/);
-  assert.match(css, /\.results-overview\s*\{[^}]*grid-template-columns:\s*240px minmax\(0,\s*1fr\);/s);
-  assert.match(css, /\.results-media-frame\s*\{[^}]*width:\s*240px;[^}]*height:\s*135px;/s);
-  assert.match(css, /\.track-recommendation-grid\s*\{[^}]*grid-template-columns:\s*repeat\(6,/s);
-  assert.match(css, /\.recommendation-footer\s*\{[^}]*grid-template-columns:/s);
-  assert.match(css, /\.recommendation-bpm-panel \.bpm-stepper\s*\{[^}]*grid-template-columns:\s*28px minmax\(0,\s*1fr\) 28px;/s);
+  assert.match(css, /\.results-copy-overview\s*\{[^}]*grid-template-columns:\s*220px minmax\(0,\s*1fr\);/s);
+  assert.match(css, /\.results-copy-media\s*\{[^}]*width:\s*220px;[^}]*height:\s*148px;/s);
+  assert.match(css, /\.results-advice-grid\s*\{[^}]*grid-template-columns:\s*280px minmax\(0,\s*1fr\);/s);
+  assert.match(css, /\.results-instrument-card\s*\{[^}]*grid-column:\s*1 \/ -1;[^}]*grid-row:\s*2;/s);
+  assert.match(css, /\.results-tempo-line \.bpm-presets\s*\{[^}]*display:\s*none;/s);
+  assert.match(css, /\.results-icon-action\s*\{[^}]*width:\s*36px;[^}]*height:\s*36px;/s);
+  assert.match(css, /\.genre-hardware:has\(\.results-copy-only\) \.genre-brand-text,[\s\S]*visibility:\s*hidden;/s);
   assert.match(css, /@media \(min-width:\s*1180px\) and \(max-width:\s*1512px\) and \(max-height:\s*760px\)/);
   assert.match(css, /\.genre-gate:has\(\.multimodal-screen\)\s*\{[^}]*padding:\s*12px;[^}]*overflow:\s*hidden;/s);
   assert.match(css, /\.genre-hardware:has\(\.multimodal-screen\)\s*\{[^}]*min-height:\s*calc\(100dvh - 24px\);[^}]*padding:\s*18px;[^}]*gap:\s*12px;/s);

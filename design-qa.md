@@ -80,6 +80,63 @@ final result: passed
 
 ---
 
+## AI Recommendation Summary-page Simplification
+
+- Source visual truth: `/tmp/ai-results-summary-reference.png`, a `1280x720` visual rendering of the user-approved ASCII structure. The source defines information hierarchy and progressive disclosure; existing Project Arranger materials and type tokens remain the visual-system source of truth.
+- Browser-rendered implementation: `/tmp/ai-results-summary-square-controls-1280-viewport.png` at a `1280x720` CSS viewport and `/tmp/ai-results-summary-square-controls-1512.png` at a `1512x760` CSS viewport.
+- Focused refinement comparison: `/tmp/ai-results-track-shape-comparison.png`, showing the previous long track rows beside the final square-card treatment at 1:1 CSS scale.
+- Copy refinement comparison: `/tmp/ai-results-copy-comparison.png`, showing the approved square-card layout before and after replacing abstract/English-first labels with concrete Chinese explanations.
+- Viewport and density: source truth is `1280x720`. The implementation was measured at `1280x720` and `1512x760` CSS viewports; the focused comparison uses the shared visible track region at 1:1 CSS scale because the current in-app browser panel is narrower than the emulated desktop viewport.
+- State: AI image analysis complete; BPM `88`; Drums, Chord, Bass, and Melody selected; Drums timbre detail open; Pad/Sampler and harmony/structure sections collapsed.
+
+### Findings
+
+- No actionable P0/P1/P2 differences remain.
+- Fonts and typography: the result establishes one dominant recommendation title, one short visual description, one track-section heading, and compact secondary labels. Track labels now render at `11px`, timbre labels at `9px`, and change actions at `9px`; the final pass does not reduce text to manufacture whitespace.
+- Spacing and layout rhythm: the result follows the approved sequence of compact media summary, four `112px` square-like track cards, one open timbre group, progressive-disclosure controls, and the final action. The default state remains exactly one viewport tall at both desktop sizes, while surrounding console space remains visibly unused rather than absorbed into controls.
+- Colors and visual tokens: the implementation retains the product's dark console, wood, brass, cyan analysis, and track-specific accents. Selection color is limited to active controls and no longer competes with multiple style, mode, and harmony chip groups.
+- Image quality and asset fidelity: the original uploaded media is shown with `object-fit: contain`; project-local track icons and hardware assets remain sharp. No visible product asset was replaced with a placeholder or code approximation.
+- Copy and content: the page now explains the result as a rain-street image suited to a relaxed tempo, soft drums, and warm electric piano. The four-track intro states each track's job; track and timbre names render in plain Chinese while the original recommendation IDs remain unchanged. Optional sound layers, arrangement detail, and the final generation action all describe what the user will get rather than relying on internal music-product terminology.
+- Interaction and accessibility: BPM step controls, per-track selection, explicit `更换` actions, per-track timbre radios, optional-track disclosure, harmony/structure disclosure, and `使用这个方案` were exercised. The selection toggle remains a separate square target on every card. Browser console reported no application errors or warnings.
+
+### Focused-region Evidence
+
+- `/tmp/ai-results-track-shape-comparison.png` isolates the changed region and keeps the before/after track shapes, restored type scale, intrinsic timbre choices, and progressive-disclosure controls legible. DOM measurements at `1280x720` and `1512x760` additionally confirmed all four `112x101px` rendered cards and the fully visible CTA.
+
+### Comparison History
+
+1. The pre-change result exposed style, BPM, mode, harmony, six track cards, timbre choices, structure, and the CTA at once, producing the reported overwhelmed state.
+2. The result was reorganized around one recommendation summary and four default track rows. Style/mode/harmony choice groups were removed from the default view; Pad/Sampler and harmony/structure moved behind explicit disclosures.
+3. The first post-fix evidence was `/tmp/ai-results-summary-comparison.png`; it established the approved hierarchy and a non-scrolling default page.
+4. Product review then identified a P2 density issue: the four full-width track bars and their selection/change controls still occupied too much of the console.
+5. The first density revision centered track content within a `640px` maximum, reduced rows to `30px`, and change buttons to `36x21px`. Product review clarified that the remaining issue was page-level whitespace, not internal button padding.
+6. The entire track, timbre, and optional-track content column was then reduced to `480px`. Product review clarified that this made the controls feel like narrow strips and forced secondary type too small.
+7. The final pass stopped narrowing the page and changed the control shape instead: four centered `112px` cards, restored `11px/9px` labels, intrinsic `132–142px` timbre choices, a `154px` optional-track disclosure, a `91px` collapsed detail disclosure, and a `168px` primary action. The default document height equals the viewport at both desktop targets.
+8. Product review then identified a comprehension issue in abstract mood language and English timbre labels. The final copy pass changed `松弛、潮湿、有城市微光` into a concrete recommendation sentence, explained each track's role, localized all visible track/timbre choices, and renamed disclosures and the CTA around their outcome. `/tmp/ai-results-copy-comparison.png` confirms the hierarchy and card dimensions remain stable.
+
+### Verification
+
+- Primary interactions tested: BPM increment/decrement; focus 和弦; switch to 柔和罗兹电钢琴 and restore 温暖电钢琴; open and close optional sounds; open and close chord/section details; apply the recommendation.
+- Automated checks: all `530` tests passed; lint passed while excluding the unrelated untracked `.codex-ringo-bp.2WJTQP/**` user workspace; production build passed. The existing Vite chunk-size warning remains non-blocking.
+
+final result: passed
+
+---
+
+## AI Recommendation Notion Copy-only Follow-up
+
+- Copy source of truth: `多模态AI入口文案for demo` in the user-provided Notion page.
+- The results page uses the approved picture description, style description, speed/rhythm, and melody/harmony copy. Instrument pairing intentionally retains the approved four square track cards and the active track's three timbre choices; optional tracks, arrangement detail, explanatory labels, and the text CTA remain removed.
+- Drums, Chord, Bass, and Melody render as `112px` square-like cards. Browser interaction switched Chord to `柔和罗兹电钢琴`, restored `温暖电钢琴`, deselected and reselected Melody, and confirmed every state updated independently.
+- Back and apply remain available as compact icon actions so the flow stays operable without introducing copy outside the approved document.
+- BPM remains a real control. Browser interaction verified `88 → 89 → 88`, while the displayed unit is the approved lowercase `bpm`; other product BPM controls retain their existing uppercase unit.
+- At both `1280x720` and `1512x760`, document height equals viewport height. The four track cards measure `112x104.5px`; at `390x844` the page stacks normally with no horizontal overflow.
+- The browser console reported no errors or warnings. All `530` tests passed; lint, production build, and `git diff --check` completed successfully. The existing production chunk-size warning remains non-blocking.
+
+final result: passed
+
+---
+
 ## AI Multimodal Shared Upload and Results Frame Follow-up
 
 - User-provided upload-page context: `/var/folders/22/2k2swhcn1zl1rf0pqjp4yt7w0000gn/T/codex-clipboard-6f8198d6-5a0d-4e3b-88b5-cbab91928d57.png`.
