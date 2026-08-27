@@ -922,6 +922,12 @@ test('chord template workspace fits the editor at compact desktop heights', asyn
   assert.match(css, /\.chord-template-workspace-body\s*\{[^}]*overflow:\s*auto;[^}]*overscroll-behavior:\s*contain;/s);
   assert.match(css, /\.chord-template-workspace-body\s*\{[^}]*grid-template-columns:\s*178px minmax\(0,\s*1fr\);/s);
   assert.match(css, /\.chord-template-progression-options,\s*\n\.chord-template-groove-options\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\);/s);
+  assert.match(css, /\.chord-style-groove-options\s*\{[^}]*align-content:\s*start;[^}]*min-height:\s*132px;/s);
+  assert.match(css, /\.chord-template-workspace-body\.chord-style-selection-workspace-body\s*\{[^}]*grid-template-rows:\s*auto auto auto;[^}]*align-content:\s*start;/s);
+  assert.match(css, /\.chord-style-selection-workspace-body \.chord-template-progression-options\s*\{[^}]*min-height:\s*132px;/s);
+  assert.match(css, /\.chord-style-selection-workspace-body \.chord-template-progression-options > button,\s*\n\.chord-style-groove-options > button\s*\{[^}]*min-height:\s*132px;/s);
+  assert.match(css, /@media \(max-width:\s*760px\)\s*\{[\s\S]*?\.chord-template-workspace-body\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\);/s);
+  assert.match(css, /@media \(max-width:\s*760px\)\s*\{[\s\S]*?\.chord-template-progression-options,\s*\n\s*\.chord-template-groove-options\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\);/s);
   assert.match(css, /\.chord-template-workspace-actions\s*\{[^}]*display:\s*flex;/s);
   assert.match(css, /\.chord-rhythm-step-grid\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(152px,\s*1fr\)\);/s);
   assert.match(css, /\.chord-rhythm-summary\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) auto;/s);
@@ -967,8 +973,12 @@ test('groove template picker mirrors the reference secondary menu layout', async
   assert.match(css, /\.tpl-picker\s*\{[^}]*z-index:\s*8;/s);
   assert.match(css, /\.gtpl-picker\s*\{[^}]*z-index:\s*8;/s);
   assert.match(css, /\.drum-template-picker\s*\{[^}]*grid-template-rows:\s*48px 1fr 58px;/s);
-  assert.match(css, /\.drum-template-list\s*\{[^}]*grid-template-columns:\s*minmax\(260px,\s*420px\);/s);
+  assert.match(css, /\.drum-template-list\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(240px,\s*1fr\)\);/s);
   assert.match(css, /\.drum-template-card\s*\{[^}]*display:\s*flex;/s);
+  assert.match(css, /\.drum-template-card-footer\s*\{[^}]*display:\s*flex;/s);
+  assert.match(css, /\.drum-template-preview\s*\{[^}]*display:\s*inline-flex;/s);
+  assert.match(css, /\.drum-template-preview\.is-playing/);
+  assert.match(css, /@media \(max-width:\s*1100px\)\s*\{[\s\S]*\.drum-template-list\s*\{[^}]*grid-template-columns:\s*repeat\(2,/s);
   assert.match(css, /\.drum-template-beat-markers\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*58px minmax\(0,\s*1fr\);/s);
   assert.match(css, /\.drum-template-beat-marker-grid\s*\{[^}]*grid-template-columns:\s*repeat\(16,\s*minmax\(0,\s*1fr\)\);/s);
   assert.match(css, /\.drum-template-hit-label\s*\{[^}]*display:\s*grid;[^}]*place-items:\s*center;/s);

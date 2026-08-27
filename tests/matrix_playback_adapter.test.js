@@ -38,6 +38,37 @@ test('matrix playback adapter returns drums events for a matrix step', () => {
   assert.deepEqual(adapter.getEventsForStep(0, 1), []);
 });
 
+test('matrix playback adapter carries drum dynamics and microtiming into events', () => {
+  const matrix = createInitialMatrix();
+  matrix.drums[0][3] = {
+    instruments: ['snare', 'hihat'],
+    timingOffsets: { hihat: 0.12, snare: 0.16 },
+    velocities: { hihat: 0.32, snare: 0.72 },
+  };
+
+  const adapter = createMatrixPlaybackAdapter(matrix);
+  assert.deepEqual(adapter.getEventsForStep(0, 3), [
+    {
+      type: 'drums',
+      trackId: 'drums',
+      bar: 0,
+      step: 3,
+      instrument: 'snare',
+      timingOffset: 0.16,
+      velocity: 0.72,
+    },
+    {
+      type: 'drums',
+      trackId: 'drums',
+      bar: 0,
+      step: 3,
+      instrument: 'hihat',
+      timingOffset: 0.12,
+      velocity: 0.32,
+    },
+  ]);
+});
+
 test('extractBassEvent reads bass cells into playable bass events', () => {
   assert.equal(extractBassEvent(null, 0, 0), null);
   assert.deepEqual(extractBassEvent({ type: 'bass', note: 'A#0', duration: '8n' }, 3, 8), {
@@ -220,6 +251,28 @@ test('extractChordEvent reads chord cells into playable chord events', () => {
   assert.deepEqual(
     extractChordEvent({ type: 'chord', root: 'C', chordRoot: 'C', quality: 'maj', label: 'C', toneRoots: ['C', 'E', 'G'], tonePitches: ['C3', 'E3', 'G3'], removedTonePitches: ['C3'], addedNotes: ['C5', 'D'] }, 2, 4)?.notes,
     ['E3', 'G3', 'D4', 'C5'],
+  );
+  assert.deepEqual(
+    extractChordEvent({
+      type: 'notes',
+      notes: ['C3'],
+      label: 'C3',
+      timingOffset: 0.28,
+      velocity: 0.56,
+    }, 1, 7),
+    {
+      type: 'chord',
+      trackId: 'chord',
+      bar: 1,
+      step: 7,
+      root: null,
+      quality: 'notes',
+      label: 'C3',
+      notes: ['C3'],
+      duration: '16n',
+      timingOffset: 0.28,
+      velocity: 0.56,
+    },
   );
 });
 

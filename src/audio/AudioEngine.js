@@ -168,6 +168,12 @@ function getMelodyVolume(trackVolume, timbreId) {
   return trackVolume + getMelodyTimbre(timbreId).gainDb;
 }
 
+function getVelocityAdjustedVolume(trackVolume, velocity = 1) {
+  if (trackVolume === -Infinity) return -Infinity;
+  const normalizedVelocity = Math.min(1, Math.max(0.2, Number(velocity) || 1));
+  return trackVolume + (20 * Math.log10(normalizedVelocity));
+}
+
 function normalizeAudibleTrackIds(trackIds) {
   if (!Array.isArray(trackIds)) return null;
   return new Set(trackIds.filter((trackId) => typeof trackId === 'string' && trackId.length > 0));
@@ -240,6 +246,8 @@ export default class AudioEngine {
     this.positionNotificationGeneration = 0;
     this.transportRunning = false;
     this.playRequestId = 0;
+    this.drumsPatternPreviewRequestId = 0;
+    this.drumsPatternPreviewSession = null;
     this.chordClipPreviewRequestId = 0;
     this.chordClipPreviewSession = null;
   }
@@ -712,6 +720,98 @@ export default class AudioEngine {
       ));
   }
 
+  stopDrumsPatternPreview() {
+    this.drumsPatternPreviewRequestId += 1;
+    const session = this.drumsPatternPreviewSession;
+    if (!session) return false;
+
+    session.timerIds.forEach((timerId) => this.cancelTimeout(timerId));
+    this.drumsPatternPreviewSession = null;
+    session.resolve('stopped');
+    return true;
+  }
+
+  async previewDrumsPattern(events, options = {}) {
+    const {
+      bpm = DEFAULT_BPM,
+      totalSteps = STEPS_PER_BAR,
+      trackId = 'drums',
+    } = options;
+    const normalizedTotalSteps = Number.isInteger(totalSteps) && totalSteps > 0
+      ? totalSteps
+      : STEPS_PER_BAR;
+    const normalizedHits = Array.isArray(events)
+      ? events.flatMap((event) => {
+        const instruments = Array.isArray(event?.instruments)
+          ? [...new Set(event.instruments)].filter((instrument) => (
+            DRUMS_INSTRUMENT_IDS.includes(instrument)
+          ))
+          : [];
+        if (
+          !Number.isInteger(event?.step)
+          || event.step < 0
+          || event.step >= normalizedTotalSteps
+          || !instruments.length
+        ) return [];
+        return instruments.map((instrument) => ({
+          instrument,
+          step: event.step,
+          timingOffset: Math.min(0.45, Math.max(
+            -0.25,
+            Number(event?.timingOffsets?.[instrument]) || 0,
+          )),
+          velocity: Math.min(1, Math.max(
+            0.2,
+            Number(event?.velocities?.[instrument]) || 1,
+          )),
+        }));
+      }).sort((left, right) => (
+        (left.step + left.timingOffset) - (right.step + right.timingOffset)
+      ))
+      : [];
+
+    this.stopDrumsPatternPreview();
+    if (!normalizedHits.length) return 'empty';
+
+    const requestId = ++this.drumsPatternPreviewRequestId;
+    await this.startAudio();
+    if (requestId !== this.drumsPatternPreviewRequestId) return 'stopped';
+
+    const normalizedBpm = Number.isFinite(bpm) && bpm > 0 ? bpm : DEFAULT_BPM;
+    const millisecondsPerSixteenth = (60 / normalizedBpm / 4) * 1000;
+    return new Promise((resolve) => {
+      const session = {
+        requestId,
+        resolve,
+        timerIds: new Set(),
+      };
+      this.drumsPatternPreviewSession = session;
+
+      const finish = (result) => {
+        if (this.drumsPatternPreviewSession !== session) return;
+        session.timerIds.forEach((timerId) => this.cancelTimeout(timerId));
+        this.drumsPatternPreviewSession = null;
+        resolve(result);
+      };
+
+      normalizedHits.forEach((hit) => {
+        const timerId = this.scheduleTimeout(() => {
+          session.timerIds.delete(timerId);
+          if (this.drumsPatternPreviewSession !== session) return;
+          const volume = getVelocityAdjustedVolume(this.getTrackVolume(trackId), hit.velocity);
+          this.triggerDrumsInstrument(hit.instrument, this.now(), volume, trackId);
+        }, (hit.step + hit.timingOffset) * millisecondsPerSixteenth);
+        session.timerIds.add(timerId);
+      });
+
+      const completionTimerId = this.scheduleTimeout(() => {
+        session.timerIds.delete(completionTimerId);
+        finish('completed');
+      }, normalizedTotalSteps * millisecondsPerSixteenth);
+      session.timerIds.add(completionTimerId);
+    });
+  }
+
   triggerChordNotes(
     notes,
     duration = '4n',
@@ -1061,10 +1161,10 @@ export default class AudioEngine {
             event.notes,
             event.duration ?? '16n',
             this.now(),
-            this.getTrackVolume(trackId),
+            getVelocityAdjustedVolume(this.getTrackVolume(trackId), event.velocity),
             trackId,
           );
-        }, event.step * millisecondsPerSixteenth);
+        }, Math.max(0, event.step + (event.timingOffset ?? 0)) * millisecondsPerSixteenth);
         session.timerIds.add(timerId);
       });
 
@@ -1113,7 +1213,7 @@ export default class AudioEngine {
       event.notes,
       event.duration,
       time,
-      this.getTrackVolume(trackId),
+      getVelocityAdjustedVolume(this.getTrackVolume(trackId), event.velocity),
       trackId,
     );
   }
@@ -1223,10 +1323,11 @@ export default class AudioEngine {
         if (this.audibleTrackIds && !this.audibleTrackIds.has(event.trackId)) continue;
         if (event.type === 'drums') {
           const trackId = event.trackId ?? 'drums';
+          const secondsPerSixteenth = 60 / (transport.bpm?.value ?? DEFAULT_BPM) / 4;
           this.triggerDrumsInstrument(
             event.instrument,
-            time,
-            this.getTrackVolume(trackId),
+            time + ((event.timingOffset ?? 0) * secondsPerSixteenth),
+            getVelocityAdjustedVolume(this.getTrackVolume(trackId), event.velocity),
             trackId,
           );
         }
@@ -1246,7 +1347,11 @@ export default class AudioEngine {
           }
         }
         if (event.type === 'chord') {
-          this.triggerChordEvent(event, time);
+          const secondsPerSixteenth = 60 / (transport.bpm?.value ?? DEFAULT_BPM) / 4;
+          this.triggerChordEvent(
+            event,
+            time + ((event.timingOffset ?? 0) * secondsPerSixteenth),
+          );
         }
         if (event.type === 'melody') {
           const melodyVolume = this.getMelodyTrackVolume(event.trackId ?? 'melody');
@@ -1299,6 +1404,7 @@ export default class AudioEngine {
   }
 
   async play(options = {}) {
+    this.stopDrumsPatternPreview();
     this.stopChordClipSequencePreview();
     const requestId = ++this.playRequestId;
     await this.startAudio();
@@ -1348,6 +1454,7 @@ export default class AudioEngine {
   async stop(time = this.now()) {
     this.playRequestId += 1;
     this.transportRunning = false;
+    this.stopDrumsPatternPreview();
     this.stopChordClipSequencePreview();
     this.stopMelodyPreview(time);
     const transport = this.getStartedTransport();

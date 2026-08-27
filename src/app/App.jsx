@@ -78,6 +78,12 @@ import {
   toggleChordRhythmStep,
 } from './chordGrooveActions.js';
 import {
+  applyChordStylePresetToExistingClips,
+  applyChordStyleSelectionToExistingClips,
+  createChordStylePresetPreviewEvents,
+  createChordStyleSelectionPreviewEvents,
+} from './chordStylePresetActions.js';
+import {
   clearMelodyBar,
   getMelodyCellToggleResult,
 } from './melodyActions.js';
@@ -109,7 +115,10 @@ import { selectLaunchpadMelodyClip } from './launchpadMelodyClipSelection.js';
 import {
   applyBasicDrumsAllBars,
   applyBasicDrumsBar,
+  applyDrumsTemplateToBar,
+  applyDrumsTemplateToBars,
   clearDrumsBar,
+  createDrumTemplatePreviewEvents,
   getDrumsClipBarIndexes,
 } from './drumsPatternActions.js';
 import {
@@ -194,7 +203,7 @@ function createTrackActionScope(state, trackId = state.activeTrackId) {
   };
 }
 
-export default function App() {
+export default function App({ genreId = 'pop' }) {
   const bpm = useMusicStore((state) => state.bpm);
   const rootKey = useMusicStore((state) => state.rootKey);
   const scale = useMusicStore((state) => state.scale);
@@ -1206,7 +1215,7 @@ export default function App() {
     }
   }, []);
 
-  const handleGenerateCurrentDrumsBar = useCallback(() => {
+  const handleGenerateCurrentDrumsBar = useCallback((templateId) => {
     let tutorialAction = null;
     if (tutorialActive) {
       tutorialAction = handleTutorialControlAction({
@@ -1222,7 +1231,10 @@ export default function App() {
       const state = useMusicStore.getState();
       const scope = createTrackActionScope(state);
       if (scope.trackType !== 'drums') return;
-      const nextMatrix = applyBasicDrumsBar(scope.matrix, selectedBar);
+      const nextMatrix = tutorialAction
+        ? applyBasicDrumsBar(scope.matrix, selectedBar)
+        : applyDrumsTemplateToBar(scope.matrix, selectedBar, templateId);
+      if (nextMatrix === scope.matrix) return;
       writeDrumsBars(nextMatrix, [selectedBar], scope.trackId);
       if (tutorialAction) applyTutorialActionProgress(tutorialAction);
     }, { force: Boolean(tutorialAction) });
@@ -1236,7 +1248,7 @@ export default function App() {
     writeDrumsBars,
   ]);
 
-  const handleGenerateAllDrumsBars = useCallback(() => {
+  const handleGenerateAllDrumsBars = useCallback((templateId) => {
     let tutorialAction = null;
     if (tutorialActive) {
       tutorialAction = handleTutorialControlAction({
@@ -1253,10 +1265,15 @@ export default function App() {
       const scope = createTrackActionScope(state);
       if (scope.trackType !== 'drums') return;
       const drumsClipBars = getDrumsClipBarIndexes(scope.clips);
-      const nextMatrix = applyBasicDrumsAllBars(scope.matrix, drumsClipBars);
+      const nextMatrix = tutorialAction
+        ? applyBasicDrumsAllBars(scope.matrix, drumsClipBars)
+        : applyDrumsTemplateToBars(scope.matrix, drumsClipBars, templateId);
+      if (nextMatrix === scope.matrix) return;
       writeDrumsBars(
         nextMatrix,
-        BAR_NUMBERS.map((_, barIndex) => barIndex),
+        tutorialAction
+          ? BAR_NUMBERS.map((_, barIndex) => barIndex)
+          : drumsClipBars,
         scope.trackId,
       );
       if (tutorialAction) applyTutorialActionProgress(tutorialAction);
@@ -1270,6 +1287,29 @@ export default function App() {
     withUndoCheckpoint,
     writeDrumsBars,
   ]);
+
+  const handleDrumTemplatePreview = useCallback(async (templateId) => {
+    const state = useMusicStore.getState();
+    const scope = createTrackActionScope(state);
+    if (scope.trackType !== 'drums') return 'empty';
+
+    const events = createDrumTemplatePreviewEvents(templateId);
+    if (!events.length) return 'empty';
+
+    if (state.isPlaying) {
+      await dispatchAppCommand({ type: APP_COMMAND_TYPES.TRANSPORT_TOGGLE_PLAY });
+    }
+
+    return audioEngine.previewDrumsPattern(events, {
+      bpm: state.bpm,
+      trackId: scope.trackId,
+    });
+  }, [dispatchAppCommand]);
+
+  const handleDrumTemplatePreviewStop = useCallback(
+    () => audioEngine.stopDrumsPatternPreview(),
+    [],
+  );
 
   const handleClearCurrentDrumsBar = useCallback(() => {
     requestClearAction(activeTrackId, 'bar', selectedBar);
@@ -1582,11 +1622,18 @@ export default function App() {
   const handleChordTemplateWorkspacePreview = useCallback(async ({
     progressionTemplateId,
     grooveTemplateId,
+    styleChordTemplateId,
+    styleGrooveTemplateId,
+    stylePresetId,
   } = {}) => {
-    const events = createChordTemplateWorkspacePreviewEvents({
-      progressionTemplateId,
-      grooveTemplateId,
-    });
+    const events = styleChordTemplateId && styleGrooveTemplateId
+      ? createChordStyleSelectionPreviewEvents(styleChordTemplateId, styleGrooveTemplateId)
+      : stylePresetId
+        ? createChordStylePresetPreviewEvents(stylePresetId)
+        : createChordTemplateWorkspacePreviewEvents({
+        progressionTemplateId,
+        grooveTemplateId,
+      });
     if (!events.length) return 'empty';
 
     if (useMusicStore.getState().isPlaying) {
@@ -1670,6 +1717,9 @@ export default function App() {
   const handleChordTemplateWorkspaceApply = useCallback(({
     progressionTemplateId,
     grooveTemplateId,
+    styleChordTemplateId,
+    styleGrooveTemplateId,
+    stylePresetId,
   }) => {
     let tutorialAction = null;
     if (tutorialActive && currentTutorialStep?.id === TUTORIAL_STEP_IDS.CHORD_SELECT_PROGRESSION_TEMPLATE) {
@@ -1685,12 +1735,20 @@ export default function App() {
     const state = useMusicStore.getState();
     const scope = createTrackActionScope(state);
     if (scope.trackType !== 'chord') return;
-    const selection = { progressionTemplateId, grooveTemplateId };
-    const nextMatrix = applyChordTemplateWorkspaceToExistingClips(
-      scope.matrix,
-      scope.clips,
-      selection,
-    );
+    const nextMatrix = styleChordTemplateId && styleGrooveTemplateId
+      ? applyChordStyleSelectionToExistingClips(
+        scope.matrix,
+        scope.clips,
+        styleChordTemplateId,
+        styleGrooveTemplateId,
+      )
+      : stylePresetId
+        ? applyChordStylePresetToExistingClips(scope.matrix, scope.clips, stylePresetId)
+        : applyChordTemplateWorkspaceToExistingClips(
+        scope.matrix,
+        scope.clips,
+        { progressionTemplateId, grooveTemplateId },
+      );
     if (nextMatrix === scope.matrix) return;
 
     withUndoCheckpoint(() => {
@@ -3172,6 +3230,7 @@ export default function App() {
           matrix: editorMatrix,
           clips: editorClips,
           drumsRecordingState: drumsRecording.recordingState,
+          genreId,
           melodyScaleId,
           melodyTimbreId,
           melodyActiveInputNotes: melodyRecording.activeInputNotes,
@@ -3215,6 +3274,8 @@ export default function App() {
           canPageBars,
           onGenerateAllDrumsBars: handleGenerateAllDrumsBars,
           onGenerateCurrentDrumsBar: handleGenerateCurrentDrumsBar,
+          onDrumTemplatePreview: handleDrumTemplatePreview,
+          onDrumTemplatePreviewStop: handleDrumTemplatePreviewStop,
           onNextBar: handleNextBar,
           onPreviousBar: handlePreviousBar,
           onDrumsPadInput: drumsRecording.previewPadInput,

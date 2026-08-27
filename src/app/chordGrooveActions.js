@@ -1,5 +1,9 @@
 import { STEPS_PER_BAR } from '../domain/musicConstants.js';
 import {
+  getChordStyleChordTemplate,
+  getChordStyleChordTemplateNotes,
+} from '../data/chordStylePresets.js';
+import {
   CHORD_TEMPLATES,
   createChordCell,
   createChordNotesCell,
@@ -82,7 +86,7 @@ function getChordProgressionTemplateId(matrix, barIndex) {
 function getChordRhythmSteps(matrix, barIndex) {
   return (matrix?.chord?.[barIndex] ?? [])
     .map((cell, step) => ({ cell, step }))
-    .filter(({ cell }) => cell?.type === 'chord')
+    .filter(({ cell }) => ['chord', 'note', 'notes'].includes(cell?.type))
     .map(({ step }) => step);
 }
 
@@ -90,7 +94,9 @@ function getChordRhythmStepLabel(matrix, barIndex, stepIndex) {
   if (!Number.isInteger(stepIndex) || stepIndex < 0 || stepIndex >= STEPS_PER_BAR) return null;
 
   const cell = matrix?.chord?.[barIndex]?.[stepIndex];
-  return cell?.type === 'chord' ? (cell.label ?? cell.sourceChordLabel ?? null) : null;
+  return ['chord', 'note', 'notes'].includes(cell?.type)
+    ? (cell.label ?? cell.sourceChordLabel ?? null)
+    : null;
 }
 
 function getChordRhythmStepSourceLabel(matrix, barIndex, stepIndex) {
@@ -138,6 +144,7 @@ function createChordSourceCell(
   chordName,
   progressionTemplateId = null,
   selectedGrooveTemplateId = CUSTOM_CHORD_GROOVE_ID,
+  metadata = {},
 ) {
   const chordCell = createChordCell(chordName) ?? createChordCell(DEFAULT_GROOVE_CHORD);
   if (!chordCell) return null;
@@ -148,6 +155,9 @@ function createChordSourceCell(
     sourceChordLabel: chordCell.label,
     ...(progressionTemplateId ? { progressionTemplateId } : {}),
     ...(selectedGrooveTemplateId ? { selectedGrooveTemplateId } : {}),
+    ...(metadata.chordStyleChordTemplateId
+      ? { chordStyleChordTemplateId: metadata.chordStyleChordTemplateId }
+      : {}),
   };
 }
 
@@ -171,7 +181,21 @@ function createGrooveChordCell(
 }
 
 function getChordBarMetadata(matrix, barIndex) {
+  const bar = matrix?.chord?.[barIndex] ?? [];
+  const chordStyleCell = bar.find((cell) => (
+    cell?.chordStyleChordTemplateId || cell?.chordStylePresetId
+  ));
+  const grooveStyleCell = bar.find((cell) => (
+    cell?.chordStyleGrooveTemplateId || cell?.chordStylePresetId
+  ));
   return {
+    chordStyleChordTemplateId: chordStyleCell?.chordStyleChordTemplateId
+      ?? chordStyleCell?.chordStylePresetId
+      ?? null,
+    chordStyleGrooveTemplateId: grooveStyleCell?.chordStyleGrooveTemplateId
+      ?? (grooveStyleCell?.chordStylePresetId
+        ? `${grooveStyleCell.chordStylePresetId}-groove`
+        : null),
     progressionTemplateId: getChordProgressionTemplateId(matrix, barIndex),
     selectedGrooveTemplateId: getChordSelectedGrooveTemplateId(matrix, barIndex),
   };
@@ -179,10 +203,25 @@ function getChordBarMetadata(matrix, barIndex) {
 
 function getChordStepMetadata(cell, barMetadata) {
   return {
+    chordStyleChordTemplateId: cell?.chordStyleChordTemplateId
+      ?? cell?.chordStylePresetId
+      ?? barMetadata.chordStyleChordTemplateId,
+    chordStyleGrooveTemplateId: cell?.chordStyleGrooveTemplateId
+      ?? (cell?.chordStylePresetId ? `${cell.chordStylePresetId}-groove` : null)
+      ?? barMetadata.chordStyleGrooveTemplateId,
+    duration: cell?.duration,
     progressionTemplateId: cell?.progressionTemplateId ?? barMetadata.progressionTemplateId,
     selectedGrooveTemplateId: cell?.selectedGrooveTemplateId
       ?? barMetadata.selectedGrooveTemplateId,
+    timingOffset: cell?.timingOffset,
+    velocity: cell?.velocity,
   };
+}
+
+function getStyleChordTonePitches(chordStyleChordTemplateId, chordName) {
+  const template = getChordStyleChordTemplate(chordStyleChordTemplateId);
+  const chordIndex = template?.chords.indexOf(chordName) ?? -1;
+  return chordIndex >= 0 ? getChordStyleChordTemplateNotes(template, chordIndex) : [];
 }
 
 function createChordRhythmEventCell({
@@ -196,15 +235,28 @@ function createChordRhythmEventCell({
 
   return {
     ...cell,
-    duration: '16n',
+    duration: metadata.duration ?? '16n',
     grooveTemplateId,
     sourceChordLabel,
+    ...(metadata.chordStyleChordTemplateId
+      ? {
+        chordStyleChordTemplateId: metadata.chordStyleChordTemplateId,
+        tonePitches: getStyleChordTonePitches(metadata.chordStyleChordTemplateId, chordName),
+      }
+      : {}),
+    ...(metadata.chordStyleGrooveTemplateId
+      ? { chordStyleGrooveTemplateId: metadata.chordStyleGrooveTemplateId }
+      : {}),
     ...(metadata.progressionTemplateId
       ? { progressionTemplateId: metadata.progressionTemplateId }
       : {}),
     ...(metadata.selectedGrooveTemplateId
       ? { selectedGrooveTemplateId: metadata.selectedGrooveTemplateId }
       : {}),
+    ...(Number.isFinite(metadata.timingOffset)
+      ? { timingOffset: metadata.timingOffset }
+      : {}),
+    ...(Number.isFinite(metadata.velocity) ? { velocity: metadata.velocity } : {}),
   };
 }
 
@@ -316,6 +368,7 @@ function toggleChordRhythmStep(matrix, barIndex, stepIndex) {
       sourceChordLabel,
       barMetadata.progressionTemplateId,
       CUSTOM_CHORD_GROOVE_ID,
+      { chordStyleChordTemplateId: barMetadata.chordStyleChordTemplateId },
     );
     return replaceChordBar(matrix, barIndex, nextBar);
   }
@@ -327,16 +380,29 @@ function toggleChordRhythmStep(matrix, barIndex, stepIndex) {
       ...barMetadata,
       selectedGrooveTemplateId: CUSTOM_CHORD_GROOVE_ID,
     });
+    const manualRhythmMetadata = {
+      ...metadata,
+      chordStyleGrooveTemplateId: null,
+      duration: '16n',
+      timingOffset: undefined,
+      velocity: undefined,
+    };
 
     if (previousCell?.type === 'chord' && isPassingChordCell(previousCell)) {
-      nextBar[activeStep] = {
+      const manualPassingCell = {
         ...previousCell,
+        chordStyleChordTemplateId: metadata.chordStyleChordTemplateId,
         duration: '16n',
         ...(metadata.progressionTemplateId
           ? { progressionTemplateId: metadata.progressionTemplateId }
           : {}),
         selectedGrooveTemplateId: CUSTOM_CHORD_GROOVE_ID,
       };
+      delete manualPassingCell.chordStyleGrooveTemplateId;
+      delete manualPassingCell.chordStylePresetId;
+      delete manualPassingCell.timingOffset;
+      delete manualPassingCell.velocity;
+      nextBar[activeStep] = manualPassingCell;
       return;
     }
 
@@ -346,10 +412,7 @@ function toggleChordRhythmStep(matrix, barIndex, stepIndex) {
     nextBar[activeStep] = createChordRhythmEventCell({
       chordName,
       grooveTemplateId: CUSTOM_CHORD_GROOVE_ID,
-      metadata: {
-        ...metadata,
-        selectedGrooveTemplateId: CUSTOM_CHORD_GROOVE_ID,
-      },
+      metadata: manualRhythmMetadata,
       sourceChordLabel: previousCell?.sourceChordLabel ?? sourceChordLabel,
     });
   });
@@ -368,7 +431,7 @@ function applyChordRhythmStepEnrichment(matrix, barIndex, stepIndex, chordName) 
   }
 
   const previousCell = matrix.chord[barIndex][stepIndex];
-  if (previousCell?.type !== 'chord') return matrix;
+  if (!['chord', 'note', 'notes'].includes(previousCell?.type)) return matrix;
 
   const sourceChordLabel = getChordRhythmStepSourceLabel(matrix, barIndex, stepIndex);
   const validChordNames = [
@@ -378,7 +441,10 @@ function applyChordRhythmStepEnrichment(matrix, barIndex, stepIndex, chordName) 
   if (!sourceChordLabel || !validChordNames.includes(chordName)) return matrix;
 
   const barMetadata = getChordBarMetadata(matrix, barIndex);
-  const metadata = getChordStepMetadata(previousCell, barMetadata);
+  const metadata = {
+    ...getChordStepMetadata(previousCell, barMetadata),
+    chordStyleChordTemplateId: null,
+  };
   const nextCell = createChordRhythmEventCell({
     chordName,
     grooveTemplateId: isPassingChordCell(previousCell)
@@ -421,7 +487,10 @@ function applyChordRhythmStepPassingChord(matrix, clips, barIndex, stepIndex, ch
   }
 
   const previousCell = matrix.chord[barIndex][stepIndex];
-  const metadata = getChordStepMetadata(previousCell, getChordBarMetadata(matrix, barIndex));
+  const metadata = {
+    ...getChordStepMetadata(previousCell, getChordBarMetadata(matrix, barIndex)),
+    chordStyleChordTemplateId: null,
+  };
   const nextPassingCell = createPassingChordCell(chordName);
   if (!nextPassingCell) return matrix;
 
@@ -429,12 +498,20 @@ function applyChordRhythmStepPassingChord(matrix, clips, barIndex, stepIndex, ch
     index === stepIndex
       ? {
         ...nextPassingCell,
+        ...(metadata.chordStyleGrooveTemplateId
+          ? { chordStyleGrooveTemplateId: metadata.chordStyleGrooveTemplateId }
+          : {}),
+        ...(metadata.duration ? { duration: metadata.duration } : {}),
         ...(metadata.progressionTemplateId
           ? { progressionTemplateId: metadata.progressionTemplateId }
           : {}),
         ...(metadata.selectedGrooveTemplateId
           ? { selectedGrooveTemplateId: metadata.selectedGrooveTemplateId }
           : {}),
+        ...(Number.isFinite(metadata.timingOffset)
+          ? { timingOffset: metadata.timingOffset }
+          : {}),
+        ...(Number.isFinite(metadata.velocity) ? { velocity: metadata.velocity } : {}),
       }
       : cell
   ));
@@ -466,6 +543,7 @@ function clearChordRhythmBar(matrix, barIndex) {
     sourceChordLabel,
     progressionTemplateId,
     CUSTOM_CHORD_GROOVE_ID,
+    { chordStyleChordTemplateId: getChordBarMetadata(matrix, barIndex).chordStyleChordTemplateId },
   );
   return replaceChordBar(matrix, barIndex, nextBar);
 }

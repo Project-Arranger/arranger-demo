@@ -21,7 +21,7 @@ function GenreSelectScreen({
 
   const handleGenreAction = (genre) => {
     setSelectedPreviewGenreId(genre.id);
-    if (genre.entryType === 'multimodal') {
+    if (genre.entryType === 'multimodal' || genre.enabled) {
       onGenreEnter(genre.id);
     }
   };

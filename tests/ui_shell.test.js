@@ -352,6 +352,10 @@ test('app shell exposes the chord rhythm editor and unified template workspace',
     new URL('../src/app/chordGrooveActions.js', import.meta.url),
     'utf8',
   );
+  const chordStylePresetActionsSource = await readFile(
+    new URL('../src/app/chordStylePresetActions.js', import.meta.url),
+    'utf8',
+  );
   const clipNameInputSource = await readFile(
     new URL('../src/app/components/ClipNameInput.jsx', import.meta.url),
     'utf8',
@@ -407,17 +411,28 @@ test('app shell exposes the chord rhythm editor and unified template workspace',
   assert.match(chordEditorSource, /aria-pressed=\{pendingGrooveTemplateId === template\.id\}/);
   assert.match(chordEditorSource, /chord-template-card:\$\{template\.id\}/);
   assert.match(chordEditorSource, /chord-groove-card:\$\{template\.id\}/);
-  assert.match(chordEditorSource, /onChordTemplateWorkspacePreview\(\{/);
+  assert.match(chordEditorSource, /onChordTemplateWorkspacePreview\(legacyTemplateMode/);
   assert.match(chordEditorSource, /progressionTemplateId: pendingTemplateId/);
   assert.match(chordEditorSource, /grooveTemplateId: pendingGrooveTemplateId/);
+  assert.match(chordEditorSource, /styleChordTemplateId: pendingStyleChordTemplateId/);
+  assert.match(chordEditorSource, /styleGrooveTemplateId: pendingStyleGrooveTemplateId/);
+  assert.match(chordEditorSource, /getChordStyleChordTemplatesForGenre\(genreId\)/);
+  assert.match(chordEditorSource, /getChordStyleGrooveTemplatesForGenre\(genreId\)/);
+  assert.match(chordEditorSource, /data-chord-style-chord-template=\{template\.id\}/);
+  assert.match(chordEditorSource, /data-chord-style-groove-template=\{template\.id\}/);
+  assert.match(chordEditorSource, /visibleStyleGrooveTemplates\.map\(\(template\) =>/);
+  assert.match(chordEditorSource, /grooveTemplatePage \+ 1/);
+  assert.match(chordEditorSource, /styleGroovePageCount/);
+  assert.match(chordEditorSource, /legacyTemplateMode \? \(/);
   assert.match(chordEditorSource, /onChordTemplateWorkspacePreviewStop\(\)/);
   assert.match(chordEditorSource, /previewRunRef/);
-  assert.match(chordEditorSource, /aria-label=\{previewing \? '停止试听' : '试听所选和弦与律动'\}/);
+  assert.match(chordEditorSource, /aria-label=\{previewingTemplateId \? '停止试听' : '试听所选和弦与律动'\}/);
+  assert.doesNotMatch(chordEditorSource, /chord-style-preset-preview/);
   assert.match(chordEditorSource, /renderIcon\(Square\)/);
   assert.match(chordEditorSource, /chord-rhythm-beat-group/);
   assert.match(chordEditorSource, /chord-template-mini-beat-group/);
   assert.match(chordEditorSource, /STEPS_PER_BAR \/ STEPS_PER_BEAT/);
-  assert.match(chordEditorSource, /onChordTemplateWorkspaceApply\(\{/);
+  assert.match(chordEditorSource, /onChordTemplateWorkspaceApply\(legacyTemplateMode/);
   assert.match(chordEditorSource, /progressionTemplateId: pendingTemplateId/);
   assert.match(chordEditorSource, /grooveTemplateId: pendingGrooveTemplateId/);
   assert.match(chordEditorSource, /hasExistingChordClipContent\(matrix, clips\)/);
@@ -463,6 +478,14 @@ test('app shell exposes the chord rhythm editor and unified template workspace',
   assert.match(chordGrooveActionsSource, /function createChordStepHarmonyPreviewEvents/);
   assert.match(chordGrooveActionsSource, /CUSTOM_CHORD_GROOVE_ID = 'custom-rhythm'/);
   assert.match(chordGrooveActionsSource, /CHORD_SOURCE_CELL_TYPE = 'chord-source'/);
+  assert.match(chordStylePresetActionsSource, /function createChordStylePresetPreviewEvents/);
+  assert.match(chordStylePresetActionsSource, /function applyChordStylePresetToExistingClips/);
+  assert.match(chordStylePresetActionsSource, /function createChordStyleSelectionPreviewEvents/);
+  assert.match(chordStylePresetActionsSource, /function applyChordStyleSelectionToExistingClips/);
+  assert.match(chordStylePresetActionsSource, /function getAppliedChordStyleSelection/);
+  assert.match(chordStylePresetActionsSource, /chordStyleChordTemplateId/);
+  assert.match(chordStylePresetActionsSource, /chordStyleGrooveTemplateId/);
+  assert.match(chordStylePresetActionsSource, /chordStylePresetId/);
 
   assert.match(source, /handleChordRhythmStepToggle/);
   assert.match(source, /handleChordStepHarmonyApply/);
@@ -474,12 +497,16 @@ test('app shell exposes the chord rhythm editor and unified template workspace',
   assert.match(source, /handleChordTemplateWorkspacePreview/);
   assert.match(source, /handleChordTemplateWorkspacePreviewStop/);
   assert.match(source, /applyChordTemplateWorkspaceToExistingClips/);
+  assert.match(source, /applyChordStylePresetToExistingClips/);
+  assert.match(source, /applyChordStyleSelectionToExistingClips/);
   assert.doesNotMatch(source, /applyChordTemplateWorkspaceToBar/);
   assert.match(source, /toggleChordRhythmStep/);
   assert.match(source, /clearChordRhythmBar/);
   assert.match(chordClearRequestSource, /requestClearAction\(activeTrackId, 'track'\)/);
   assert.doesNotMatch(chordClearRequestSource, /clearTrack\(activeTrackId\)/);
   assert.match(source, /createChordTemplateWorkspacePreviewEvents/);
+  assert.match(source, /createChordStylePresetPreviewEvents/);
+  assert.match(source, /createChordStyleSelectionPreviewEvents/);
   assert.match(source, /createChordStepHarmonyPreviewEvents/);
   assert.match(source, /previewChordClipSequence/);
   assert.match(source, /APP_COMMAND_TYPES\.TRANSPORT_STOP/);
@@ -490,6 +517,7 @@ test('app shell exposes the chord rhythm editor and unified template workspace',
   assert.match(bottomEditorSource, /onChordTemplateWorkspaceApply/);
   assert.match(bottomEditorSource, /onChordTemplateWorkspacePreview/);
   assert.match(bottomEditorSource, /onChordTemplateWorkspacePreviewStop/);
+  assert.match(bottomEditorSource, /genreId/);
   assert.match(bottomEditorSource, /onClearChord/);
   assert.match(bottomEditorSource, /onClearChordBar/);
 });
@@ -651,12 +679,15 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(drumSequencerSource, /drum-template-picker/);
   assert.match(drumSequencerSource, /drum-template-card/);
   assert.match(drumSequencerSource, /DRUM_TEMPLATE_HIT_LABELS/);
-  assert.match(drumSequencerSource, /getDrumTemplateHitLabel\(row\.id,\s*stepIndex\)/);
+  assert.match(drumSequencerSource, /getDrumTemplateHitLabel\(\s*template,\s*row\.id,\s*stepIndex,?\s*\)/);
   assert.match(drumSequencerSource, /drum-template-beat-markers/);
   assert.match(drumSequencerSource, /drum-template-hit-label/);
   assert.match(drumSequencerSource, /data-hit-label=\{hitLabel \?\? undefined\}/);
   assert.doesNotMatch(drumSequencerSource, /drum-template-(?:legend|row-icon)/);
-  assert.match(drumSequencerSource, /基础律动/);
+  assert.match(drumSequencerSource, /getDrumTemplatesForGenre\(genreId\)/);
+  assert.match(drumSequencerSource, /drumTemplates\.map\(\(template\) =>/);
+  assert.match(drumSequencerSource, /handleTemplatePreview\(template\.id\)/);
+  assert.match(drumSequencerSource, /停止试听/);
   assert.match(drumSequencerSource, /应用到本小节/);
   assert.match(drumSequencerSource, /应用到整轨/);
   assert.match(drumSequencerSource, /hasExistingDrumsClipContent\(matrix, clips\)/);
@@ -670,12 +701,16 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.doesNotMatch(drumSequencerSource, /为本小节生成基础律动|全局生成基础律动|清空本小节|清空整轨/);
   assert.doesNotMatch(drumSequencerSource, /清空 Drums/);
   assert.match(drumSequencerSource, /onClose/);
-  assert.match(drumSequencerSource, /const handleClose = \(\) => \{[\s\S]*setDrumTemplatePickerOpen\(false\);[\s\S]*onClose\(\);/);
+  assert.match(drumSequencerSource, /const handleClose = \(\) => \{[\s\S]*closeTemplatePicker\(\);[\s\S]*onClose\(\);/);
   assert.match(drumSequencerSource, /className="editor-close"[\s\S]*onClick=\{handleClose\}/);
   assert.match(source, /applyBasicDrumsBar/);
   assert.match(source, /getDrumsClipBarIndexes/);
   assert.match(source, /applyBasicDrumsAllBars/);
   assert.match(source, /applyBasicDrumsAllBars\(scope\.matrix,\s*drumsClipBars\)/);
+  assert.match(source, /applyDrumsTemplateToBar\(scope\.matrix,\s*selectedBar,\s*templateId\)/);
+  assert.match(source, /applyDrumsTemplateToBars\(scope\.matrix,\s*drumsClipBars,\s*templateId\)/);
+  assert.match(source, /createDrumTemplatePreviewEvents\(templateId\)/);
+  assert.match(source, /audioEngine\.previewDrumsPattern\(events/);
   assert.doesNotMatch(source, /createBasicDrumsBarWithoutKick/);
   assert.match(source, /clearDrumsBar/);
   assert.match(source, /getAdjacentTrackClipBar/);
@@ -702,6 +737,8 @@ test('timeline add clip controls switch the persistent editor by track row', asy
   assert.match(bottomEditorSource, /onNextBar/);
   assert.match(bottomEditorSource, /onPreviousBar/);
   assert.match(bottomEditorSource, /onClose:\s*onCloseEditor/);
+  assert.match(bottomEditorSource, /onTemplatePreview:\s*onDrumTemplatePreview/);
+  assert.match(bottomEditorSource, /onTemplatePreviewStop:\s*onDrumTemplatePreviewStop/);
   assert.match(bottomEditorSource, /activeTrackType === 'chord'/);
   assert.match(bottomEditorSource, /onChordRhythmStepToggle/);
   assert.match(bottomEditorSource, /onChordTemplateWorkspacePreview/);

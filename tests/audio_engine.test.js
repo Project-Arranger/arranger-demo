@@ -1263,6 +1263,69 @@ test('AudioEngine matrix playback triggers drums bass chord and melody events', 
   ]);
 });
 
+test('AudioEngine matrix playback applies drum microtiming and velocity', async () => {
+  const tone = createFakeTone();
+  const matrix = createInitialMatrix();
+  matrix.drums[0][0] = {
+    instruments: ['hihat'],
+    timingOffsets: { hihat: 0.24 },
+    velocities: { hihat: 0.5 },
+  };
+  const engine = new AudioEngine({
+    tone,
+    matrixSource: matrix,
+    volumeSource: () => ({ drums: -8 }),
+    playerFactory: createVolumeAwarePlayerFactory(tone.calls),
+  });
+
+  await engine.play({ bpm: 120 });
+  tone.Transport.scheduledCallback(24);
+
+  assert.deepEqual(tone.calls.filter(([name]) => name === 'player.start'), [
+    [
+      'player.start',
+      'hihat',
+      versioned('/samples/Drums/Hihat_v0.22.wav'),
+      24.03,
+      -14.020599913279625,
+    ],
+  ]);
+});
+
+test('AudioEngine matrix playback applies chord preset microtiming and velocity', async () => {
+  const tone = createFakeTone();
+  const matrix = createInitialMatrix();
+  matrix.chord[0][0] = {
+    type: 'notes',
+    notes: ['C3', 'E3', 'G3'],
+    label: 'C3/E3/G3',
+    timingOffset: 0.08,
+    velocity: 0.5,
+  };
+  const engine = new AudioEngine({
+    tone,
+    matrixSource: matrix,
+    volumeSource: () => ({ chord: -8 }),
+    playerFactory: createPlayerFactory(tone.calls),
+    chordSamplerFactory: createVolumeAwareChordSamplerFactory(tone.calls),
+    chordSynthFactory: createVolumeAwareChordSynthFactory(tone.calls),
+  });
+
+  await engine.play({ bpm: 120 });
+  tone.Transport.scheduledCallback(24);
+
+  assert.deepEqual(tone.calls.filter(([name]) => name === 'chordSampler.triggerAttackRelease'), [
+    [
+      'chordSampler.triggerAttackRelease',
+      ['C3', 'E3', 'G3'],
+      '2s',
+      24.01,
+      -14.020599913279625,
+      createChordSampleUrls(),
+    ],
+  ]);
+});
+
 test('AudioEngine filters matrix playback tracks and stops after the requested step count', async () => {
   const tone = createFakeTone();
   const matrix = createInitialMatrix();
@@ -1760,6 +1823,46 @@ test('AudioEngine previews a cancelable four-clip chord sequence through the 64-
   ]);
 });
 
+test('AudioEngine chord preset previews apply swing timing and hit velocity', async () => {
+  const tone = createFakeTone();
+  const timers = createManualTimers();
+  const engine = new AudioEngine({
+    tone,
+    volumeSource: () => ({ chord: -4 }),
+    playerFactory: createPlayerFactory(tone.calls),
+    chordSamplerFactory: createVolumeAwareChordSamplerFactory(tone.calls),
+    chordSynthFactory: createVolumeAwareChordSynthFactory(tone.calls),
+    scheduleTimeout: timers.scheduleTimeout,
+    cancelTimeout: timers.cancelTimeout,
+  });
+  await engine.startAudio();
+
+  const previewPromise = engine.previewChordClipSequence([{
+    step: 1,
+    notes: ['C3', 'E3', 'G3'],
+    duration: '16n',
+    timingOffset: 0.1,
+    velocity: 0.5,
+  }], { bpm: 120, totalSteps: 16 });
+  await Promise.resolve();
+
+  assert.deepEqual(timers.getDelays(), [137.5, 2000]);
+  timers.runThrough(137.5);
+  assert.deepEqual(
+    tone.calls.filter(([name]) => name === 'chordSampler.triggerAttackRelease'),
+    [[
+      'chordSampler.triggerAttackRelease',
+      ['C3', 'E3', 'G3'],
+      '2s',
+      12.5,
+      -10.020599913279625,
+      createChordSampleUrls(),
+    ]],
+  );
+  timers.runThrough(2000);
+  assert.equal(await previewPromise, 'completed');
+});
+
 test('AudioEngine stops and supersedes chord clip previews without leaving scheduled hits', async () => {
   const tone = createFakeTone();
   const timers = createManualTimers();
@@ -1791,6 +1894,85 @@ test('AudioEngine stops and supersedes chord clip previews without leaving sched
   assert.ok(timers.cancelled.length >= 3);
   assert.equal(await engine.previewChordClipSequence([], { totalSteps: 64 }), 'empty');
   assert.equal(engine.stopChordClipSequencePreview(), false);
+});
+
+test('AudioEngine previews one drum-template bar with stacked hits and live mix state', async () => {
+  const tone = createFakeTone();
+  const timers = createManualTimers();
+  const mix = {
+    mutedTracks: { drums: false },
+    volumes: { drums: -8 },
+  };
+  const engine = new AudioEngine({
+    tone,
+    volumeSource: () => mix,
+    playerFactory: createVolumeAwarePlayerFactory(tone.calls),
+    scheduleTimeout: timers.scheduleTimeout,
+    cancelTimeout: timers.cancelTimeout,
+  });
+  await engine.startAudio();
+
+  const previewPromise = engine.previewDrumsPattern([
+    {
+      step: 0,
+      instruments: ['kick', 'hihat'],
+      timingOffsets: { hihat: 0.24, kick: 0 },
+      velocities: { hihat: 0.5, kick: 1 },
+    },
+    { step: 4, instruments: ['snare'] },
+  ], { bpm: 120, totalSteps: 16 });
+  await Promise.resolve();
+
+  assert.deepEqual(timers.getDelays(), [0, 30, 500, 2000]);
+  timers.runThrough(0);
+  timers.runThrough(30);
+  mix.mutedTracks.drums = true;
+  timers.runThrough(500);
+  timers.runThrough(2000);
+
+  assert.equal(await previewPromise, 'completed');
+  assert.deepEqual(
+    tone.calls
+      .filter(([name]) => name === 'player.start')
+      .map((call) => [call[1], call[4]]),
+    [
+      ['kick', -8],
+      ['hihat', -14.020599913279625],
+      ['snare', -Infinity],
+    ],
+  );
+  assert.equal(timers.size(), 0);
+});
+
+test('AudioEngine stops and supersedes drum-template previews without stale hits', async () => {
+  const tone = createFakeTone();
+  const timers = createManualTimers();
+  const engine = new AudioEngine({
+    tone,
+    playerFactory: createPlayerFactory(tone.calls),
+    scheduleTimeout: timers.scheduleTimeout,
+    cancelTimeout: timers.cancelTimeout,
+  });
+  await engine.startAudio();
+
+  const firstPreview = engine.previewDrumsPattern([
+    { step: 0, instruments: ['kick'] },
+    { step: 12, instruments: ['snare'] },
+  ], { bpm: 120 });
+  await Promise.resolve();
+  timers.runThrough(0);
+
+  const secondPreview = engine.previewDrumsPattern([
+    { step: 0, instruments: ['hihat'] },
+  ], { bpm: 120 });
+  assert.equal(await firstPreview, 'stopped');
+  await Promise.resolve();
+  assert.equal(engine.stopDrumsPatternPreview(), true);
+  assert.equal(await secondPreview, 'stopped');
+  assert.equal(timers.size(), 0);
+  assert.ok(timers.cancelled.length >= 3);
+  assert.equal(await engine.previewDrumsPattern([]), 'empty');
+  assert.equal(engine.stopDrumsPatternPreview(), false);
 });
 
 test('AudioEngine previews bass groove patterns with sixteenth-step timing', async () => {

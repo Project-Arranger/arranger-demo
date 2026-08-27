@@ -5,8 +5,10 @@ import {
 } from 'react';
 import App from './App.jsx';
 import {
+  ARRANGER_GENRE_IDS,
   CURRENT_GENRE_ID,
   GENRE_OPTIONS,
+  MULTIMODAL_DRUM_TEMPLATE_GENRE_ID,
   MULTIMODAL_GENRE_ID,
 } from './genreOptions.js';
 import { GenreSelectScreen } from './components/GenreSelectScreen.jsx';
@@ -31,6 +33,7 @@ const ROOT_VIEWS = Object.freeze({
 
 function Root() {
   const [view, setView] = useState(ROOT_VIEWS.GENRE);
+  const [genreId, setGenreId] = useState(CURRENT_GENRE_ID);
   const [mediaFile, setMediaFile] = useState(null);
   const [mediaKind, setMediaKind] = useState(null);
   const [mediaError, setMediaError] = useState(null);
@@ -56,7 +59,8 @@ function Root() {
   }, [view]);
 
   const handleGenreEnter = (genreId) => {
-    if (genreId === CURRENT_GENRE_ID) {
+    if (ARRANGER_GENRE_IDS.includes(genreId)) {
+      setGenreId(genreId);
       setView(ROOT_VIEWS.ARRANGER);
       return;
     }
@@ -84,6 +88,7 @@ function Root() {
 
   const handleApplyRecommendation = () => {
     useMusicStore.setState(createMultimodalRecommendationAppState({ bpm }));
+    setGenreId(MULTIMODAL_DRUM_TEMPLATE_GENRE_ID);
     setView(ROOT_VIEWS.ARRANGER);
   };
 
@@ -125,7 +130,7 @@ function Root() {
 
   if (view === ROOT_VIEWS.GENRE) {
     return createElement(GenreSelectScreen, {
-      currentGenreId: CURRENT_GENRE_ID,
+      currentGenreId: genreId,
       onGenreEnter: handleGenreEnter,
       options: GENRE_OPTIONS,
     });
@@ -159,7 +164,7 @@ function Root() {
     });
   }
 
-  return createElement(App);
+  return createElement(App, { genreId });
 }
 
 export default Root;

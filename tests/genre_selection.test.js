@@ -4,13 +4,23 @@ import { test } from 'node:test';
 
 test('genre options replace Jazz with the enabled AI multimodal entry', async () => {
   const {
+    ARRANGER_GENRE_IDS,
     CURRENT_GENRE_ID,
     GENRE_OPTIONS,
+    MULTIMODAL_DRUM_TEMPLATE_GENRE_ID,
     MULTIMODAL_GENRE_ID,
   } = await import('../src/app/genreOptions.js');
 
   assert.equal(CURRENT_GENRE_ID, 'pop');
   assert.equal(MULTIMODAL_GENRE_ID, 'ai-multimodal');
+  assert.equal(MULTIMODAL_DRUM_TEMPLATE_GENRE_ID, 'electronic-edm');
+  assert.deepEqual(ARRANGER_GENRE_IDS, [
+    'pop',
+    'hip-hop',
+    'r-and-b',
+    'electronic-edm',
+    'rock',
+  ]);
   assert.deepEqual(GENRE_OPTIONS.map((genre) => genre.label), [
     '流行 Pop',
     '嘻哈 Hip-Hop',
@@ -63,11 +73,18 @@ test('genre options replace Jazz with the enabled AI multimodal entry', async ()
   assert.equal(GENRE_OPTIONS.find((genre) => genre.id === CURRENT_GENRE_ID)?.enabled, true);
   assert.deepEqual(GENRE_OPTIONS.map((genre) => genre.enabled), [
     true,
-    false,
-    false,
-    false,
-    false,
     true,
+    true,
+    true,
+    true,
+    true,
+  ]);
+  assert.deepEqual(GENRE_OPTIONS.slice(0, 5).map((genre) => genre.actionLabel), [
+    '进入',
+    '进入',
+    '进入',
+    '进入',
+    '进入',
   ]);
   const multimodal = GENRE_OPTIONS.find((genre) => genre.id === MULTIMODAL_GENRE_ID);
   assert.equal(multimodal.entryType, 'multimodal');
@@ -89,7 +106,11 @@ test('root owns the genre upload analysis results and arranger views', async () 
   assert.match(rootSource, /useState\(ROOT_VIEWS\.GENRE\)/);
   assert.match(rootSource, /createElement\(GenreSelectScreen/);
   assert.match(rootSource, /createElement\(MultimodalFlowScreen/);
-  assert.match(rootSource, /createElement\(App\)/);
+  assert.match(rootSource, /const \[genreId, setGenreId\] = useState\(CURRENT_GENRE_ID\)/);
+  assert.match(rootSource, /ARRANGER_GENRE_IDS\.includes\(genreId\)/);
+  assert.match(rootSource, /setGenreId\(genreId\)/);
+  assert.match(rootSource, /setGenreId\(MULTIMODAL_DRUM_TEMPLATE_GENRE_ID\)/);
+  assert.match(rootSource, /createElement\(App, \{ genreId \}\)/);
   assert.match(rootSource, /genreId === MULTIMODAL_GENRE_ID/);
   assert.match(rootSource, /setView\(ROOT_VIEWS\.UPLOAD\)/);
   assert.match(rootSource, /setTimeout\(\(\) => setAnalysisStageIndex\(1\), 900\)/);
@@ -121,6 +142,7 @@ test('genre selection screen enters enabled cards and routes AI through its uplo
   assert.match(cardHandler, /onGenreEnter\(genre\.id\)/);
   assert.match(actionHandler, /setSelectedPreviewGenreId\(genre\.id\)/);
   assert.match(actionHandler, /genre\.entryType === 'multimodal'/);
+  assert.match(actionHandler, /\|\| genre\.enabled/);
   assert.match(actionHandler, /onGenreEnter\(genre\.id\)/);
   assert.match(source, /aria-pressed=\{selected\}/);
   assert.match(source, /data-selected=\{selected \? 'true' : undefined\}/);
